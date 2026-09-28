@@ -1,9 +1,8 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Riflette
-`main`/`claude/trusting-dijkstra-pk6wua` allo stato corrente (base: 2.0.1, nessun cambio di
-comportamento non ancora rilasciato). Va rigenerato quando cambia la struttura dei moduli, non a
-ogni commit.
+`main` allo stato corrente (base: 2.1.0, nessun cambio di comportamento non ancora rilasciato).
+Va rigenerato quando cambia la struttura dei moduli, non a ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
 
@@ -63,5 +62,6 @@ common/  (condiviso dai due nodi)
 - `datalevel.py` è importato sia da Python (`extract`, `plugin_cache`, `resolve_io`) sia
   concettualmente specchiato in `common/` lato C++ per le stesse scale di codice.
 
-_Ultimo aggiornamento: revisione automatica commenti, 25/09/2026 — nessuna modifica funzionale in
-questo giro, solo verifica che i commenti fossero già minimi e navigabili._
+_Ultimo aggiornamento: revisione automatica commenti, 28/09/2026 — struttura dei moduli invariata
+dalla scorsa revisione; unico intervento il docstring di `datalevel.py` (ricerca/citazioni
+spostate su `docs/DATA_LEVELS.md`, già linkato lì)._
