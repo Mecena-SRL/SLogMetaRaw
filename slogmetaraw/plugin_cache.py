@@ -177,7 +177,7 @@ def write_cache(r, keep_complete=False):
     path = os.path.join(CACHE_DIR, fnv1a64(rec['path']) + '.json')
     if (rec['partial'] or keep_complete) and _complete_record_at(path, rec):
         return path
-    tmp = path + '.tmp'
+    tmp = '%s.%d.tmp' % (path, os.getpid())   # the plugin's reader and the script may write at once
     try:
         with open(tmp, 'w', encoding='utf-8') as fh:
             json.dump(rec, fh, ensure_ascii=False)

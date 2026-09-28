@@ -121,6 +121,51 @@ class Damaged(unittest.TestCase):
         boxes = list(mp4.iter_boxes(Buf(outer + bytes(2000)), 8, len(outer)))
         self.assertEqual(boxes, [(b'stsd', 8, 8, len(inner))])
 
+    def test_a_64bit_box_size_is_clamped_to_the_parent(self):
+        class Buf:
+            def __init__(self, data):
+                self.data, self.size = data, len(data)
+
+            def read_at(self, pos, n):
+                return self.data[pos:pos + n]
+        inner = (1).to_bytes(4, 'big') + b'stsz' + (1 << 40).to_bytes(8, 'big') + bytes(8)
+        outer = (8 + len(inner)).to_bytes(4, 'big') + b'stbl' + inner
+        boxes = list(mp4.iter_boxes(Buf(outer + bytes(2000)), 8, len(outer)))
+        self.assertEqual(boxes, [(b'stsz', 8, 16, len(inner))])
+
+    def test_short_chunk_tables_give_no_offsets(self):
+        t = mp4.Track()
+        t.tables[b'stsz'] = bytes(4) + (7).to_bytes(4, 'big') + (10).to_bytes(4, 'big')
+        t.tables[b'stco'] = bytes(4)
+        t.tables[b'stsc'] = bytes(4) + (1).to_bytes(4, 'big') + b''.join(v.to_bytes(4, 'big') for v in (1, 10, 1))
+        self.assertEqual(t.chunk_offsets(), [])
+        t.tables[b'stsc'] = bytes(3)
+        self.assertEqual(t.sample_offsets([0, 1]), {})
+
+    def test_a_huge_fixed_sample_count_is_sampled_without_a_list(self):
+        signal.alarm(5)
+        order = extract._sample_indices(0xFFFFFFFF, 25, 1.0, 24)
+        self.assertEqual(order[:2], [0, 0xFFFFFFFE])
+        self.assertEqual(len(order), 24)
+        self.assertEqual(extract._grid(0xFFFFFFFF, 25, 1.0)[1], (0xFFFFFFFF + 24) // 25 + 1)
+
+    def test_an_unparseable_frame_rate_is_dropped(self):
+        for bad in ('.', '..p', ''):
+            self.assertIsNone(extract._fps_value(bad))
+        self.assertEqual(extract._fps_value('5..94p'), 5.0)
+        self.assertEqual(extract._fps_value('59.94p'), 59.94)
+
+    def test_a_damaged_anc_length_does_not_hide_the_next_packet(self):
+        class Buf:
+            def __init__(self, data):
+                self.data, self.size = data, len(data)
+
+            def read_at(self, pos, n):
+                return self.data[pos:pos + n]
+        good = fx._anc(fx.rtmd_payload(0))
+        bad = mxf.ANC_KEY + b'\x84\x7f\xff\xff\xff' + bytes(40)
+        self.assertTrue(mxf.find_rtmd(Buf(bad + bytes(1000) + good), 0))
+
     def test_a_bad_mxf_component_depth_is_ignored(self):
         from slogmetaraw import datalevel
         for depth in (1, 3, 64, 1 << 40):

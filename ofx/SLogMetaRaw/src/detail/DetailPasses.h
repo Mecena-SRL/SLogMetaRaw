@@ -15,6 +15,7 @@ struct DetailScratch
     std::vector<float> L0, L, xa, J, tmp, Gg, G1;                     // full size
     std::vector<float> Lw, aB, bB, Dg, a2, b2, a3, b3, g0, g1, g2, g3;   // working grid
     std::vector<float> ch[3], E, at, bt, Lt, G2;                      // Dehaze grid, texture grid
+    std::vector<unsigned char> finite;                                // Dehaze: source pixel is finite
 };
 
 struct DetailPlanes   // intermediate results, for the parity tests

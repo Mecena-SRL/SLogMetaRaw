@@ -77,8 +77,9 @@ def iter_boxes(f, start, end):
                 return
             size = struct.unpack('>Q', hdr[8:16])[0]
             hlen = 16
-        elif size == 0 or pos + size > end:
-            size = end - pos       # to end, or clamped: a corrupt size must not read past the parent
+        elif size == 0:
+            size = end - pos
+        size = min(size, end - pos)   # a corrupt size must not read past the parent
         if size < hlen:
             return
         yield typ, pos, hlen, size
@@ -104,7 +105,7 @@ class Track:
 
     def sample_size(self, idx):
         stsz = self.tables[b'stsz']
-        fixed, count = struct.unpack('>II', stsz[4:12])
+        fixed = struct.unpack('>I', stsz[4:8])[0]
         if fixed:
             return fixed
         return struct.unpack('>I', stsz[12 + 4 * idx:16 + 4 * idx])[0]
@@ -112,9 +113,13 @@ class Track:
     def chunk_offsets(self):
         if b'stco' in self.tables:
             d = self.tables[b'stco']
+            if len(d) < 8:
+                return []
             n = min(struct.unpack('>I', d[4:8])[0], (len(d) - 8) // 4)
             return list(struct.unpack('>%dI' % n, d[8:8 + 4 * n]))
         d = self.tables[b'co64']
+        if len(d) < 8:
+            return []
         n = min(struct.unpack('>I', d[4:8])[0], (len(d) - 8) // 8)
         return list(struct.unpack('>%dQ' % n, d[8:8 + 8 * n]))
 
@@ -125,6 +130,8 @@ class Track:
         if not wanted or b'stsc' not in self.tables or not (b'stco' in self.tables or b'co64' in self.tables):
             return {}
         stsc = self.tables[b'stsc']
+        if len(stsc) < 8:
+            return {}
         n = min(struct.unpack('>I', stsc[4:8])[0], (len(stsc) - 8) // 12)
         runs = [struct.unpack('>III', stsc[8 + 12 * i:20 + 12 * i]) for i in range(n)]
         chunks = self.chunk_offsets()
@@ -274,7 +281,7 @@ class MP4:
                         method = rd(2) & 15
                     rd(2)  # data_reference_index
                     base = rd(base_size)
-                    ext = rd(2)
+                    ext = min(rd(2), (len(d) - q) // max(1, idx_size + off_size + len_size))
                     for _e in range(ext):
                         if idx_size:
                             rd(idx_size)

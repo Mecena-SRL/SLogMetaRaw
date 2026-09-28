@@ -49,7 +49,7 @@ def find_sidecar(path):
 def _fps_value(s):
     if not s:
         return None
-    m = re.match(r'([\d.]+)', str(s))
+    m = re.match(r'(\d+(?:\.\d+)?)', str(s))
     return float(m.group(1)) if m else None
 
 
@@ -89,11 +89,14 @@ def _color_space(gamma, primaries):
 
 
 def _grid(n, fps, interval):
+    """(step, length) of the sampling grid 0, step, 2*step, ... plus n - 1: never built as a list."""
     step = max(1, int(round((fps or 25) * interval)))
-    idx = list(range(0, n, step))
-    if idx[-1] != n - 1:
-        idx.append(n - 1)
-    return idx
+    m = (n + step - 1) // step
+    return step, m + ((m - 1) * step != n - 1)
+
+
+def _grid_at(n, step, j):
+    return min(j * step, n - 1)
 
 
 def _coarse_to_fine(items):
@@ -119,10 +122,12 @@ def _sample_indices(n, fps, interval, max_samples):
         return []
     if max_samples <= 1:
         return [0]
-    idx = _grid(n, fps, interval)
-    if len(idx) > max_samples:
-        k = (len(idx) - 1) / (max_samples - 1)
-        idx = sorted({idx[int(round(i * k))] for i in range(max_samples)})
+    step, size = _grid(n, fps, interval)
+    if size > max_samples:
+        k = (size - 1) / (max_samples - 1)
+        idx = sorted({_grid_at(n, step, int(round(i * k))) for i in range(max_samples)})
+    else:
+        idx = [_grid_at(n, step, j) for j in range(size)]
     return _coarse_to_fine(idx)
 
 
@@ -228,7 +233,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
             out['rtmd'] = entries
         return rtmd.values(entries)
 
-    full = min(len(_grid(n, fps, interval)), FULL_SAMPLES) if n else 0
+    full = min(_grid(n, fps, interval)[1], FULL_SAMPLES) if n else 0
     _sample(out, order, read_one, deadline, full, n)
 
 
@@ -296,7 +301,7 @@ def _read_mxf(f, out, interval, max_samples, deadline):
             return rtmd.values(rtmd.decode(payload[:PARTIAL_READ])) if payload else None
 
         order = _sample_indices(units, fps, interval, max_samples)
-        _sample(out, order, read_one, deadline, min(len(_grid(units, fps, interval)), FULL_SAMPLES), units)
+        _sample(out, order, read_one, deadline, min(_grid(units, fps, interval)[1], FULL_SAMPLES), units)
         return
 
     # no index: the first package plus byte-scan windows spread across the file
@@ -383,10 +388,7 @@ def _normalise(out):
         fr = meta.get('v_colr_full_range')
     meta['file_range'] = {True: 'Full', False: 'Video (legal)', None: 'non dichiarato (video)'}.get(fr)
     if out['container'] == 'MXF':
-        # the MXF SPS is located by scanning for a start code inside interleaved
-        # essence, so nothing read from it declares the range; the picture
-        # descriptor does, and datalevel.declared_level uses that instead. Leave
-        # the field empty rather than claim the file said "video".
+        # the scanned MXF SPS declares nothing reliable; declared_level reads the picture descriptor
         meta['file_range'] = None
     meta['container'] = out['container']
     _data_level(out)

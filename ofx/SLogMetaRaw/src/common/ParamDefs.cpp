@@ -128,16 +128,6 @@ GroupParamDescriptor* defineGroup(ImageEffectDescriptor& d, PageParamDescriptor*
     return g;
 }
 
-DoubleParamDescriptor* defineHiddenDouble(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name,
-                                          double def)
-{
-    if (!claimName(name)) return nullptr;
-    DoubleParamDescriptor* p = d.defineDoubleParam(name);
-    p->setDefault(def);
-    hideParam(p, page);
-    return p;
-}
-
 IntParamDescriptor* defineHiddenInt(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name, int def)
 {
     if (!claimName(name)) return nullptr;

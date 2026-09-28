@@ -32,7 +32,6 @@ bool parseClipRecord(const std::map<std::string, std::string>& record, ClipMeta&
 {
     std::map<std::string, std::string> j = record;
     auto num = [&](const char* k, int def) { return j.count(k) ? atoi(j[k].c_str()) : def; };
-    m.ok = true;
     m.supported = num("supported", 0) != 0;
     m.wbEstimated = num("wb_estimated", 0) != 0;
     m.shotTemp = atof(j["shot_temp"].c_str());
@@ -73,7 +72,8 @@ static bool isSonyContainer(const std::string& path)
 // The outcome of the Media Pool write, left by the detached writer of "Rileggi".
 static std::string takeResolveNote(const std::string& path)
 {
-    const std::string file = cacheRecordPath(path).substr(0, cacheRecordPath(path).size() - 5) + ".resolve.json";
+    const std::string record = cacheRecordPath(path);
+    const std::string file = record.substr(0, record.size() - 5) + ".resolve.json";
     std::string text;
     if (!readFile(file, text)) return "";
     unlink(file.c_str());
@@ -122,9 +122,41 @@ static MetaOutcome settle(const std::string& path, Read& r, ClipMeta& m, std::st
     return MetaOutcome::Missing;
 }
 
+// Readers of clips nobody asks about any more: reap them, or they stay zombies with an open pipe.
+static void sweepReads(const std::string& current)
+{
+    for (auto it = s_Reads.begin(); it != s_Reads.end();) {
+        Read& r = it->second;
+        if (it->first != current && r.running) {
+            if (waitProcess(r.child, 0)) {
+                r.running = false;
+                const std::map<std::string, std::string> out = parseFlatJson(r.child.out);
+                auto e = out.find("error");
+                if (e != out.end() && !e->second.empty()) {
+                    r.failure = e->second;
+                    r.failedAt = std::chrono::steady_clock::now();
+                }
+            } else if (r.child.elapsedMs() >= kReadLimitMs) {
+                killProcess(r.child);
+                r.running = false;
+                r.failure = "metadata non letti entro 15 s (disco lento o in stand-by)";
+                r.failedAt = std::chrono::steady_clock::now();
+            }
+        }
+        const bool stale = r.failure.empty()
+            || std::chrono::steady_clock::now() - r.failedAt >= std::chrono::milliseconds(kRetryAfterMs);
+        if (!r.running && stale && it->first != current) it = s_Reads.erase(it);
+        else ++it;
+    }
+}
+
 MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std::string& status)
 {
     reapStrays();
+    {
+        std::lock_guard<std::mutex> lock(s_Mutex);
+        sweepReads(path);
+    }
     if (mode != MetaMode::Reload && readRecord(path, m)) {
         m.resolveNote = takeResolveNote(path);
         status = "Metadata letti (registrati da S-Log MetaRaw)";

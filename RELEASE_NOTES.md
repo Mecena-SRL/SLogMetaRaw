@@ -11,12 +11,32 @@ identica.
   render), i passi rimanenti vengono saltati invece di arrivare comunque alla fine (#24).
 - **Develop su CPU più leggero**: l'indirizzo della sorgente si calcola una volta per riga invece che per ogni pixel
   (#24).
+- **Detail su CPU con Dehaze più veloce**: il passo finale non decodifica più la sorgente solo per controllare i pixel
+  non validi (3 `pow` in meno per pixel). Immagine identica al bit.
+- **Nessun processo "zombie" passando da una clip all'altra**: una lettura dei metadata ancora in corso quando si
+  cambia clip ora viene raccolta (o fermata dopo 15 s) invece di restare come processo morto con una pipe aperta per
+  tutta la sessione di Resolve.
+- Tolto codice non più usato.
+
+### Lettura dei metadata
+
+- **Box MP4 con dimensione a 64 bit corrotta** non fanno più leggere fino alla fine del file: anche loro si fermano al
+  box padre.
+- **Tabelle `stco`/`co64`/`stsc` troppo corte** non fanno più fallire la lettura della clip.
+- **Numero di campioni assurdo** (tabella `stsz` a dimensione fissa o `Duration` NRT danneggiati) non riempie più la
+  memoria: la griglia di campionamento si calcola senza costruire la lista di tutti i frame.
+- **Frame rate illeggibile** nell'XML NRT (per esempio `5..94p`) fa perdere solo quel campo, non la clip.
+- **MXF senza indice**: un pacchetto ANC con lunghezza danneggiata non nasconde più i pacchetti validi che lo seguono;
+  la scansione non ricopia più il buffer a ogni blocco letto.
+- **Box `iloc` con estensioni a larghezza zero** non tengono più la CPU occupata per minuti.
 
 ### Script
 
 - **"Rileggi metadata" su Mac con più interfacce di rete**: i tentativi sugli indirizzi locali si dividono il tempo
   concesso alla connessione invece di 1 s ciascuno, e l'errore riportato è quello vero invece di un timeout (#24).
 - Tolta la voce "Shade" dai Kelvin dei preset di luce: la camera non la registra mai, quindi non veniva mai usata (#24).
+- **Plugin e script che scrivono la stessa clip insieme** non si contendono più lo stesso file temporaneo della scheda.
+- **Dopo un aggiornamento** la finestra non ripropone come novità la versione appena installata.
 
 ## S-Log MetaRaw 2.1.0
 

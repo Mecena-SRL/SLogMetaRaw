@@ -253,7 +253,7 @@ def find_rtmd(f, pos, window=WINDOW):
 
     Used where no content package boundary is known (no partition pack or index).
     """
-    buf = b''
+    buf = bytearray()
     base = pos
     start = 0
     while len(buf) < window and base + len(buf) < f.size:
@@ -273,8 +273,11 @@ def find_rtmd(f, pos, window=WINDOW):
                 start = i + 16
                 continue
             if vs + length > len(buf):
-                break  # need more data
-            payload = _anc_value(buf[vs:vs + length])
+                if vs + length < window + CHUNK:   # the scan can still reach its end
+                    break  # need more data
+                start = i + 16   # a damaged length: try the next packet
+                continue
+            payload = _anc_value(bytes(buf[vs:vs + length]))
             if payload:
                 return payload
             start = i + 16
@@ -289,7 +292,7 @@ def _sps_in(buf, pos=0):
     if m:
         j = buf.find(b'\x00\x00\x01', m.start() + 4)
         if j > 0:
-            return ('avc' if m.group(1) else 'hevc'), buf[m.start() + 3:j]
+            return ('avc' if m.group(1) else 'hevc'), bytes(buf[m.start() + 3:j])
     return None, None
 
 
@@ -299,7 +302,7 @@ def find_sps(f, window=8 * 1024 * 1024, start=0):
     From offset 0 this can match inside header metadata or index; callers that
     know where the essence starts pass it.
     """
-    buf = b''
+    buf = bytearray()
     while len(buf) < window and start + len(buf) < f.size:
         chunk = f.read_at(start + len(buf), CHUNK)
         if not chunk:
