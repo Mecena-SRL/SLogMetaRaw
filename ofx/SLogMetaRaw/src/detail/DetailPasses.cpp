@@ -181,9 +181,9 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
     const float* L = s.L0.data();
 
     if (dehaze) {
-        ensure(s.L, full);
-        if (p.hazeMix == 0.0f) {   // the transmission map, on the grid
-            ensure(s.xa, full);
+        if (p.hazeMix == 0.0f) {   // the transmission map, on the grid; Gg is free until the gaussian below
+            ensure(s.Gg, full);
+            float* xa = s.Gg.data();
             for (int c = 0; c < 3; ++c) {
                 ensure(s.ch[c], grid);
                 par(H, [&](int b, int e) {
@@ -192,10 +192,10 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                             const size_t i = (size_t)y * W + x;
                             const SMf3 v = smf3(s.J[i * 3], s.J[i * 3 + 1], s.J[i * 3 + 2]);
                             const float cv = c == 0 ? v.x : (c == 1 ? v.y : v.z);
-                            s.xa[i] = finite3(v) ? cv * p.hazeInvA[c] : 0.0f;
+                            xa[i] = finite3(v) ? cv * p.hazeInvA[c] : 0.0f;
                         }
                 });
-                tent(par, s.xa.data(), W, H, p.s, s.ch[c].data(), s.tmp);
+                tent(par, xa, W, H, p.s, s.ch[c].data(), s.tmp);
             }
             ensure(s.Lw, grid);
             tent(par, L, W, H, p.s, s.Lw.data(), s.tmp);
@@ -238,10 +238,9 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                                      + dt_bilinear(s.bt.data(), w, h, p.s, x, y) + 1.0f, SM_DT_HAZE_MIN_T, 1.0f);
                     SMf3 j = finite3(v) ? dt_haze_pixel(v, t, p) : v;
                     s.J[i * 3] = j.x; s.J[i * 3 + 1] = j.y; s.J[i * 3 + 2] = j.z;
-                    s.L[i] = finite3(j) ? dt_luma(j, p) : -16.0f;
+                    s.L0[i] = finite3(j) ? dt_luma(j, p) : -16.0f;   // in place: only index i is read
                 }
         });
-        L = s.L.data();
     }
 
     ensure(s.Lw, grid);

@@ -198,18 +198,24 @@ private:
     const std::function<void(int, int)>& m_Fn;
 };
 
-// Working planes shared by every Detail node: reused between frames instead of reallocated, and at
-// most kKeep sets stay allocated however many nodes the project has. A set grown for a frame much
-// larger than the current one is freed, so one 8K render does not pin its memory for HD work.
+// Working planes shared by every Detail node, at most kKeep sets. A frame takes the set sized for it;
+// a set more than twice its size is freed on release, so an 8K render does not pin memory for HD work.
 class ScratchLease
 {
 public:
     explicit ScratchLease(size_t pixels) : m_Pixels(pixels)
     {
         std::lock_guard<std::mutex> lock(mutex());
-        if (!pool().empty()) {
-            m_S = std::move(pool().back());
-            pool().pop_back();
+        auto& p = pool();
+        auto best = p.end();
+        for (auto it = p.begin(); it != p.end(); ++it) {
+            const size_t c = (*it)->L0.capacity();
+            if (c >= pixels && c <= 2 * pixels) { best = it; break; }
+            if (best == p.end() || c < (*best)->L0.capacity()) best = it;
+        }
+        if (best != p.end()) {
+            m_S = std::move(*best);
+            p.erase(best);
         } else {
             m_S.reset(new DetailScratch());
         }

@@ -70,6 +70,17 @@ class State(unittest.TestCase):
         self.assertFalse(result['newer'])
         self.assertEqual(result['current'], '2.1.1')
 
+    def test_a_cached_download_link_outside_the_releases_is_not_offered(self):
+        offer = update.blank('2.1.0')
+        offer.update(ok=True, latest='2.1.1', newer=True, checked_at=time.time(), dmg_url='https://example.com/x.dmg')
+        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test3.json'):
+            update.write_state(offer)
+            result = update.check('2.1.0')
+            os.unlink('/tmp/smr-update-test3.json')
+        self.assertEqual(result['dmg_url'], '')
+        self.assertTrue(update.trusted_dmg_url(
+            'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1.dmg'))
+
     def test_stale_cache_is_refreshed(self):
         stale = update.blank()
         stale['ok'] = True

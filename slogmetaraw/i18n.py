@@ -272,6 +272,28 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': 'No hay una versión más reciente (estás en la %s).',
         'Controllo non riuscito: %s': 'Comprobación fallida: %s',
         'Download di S-Log MetaRaw %s avviato.': 'Descarga de S-Log MetaRaw %s iniciada.',
+        'Camera': 'Cámara',
+        'Clip': 'Clip',
+        'Shutter': 'Obturador',
+        'WB': 'BB',
+        'Format': 'Formato',
+        'NRT metadata': 'Metadatos NRT',
+        'DEVICE': 'DISPOSITIVO',
+        'Image stabilizer': 'Estabilizador',
+        'Lighting preset': 'Preset de luz',
+        'Tint Correction': 'Corrección de tinte',
+        'Recording mode': 'Modo de grabación',
+        'ND filter wheel': 'Filtro ND',
+        'Focus position from image plane': 'Posición del foco desde el plano de imagen',
+        'Auto white balance mode': 'Modo de balance de blancos automático',
+        'Camera master gain adjustment': 'Ganancia maestra de la cámara',
+        'Color sampling': 'Muestreo de color',
+        'Field order': 'Orden de campos',
+        'Profile and level': 'Perfil y nivel',
+        'Luminance code range': 'Rango de código de luminancia',
+        'Frame rate': 'Velocidad de fotogramas',
+        'Capture FPS': 'FPS de captura',
+        'Monitoring descriptions': 'Descripciones de monitorización',
     },
     'pt': {
         'Tutto il Media Pool': 'Todo o Media Pool',
@@ -387,6 +409,28 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': 'Nenhuma versão mais recente (você está na %s).',
         'Controllo non riuscito: %s': 'Verificação falhou: %s',
         'Download di S-Log MetaRaw %s avviato.': 'Download do S-Log MetaRaw %s iniciado.',
+        'Camera': 'Câmera',
+        'Clip': 'Clipe',
+        'Shutter': 'Obturador',
+        'WB': 'BB',
+        'Format': 'Formato',
+        'NRT metadata': 'Metadados NRT',
+        'DEVICE': 'DISPOSITIVO',
+        'Image stabilizer': 'Estabilizador',
+        'Lighting preset': 'Predefinição de luz',
+        'Tint Correction': 'Correção de matiz',
+        'Recording mode': 'Modo de gravação',
+        'ND filter wheel': 'Filtro ND',
+        'Focus position from image plane': 'Posição do foco a partir do plano da imagem',
+        'Auto white balance mode': 'Modo de balanço de branco automático',
+        'Camera master gain adjustment': 'Ganho mestre da câmera',
+        'Color sampling': 'Amostragem de cor',
+        'Field order': 'Ordem dos campos',
+        'Profile and level': 'Perfil e nível',
+        'Luminance code range': 'Faixa de código de luminância',
+        'Frame rate': 'Taxa de quadros',
+        'Capture FPS': 'FPS de captura',
+        'Monitoring descriptions': 'Descrições de monitoramento',
     },
     'zh': {
         'Tutto il Media Pool': '整个媒体池',
@@ -516,6 +560,10 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': '没有更新的版本（当前为 %s）。',
         'Controllo non riuscito: %s': '检查失败：%s',
         'Download di S-Log MetaRaw %s avviato.': 'S-Log MetaRaw %s 下载已开始。',
+        'NRT metadata': 'NRT 元数据',
+        'Frame rate': '帧率',
+        'Capture FPS': '拍摄帧率',
+        'Monitoring descriptions': '监看描述',
     },
 }
 
@@ -525,7 +573,8 @@ def _system_language():
     try:
         out = subprocess.run(['/usr/bin/defaults', 'read', '-g', 'AppleLanguages'],
                              capture_output=True, text=True, timeout=5).stdout
-        for code in re.findall(r'"([a-zA-Z-]+)"', out):
+        # codes without a hyphen are printed unquoted: ( en, "it-IT" )
+        for code in re.findall(r'^\s*"?([A-Za-z]+(?:-[A-Za-z0-9]+)*)"?,?\s*$', out, re.M):
             base = code.split('-')[0].lower()
             if base in LANGS:
                 return base
