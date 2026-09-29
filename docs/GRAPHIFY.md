@@ -63,5 +63,5 @@ common/  (condiviso dai due nodi)
 - `datalevel.py` è importato sia da Python (`extract`, `plugin_cache`, `resolve_io`) sia
   concettualmente specchiato in `common/` lato C++ per le stesse scale di codice.
 
-_Ultimo aggiornamento: revisione automatica commenti, 25/09/2026 — nessuna modifica funzionale in
-questo giro, solo verifica che i commenti fossero già minimi e navigabili._
+_Ultimo aggiornamento: revisione automatica commenti, 29/09/2026 — struttura dei moduli invariata
+dal giro precedente; commenti già minimi e navigabili, nessuna modifica applicata._
