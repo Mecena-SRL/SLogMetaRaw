@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Python reference of the SLogMetaRaw develop math (ofx/SLogMetaRaw/DevelopMath.h)."""
+"""Python reference of the SLogMetaRaw develop math (ofx/SLogMetaRaw/gen/DevelopMath.h)."""
 import math
 import os
 import sys

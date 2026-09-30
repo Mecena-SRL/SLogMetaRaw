@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Camera colour and as-shot values used by the SLogMetaRaw plugin.
 
-Codes match ofx/SLogMetaRaw/DevelopMath.h (gamut and transfer tables).
+Codes match ofx/SLogMetaRaw/gen/DevelopMath.h (gamut and transfer tables).
 """
 
 SPACE_CODE = {'DaVinci WG': 0, 'Rec.709': 1, 'Rec.2020': 2, 'P3 D65': 3, 'P3 D60': 4, 'P3 DCI': 5,
