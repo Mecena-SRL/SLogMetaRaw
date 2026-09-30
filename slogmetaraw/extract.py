@@ -7,7 +7,7 @@ read_clip(path) -> {
     'sections': [(title, [(label, display), ...]), ...],   # Catalyst-like view
     'rtmd': [decoded first-frame entries], 'changes': {...},
     'sampling': {'total', 'planned', 'read', 'partial'},
-    'warnings': [...], 'bytes_read': int, 'reads': int,
+    'warnings': [...], 'warning_keys': [[template, args], ...], 'bytes_read': int, 'reads': int,
 }
 Nothing is written to the clip or next to it.
 """
@@ -175,12 +175,18 @@ def _audio_info(track):
             'audio_channels': channels, 'audio_bits': bits, 'audio_rate': rate}
 
 
+def _warn(out, fmt, *args):
+    """Keep the template and its arguments too: the window translates before formatting."""
+    out['warnings'].append(fmt % args if args else fmt)
+    out.setdefault('warning_keys', []).append([fmt, list(args)])
+
+
 def _merge_nrt(out, xml):
     """A damaged NRT XML costs its own fields, not the rtmd that is still readable."""
     try:
         out['meta'].update(nrt.parse(xml))
     except (ET.ParseError, ValueError, TypeError, LookupError) as exc:
-        out['warnings'].append('NRT XML illeggibile: %s' % exc)
+        _warn(out, 'NRT XML illeggibile: %s', str(exc))
         return
     out['nrt_source'] = 'sidecar' if out.get('sidecar') else 'embedded'
 
@@ -217,7 +223,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
         meta.update(_audio_info(audio))
     track = m.track(handler=b'meta', codec=b'rtmd')
     if not track:
-        out['warnings'].append('Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
+        _warn(out, 'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
         return
     n = track.sample_count()
     fps = meta.get('fps')
@@ -281,7 +287,7 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     if not first:
         first = mxf.find_rtmd(f, lay['essence'] if lay else 0, 2 * mxf.WINDOW if lay else mxf.WINDOW)
     if not first:
-        out['warnings'].append('Metadata di acquisizione non trovati nell\'MXF.')
+        _warn(out, 'Metadata di acquisizione non trovati nell\'MXF.')
         return
     out['rtmd'] = rtmd.decode(first)
     first_values = rtmd.values(out['rtmd'])
@@ -382,7 +388,7 @@ def _normalise(out):
     else:
         meta['gamma_name'] = gamma
     if 'white_balance_k' not in meta:
-        out['warnings'].append('Temperatura colore non registrata dalla camera in questo file.')
+        _warn(out, 'Temperatura colore non registrata dalla camera in questo file.')
     # v_full_range is always present but may be None (VUI absent): fall back to
     # the colr box only then, never when the VUI explicitly said "video range".
     fr = meta.get('v_full_range')
@@ -414,7 +420,7 @@ def _data_level(out):
     meta['level_note'] = d['note']
     meta['data_level'] = datalevel.summary(meta, host)
     if d.get('conflict'):
-        out['warnings'].append('Data level: ' + d['conflict'])
+        _warn(out, 'Data level: %s', d['conflict'])
 
 
 def _sections(out):
@@ -565,8 +571,8 @@ def read_clip(path, interval=1.0, max_samples=FULL_SAMPLES, allow_dataless=False
         out['file_size'] = f.size
     out.pop('_sidecar_xml', None)
     if out['sampling']['partial']:
-        out['warnings'].append('Campionamento parziale (%d fotogrammi campione): le variazioni durante '
-                               'la clip potrebbero non essere tutte elencate.' % out['sampling']['read'])
+        _warn(out, 'Campionamento parziale (%d fotogrammi campione): le variazioni durante '
+              'la clip potrebbero non essere tutte elencate.', out['sampling']['read'])
     _normalise(out)
     out['sections'] = _sections(out)
     return out

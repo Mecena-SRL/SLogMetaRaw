@@ -152,6 +152,10 @@ TABLES = {
             'Acquisition metadata not found in the MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'The camera did not record the color temperature in this file.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Partial sampling (%d sample frames): changes during the clip may not all be listed.',
+        'NRT XML illeggibile: %s': 'Unreadable NRT XML: %s',
+        'Data level: %s': 'Data level: %s',
         'Controllo aggiornamenti…': 'Checking for updates…',
         'Disponibile la %s: clicca per scaricare': 'Version %s available: click to download',
         'Nessuna versione più recente (sei alla %s).': 'No newer version (you are on %s).',
@@ -243,6 +247,10 @@ TABLES = {
             'Metadatos de adquisición no encontrados en el MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'La cámara no registró la temperatura de color en este archivo.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Muestreo parcial (%d fotogramas de muestra): puede que no se enumeren todas las variaciones durante el clip.',
+        'NRT XML illeggibile: %s': 'NRT XML ilegible: %s',
+        'Data level: %s': 'Nivel de datos: %s',
         'File name': 'Nombre de archivo',
         'Folder': 'Carpeta',
         'Date created': 'Fecha de creación',
@@ -380,6 +388,10 @@ TABLES = {
             'Metadados de aquisição não encontrados no MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'A câmera não registrou a temperatura de cor neste arquivo.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Amostragem parcial (%d quadros de amostra): as variações durante o clipe podem não estar todas listadas.',
+        'NRT XML illeggibile: %s': 'NRT XML ilegível: %s',
+        'Data level: %s': 'Nível de dados: %s',
         'File name': 'Nome do arquivo',
         'Folder': 'Pasta',
         'Date created': 'Data de criação',
@@ -518,6 +530,10 @@ TABLES = {
             '没有 rtmd 轨道：相机未记录逐帧拍摄数据。',
         'Metadata di acquisizione non trovati nell\'MXF.': 'MXF 中未找到采集元数据。',
         'Temperatura colore non registrata dalla camera in questo file.': '相机未在此文件中记录色温。',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            '部分采样（%d 个样本帧）：片段中的变化可能未全部列出。',
+        'NRT XML illeggibile: %s': 'NRT XML 无法读取：%s',
+        'Data level: %s': '数据电平：%s',
         'File name': '文件名',
         'Folder': '文件夹',
         'Format': '格式',
@@ -589,6 +605,21 @@ _lang = _system_language()
 def t(text):
     """Translate a source string, or return it unchanged when unknown."""
     return TABLES.get(_lang, {}).get(text, text)
+
+
+def warning_texts(result):
+    """Clip warnings in the window language, translated before their arguments go in."""
+    warnings = result.get('warnings', [])
+    keys = result.get('warning_keys')
+    if not keys or len(keys) != len(warnings):
+        return [t(w) for w in warnings]
+    out = []
+    for fmt, args in keys:
+        try:
+            out.append(t(fmt) % tuple(args) if args else t(fmt))
+        except (TypeError, ValueError):
+            out.append(fmt % tuple(args) if args else fmt)
+    return out
 
 
 def language():
