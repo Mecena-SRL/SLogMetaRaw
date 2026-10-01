@@ -123,7 +123,8 @@ def _reader_python():
 def _mount_points():
     """Mount points from the kernel table; mount(8) does not wait for unresponsive volumes."""
     try:
-        out = subprocess.run(['/sbin/mount'], capture_output=True, text=True, timeout=2).stdout
+        out = subprocess.run(['/sbin/mount'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             universal_newlines=True, timeout=2).stdout
     except (OSError, subprocess.SubprocessError):
         return ['/']
     points = [m.group(1) for m in re.finditer(r' on (/.*?) \(', out)]

@@ -17,12 +17,9 @@ jobs:
       - name: Unit tests (builds the plugin and the C++ test helpers with CMake)
         # macOS-only tests (Metal, sample clips, install.sh) skip themselves on Linux
         run: python3 -m unittest discover -s tests -v
-      - name: Package
-        run: ./packaging/linux/build_package.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-package
-          path: dist/*.tar.gz
+
+  linux-packages:
+    uses: ./.github/workflows/linux-packages.yml
 
   windows:
     runs-on: windows-latest

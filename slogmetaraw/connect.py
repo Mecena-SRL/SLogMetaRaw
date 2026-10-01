@@ -15,8 +15,8 @@ import unicodedata
 def _local_ipv4_addresses():
     """Assigned IPv4 addresses on this Mac only; never discover other hosts."""
     try:
-        result = subprocess.run(['/sbin/ifconfig', '-a'], capture_output=True,
-                                text=True, timeout=2, check=True)
+        result = subprocess.run(['/sbin/ifconfig', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True, timeout=2, check=True)
     except (OSError, subprocess.SubprocessError):
         return []
     addresses = []
