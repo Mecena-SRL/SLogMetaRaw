@@ -1,5 +1,6 @@
 # S-Log MetaRaw OpenFX plugins for DaVinci Resolve: Linux and Windows (CPU render) build.
-# macOS keeps using the Makefile (universal binary, Metal); this file builds the same sources elsewhere.
+# macOS releases keep using the Makefile (universal binary against Resolve's own SDK); this file builds the same
+# sources everywhere, Metal included on macOS, so that CI can compile and test them on all three systems.
 #
 #   cmake -S ofx/SLogMetaRaw -B build -DCMAKE_BUILD_TYPE=Release
 #   cmake --build build --config Release
@@ -8,7 +9,16 @@
 # The OpenFX SDK (Support library + headers) is fetched at a pinned commit unless OFX_SDK_DIR points to a
 # local copy (e.g. the one in Resolve's Developer folder).
 cmake_minimum_required(VERSION 3.20)
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version")   # as the Makefile
+endif()
 project(SLogMetaRaw LANGUAGES CXX)
+if(APPLE)
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD 17)
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+  set(CMAKE_OBJCXX_VISIBILITY_PRESET hidden)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,10 +28,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release)
-endif()
-
-if(APPLE)
-  message(FATAL_ERROR "On macOS use the Makefile (universal binary with Metal): make -C ofx/SLogMetaRaw")
 endif()
 
 set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
@@ -72,11 +78,17 @@ add_custom_command(
   COMMENT "Generating gen/*.h")
 add_custom_target(slogmetaraw_gen DEPENDS ${GEN_OUT})
 
-# ---- plugin sources (no Metal: the CPU path renders everywhere)
+# ---- plugin sources: the CPU path renders everywhere, Metal is added on macOS
 file(GLOB PLUGIN_SRCS CONFIGURE_DEPENDS
   src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
 if(NOT WIN32)
   list(FILTER PLUGIN_SRCS EXCLUDE REGEX "ChildWin\\.cpp$")
+endif()
+if(APPLE)
+  file(GLOB MM_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/metal/*.mm")
+  list(APPEND PLUGIN_SRCS ${MM_SRCS})
+  set_source_files_properties(${MM_SRCS} "${REPO_ROOT}/tests/metal_test.mm" "${REPO_ROOT}/tests/detail_metal_test.mm"
+                              PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 endif()
 
 add_library(SLogMetaRaw MODULE ${PLUGIN_SRCS} ${OFX_SUPPORT_SRCS})
@@ -100,6 +112,8 @@ else()
   if(WIN32)
     target_compile_definitions(SLogMetaRaw PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
     target_link_options(SLogMetaRaw PRIVATE -static-libgcc -static-libstdc++ -static)
+  elseif(APPLE)
+    target_link_libraries(SLogMetaRaw PRIVATE "-framework Metal" "-framework Foundation" "-framework CoreFoundation")
   else()
     # Resolve ships its own, older libstdc++ and loads it first: link ours in so the plugin never meets it
     target_link_options(SLogMetaRaw PRIVATE -Wl,--no-undefined -Wl,--exclude-libs,ALL -static-libstdc++ -static-libgcc)
@@ -115,6 +129,8 @@ endif()
 # ---- bundle: <name>.ofx.bundle/Contents/{Linux-x86-64|Win64}/SLogMetaRaw.ofx + Resources
 if(WIN32)
   set(OFX_ARCH_DIR "Win64")
+elseif(APPLE)
+  set(OFX_ARCH_DIR "MacOS")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
   set(OFX_ARCH_DIR "Linux-arm-64")
 else()
@@ -128,10 +144,19 @@ foreach(r ${RESOURCES})
   list(APPEND _res_copy COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${r}"
        "${BUNDLE_DIR}/Contents/Resources/${r}")
 endforeach()
+set(_extra_bundle_steps)
+if(APPLE)
+  set(VERSION "${SLOGMETARAW_VERSION}")   # Info.plist.in substitutes @VERSION@
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in" "${CMAKE_BINARY_DIR}/Info.plist" @ONLY)
+  list(APPEND _extra_bundle_steps
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/Info.plist" "${BUNDLE_DIR}/Contents/Info.plist"
+    COMMAND codesign --force --sign - "${BUNDLE_DIR}")          # ad-hoc, as the Makefile
+endif()
 add_custom_command(TARGET SLogMetaRaw POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${BUNDLE_DIR}/Contents/${OFX_ARCH_DIR}" "${BUNDLE_DIR}/Contents/Resources"
   COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SLogMetaRaw>" "${BUNDLE_DIR}/Contents/${OFX_ARCH_DIR}/SLogMetaRaw.ofx"
   ${_res_copy}
+  ${_extra_bundle_steps}
   COMMENT "Assembling SLogMetaRaw.ofx.bundle")
 
 install(DIRECTORY "${BUNDLE_DIR}" DESTINATION . USE_SOURCE_PERMISSIONS)
@@ -172,5 +197,15 @@ if(SLOGMETARAW_BUILD_TESTS)
             ${_common}/Version.cpp ${_child})
   if(WIN32)
     target_link_libraries(common_test PRIVATE shell32)
+  endif()
+  if(APPLE)
+    target_link_libraries(common_test PRIVATE "-framework CoreFoundation")
+    slog_test(metal_test "${REPO_ROOT}/tests/metal_test.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm"
+              "${CMAKE_CURRENT_SOURCE_DIR}/metal/DevelopKernel.mm")
+    slog_test(detail_metal_test "${REPO_ROOT}/tests/detail_metal_test.mm" src/detail/DetailPasses.cpp
+              "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/DetailKernels.mm")
+    foreach(t metal_test detail_metal_test)
+      target_link_libraries(${t} PRIVATE "-framework Metal" "-framework Foundation")
+    endforeach()
   endif()
 endif()

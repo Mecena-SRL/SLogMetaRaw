@@ -10,8 +10,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OFX = os.path.join(ROOT, 'ofx', 'SLogMetaRaw')
 MACOS = sys.platform == 'darwin'
 CMAKE_BUILD = os.path.join(OFX, 'build')
-if MACOS:
+# A Mac with DaVinci Resolve installed builds with the Makefile (Resolve's own SDK, as the release does); any other
+# machine, a CI runner included, builds with CMake and the public OpenFX SDK.
+RESOLVE_SDK = '/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/OpenFX'
+USE_MAKE = MACOS and os.path.isdir(RESOLVE_SDK) and bool(shutil.which('make'))
+if USE_MAKE:
     BUNDLE_BINARY = os.path.join(OFX, 'SLogMetaRaw.ofx.bundle', 'Contents', 'MacOS', 'SLogMetaRaw.ofx')
+elif MACOS:
+    BUNDLE_BINARY = os.path.join(CMAKE_BUILD, 'SLogMetaRaw.ofx.bundle', 'Contents', 'MacOS', 'SLogMetaRaw.ofx')
 else:
     BUNDLE_BINARY = os.path.join(CMAKE_BUILD, 'SLogMetaRaw.ofx.bundle', 'Contents',
                                  'Win64' if os.name == 'nt' else 'Linux-x86-64', 'SLogMetaRaw.ofx')
@@ -26,8 +32,8 @@ _built = None
 
 
 def _build():
-    """`make` on macOS; CMake elsewhere (OFX_SDK_DIR may point to a local OpenFX SDK, else it is fetched)."""
-    if MACOS:
+    """`make` on a Mac with Resolve; CMake elsewhere (OFX_SDK_DIR may point to a local OpenFX SDK, else it is fetched)."""
+    if USE_MAKE:
         return bool(shutil.which('make') and shutil.which('clang++')) and subprocess.run(
             ['make', '-s', '-C', OFX, 'all', 'test-bins'], capture_output=True).returncode == 0
     if not shutil.which('cmake'):

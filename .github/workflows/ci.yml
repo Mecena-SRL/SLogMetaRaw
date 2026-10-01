@@ -21,6 +21,25 @@ jobs:
   linux-packages:
     uses: ./.github/workflows/linux-packages.yml
 
+  macos:
+    # Compiles the plugin (Metal included) and runs the whole suite on a real Mac. It builds with CMake against the
+    # public OpenFX SDK: the .dmg release itself is still built on a Mac with Resolve (packaging/build_installer.sh).
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build the plugin and the test helpers
+        run: |
+          cmake -S ofx/SLogMetaRaw -B ofx/SLogMetaRaw/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build ofx/SLogMetaRaw/build --parallel
+      - name: Unit tests
+        # the GitHub runners may expose no Metal device: the GPU parity tests are the ones to watch
+        continue-on-error: true
+        timeout-minutes: 15
+        run: python3 -X utf8 -m unittest discover -s tests -v
+
   windows:
     runs-on: windows-latest
     steps:
