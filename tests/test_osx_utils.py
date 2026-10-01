@@ -53,10 +53,18 @@ class OsxUtils(unittest.TestCase):
             self.assertGreater(b[3], 0)
 
     def test_play_sound_never_raises(self):
-        with mock.patch('slogmetaraw.osx_utils.subprocess.Popen') as popen:
+        with mock.patch('slogmetaraw.osx_utils.sys.platform', 'darwin'), \
+                mock.patch('slogmetaraw.osx_utils.subprocess.Popen') as popen:
             osx_utils.play_sound(True)
             osx_utils.play_sound(False)
             self.assertEqual(popen.call_count, 2)
+
+    def test_play_sound_is_silent_on_linux(self):
+        with mock.patch('slogmetaraw.osx_utils.sys.platform', 'linux'), \
+                mock.patch('slogmetaraw.osx_utils.os.name', 'posix'), \
+                mock.patch('slogmetaraw.osx_utils.subprocess.Popen') as popen:
+            osx_utils.play_sound(True)
+            self.assertEqual(popen.call_count, 0)
 
 
 if __name__ == '__main__':

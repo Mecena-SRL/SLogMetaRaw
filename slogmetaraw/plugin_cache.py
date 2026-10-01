@@ -11,9 +11,9 @@ import json
 import os
 import unicodedata
 
-from . import camera, datalevel, resolve_io
+from . import camera, datalevel, paths, resolve_io
 
-CACHE_DIR = os.path.expanduser('~/Library/Application Support/SLogMetaRaw/cache')
+CACHE_DIR = os.path.join(paths.support_dir(), 'cache')
 # 5: MXF read from the partition pack (long FX6 clips came out unsupported).
 # 6: FX6 tint in the camera's units (the file stores hundredths). The plugin re-reads older records.
 VERSION = 6

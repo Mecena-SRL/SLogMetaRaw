@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, 'tests'))
 
 from slogmetaraw import __main__ as cli, plugin_cache  # noqa: E402
 import clip_fixtures as fx  # noqa: E402
+from plugin_build import SUPPORT_REL  # noqa: E402
 
 RESULT = {'meta': {}, 'display': {}, 'sections': [], 'warnings': [], 'path': '/fake/clip.MP4'}
 REPORT = {'written': 34, 'failed': 1, 'clips': 1, 'data_level': {'host': 'Full'}}
@@ -72,7 +73,7 @@ class Detached(unittest.TestCase):
         return json.loads(first)
 
     def status_path(self):
-        cache = os.path.join(self.home, 'Library/Application Support/SLogMetaRaw/cache')
+        cache = os.path.join(self.home, SUPPORT_REL, 'cache')
         with mock.patch.object(plugin_cache, 'CACHE_DIR', cache):
             return plugin_cache.resolve_status_path(self.clip)
 

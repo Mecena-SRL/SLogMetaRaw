@@ -254,6 +254,23 @@ packaging/           installer, guide, disinstallatore
 docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 ```
 
+### Linux e Windows (render su CPU, sperimentale)
+
+Il plugin si compila per Linux e Windows con CMake. Questi port renderizzano su CPU (ancora senza Metal, CUDA o
+OpenCL) e non sono stati provati dentro DaVinci Resolve: la build supportata resta quella macOS.
+
+```bash
+# Linux: servono cmake, un compilatore C++17, python3 (l'SDK OpenFX viene scaricato, oppure imposta OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/SLogMetaRaw-<version>-linux-<arch>.tar.gz
+cd dist && tar xzf SLogMetaRaw-*.tar.gz && ./SLogMetaRaw-*/install.sh      # plugin in /usr/OFX/Plugins
+
+# Windows (PowerShell): servono cmake, Visual Studio Build Tools, python; Inno Setup e facoltativo
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ setup .exe with Inno Setup)
+```
+
+Lo stato e in `~/.local/share/SLogMetaRaw` su Linux e `%APPDATA%\SLogMetaRaw` su Windows. `.github/workflows/`
+costruisce i due pacchetti; un tag `v*` li allega a una release in bozza.
+
 ---
 
 ## Limiti noti
