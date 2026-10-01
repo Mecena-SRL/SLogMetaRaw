@@ -259,17 +259,31 @@ docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 Il plugin si compila per Linux e Windows con CMake. Questi port renderizzano su CPU (ancora senza Metal, CUDA o
 OpenCL) e non sono stati provati dentro DaVinci Resolve: la build supportata resta quella macOS.
 
-```bash
-# Linux: servono cmake, un compilatore C++17, python3 (l'SDK OpenFX viene scaricato, oppure imposta OFX_SDK_DIR)
-./packaging/linux/build_package.sh          # dist/SLogMetaRaw-<version>-linux-<arch>.tar.gz
-cd dist && tar xzf SLogMetaRaw-*.tar.gz && ./SLogMetaRaw-*/install.sh      # plugin in /usr/OFX/Plugins
+**Installazione su Linux** (scarica da **Releases** il file adatto alla tua distribuzione):
 
+| File | Per |
+|---|---|
+| `slogmetaraw_<versione>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<versione>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<versione>-linux-x86_64.run` | qualsiasi distribuzione: `sh SLogMetaRaw-*.run` (`--user` senza sudo, `--uninstall`) |
+| `SLogMetaRaw-<versione>-linux-x86_64.tar.gz` | lo stesso, scompattato: lancia `install.sh` |
+
+Il plugin va in `/usr/OFX/Plugins`; la libreria Python in `/usr/lib/slogmetaraw` (.deb/.rpm) o in
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). Il pacchetto mette lo script di menu in
+`/opt/resolve/Fusion/Scripts/Utility` se Resolve e li; altrimenti lancia una volta `slogmetaraw-setup` (per il tuo
+utente). Riavvia Resolve. Basta Python 3.6 (anche su Rocky/RHEL 8). Il binario e costruito contro glibc 2.28: si carica
+su Rocky/Alma/RHEL 8+, Ubuntu 20.04+ e Debian 10+.
+
+```bash
+# compilalo tu (cmake, un compilatore C++17, python3; l'SDK OpenFX viene scaricato, oppure imposta OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/: .tar.gz, .run, .deb, .rpm
 # Windows (PowerShell): servono cmake, Visual Studio Build Tools, python; Inno Setup e facoltativo
-powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ setup .exe with Inno Setup)
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ setup .exe con Inno Setup)
 ```
 
 Lo stato e in `~/.local/share/SLogMetaRaw` su Linux e `%APPDATA%\SLogMetaRaw` su Windows. `.github/workflows/`
-costruisce i due pacchetti; un tag `v*` li allega a una release in bozza.
+costruisce i pacchetti e a ogni modifica installa .deb/.rpm su Rocky 8/9, Ubuntu 20.04-24.04 e Debian 12; un tag `v*` li
+allega a una release in bozza.
 
 ---
 

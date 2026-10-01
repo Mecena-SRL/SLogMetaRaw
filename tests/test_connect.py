@@ -80,6 +80,49 @@ class Connect(unittest.TestCase):
                 connect.connect()
 
 
+class ScriptingModule(unittest.TestCase):
+    """A python3 that Resolve did not start (Linux, Windows) finds DaVinciResolveScript in Resolve's own folder."""
+
+    def setUp(self):
+        self.saved_path = list(sys.path)
+        self.saved_module = sys.modules.pop('DaVinciResolveScript', None)
+        self.addCleanup(self.restore)
+
+    def restore(self):
+        sys.path[:] = self.saved_path
+        sys.modules.pop('DaVinciResolveScript', None)
+        if self.saved_module is not None:
+            sys.modules['DaVinciResolveScript'] = self.saved_module
+
+    def test_the_folder_comes_from_resolve_script_api(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as api:
+            os.makedirs(os.path.join(api, 'Modules'))
+            with open(os.path.join(api, 'Modules', 'DaVinciResolveScript.py'), 'w') as fh:
+                fh.write('MARK = 42\n')
+            with mock.patch.dict(os.environ, {'RESOLVE_SCRIPT_API': api}):
+                self.assertIn(os.path.join(api, 'Modules'), connect.scripting_module_dirs())
+                module = connect._resolve_script_module()
+            self.assertEqual(module.MARK, 42)
+
+    def test_default_folders_per_system(self):
+        def default(platform, name):
+            with mock.patch.object(connect.sys, 'platform', platform), mock.patch.object(connect.os, 'name', name), \
+                    mock.patch.object(connect.os.path, 'isdir', lambda p: True), \
+                    mock.patch.dict(os.environ, {}):
+                os.environ.pop('RESOLVE_SCRIPT_API', None)
+                return connect.scripting_module_dirs()
+        self.assertEqual(default('linux', 'posix'), ['/opt/resolve/Developer/Scripting/Modules'])
+        self.assertTrue(default('darwin', 'posix')[0].startswith('/Library/Application Support/Blackmagic Design'))
+        self.assertIn('Scripting', default('win32', 'nt')[0])
+
+    def test_a_folder_that_does_not_exist_is_not_added(self):
+        before = list(sys.path)
+        with mock.patch.dict(os.environ, {'RESOLVE_SCRIPT_API': '/nonexistent/api'}):
+            self.assertEqual([d for d in connect.scripting_module_dirs() if 'nonexistent' in d], [])
+        self.assertEqual(sys.path, before)
+
+
 class ApplyPath(unittest.TestCase):
     def make_resolve(self, clip_paths):
         clips = []

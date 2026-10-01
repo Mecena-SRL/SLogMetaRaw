@@ -6,6 +6,10 @@
 #endif
 #include <limits.h>
 #include <sys/stat.h>
+#ifndef _WIN32
+#include <pwd.h>
+#include <unistd.h>
+#endif
 #ifdef _WIN32
 #include <direct.h>
 #include <windows.h>
@@ -25,6 +29,11 @@ std::string homeDir()
     const char* h = getenv("USERPROFILE");
 #else
     const char* h = getenv("HOME");
+    if (!h || !*h) {   // a host started without HOME: the password database knows
+        struct passwd pwd, *found = nullptr;
+        char buf[4096];
+        if (getpwuid_r(getuid(), &pwd, buf, sizeof(buf), &found) == 0 && found && found->pw_dir) return found->pw_dir;
+    }
 #endif
     return h ? h : "";
 }
@@ -149,3 +158,25 @@ bool fileExists(const std::string& path)
 }
 
 bool removeFile(const std::string& path) { return remove(path.c_str()) == 0; }
+
+std::string findExecutable(const std::string& name)
+{
+#ifdef _WIN32
+    char found[MAX_PATH];
+    return SearchPathA(nullptr, name.c_str(), ".exe", MAX_PATH, found, nullptr) ? std::string(found) : "";
+#else
+    std::string list = getenv("PATH") ? getenv("PATH") : "";
+    list += ":/usr/bin:/usr/local/bin:/bin";   // a host can start with a stripped PATH
+    size_t pos = 0;
+    while (pos <= list.size()) {
+        size_t end = list.find(':', pos);
+        if (end == std::string::npos) end = list.size();
+        if (end > pos) {
+            const std::string candidate = list.substr(pos, end - pos) + "/" + name;
+            if (access(candidate.c_str(), X_OK) == 0) return candidate;
+        }
+        pos = end + 1;
+    }
+    return "";
+#endif
+}

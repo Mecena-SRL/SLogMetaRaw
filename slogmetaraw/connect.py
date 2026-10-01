@@ -7,6 +7,7 @@ refuse 127.0.0.1 while accepting an interface address, so the fallback tries the
 
 import os
 import socket
+import sys
 import subprocess
 import time
 import unicodedata
@@ -15,8 +16,8 @@ import unicodedata
 def _local_ipv4_addresses():
     """Assigned IPv4 addresses on this Mac only; never discover other hosts."""
     try:
-        result = subprocess.run(['/sbin/ifconfig', '-a'], capture_output=True,
-                                text=True, timeout=2, check=True)
+        result = subprocess.run(['/sbin/ifconfig', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True, timeout=2, check=True)
     except (OSError, subprocess.SubprocessError):
         return []
     addresses = []
@@ -34,13 +35,42 @@ def _local_ipv4_addresses():
     return addresses
 
 
+def scripting_module_dirs():
+    """Folders where Resolve installs DaVinciResolveScript.py, for a python3 that Resolve did not start itself."""
+    dirs = []
+    api = os.environ.get('RESOLVE_SCRIPT_API')
+    if api:
+        dirs.append(os.path.join(api, 'Modules'))
+    if sys.platform == 'darwin':
+        dirs.append('/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules')
+    elif os.name == 'nt':
+        dirs.append(os.path.join(os.environ.get('PROGRAMDATA', 'C:\\ProgramData'), 'Blackmagic Design', 'DaVinci Resolve',
+                                 'Support', 'Developer', 'Scripting', 'Modules'))
+    else:
+        dirs.append('/opt/resolve/Developer/Scripting/Modules')
+    return [d for d in dirs if os.path.isdir(d)]
+
+
+def _resolve_script_module():
+    """DaVinciResolveScript: Resolve's own python has it on its path, a system python3 (Linux, Windows) does not."""
+    try:
+        import DaVinciResolveScript
+        return DaVinciResolveScript
+    except ImportError:
+        for folder in scripting_module_dirs():
+            if folder not in sys.path:
+                sys.path.append(folder)
+        import DaVinciResolveScript
+        return DaVinciResolveScript
+
+
 def connect(timeout=None):
     """A connected Resolve object, or raise RuntimeError with a user-readable reason.
 
     With a timeout the fallback addresses share what is left of it, instead of 1 s each."""
     end = None if timeout is None else time.monotonic() + timeout
     try:
-        import DaVinciResolveScript as bmd
+        bmd = _resolve_script_module()
     except Exception as exc:
         raise RuntimeError('modulo DaVinciResolveScript non disponibile (%s)' % exc)
     resolve = None

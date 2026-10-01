@@ -10,18 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: ./packaging/linux/build_package.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-package
-          path: dist/*.tar.gz
+  linux-packages:
+    uses: ./.github/workflows/linux-packages.yml
 
   windows:
     runs-on: windows-latest
@@ -42,13 +32,14 @@ jobs:
             dist/*.exe
 
   draft:
-    needs: [linux, windows]
+    needs: [linux-packages, windows]
     # the draft is made from whatever packages were built; Linux is required, Windows is optional
-    if: ${{ !cancelled() && needs.linux.result == 'success' && startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ !cancelled() && needs.linux-packages.result == 'success' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: '*-package*'    # linux-packages and windows-package; not the intermediate linux-plugin
           path: dist
           merge-multiple: true
       - uses: softprops/action-gh-release@v2

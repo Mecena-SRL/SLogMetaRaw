@@ -7,6 +7,7 @@ Modes used by the OpenFX plugin (argument order and flat JSON output are its con
   --to-resolve PATH
   --update-check [--current X] [--force]
 and --helper, the streaming reader of the script window."""
+import io
 import json
 import math
 import os
@@ -64,13 +65,22 @@ def _emit(obj):
     print(json.dumps(obj, ensure_ascii=False), flush=True)
 
 
+def _utf8_stream(name):
+    """sys.<name> as UTF-8 whatever the locale; TextIOWrapper.reconfigure needs Python 3.7 (Rocky/RHEL 8 have 3.6)."""
+    stream = getattr(sys, name)
+    try:
+        stream.reconfigure(encoding='utf-8')
+    except AttributeError:
+        setattr(sys, name, io.TextIOWrapper(stream.buffer, encoding='utf-8', line_buffering=(name == 'stdout')))
+
+
 def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET):
     """Streaming mode used by the script window (ui.py): one clip path per line on
     stdin, one JSON result per line on stdout. A clip that hangs can be killed from
     outside (the window enforces a per-clip timeout), so the scan always finishes."""
     # inside Resolve the locale is often ASCII: paths and metadata travel as UTF-8 regardless
-    sys.stdin.reconfigure(encoding='utf-8')
-    sys.stdout.reconfigure(encoding='utf-8')
+    _utf8_stream('stdin')
+    _utf8_stream('stdout')
     for line in sys.stdin:
         path = line.strip()
         if not path:

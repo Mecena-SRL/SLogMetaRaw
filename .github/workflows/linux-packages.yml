@@ -1,0 +1,72 @@
+name: Linux packages
+# Reusable: builds the plugin on a glibc 2.28 distribution, makes the .tar.gz, .run, .deb and .rpm, and installs the
+# .deb / .rpm on the distributions DaVinci Resolve runs on, checking that the plugin loads there.
+on:
+  workflow_call:
+
+jobs:
+  plugin:
+    runs-on: ubuntu-latest
+    # AlmaLinux 8 (glibc 2.28): a binary built here loads on Rocky/Alma/RHEL 8+, Ubuntu 20.04+, Debian 10+
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the plugin and check its ABI
+        run: ./packaging/linux/build_plugin.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-plugin
+          path: build/linux-plugin/SLogMetaRaw.ofx.bundle
+
+  packages:
+    needs: plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get update && sudo apt-get install -y rpm
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-plugin
+          path: bundle/SLogMetaRaw.ofx.bundle
+      - name: Build .tar.gz, .run, .deb and .rpm
+        run: python3 packaging/linux/build_packages.py --bundle bundle/SLogMetaRaw.ofx.bundle --out dist
+      - name: Self-extracting installer works for a user
+        run: |
+          export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"
+          sh dist/SLogMetaRaw-*-linux-x86_64.run --user
+          test -x "$HOME/.local/share/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Linux-x86-64/SLogMetaRaw.ofx"
+          test -f "$HOME/.local/share/DaVinciResolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+          sh dist/SLogMetaRaw-*-linux-x86_64.run --uninstall --user
+          test ! -e "$HOME/.local/share/OFX/Plugins/SLogMetaRaw.ofx.bundle"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/*
+
+  smoke:
+    needs: packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: 'rockylinux:8', kind: rpm }
+          - { image: 'rockylinux:9', kind: rpm }
+          - { image: 'ubuntu:20.04', kind: deb }
+          - { image: 'ubuntu:22.04', kind: deb }
+          - { image: 'ubuntu:24.04', kind: deb }
+          - { image: 'debian:12', kind: deb }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: pkg
+      - name: Install on ${{ matrix.image }}
+        run: |
+          mkdir -p pkgs && cp pkg/*.${{ matrix.kind }} pkgs/
+          docker run --rm -v "$PWD/pkgs:/pkg:ro" -v "$PWD/packaging/linux:/scripts:ro" \
+            ${{ matrix.image }} sh /scripts/smoke_in_container.sh ${{ matrix.kind }}

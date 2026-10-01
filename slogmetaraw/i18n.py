@@ -6,8 +6,10 @@ system language). Lookups are keyed on the source string (Italian for the
 window, English for the extract.py section labels), so an untranslated string
 simply stays as it is. Supported: it, en, es, pt, zh.
 """
+import os
 import re
 import subprocess
+import sys
 
 LANGS = ('it', 'en', 'es', 'pt', 'zh')
 
@@ -668,14 +670,29 @@ TABLES = {
 }
 
 
-def _system_language():
-    """Preferred language of macOS (Resolve follows it)."""
-    try:
-        out = subprocess.run(['/usr/bin/defaults', 'read', '-g', 'AppleLanguages'],
-                             capture_output=True, text=True, timeout=5).stdout
+def _preferred_codes():
+    """Language codes in order of preference, as the system gives them: 'it-IT', 'en_US.UTF-8', 'it'."""
+    if sys.platform == 'darwin':
+        out = subprocess.run(['/usr/bin/defaults', 'read', '-g', 'AppleLanguages'], stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, universal_newlines=True, timeout=5).stdout
         # codes without a hyphen are printed unquoted: ( en, "it-IT" )
-        for code in re.findall(r'^\s*"?([A-Za-z]+(?:-[A-Za-z0-9]+)*)"?,?\s*$', out, re.M):
-            base = code.split('-')[0].lower()
+        return re.findall(r'^\s*"?([A-Za-z]+(?:-[A-Za-z0-9]+)*)"?,?\s*$', out, re.M)
+    if os.name == 'nt':
+        import ctypes
+        buf = ctypes.create_unicode_buffer(85)
+        ctypes.windll.kernel32.GetUserDefaultLocaleName(buf, len(buf))
+        return [buf.value]
+    codes = []
+    for var in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):   # the order gettext uses
+        codes.extend(c for c in os.environ.get(var, '').split(':') if c)
+    return codes
+
+
+def _system_language():
+    """Preferred language of the system (Resolve follows it): macOS defaults, Windows locale, Linux LANG."""
+    try:
+        for code in _preferred_codes():
+            base = re.split(r'[-_.@]', code)[0].lower()
             if base in LANGS:
                 return base
     except Exception:
