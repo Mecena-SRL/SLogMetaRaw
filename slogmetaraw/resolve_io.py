@@ -6,15 +6,18 @@ Resolve's API cannot create custom metadata fields, so everything else goes
 into a [S-Log MetaRaw] block inside "Camera Notes" (user text outside the block is
 kept) and into a CSV/ALE that Resolve can import with "create custom fields".
 """
+import copy
 import csv
 import io
 import os
+import re
 
 from . import datalevel
 
 NOTES_START = '[S-Log MetaRaw]'
 NOTES_END = '[/S-Log MetaRaw]'
 VIDEO_EXTS = ('.mp4', '.mxf')
+LEVEL_KEYS = ('data_level', 'luminance_code_range', 'file_range')
 
 # Resolve Input Color Space names verified on 21.1 (SetClipProperty accepts them)
 RESOLVE_COLOR_SPACES = {
@@ -139,6 +142,9 @@ def summary_line(r):
 def notes_block(r):
     m = r['meta']
     lines = [summary_line(r)]
+    copied = r.get('copied_from')
+    if copied:
+        lines.insert(0, 'Copiato dalla clip Sony: %s' % copied)
     extra = []
     for label, key in (('Data level', 'data_level'), ('Luminance code range', 'luminance_code_range'),
                        ('Range codec', 'file_range'),
@@ -146,6 +152,8 @@ def notes_block(r):
                        ('AE', 'ae_mode'), ('AF', 'af_area'), ('Gain', 'master_gain_db'),
                        ('Stabilizzatore', 'image_stabilizer'), ('LUT', 'monitoring_descriptions'),
                        ('35mm eq.', 'focal_length_35mm'), ('Registrata', 'recording_time')):
+        if copied and key in LEVEL_KEYS:   # the range belongs to the Sony file, not to the copy
+            continue
         v = r['display'].get(key) or m.get(key)
         if v not in (None, ''):
             extra.append('%s: %s' % (label, v))
@@ -235,6 +243,9 @@ def build_fields(r):
         'Color Space Notes': m.get('color_primaries') or '',
         'Date Recorded': (m.get('recording_time') or m.get('creation_date') or '')[:10],
     }
+    if r.get('copied_from'):   # properties of the Sony file, not of the clip that receives them
+        for key in ('Codec Bitrate', 'Camera FPS', 'Aspect Ratio Notes'):
+            fields.pop(key, None)
     return {k: v for k, v in fields.items() if v not in (None, '')}
 
 
@@ -324,3 +335,47 @@ def iter_media_pool_clips(folder, recursive=True):
 def clip_path(clip):
     p = clip.GetClipProperty('File Path') or ''
     return p if p.lower().endswith(VIDEO_EXTS) else ''
+
+
+# --- copy to a clip without metadata of its own --------------------------------
+
+def any_clip_path(clip):
+    """File path of a clip of any format (the Sony reader only accepts MP4/MXF)."""
+    return clip.GetClipProperty('File Path') or ''
+
+
+def natural_key(name):
+    """Sort key where C0002 comes before C0010."""
+    return [int(p) if p.isdigit() else p.lower() for p in re.split(r'(\d+)', name or '')]
+
+
+def pair_clips(sources, targets):
+    """Pair the i-th original with the i-th external-recorder clip.
+
+    Both lists are in the user's order of recording; the first pair is the anchor and the
+    rest follows in sequence, so no timecode is needed. Returns (pairs, leftover) where
+    leftover is the number of clips of the longer list that found no partner.
+    """
+    n = min(len(sources), len(targets))
+    return list(zip(sources[:n], targets[:n])), abs(len(sources) - len(targets))
+
+
+def copy_result(r, source_name, target_path):
+    """A result for the target clip: the Sony values, filed under the target's path."""
+    c = copy.deepcopy(r)
+    c['path'] = target_path
+    c['copied_from'] = source_name
+    c['meta']['format_name'] = ''
+    for key in LEVEL_KEYS + ('level_note',):
+        c['meta'].pop(key, None)
+    c['sections'] = []
+    return c
+
+
+def apply_copy(target, r, source_name, overwrite=True, add_tags=True):
+    """Write the Sony values of r on a clip that has none of its own (one-off copy)."""
+    path = any_clip_path(target)
+    if not path:
+        raise ValueError('no file path')
+    return apply_to_clip(target, copy_result(r, source_name, path), set_color_space=False,
+                         overwrite=overwrite, add_tags=add_tags, set_data_level=False)
