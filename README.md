@@ -255,17 +255,31 @@ docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 The plugin builds for Linux and Windows with CMake. These ports render on the CPU (no Metal, CUDA or OpenCL yet) and
 have not been tested inside DaVinci Resolve itself: the macOS build is the supported one.
 
-```bash
-# Linux: needs cmake, a C++17 compiler, python3 (the OpenFX SDK is fetched; or set OFX_SDK_DIR)
-./packaging/linux/build_package.sh          # dist/SLogMetaRaw-<version>-linux-<arch>.tar.gz
-cd dist && tar xzf SLogMetaRaw-*.tar.gz && ./SLogMetaRaw-*/install.sh      # plugin in /usr/OFX/Plugins
+**Linux install** (download from **Releases**; pick what fits your distribution):
 
-# Windows (PowerShell): needs cmake, Visual Studio Build Tools, python; Inno Setup is optional
+| File | For |
+|---|---|
+| `slogmetaraw_<version>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<version>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<version>-linux-x86_64.run` | any distribution: `sh SLogMetaRaw-*.run` (`--user` without sudo, `--uninstall`) |
+| `SLogMetaRaw-<version>-linux-x86_64.tar.gz` | the same, unpacked: run `install.sh` inside |
+
+The plugin goes to `/usr/OFX/Plugins`; the Python library to `/usr/lib/slogmetaraw` (.deb/.rpm) or
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). The package puts the menu script in `/opt/resolve/Fusion/Scripts/Utility`
+when Resolve is there; otherwise run `slogmetaraw-setup` (for your user) once. Restart Resolve. Python 3.6 or newer is
+enough (Rocky/RHEL 8 included). The binary is built against glibc 2.28, so it loads on Rocky/Alma/RHEL 8+, Ubuntu 20.04+
+and Debian 10+.
+
+```bash
+# build it yourself (cmake, a C++17 compiler, python3; the OpenFX SDK is fetched, or set OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/: .tar.gz, .run, .deb, .rpm
+# Windows (PowerShell): cmake, Visual Studio Build Tools, python; Inno Setup is optional
 powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ setup .exe with Inno Setup)
 ```
 
 State lives in `~/.local/share/SLogMetaRaw` on Linux and `%APPDATA%\SLogMetaRaw` on Windows. `.github/workflows/`
-builds both packages; pushing a `v*` tag attaches them to a draft release.
+builds the packages and installs the .deb/.rpm on Rocky 8/9, Ubuntu 20.04-24.04 and Debian 12 on every change; pushing a
+`v*` tag attaches them to a draft release.
 
 ---
 
