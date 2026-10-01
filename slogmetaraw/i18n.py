@@ -152,6 +152,10 @@ TABLES = {
             'Acquisition metadata not found in the MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'The camera did not record the color temperature in this file.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Partial sampling (%d sample frames): changes during the clip may not all be listed.',
+        'NRT XML illeggibile: %s': 'Unreadable NRT XML: %s',
+        'Data level: %s': 'Data level: %s',
         'Controllo aggiornamenti…': 'Checking for updates…',
         'Disponibile la %s: clicca per scaricare': 'Version %s available: click to download',
         'Nessuna versione più recente (sei alla %s).': 'No newer version (you are on %s).',
@@ -243,6 +247,10 @@ TABLES = {
             'Metadatos de adquisición no encontrados en el MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'La cámara no registró la temperatura de color en este archivo.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Muestreo parcial (%d fotogramas de muestra): puede que no se enumeren todas las variaciones durante el clip.',
+        'NRT XML illeggibile: %s': 'NRT XML ilegible: %s',
+        'Data level: %s': 'Nivel de datos: %s',
         'File name': 'Nombre de archivo',
         'Folder': 'Carpeta',
         'Date created': 'Fecha de creación',
@@ -272,6 +280,28 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': 'No hay una versión más reciente (estás en la %s).',
         'Controllo non riuscito: %s': 'Comprobación fallida: %s',
         'Download di S-Log MetaRaw %s avviato.': 'Descarga de S-Log MetaRaw %s iniciada.',
+        'Camera': 'Cámara',
+        'Clip': 'Clip',
+        'Shutter': 'Obturador',
+        'WB': 'BB',
+        'Format': 'Formato',
+        'NRT metadata': 'Metadatos NRT',
+        'DEVICE': 'DISPOSITIVO',
+        'Image stabilizer': 'Estabilizador',
+        'Lighting preset': 'Preset de luz',
+        'Tint Correction': 'Corrección de tinte',
+        'Recording mode': 'Modo de grabación',
+        'ND filter wheel': 'Filtro ND',
+        'Focus position from image plane': 'Posición del foco desde el plano de imagen',
+        'Auto white balance mode': 'Modo de balance de blancos automático',
+        'Camera master gain adjustment': 'Ganancia maestra de la cámara',
+        'Color sampling': 'Muestreo de color',
+        'Field order': 'Orden de campos',
+        'Profile and level': 'Perfil y nivel',
+        'Luminance code range': 'Rango de código de luminancia',
+        'Frame rate': 'Velocidad de fotogramas',
+        'Capture FPS': 'FPS de captura',
+        'Monitoring descriptions': 'Descripciones de monitorización',
     },
     'pt': {
         'Tutto il Media Pool': 'Todo o Media Pool',
@@ -358,6 +388,10 @@ TABLES = {
             'Metadados de aquisição não encontrados no MXF.',
         'Temperatura colore non registrata dalla camera in questo file.':
             'A câmera não registrou a temperatura de cor neste arquivo.',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            'Amostragem parcial (%d quadros de amostra): as variações durante o clipe podem não estar todas listadas.',
+        'NRT XML illeggibile: %s': 'NRT XML ilegível: %s',
+        'Data level: %s': 'Nível de dados: %s',
         'File name': 'Nome do arquivo',
         'Folder': 'Pasta',
         'Date created': 'Data de criação',
@@ -387,6 +421,28 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': 'Nenhuma versão mais recente (você está na %s).',
         'Controllo non riuscito: %s': 'Verificação falhou: %s',
         'Download di S-Log MetaRaw %s avviato.': 'Download do S-Log MetaRaw %s iniciado.',
+        'Camera': 'Câmera',
+        'Clip': 'Clipe',
+        'Shutter': 'Obturador',
+        'WB': 'BB',
+        'Format': 'Formato',
+        'NRT metadata': 'Metadados NRT',
+        'DEVICE': 'DISPOSITIVO',
+        'Image stabilizer': 'Estabilizador',
+        'Lighting preset': 'Predefinição de luz',
+        'Tint Correction': 'Correção de matiz',
+        'Recording mode': 'Modo de gravação',
+        'ND filter wheel': 'Filtro ND',
+        'Focus position from image plane': 'Posição do foco a partir do plano da imagem',
+        'Auto white balance mode': 'Modo de balanço de branco automático',
+        'Camera master gain adjustment': 'Ganho mestre da câmera',
+        'Color sampling': 'Amostragem de cor',
+        'Field order': 'Ordem dos campos',
+        'Profile and level': 'Perfil e nível',
+        'Luminance code range': 'Faixa de código de luminância',
+        'Frame rate': 'Taxa de quadros',
+        'Capture FPS': 'FPS de captura',
+        'Monitoring descriptions': 'Descrições de monitoramento',
     },
     'zh': {
         'Tutto il Media Pool': '整个媒体池',
@@ -474,6 +530,10 @@ TABLES = {
             '没有 rtmd 轨道：相机未记录逐帧拍摄数据。',
         'Metadata di acquisizione non trovati nell\'MXF.': 'MXF 中未找到采集元数据。',
         'Temperatura colore non registrata dalla camera in questo file.': '相机未在此文件中记录色温。',
+        'Campionamento parziale (%d fotogrammi campione): le variazioni durante la clip potrebbero non essere tutte elencate.':
+            '部分采样（%d 个样本帧）：片段中的变化可能未全部列出。',
+        'NRT XML illeggibile: %s': 'NRT XML 无法读取：%s',
+        'Data level: %s': '数据电平：%s',
         'File name': '文件名',
         'Folder': '文件夹',
         'Format': '格式',
@@ -516,6 +576,10 @@ TABLES = {
         'Nessuna versione più recente (sei alla %s).': '没有更新的版本（当前为 %s）。',
         'Controllo non riuscito: %s': '检查失败：%s',
         'Download di S-Log MetaRaw %s avviato.': 'S-Log MetaRaw %s 下载已开始。',
+        'NRT metadata': 'NRT 元数据',
+        'Frame rate': '帧率',
+        'Capture FPS': '拍摄帧率',
+        'Monitoring descriptions': '监看描述',
     },
 }
 
@@ -525,7 +589,8 @@ def _system_language():
     try:
         out = subprocess.run(['/usr/bin/defaults', 'read', '-g', 'AppleLanguages'],
                              capture_output=True, text=True, timeout=5).stdout
-        for code in re.findall(r'"([a-zA-Z-]+)"', out):
+        # codes without a hyphen are printed unquoted: ( en, "it-IT" )
+        for code in re.findall(r'^\s*"?([A-Za-z]+(?:-[A-Za-z0-9]+)*)"?,?\s*$', out, re.M):
             base = code.split('-')[0].lower()
             if base in LANGS:
                 return base
@@ -540,6 +605,21 @@ _lang = _system_language()
 def t(text):
     """Translate a source string, or return it unchanged when unknown."""
     return TABLES.get(_lang, {}).get(text, text)
+
+
+def warning_texts(result):
+    """Clip warnings in the window language, translated before their arguments go in."""
+    warnings = result.get('warnings', [])
+    keys = result.get('warning_keys')
+    if not keys or len(keys) != len(warnings):
+        return [t(w) for w in warnings]
+    out = []
+    for fmt, args in keys:
+        try:
+            out.append(t(fmt) % tuple(args) if args else t(fmt))
+        except (TypeError, ValueError):
+            out.append(fmt % tuple(args) if args else fmt)
+    return out
 
 
 def language():

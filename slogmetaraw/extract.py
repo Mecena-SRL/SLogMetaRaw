@@ -7,7 +7,7 @@ read_clip(path) -> {
     'sections': [(title, [(label, display), ...]), ...],   # Catalyst-like view
     'rtmd': [decoded first-frame entries], 'changes': {...},
     'sampling': {'total', 'planned', 'read', 'partial'},
-    'warnings': [...], 'bytes_read': int, 'reads': int,
+    'warnings': [...], 'warning_keys': [[template, args], ...], 'bytes_read': int, 'reads': int,
 }
 Nothing is written to the clip or next to it.
 """
@@ -59,7 +59,7 @@ def _fmt_fps(x):
 
 def _tc_rate(x):
     """Timecode base as the nearest integer (23.976 -> 24, 29.97 -> 30, 59.94 -> 60)."""
-    return int(round(float(x)))
+    return max(1, int(round(float(x))))
 
 
 def _format_name(container, video_codec, width):
@@ -175,12 +175,18 @@ def _audio_info(track):
             'audio_channels': channels, 'audio_bits': bits, 'audio_rate': rate}
 
 
+def _warn(out, fmt, *args):
+    """Keep the template and its arguments too: the window translates before formatting."""
+    out['warnings'].append(fmt % args if args else fmt)
+    out.setdefault('warning_keys', []).append([fmt, list(args)])
+
+
 def _merge_nrt(out, xml):
     """A damaged NRT XML costs its own fields, not the rtmd that is still readable."""
     try:
         out['meta'].update(nrt.parse(xml))
     except (ET.ParseError, ValueError, TypeError, LookupError) as exc:
-        out['warnings'].append('NRT XML illeggibile: %s' % exc)
+        _warn(out, 'NRT XML illeggibile: %s', str(exc))
         return
     out['nrt_source'] = 'sidecar' if out.get('sidecar') else 'embedded'
 
@@ -217,7 +223,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
         meta.update(_audio_info(audio))
     track = m.track(handler=b'meta', codec=b'rtmd')
     if not track:
-        out['warnings'].append('Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
+        _warn(out, 'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
         return
     n = track.sample_count()
     fps = meta.get('fps')
@@ -253,6 +259,8 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     if lay:
         head = min(lay['header_end'], mxf.HEAD_MAX)
         f.preload(0, lay['essence'] if lay['essence'] <= mxf.HEAD_MAX else head)
+    else:
+        f.preload(0, head)   # the NRT and picture-level scans read the same head
     xml = out.pop('_sidecar_xml', None) or mxf.find_nrt_xml(f, head)
     if xml:
         _merge_nrt(out, xml)
@@ -279,7 +287,7 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     if not first:
         first = mxf.find_rtmd(f, lay['essence'] if lay else 0, 2 * mxf.WINDOW if lay else mxf.WINDOW)
     if not first:
-        out['warnings'].append('Metadata di acquisizione non trovati nell\'MXF.')
+        _warn(out, 'Metadata di acquisizione non trovati nell\'MXF.')
         return
     out['rtmd'] = rtmd.decode(first)
     first_values = rtmd.values(out['rtmd'])
@@ -318,15 +326,26 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     _sample(out, _coarse_to_fine(list(range(n + 1))), read_window, deadline, windows + 1, frames)
 
 
+def _dropped(fps, drop):
+    """Frame numbers skipped each minute (except every tenth) in drop-frame timecode."""
+    return fps // 15 if drop and fps % 30 == 0 else 0
+
+
 def tc_to_frames(tc, fps):
-    hh, mm, ss, ff = (int(x) for x in tc.split(':'))
-    return ((hh * 60 + mm) * 60 + ss) * fps + ff
+    drop = _dropped(fps, ';' in tc)
+    hh, mm, ss, ff = (int(x) for x in re.split('[:;]', tc))
+    minutes = hh * 60 + mm
+    return (minutes * 60 + ss) * fps + ff - drop * (minutes - minutes // 10)
 
 
-def frames_to_tc(n, fps):
+def frames_to_tc(n, fps, drop_frame=False):
+    drop = _dropped(fps, drop_frame)
+    if drop:
+        tens, rest = divmod(n, fps * 600 - 9 * drop)
+        n += 9 * drop * tens + (drop * ((rest - drop) // (fps * 60 - drop)) if rest > drop else 0)
     ff = n % fps
     s = n // fps
-    return '%02d:%02d:%02d:%02d' % ((s // 3600) % 24, (s // 60) % 60, s % 60, ff)
+    return '%02d:%02d:%02d%s%02d' % ((s // 3600) % 24, (s // 60) % 60, s % 60, ';' if drop else ':', ff)
 
 
 def _normalise(out):
@@ -338,10 +357,11 @@ def _normalise(out):
     if meta.get('start_tc') and frames:
         # End TC as Resolve/Catalyst show it (exclusive) and duration as timecode
         try:
-            meta['end_tc'] = frames_to_tc(tc_to_frames(meta['start_tc'], tc_fps) + frames, tc_fps)
-            meta['duration_tc'] = frames_to_tc(frames, tc_fps)
+            df = ';' in meta['start_tc']
+            meta['end_tc'] = frames_to_tc(tc_to_frames(meta['start_tc'], tc_fps) + frames, tc_fps, df)
+            meta['duration_tc'] = frames_to_tc(frames, tc_fps, df)
         except (ValueError, TypeError):
-            pass   # a start timecode that is not HH:MM:SS:FF
+            pass   # a start timecode that is not HH:MM:SS:FF (or ;FF)
     for e in out.get('rtmd', []):
         if e['key'] and e['value'] is not None and e['key'] not in meta:
             meta[e['key']] = e['value']
@@ -380,7 +400,7 @@ def _normalise(out):
     else:
         meta['gamma_name'] = gamma
     if 'white_balance_k' not in meta:
-        out['warnings'].append('Temperatura colore non registrata dalla camera in questo file.')
+        _warn(out, 'Temperatura colore non registrata dalla camera in questo file.')
     # v_full_range is always present but may be None (VUI absent): fall back to
     # the colr box only then, never when the VUI explicitly said "video range".
     fr = meta.get('v_full_range')
@@ -412,7 +432,7 @@ def _data_level(out):
     meta['level_note'] = d['note']
     meta['data_level'] = datalevel.summary(meta, host)
     if d.get('conflict'):
-        out['warnings'].append('Data level: ' + d['conflict'])
+        _warn(out, 'Data level: %s', d['conflict'])
 
 
 def _sections(out):
@@ -563,8 +583,8 @@ def read_clip(path, interval=1.0, max_samples=FULL_SAMPLES, allow_dataless=False
         out['file_size'] = f.size
     out.pop('_sidecar_xml', None)
     if out['sampling']['partial']:
-        out['warnings'].append('Campionamento parziale (%d fotogrammi campione): le variazioni durante '
-                               'la clip potrebbero non essere tutte elencate.' % out['sampling']['read'])
+        _warn(out, 'Campionamento parziale (%d fotogrammi campione): le variazioni durante '
+              'la clip potrebbero non essere tutte elencate.', out['sampling']['read'])
     _normalise(out)
     out['sections'] = _sections(out)
     return out

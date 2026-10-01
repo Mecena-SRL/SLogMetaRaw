@@ -47,7 +47,7 @@ bool DevelopEffect::inputKnown() const
     if (input > 0) return true;
     if (mapColourspace(m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false), space, gamma))
         return true;
-    return m_CamSpace->getValue() >= 0 && m_CamGamma->getValue() >= 0;
+    return validCode(m_CamSpace->getValue(), kSpaceCount) >= 0 && validCode(m_CamGamma->getValue(), kGammaCount) >= 0;
 }
 
 // The sliders take the camera values only for a new node, a node moved to another clip, or

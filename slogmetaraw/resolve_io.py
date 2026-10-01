@@ -51,11 +51,8 @@ def read_data_level(clip):
 def sync_data_level(clip, r, apply_fix=False):
     """Read (and optionally correct) this clip's Data Level in Resolve.
 
-    Resolve's "Auto" is documented as a per-codec guess and the resolved value is
-    not exposed by any API, so leaving it on Auto means the node cannot know which
-    scale its input is on. Setting it explicitly is the real fix: it corrects the
-    decode for the whole project — CSTs, RCM and scopes included — not just for
-    the node. It is fully reversible, SetClipProperty accepts 'Auto' again.
+    Under "Auto" the applied scale is not exposed by any API; setting it explicitly fixes
+    the decode for the whole project (CSTs, RCM, scopes). Reversible: 'Auto' is accepted again.
     """
     meta = r['meta']
     host = read_data_level(clip)
