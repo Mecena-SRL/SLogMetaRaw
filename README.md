@@ -250,6 +250,23 @@ packaging/           installer, guides, uninstaller
 docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 ```
 
+### Linux and Windows (CPU render, experimental)
+
+The plugin builds for Linux and Windows with CMake. These ports render on the CPU (no Metal, CUDA or OpenCL yet) and
+have not been tested inside DaVinci Resolve itself: the macOS build is the supported one.
+
+```bash
+# Linux: needs cmake, a C++17 compiler, python3 (the OpenFX SDK is fetched; or set OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/SLogMetaRaw-<version>-linux-<arch>.tar.gz
+cd dist && tar xzf SLogMetaRaw-*.tar.gz && ./SLogMetaRaw-*/install.sh      # plugin in /usr/OFX/Plugins
+
+# Windows (PowerShell): needs cmake, Visual Studio Build Tools, python; Inno Setup is optional
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ setup .exe with Inno Setup)
+```
+
+State lives in `~/.local/share/SLogMetaRaw` on Linux and `%APPDATA%\SLogMetaRaw` on Windows. `.github/workflows/`
+builds both packages; pushing a `v*` tag attaches them to a draft release.
+
 ---
 
 ## Known limits

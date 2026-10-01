@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
-from plugin_build import BUNDLE_BINARY, test_bin  # noqa: E402
+from plugin_build import BUNDLE_BINARY, SUPPORT_REL, test_bin  # noqa: E402
 
 TRUSTED = 'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
 
@@ -31,7 +31,7 @@ class Node(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.home = Path(self.tmp.name) / 'home'
-        self.support = self.home / 'Library/Application Support/SLogMetaRaw'
+        self.support = self.home / SUPPORT_REL
         self.support.mkdir(parents=True)
         self.sentinel = Path(self.tmp.name) / 'launched'
 

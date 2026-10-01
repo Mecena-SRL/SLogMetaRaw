@@ -75,7 +75,7 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         setIfDifferent(m_MetaValid, false);
         m_CameraName.clear();
         for (int i = 0; i < kDetailCount; ++i) setText(m_Details[i], "—");
-        setText(m_Details[kDetailCount - 1], path.substr(path.find_last_of('/') + 1));
+        setText(m_Details[kDetailCount - 1], path.substr(path.find_last_of("/\\") + 1));
         if (!sameClip) {   // decoding facts of another clip must not follow a copied node
             setIfDifferent(m_CamSpace, -1);
             setIfDifferent(m_CamGamma, -1);

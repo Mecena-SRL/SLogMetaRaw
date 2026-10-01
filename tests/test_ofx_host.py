@@ -15,7 +15,7 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
-from plugin_build import BUNDLE_BINARY as BINARY, test_bin  # noqa: E402
+from plugin_build import BUNDLE_BINARY as BINARY, SUPPORT_REL, test_bin  # noqa: E402
 
 GOLDEN = {0: os.path.join(ROOT, 'tests', 'golden', 'params_develop.txt'),
           1: os.path.join(ROOT, 'tests', 'golden', 'params_detail.txt')}
@@ -108,7 +108,7 @@ class OfxHost(unittest.TestCase):
             self.skipTest('ResolvePython bundled non disponibile')
         with tempfile.TemporaryDirectory() as directory:
             user_directory = Path(directory) / 'user'
-            support = user_directory / 'Library/Application Support/SLogMetaRaw'
+            support = user_directory / SUPPORT_REL
             support.mkdir(parents=True)
             library = Path(directory) / "libreria d'Ivan & è"
             package = library / 'slogmetaraw'
@@ -129,7 +129,7 @@ class OfxHost(unittest.TestCase):
                 'value = 0xcbf29ce484222325\n'
                 'for byte in unicodedata.normalize("NFC", os.path.realpath(sys.argv[2])).encode("utf-8"):\n'
                 '    value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff\n'
-                'cache = Path(os.environ["HOME"]) / "Library/Application Support/SLogMetaRaw/cache"\n'
+                'cache = Path(os.environ["HOME"]) / %r / "cache"\n' % SUPPORT_REL +
                 'cache.mkdir(parents=True, exist_ok=True)\n'
                 '(cache / ("%016x.json" % value)).write_text(' + repr(json.dumps(record)) + ', encoding="utf-8")\n'
                 'if sys.argv[1] == "--to-resolve":\n'

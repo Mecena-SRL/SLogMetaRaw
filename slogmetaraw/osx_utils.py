@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Small macOS helpers for the S-Log MetaRaw window: None / no-op on failure, never required."""
+"""Small helpers for the S-Log MetaRaw window (window geometry is macOS only, the sound also works on
+Windows): None / no-op on failure, never required."""
 import ctypes
 import ctypes.util
 import os
 import subprocess
+import sys
 
 _kCGWindowListOptionOnScreenOnly = 1
 _kCGWindowListExcludeDesktopElements = 16
@@ -145,6 +147,11 @@ def play_sound(ok=True):
     """Fire-and-forget notification sound (different one on errors). Never raises."""
     path = SOUND_OK if ok else SOUND_ERR
     try:
+        if sys.platform != 'darwin':
+            if os.name == 'nt':
+                import winsound
+                winsound.MessageBeep(winsound.MB_OK if ok else winsound.MB_ICONHAND)
+            return   # no portable sound on Linux: stay silent
         if os.path.exists(path):
             subprocess.Popen(['/usr/bin/afplay', path],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

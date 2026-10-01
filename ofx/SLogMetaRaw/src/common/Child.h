@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
-#include <sys/types.h>
-
 #include <atomic>
 #include <chrono>
 #include <string>
@@ -16,8 +14,11 @@ struct EnvSnapshot
 
 struct Child
 {
-    pid_t pid = -1;
-    int fd = -1;                 // read end of the child's stdout
+    long long pid = -1;
+    int fd = -1;                 // read end of the child's stdout (POSIX)
+    void* process = nullptr;     // Windows: process handle
+    void* pipe = nullptr;        // Windows: read end of the child's stdout
+    void* job = nullptr;         // Windows: job object, so a kill takes the grandchildren too
     std::string out;             // first 64 KB of it
     bool exited = false;
     int exitCode = -1;           // -1 also when the host reaps children itself (ECHILD)
@@ -30,7 +31,7 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
                   const std::string& stderrPath = "");
 // True once the child has exited (output fully drained); false on timeout or cancel.
 bool waitProcess(Child& c, int timeoutMs, const std::atomic<bool>* cancel = nullptr);
-// SIGKILL to the whole process group. Never blocks: an unreaped pid is collected by reapStrays().
+// SIGKILL to the whole process group (Windows: terminates the job). Never blocks: an unreaped pid is collected by reapStrays().
 void killProcess(Child& c);
 void reapStrays();
 
@@ -50,4 +51,6 @@ struct PythonCommand
 };
 bool findPython(PythonCommand& cmd, std::string& error);
 std::vector<std::string> pythonArgv(const PythonCommand& cmd, const std::vector<std::string>& args);
-std::string childLogPath();      // ~/Library/Logs/SLogMetaRaw/plugin-child.log
+std::string childLogPath();      // <logDir()>/plugin-child.log
+// Opens a URL in the default browser. False when it could not be started.
+bool openUrl(const std::string& url);

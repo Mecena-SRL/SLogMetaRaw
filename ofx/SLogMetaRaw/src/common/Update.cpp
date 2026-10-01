@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <mutex>
 #include <thread>
-#include <unistd.h>
 
 #include "Child.h"
 #include "Files.h"
@@ -42,7 +41,7 @@ const char* release() { return SLOGMETARAW_RELEASE; }
 static bool optedOut()
 {
     if (getenv("SLOGMETARAW_NO_UPDATE_CHECK")) return true;
-    return access((supportDir() + "/no_update_check").c_str(), F_OK) == 0;
+    return fileExists(supportDir() + "/no_update_check");
 }
 
 static void finish(const ChildResult& r)
@@ -135,8 +134,7 @@ bool openInstaller(std::string& error)
     if (getenv("SLOGMETARAW_TEST_NO_OPEN")) {
         fprintf(stderr, "[open] %s\n", n.url.c_str());
     } else {
-        ChildResult r = runProcess({ "/usr/bin/open", "-u", n.url }, EnvSnapshot::capture(), 3000);
-        if (!r.finished || r.exitCode != 0) {
+        if (!openUrl(n.url)) {
             error = "il browser non si e aperto";
             return false;
         }

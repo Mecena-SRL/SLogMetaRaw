@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "DevelopEffect.h"
+#include "ofxImageEffectExt.h"
 
 #include <cmath>
 #include <cstdio>

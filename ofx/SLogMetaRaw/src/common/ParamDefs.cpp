@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <set>
 
-#include "ofxImageEffectExt.h"
+#include "ofxImageEffectExt.h"   // Resolve SDK; compat/ stands in for it with the upstream OpenFX SDK
 #include "ofxColour.h"
 
 using namespace OFX;
@@ -159,7 +159,7 @@ void describeEffectCommon(ImageEffectDescriptor& d, const char* name, const char
     d.setSupportsMetalRender(true);
 #endif
     // Pointwise = Resolve may bake the node into a LUT (Generate LUT); a spatial node must say no.
-    d.setNoSpatialAwareness(mode == kPointwiseLutSafe);
+    d.getPropertySet().propSetString(kOfxImageEffectPropNoSpatialAwareness, mode == kPointwiseLutSafe ? "true" : "false", false);
     d.getPropertySet().propSetString(kOfxImageEffectPropColourManagementStyle, kOfxImageEffectColourManagementFull, false);
     d.getPropertySet().propSetString(kOfxImageEffectPropColourManagementAvailableConfigs, kOfxNativeConfig, false);
 }

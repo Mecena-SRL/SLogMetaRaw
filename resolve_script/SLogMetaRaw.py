@@ -3,7 +3,8 @@
 
 Installed by install.sh into Fusion/Scripts/Utility; LIB_DIR is replaced at
 install time with the folder that contains the 'slogmetaraw' package.
-Startup failures are reported in a dialog and in ~/Library/Logs/SLogMetaRaw.
+Startup failures are reported in a dialog and in launcher.log (macOS ~/Library/Logs/SLogMetaRaw,
+Windows %APPDATA%\\SLogMetaRaw\\logs, Linux ~/.local/share/SLogMetaRaw/logs).
 """
 import os
 import socket
@@ -13,7 +14,21 @@ import time
 import traceback
 
 LIB_DIR = '__LIB_DIR__'
-LOG_PATH = os.path.expanduser('~/Library/Logs/SLogMetaRaw/launcher.log')
+
+
+def _log_path():
+    # same folders as slogmetaraw/paths.py (this file runs before the package is importable)
+    home = os.path.expanduser('~')
+    if sys.platform == 'darwin':
+        return os.path.join(home, 'Library', 'Logs', 'SLogMetaRaw', 'launcher.log')
+    if os.name == 'nt':
+        base = os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming')
+    else:
+        base = os.environ.get('XDG_DATA_HOME') or os.path.join(home, '.local', 'share')
+    return os.path.join(base, 'SLogMetaRaw', 'logs', 'launcher.log')
+
+
+LOG_PATH = _log_path()
 PROJECT_WAIT = 3.0   # seconds for Fusion and the open project once Resolve answers
 
 
@@ -33,17 +48,31 @@ def _report_error(message, detail):
         print('S-Log MetaRaw: %s\n%s' % (message, detail), file=sys.stderr)
     except (OSError, AttributeError):
         pass
-    # Passing the message as argv preserves accents and quotes without generating
-    # AppleScript source from exception text or a user's installation path.
-    script = ('on run argv\n'
-              'display dialog (item 1 of argv) with title "S-Log MetaRaw" '
-              'buttons {"OK"} default button "OK" with icon caution\n'
-              'end run')
+    _show_dialog(message[:700] + '\n\nDettagli: ' + LOG_PATH)
+
+
+def _show_dialog(text):
     try:
-        subprocess.run(['/usr/bin/osascript', '-e', script,
-                        message[:700] + '\n\nDettagli: ' + LOG_PATH],
-                       timeout=30, check=False)
-    except (OSError, subprocess.SubprocessError):
+        if sys.platform == 'darwin':
+            # Passing the message as argv preserves accents and quotes without generating
+            # AppleScript source from exception text or a user's installation path.
+            script = ('on run argv\n'
+                      'display dialog (item 1 of argv) with title "S-Log MetaRaw" '
+                      'buttons {"OK"} default button "OK" with icon caution\n'
+                      'end run')
+            subprocess.run(['/usr/bin/osascript', '-e', script, text], timeout=30, check=False)
+        elif os.name == 'nt':
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, text, 'S-Log MetaRaw', 0x30)
+        else:
+            for tool in (['zenity', '--warning', '--title=S-Log MetaRaw', '--text=' + text],
+                         ['kdialog', '--title', 'S-Log MetaRaw', '--sorry', text]):
+                try:
+                    subprocess.run(tool, timeout=30, check=False)
+                    return
+                except FileNotFoundError:
+                    continue
+    except (OSError, AttributeError, subprocess.SubprocessError):
         pass
 
 

@@ -19,7 +19,7 @@ import time
 import urllib.error
 import urllib.request
 
-from . import __version__
+from . import __version__, paths
 
 REPO = 'ivan-94m/SLogMetaRaw'
 LATEST_REDIRECT = 'https://github.com/%s/releases/latest' % REPO
@@ -27,7 +27,7 @@ API_LATEST = 'https://api.github.com/repos/%s/releases/latest' % REPO
 RELEASES_PAGE = 'https://github.com/%s/releases' % REPO
 TAG_PAGE = 'https://github.com/%s/releases/tag/%%s' % REPO
 
-SUPPORT_DIR = os.path.expanduser('~/Library/Application Support/SLogMetaRaw')
+SUPPORT_DIR = paths.support_dir()
 STATE_PATH = os.path.join(SUPPORT_DIR, 'update.json')
 CACHE_TTL = 60  # seconds: a fresh answer is reused instead of asking GitHub again
 # same rule as the plugin's isTrustedDmgUrl: update.json is writable by anyone, so check before opening

@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "Child.h"
 
+#ifndef _WIN32   // the Windows implementation is in ChildWin.cpp
+
 #include "Files.h"
 #include "FlatJson.h"
 
 #include <errno.h>
+#include <sys/types.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
@@ -40,6 +43,7 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     int fds[2];
     if (pipe(fds) != 0) { error = "pipe non disponibile"; return false; }
     fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+    fcntl(fds[1], F_SETFD, FD_CLOEXEC);   // dup2 onto fd 1 clears it in the child
     fcntl(fds[0], F_SETFL, fcntl(fds[0], F_GETFL) | O_NONBLOCK);
 
     posix_spawn_file_actions_t fa;
@@ -55,8 +59,11 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     posix_spawnattr_t at;
     posix_spawnattr_init(&at);
     // Only 0/1/2 reach the child; its own group, so a timeout also kills what it spawned.
-    posix_spawnattr_setflags(&at, POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGMASK
-                                      | POSIX_SPAWN_SETSIGDEF);
+    short spawnFlags = POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_SETSIGDEF;
+#ifdef POSIX_SPAWN_CLOEXEC_DEFAULT   // macOS only: elsewhere the host's descriptors are CLOEXEC by convention
+    spawnFlags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
+#endif
+    posix_spawnattr_setflags(&at, spawnFlags);
     posix_spawnattr_setpgroup(&at, 0);
     sigset_t none, defaults;
     sigemptyset(&none);
@@ -110,8 +117,8 @@ static void checkExit(Child& c)
 {
     if (c.exited || c.pid < 0) return;
     int status = 0;
-    pid_t r = waitpid(c.pid, &status, WNOHANG);
-    if (r == c.pid) {
+    pid_t r = waitpid((pid_t)c.pid, &status, WNOHANG);
+    if (r == (pid_t)c.pid) {
         c.exited = true;
         if (WIFEXITED(status)) c.exitCode = WEXITSTATUS(status);
         if (WIFSIGNALED(status)) c.termSignal = WTERMSIG(status);
@@ -146,22 +153,22 @@ bool waitProcess(Child& c, int timeoutMs, const std::atomic<bool>* cancel)
 }
 
 static std::mutex s_StrayMutex;
-static std::vector<pid_t> s_Strays;
+static std::vector<long long> s_Strays;
 
 void reapStrays()
 {
     std::lock_guard<std::mutex> lock(s_StrayMutex);
-    s_Strays.erase(std::remove_if(s_Strays.begin(), s_Strays.end(), [](pid_t p) {
-        pid_t r = waitpid(p, nullptr, WNOHANG);
-        return r == p || (r < 0 && errno == ECHILD);
+    s_Strays.erase(std::remove_if(s_Strays.begin(), s_Strays.end(), [](long long p) {
+        pid_t r = waitpid((pid_t)p, nullptr, WNOHANG);
+        return r == (pid_t)p || (r < 0 && errno == ECHILD);
     }), s_Strays.end());
 }
 
 void killProcess(Child& c)
 {
     if (c.pid > 0 && !c.exited) {
-        kill(-c.pid, SIGKILL);
-        kill(c.pid, SIGKILL);
+        kill(-(pid_t)c.pid, SIGKILL);
+        kill((pid_t)c.pid, SIGKILL);
         checkExit(c);
         if (!c.exited) {
             std::lock_guard<std::mutex> lock(s_StrayMutex);
@@ -203,13 +210,22 @@ bool findPython(PythonCommand& cmd, std::string& error)
     std::string lib;
     if (readFile(supportDir() + "/lib_path", lib)) lib = trim(lib);
     if (lib.empty() && stat((supportDir() + "/lib/slogmetaraw").c_str(), &st) == 0) lib = supportDir() + "/lib";
+#ifdef __APPLE__
     if (lib.empty()) lib = "/Library/Application Support/SLogMetaRaw/lib";
-    static const char* candidates[] = {
-        "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython",
-        "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Resources/ResolvePython/ResolvePython",
-        "/usr/bin/python3", "/opt/homebrew/bin/python3", "/usr/local/bin/python3" };
-    for (const char* c : candidates) {
-        if (access(c, X_OK) == 0) {
+#endif
+    std::vector<std::string> candidates;
+    if (const char* forced = getenv("SLOGMETARAW_PYTHON")) candidates.push_back(forced);
+#ifdef __APPLE__
+    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython");
+    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Resources/ResolvePython/ResolvePython");
+    candidates.push_back("/opt/homebrew/bin/python3");
+#else
+    candidates.push_back("/opt/resolve/libs/Fusion/ResolvePython");
+#endif
+    candidates.push_back("/usr/bin/python3");
+    candidates.push_back("/usr/local/bin/python3");
+    for (const std::string& c : candidates) {
+        if (access(c.c_str(), X_OK) == 0) {
             cmd.python = c;
             cmd.lib = lib;
             return true;
@@ -229,6 +245,19 @@ std::vector<std::string> pythonArgv(const PythonCommand& cmd, const std::vector<
 
 std::string childLogPath()
 {
-    const std::string dir = homeDir() + "/Library/Logs/SLogMetaRaw";
+    const std::string dir = logDir();
     return makeDirs(dir) ? dir + "/plugin-child.log" : "";
 }
+
+bool openUrl(const std::string& url)
+{
+#ifdef __APPLE__
+    const std::vector<std::string> argv = { "/usr/bin/open", "-u", url };
+#else
+    const std::vector<std::string> argv = { "/usr/bin/xdg-open", url };
+#endif
+    ChildResult r = runProcess(argv, EnvSnapshot::capture(), 3000);
+    return r.finished && r.exitCode == 0;
+}
+
+#endif   // !_WIN32

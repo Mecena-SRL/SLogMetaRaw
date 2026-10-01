@@ -23,7 +23,7 @@ import time
 import traceback
 import webbrowser
 
-from . import __version__, i18n, osx_utils, plugin_cache, resolve_io, update as upd
+from . import __version__, i18n, osx_utils, paths, plugin_cache, resolve_io, update as upd
 
 t = i18n.t
 
@@ -43,7 +43,7 @@ WRITE_BUDGET = 0.07        # seconds of SetMetadata calls per timer tick
 CLIP_TIMEOUT_FIRST = 10    # seconds for the first clip of a volume: a sleeping disk spins up
 CLIP_TIMEOUT_NEXT = 6
 UPDATE_TIMEOUT = 8
-UI_LOG_PATH = os.path.expanduser('~/Library/Logs/SLogMetaRaw/ui.log')
+UI_LOG_PATH = os.path.join(paths.log_dir(), 'ui.log')
 
 
 def _ui_log(message):

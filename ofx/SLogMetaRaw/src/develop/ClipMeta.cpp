@@ -7,7 +7,6 @@
 #include "../common/Files.h"
 #include "../common/FlatJson.h"
 
-#include <unistd.h>
 
 #include <cctype>
 #include <cstdlib>
@@ -76,7 +75,7 @@ static std::string takeResolveNote(const std::string& path)
     const std::string file = record.substr(0, record.size() - 5) + ".resolve.json";
     std::string text;
     if (!readFile(file, text)) return "";
-    unlink(file.c_str());
+    removeFile(file);
     std::map<std::string, std::string> r = parseFlatJson(text);
     if (atoi(r["ok"].c_str()) != 1)
         return "scrittura in Resolve non riuscita: " + (r["error"].empty() ? std::string("sconosciuto") : r["error"]);
@@ -167,7 +166,7 @@ MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std
         return MetaOutcome::Missing;
     }
     if (!isSonyContainer(path)) {
-        status = "Formato non Sony (" + path.substr(path.find_last_of('/') + 1) + "): nessun metadata di camera";
+        status = "Formato non Sony (" + path.substr(path.find_last_of("/\\") + 1) + "): nessun metadata di camera";
         return MetaOutcome::Missing;
     }
     std::string why;
