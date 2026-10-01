@@ -29,7 +29,7 @@ bool isNewer(const std::string& current, const std::string& latest)
 
 bool isTrustedDmgUrl(const std::string& url)
 {
-    static const std::string prefix = "https://github.com/ivan-94m/SLogMetaRaw/releases/download/";
+    static const std::string prefix = "https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/";
     if (url.size() >= 512 || url.compare(0, prefix.size(), prefix) != 0 || url.find("..") != std::string::npos)
         return false;
     for (char c : url)

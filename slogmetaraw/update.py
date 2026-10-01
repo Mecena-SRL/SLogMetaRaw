@@ -21,7 +21,7 @@ import urllib.request
 
 from . import __version__, paths
 
-REPO = 'ivan-94m/SLogMetaRaw'
+REPO = 'Mecena-SRL/SLogMetaRaw'
 LATEST_REDIRECT = 'https://github.com/%s/releases/latest' % REPO
 API_LATEST = 'https://api.github.com/repos/%s/releases/latest' % REPO
 RELEASES_PAGE = 'https://github.com/%s/releases' % REPO

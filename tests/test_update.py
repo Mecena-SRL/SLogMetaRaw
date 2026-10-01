@@ -17,7 +17,7 @@ sys.path.insert(0, ROOT)
 
 from slogmetaraw import update, __main__ as cli  # noqa: E402
 
-DMG = 'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
+DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
 DETAILS = {'notes': 'lunghe note\ncon a capo', 'title': 'S-Log MetaRaw  9.9.9\n', 'page': 'p',
            'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9.dmg', 'size': 1234}
 NO_NETWORK = AssertionError('rete non permessa')
@@ -79,7 +79,7 @@ class State(unittest.TestCase):
             os.unlink('/tmp/smr-update-test3.json')
         self.assertEqual(result['dmg_url'], '')
         self.assertTrue(update.trusted_dmg_url(
-            'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1.dmg'))
+            'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1.dmg'))
 
     def test_stale_cache_is_refreshed(self):
         stale = update.blank()
