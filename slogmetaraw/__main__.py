@@ -12,7 +12,9 @@ import math
 import os
 import signal
 import stat
+import subprocess
 import sys
+import threading
 import time
 
 from .extract import read_clip, DatalessError, FULL_SAMPLES
@@ -36,6 +38,18 @@ def iter_clips(paths):
                         yield os.path.join(root, n)
         else:
             yield p
+
+
+def _alarm(seconds):
+    """End this process after `seconds`, even when the main thread is stuck inside a blocking call.
+
+    SIGALRM where it exists; Windows has no signal.alarm, so a timer thread exits the process instead."""
+    if hasattr(signal, 'SIGALRM'):
+        signal.alarm(seconds)
+        return
+    timer = threading.Timer(seconds, lambda: os._exit(1))
+    timer.daemon = True
+    timer.start()
 
 
 def _jsonable(o):
@@ -108,7 +122,7 @@ def _cache_cli(args, hard_limit):
         return 2
     if hard_limit:
         # a pread blocked on a dead volume never reaches the soft deadline checks
-        signal.alarm(int(math.ceil(opts['--deadline'])) + 1)
+        _alarm(int(math.ceil(opts['--deadline'])) + 1)
     return cache_clips(paths, opts['--interval'], opts['--max-samples'], opts['--deadline'])
 
 
@@ -156,7 +170,6 @@ def _resolve_writer(path, r, status_path):
     The Resolve calls stay on the main thread; a watchdog thread writes the timeout
     status and ends the process, since a call blocked inside fusionscript never returns.
     """
-    import threading
     lock = threading.Lock()
     finished = []
     connected, done = threading.Event(), threading.Event()
@@ -185,6 +198,37 @@ def _resolve_writer(path, r, status_path):
     done.set()
 
 
+_BOOTSTRAP = ("import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); "
+              "runpy.run_module('slogmetaraw', run_name='__main__')")
+
+
+def _spawn_resolve_writer(path):
+    """Windows has no fork: start the writer as a separate detached process (it reads the clip again)."""
+    lib = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    flags = (getattr(subprocess, 'DETACHED_PROCESS', 0x8) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0x200)
+             | getattr(subprocess, 'CREATE_NO_WINDOW', 0x8000000))
+    subprocess.Popen([sys.executable, '-X', 'utf8', '-c', _BOOTSTRAP, lib, '--resolve-writer', path],
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     creationflags=flags, close_fds=True)
+
+
+def _resolve_writer_cli(args):
+    """Entry of the detached writer on Windows: read the clip, then do what the forked grandchild does."""
+    if not args:
+        return 2
+    path = args[0]
+    from . import plugin_cache
+    status_path = plugin_cache.resolve_status_path(path)
+    try:
+        r = read_clip(path, max_samples=FULL_SAMPLES, deadline=time.monotonic() + CLIP_BUDGET)
+    except Exception as exc:
+        _save_status(status_path, _status(error='lettura metadata: %s' % exc))
+        return 1
+    _alarm(RESOLVE_ALARM)
+    _resolve_writer(path, r, status_path)
+    return 0
+
+
 def _detach(job):
     """Run job in a grandchild with its own session; the caller returns at once."""
     sys.stdout.flush()
@@ -207,7 +251,7 @@ def _detach(job):
             keep_stderr = False
         if not keep_stderr:
             os.dup2(null, 2)
-        signal.alarm(RESOLVE_ALARM)
+        _alarm(RESOLVE_ALARM)
         job()
     finally:
         os._exit(0)
@@ -240,7 +284,9 @@ def to_resolve(paths, detach=True):
         _emit({'cache': 1})
     except OSError as exc:
         _emit({'cache': 0, 'error': 'scheda per il plugin non salvata: %s' % exc})
-    if detach:
+    if detach and not hasattr(os, 'fork'):
+        _spawn_resolve_writer(path)
+    elif detach:
         _detach(lambda: _resolve_writer(path, r, status_path))
     else:
         _save_status(status_path, write_to_resolve(path, r))
@@ -295,6 +341,8 @@ def main(argv=None):
         return _cache_cli(args[1:], hard_limit=argv is None)
     if args[:1] == ['--to-resolve']:
         return to_resolve(args[1:])
+    if args[:1] == ['--resolve-writer']:
+        return _resolve_writer_cli(args[1:])
     if args[:1] == ['--update-check']:
         return _update_cli(args[1:])
 

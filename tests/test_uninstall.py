@@ -69,6 +69,7 @@ class FakeMac:
                [r for r in USER if os.path.lexists(os.path.join(self.home, r))]
 
 
+@unittest.skipIf(os.name == 'nt', 'il disinstallatore e uno script bash per macOS')
 class Uninstaller(unittest.TestCase):
     def setUp(self):
         self.mac = FakeMac()
@@ -126,6 +127,7 @@ class Uninstaller(unittest.TestCase):
         self.assertIn('niente da rimuovere', run.stdout)
 
 
+@unittest.skipIf(os.name == 'nt', 'gli script del pacchetto sono per macOS')
 class Preinstall(unittest.TestCase):
     def setUp(self):
         self.mac = FakeMac()

@@ -103,7 +103,8 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
         fusion = types.SimpleNamespace(UIManager=object())
         namespace = {'resolve': resolve, 'fusion': fusion, 'bmd': Mock()}
         with patch.object(launcher, '_load_ui', side_effect=ImportError('missing parser')):
-            with patch.object(launcher.subprocess, 'run') as dialog:
+            with patch.object(launcher.sys, 'platform', 'darwin'), \
+                    patch.object(launcher.subprocess, 'run') as dialog:
                 with patch.object(launcher.sys, 'stderr', io.StringIO()):
                     self.assertFalse(launcher.main(namespace))
         self.assertIn('ImportError: missing parser', self.log.read_text())
@@ -128,7 +129,8 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
 
     def test_error_dialog_passes_unicode_and_quotes_as_data(self):
         message = 'Libreria d\'Ivan: "è mancante"'
-        with patch.object(launcher.subprocess, 'run') as dialog:
+        # the macOS dialog (osascript): Windows and Linux use their own native boxes
+        with patch.object(launcher.sys, 'platform', 'darwin'), patch.object(launcher.subprocess, 'run') as dialog:
             with patch.object(launcher.sys, 'stderr', io.StringIO()):
                 launcher._report_error(message, 'traceback')
         args = dialog.call_args.args[0]
