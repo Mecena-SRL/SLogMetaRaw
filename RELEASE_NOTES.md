@@ -1,9 +1,19 @@
 # Changelog
 
-## Non rilasciato
+## S-Log MetaRaw 2.2.0
+
+Due funzioni nuove. Nessun valore salvato cambia, l'immagine resta identica.
+
+### Plugin
 
 - **Esporta LUT (.cube)** (#13): nel pannello S-Log MetaRaw il pulsante salva una LUT 3D con White Balance, Exposure, Toni
   e conversione Color Space / Gamma del nodo. Ingresso: il segnale che entra nel nodo; dimensione 17, 33 (default) o 65.
+
+### Script
+
+- **Copia dei metadata Sony su clip senza metadata** (#7): sezione a parte, abilitata da una spunta. Le clip Sony già
+  lette e quelle di un registratore esterno (per esempio ProRes) si abbinano in sequenza per nome, e "Copia sulle clip"
+  scrive white balance, EI, lente e il blocco in Camera Notes. Copia una tantum; il data level resta neutro.
 
 ## S-Log MetaRaw 2.1.2
 
