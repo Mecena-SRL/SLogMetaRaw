@@ -28,6 +28,18 @@ class Helper(unittest.TestCase):
         out = self.run_helper(['', '   '])
         self.assertEqual(out, [])
 
+    def test_accented_path_under_c_locale(self):
+        # Resolve's embedded Python may run under the C locale (ASCII pipes): #39
+        env = dict(os.environ, LC_ALL='C', LANG='C', PYTHONUTF8='0', PYTHONCOERCECLOCALE='0')
+        path = '/percorso/inesistente/Caff\u00e9 \u00e8.MP4'
+        proc = subprocess.run([sys.executable, '-X', 'utf8=0', '-m', 'slogmetaraw', '--helper'],
+                              input=(path + '\n').encode('utf-8'), capture_output=True,
+                              cwd=ROOT, env=env, timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        msg = json.loads(proc.stdout.splitlines()[0])
+        self.assertEqual(msg['path'], path)
+        self.assertFalse(msg['ok'])
+
 
 if __name__ == '__main__':
     unittest.main()

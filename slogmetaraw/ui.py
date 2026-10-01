@@ -150,7 +150,8 @@ def _spawn_reader():
     # and add it explicitly before running the helper module.
     bootstrap = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
                  'runpy.run_module("slogmetaraw", run_name="__main__")')
-    return subprocess.Popen([_reader_python(), '-c', bootstrap, lib, '--helper'],
+    # -X utf8 also makes os.open() accept accented paths when the locale is ASCII (#39)
+    return subprocess.Popen([_reader_python(), '-X', 'utf8', '-c', bootstrap, lib, '--helper'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1)
 

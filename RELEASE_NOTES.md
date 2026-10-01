@@ -6,6 +6,8 @@ Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, 
 
 ### Script
 
+- **"'ascii' codec can't encode character" leggendo i metadata** con percorsi o valori accentati (#39): il lettore
+  parte ora in modalità UTF-8, quindi funziona anche quando il Python incorporato in Resolve ha la locale ASCII.
 - **Avvisi della clip tradotti anche quando contengono un valore**: "Campionamento parziale (N fotogrammi campione)",
   "NRT XML illeggibile" e "Data level" restavano in italiano perché si traducevano dopo aver inserito il numero o il
   testo. Ora la lettura salva modello e argomenti, e la finestra traduce prima di comporre il messaggio (#24).
