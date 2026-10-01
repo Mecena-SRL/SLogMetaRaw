@@ -25,6 +25,7 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_WBMode = fetchChoiceParam("whiteBalance");
         m_ColorSpace = fetchChoiceParam("colorSpace");
         m_Gamma = fetchChoiceParam("gamma");
+        m_LutSize = fetchChoiceParam("lutSize");
         m_Temp = fetchDoubleParam("colorTemp");
         m_Tint = fetchDoubleParam("tint");
         m_EI = fetchDoubleParam("exposure");
@@ -101,6 +102,8 @@ void DevelopEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const s
     const bool user = (p_Args.reason == OFX::eChangeUserEdit);
     if (p_ParamName == "reload") {
         syncMetadata(MetaMode::Reload);
+    } else if (p_ParamName == "exportLut") {
+        exportLut(p_Args.time);
     } else if (p_ParamName == "version") {
         m_Badge.clicked();
     } else if (p_ParamName == "unlockNoMeta" && user) {
