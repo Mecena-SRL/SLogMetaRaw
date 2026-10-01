@@ -33,6 +33,7 @@ private:
     void updateEnabledness();
     void refreshNodeInfo();
     void composeStatus();
+    void exportLut(double p_Time);   // DevelopLut.cpp, asks where to save
     void onUnlockChanged();
     void onReferenceChanged(const std::string& p_Name);
     // BuildParams.cpp
@@ -57,6 +58,7 @@ private:
     OFX::ChoiceParam* m_WBMode = nullptr;
     OFX::ChoiceParam* m_ColorSpace = nullptr;
     OFX::ChoiceParam* m_Gamma = nullptr;
+    OFX::ChoiceParam* m_LutSize = nullptr;
     OFX::DoubleParam* m_Temp = nullptr;
     OFX::DoubleParam* m_Tint = nullptr;
     OFX::DoubleParam* m_EI = nullptr;

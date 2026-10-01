@@ -6,6 +6,7 @@
 #include "../common/UpdateBadge.h"
 #include "ClipMeta.h"
 #include "DevelopEffect.h"
+#include "LutExport.h"
 #include "ToneParams.h"
 
 using namespace OFX;
@@ -60,6 +61,13 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     static const char* gmOpts[] = { "Timeline", "DaVinci Intermediate", "Linear", "Gamma 2.2", "Gamma 2.4", "Gamma 2.6",
                                     "Rec.709", "sRGB", "SLog", "SLog2", "SLog3", "ACEScct" };
     defineChoice(d, page, "gamma", "Gamma", gmOpts, 12, 0, "Curva in uscita. Timeline non converte");
+
+    static const char* lutOpts[] = { "17", "33", "65" };
+    defineChoice(d, page, "lutSize", "Dimensione LUT", lutOpts, kLutSizeCount, kLutDefaultSize,
+                 "Punti per lato della LUT 3D esportata: 33 va bene per quasi tutto, 65 e piu fedele ma pesa di piu");
+    defineButton(d, page, "exportLut", "Esporta LUT (.cube)",
+                 "Salva una LUT 3D .cube con White Balance, Exposure, Toni e conversione Color Space / Gamma di "
+                 "questo nodo. Ingresso: il segnale che entra nel nodo");
 
     GroupParamDescriptor* tones = defineGroup(d, page, "tonesGroup", "Toni", true);
     GroupParamDescriptor* zones = defineGroup(d, page, "zonesGroup", "Zone", false);

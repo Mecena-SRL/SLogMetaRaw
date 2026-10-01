@@ -1,5 +1,10 @@
 # Changelog
 
+## Non rilasciato
+
+- **Esporta LUT (.cube)** (#13): nel pannello S-Log MetaRaw il pulsante salva una LUT 3D con White Balance, Exposure, Toni
+  e conversione Color Space / Gamma del nodo. Ingresso: il segnale che entra nel nodo; dimensione 17, 33 (default) o 65.
+
 ## S-Log MetaRaw 2.1.2
 
 Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.

@@ -12,6 +12,8 @@ param:fcExposure|OfxParamTypeBoolean|False color: esposizione|0||||||||||0|Mappa
 param:exposure|OfxParamTypeDouble|Exposure|800||||25|409600|50|25600|1|||Exposure Index: il doppio dell'EI di ripresa = +1 stop|||
 param:colorSpace|OfxParamTypeChoice|Color Space|0||||||||||0|Gamut in uscita, come un Color Space Transform. Timeline non converte|Timeline,DaVinci WG,Rec.709,Rec.2020,P3 D65,P3 D60,P3 DCI,S-Gamut,S-Gamut3,S-Gamut3.Cine,ACES AP0,ACES AP1||
 param:gamma|OfxParamTypeChoice|Gamma|0||||||||||0|Curva in uscita. Timeline non converte|Timeline,DaVinci Intermediate,Linear,Gamma 2.2,Gamma 2.4,Gamma 2.6,Rec.709,sRGB,SLog,SLog2,SLog3,ACEScct||
+param:lutSize|OfxParamTypeChoice|Dimensione LUT|1||||||||||0|Punti per lato della LUT 3D esportata: 33 va bene per quasi tutto, 65 e piu fedele ma pesa di piu|17,33,65||
+param:exportLut|OfxParamTypePushButton|Esporta LUT (.cube)||||||||||||Salva una LUT 3D .cube con White Balance, Exposure, Toni e conversione Color Space / Gamma di questo nodo. Ingresso: il segnale che entra nel nodo|||
 param:tonesGroup|OfxParamTypeGroup|Toni|||||||||||||||1
 param:zonesGroup|OfxParamTypeGroup|Zone|||||||||||||||0
 param:toneContrast|OfxParamTypeDouble|Contrast|0|tonesGroup|||-100|100|-100|100|0.1|2||Contrasto attorno al grigio 18% (Pivot in Zone): pendenza x2 a +100, x1/2 a -100. I bordi delle zone restano in stop di scena|||
