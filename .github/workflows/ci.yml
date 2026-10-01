@@ -38,7 +38,14 @@ jobs:
         # the GitHub runners may expose no Metal device: the GPU parity tests are the ones to watch
         continue-on-error: true
         timeout-minutes: 15
-        run: python3 -X utf8 -m unittest discover -s tests -v
+        run: |
+          set -o pipefail
+          python3 -X utf8 -m unittest discover -s tests -v 2>&1 | tee tests.log
+      - name: What the Mac tests skipped
+        if: always()
+        run: |
+          grep -o "skipped '.*'" tests.log | sort | uniq -c | sort -rn || true
+          grep -E "\.\.\. (ERROR|FAIL)$" tests.log || true
 
   windows:
     runs-on: windows-latest
