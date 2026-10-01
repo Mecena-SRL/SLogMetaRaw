@@ -10,6 +10,12 @@ Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, 
   "NRT XML illeggibile" e "Data level" restavano in italiano perché si traducevano dopo aver inserito il numero o il
   testo. Ora la lettura salva modello e argomenti, e la finestra traduce prima di comporre il messaggio (#24).
 
+### Lettura dei metadata
+
+- **Timecode drop-frame (29,97/59,94 DF)**: End TC e Length si calcolano con la numerazione drop-frame quando il
+  timecode della clip ha il flag DF, invece di contare non-drop (18 frame di errore ogni 10 minuti). Il timecode DF
+  si mostra con il `;` prima dei frame, come in Resolve (#24).
+
 ## S-Log MetaRaw 2.1.1
 
 Correzioni di stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta
