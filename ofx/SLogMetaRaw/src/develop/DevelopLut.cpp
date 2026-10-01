@@ -51,11 +51,12 @@ static SaveAsk askSavePath(const std::string& name, std::string& path)
     argv = { "/usr/bin/osascript", "-e",
              "POSIX path of (choose file name with prompt \"Salva la LUT\" default name " + appleScriptQuote(name) + ")" };
 #else
-    if (fileExists("/usr/bin/zenity"))
-        argv = { "/usr/bin/zenity", "--file-selection", "--save", "--confirm-overwrite", "--title=Salva la LUT",
+    const std::string zenity = findExecutable("zenity"), kdialog = findExecutable("kdialog");
+    if (!zenity.empty())
+        argv = { zenity, "--file-selection", "--save", "--confirm-overwrite", "--title=Salva la LUT",
                  "--filename=" + name };
-    else if (fileExists("/usr/bin/kdialog"))
-        argv = { "/usr/bin/kdialog", "--getsavefilename", name, "*.cube", "--title", "Salva la LUT" };
+    else if (!kdialog.empty())
+        argv = { kdialog, "--getsavefilename", name, "*.cube", "--title", "Salva la LUT" };
     else
         return SaveAsk::Failed;
 #endif

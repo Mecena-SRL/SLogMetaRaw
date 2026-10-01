@@ -158,3 +158,25 @@ bool fileExists(const std::string& path)
 }
 
 bool removeFile(const std::string& path) { return remove(path.c_str()) == 0; }
+
+std::string findExecutable(const std::string& name)
+{
+#ifdef _WIN32
+    char found[MAX_PATH];
+    return SearchPathA(nullptr, name.c_str(), ".exe", MAX_PATH, found, nullptr) ? std::string(found) : "";
+#else
+    std::string list = getenv("PATH") ? getenv("PATH") : "";
+    list += ":/usr/bin:/usr/local/bin:/bin";   // a host can start with a stripped PATH
+    size_t pos = 0;
+    while (pos <= list.size()) {
+        size_t end = list.find(':', pos);
+        if (end == std::string::npos) end = list.size();
+        if (end > pos) {
+            const std::string candidate = list.substr(pos, end - pos) + "/" + name;
+            if (access(candidate.c_str(), X_OK) == 0) return candidate;
+        }
+        pos = end + 1;
+    }
+    return "";
+#endif
+}

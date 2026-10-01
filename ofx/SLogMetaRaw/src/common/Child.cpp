@@ -327,7 +327,9 @@ bool openUrl(const std::string& url)
 #ifdef __APPLE__
     const std::vector<std::string> argv = { "/usr/bin/open", "-u", url };
 #else
-    const std::vector<std::string> argv = { "/usr/bin/xdg-open", url };
+    const std::string opener = findExecutable("xdg-open");
+    if (opener.empty()) return false;
+    const std::vector<std::string> argv = { opener, url };
 #endif
     ChildResult r = runProcess(argv, EnvSnapshot::capture(), 3000);
     return r.finished && r.exitCode == 0;

@@ -2,6 +2,7 @@
 // Command-line access to src/common for the Python tests. One command per invocation:
 //   cachekey PATH            cache record path the plugin uses for a clip
 //   run TIMEOUT_MS ARGV...   spawn a child; prints finished/timedOut/exit/signal/bytes/elapsed
+//   which NAME               first executable of that name on PATH (empty line if none)
 //   runout TIMEOUT_MS ARGV...  spawn a child and print what it wrote on stdout, nothing else
 #include <cstdio>
 #include <cstring>
@@ -31,6 +32,10 @@ int main(int argc, char** argv)
         ChildResult r = runProcess(args, EnvSnapshot::capture(), atoi(argv[2]));
         if (!r.started) { fprintf(stderr, "non avviato: %s\n", r.error.c_str()); return 1; }
         fwrite(r.out.data(), 1, r.out.size(), stdout);
+        return 0;
+    }
+    if (argc >= 3 && !strcmp(argv[1], "which")) {
+        printf("%s\n", findExecutable(argv[2]).c_str());
         return 0;
     }
     fprintf(stderr, "uso: common_test cachekey PATH | run TIMEOUT_MS ARGV... | runout TIMEOUT_MS ARGV...\n");

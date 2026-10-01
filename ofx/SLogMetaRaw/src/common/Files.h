@@ -13,4 +13,5 @@ std::string cacheRecordPath(const std::string& clipPath);
 bool clipIsReadable(const std::string& path, std::string& why);
 bool makeDirs(const std::string& path);   // mkdir -p
 bool fileExists(const std::string& path);
+std::string findExecutable(const std::string& name);   // first match on PATH (or one of the usual folders); "" if none
 bool removeFile(const std::string& path);

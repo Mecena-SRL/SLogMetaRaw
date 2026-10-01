@@ -52,6 +52,16 @@ class LinuxChild(unittest.TestCase):
                              timeout=30, env=env).stdout
         self.assertNotIn('LD_PRELOAD', out)
 
+    def test_which_looks_on_the_path_and_in_the_usual_folders(self):
+        sh = subprocess.run([self.exe, 'which', 'sh'], capture_output=True, text=True, timeout=10).stdout.strip()
+        self.assertTrue(sh.endswith('/sh'), sh)
+        bare = dict(os.environ, PATH='')                      # a host started with an empty PATH
+        sh = subprocess.run([self.exe, 'which', 'sh'], capture_output=True, text=True, timeout=10, env=bare).stdout.strip()
+        self.assertTrue(sh.endswith('/sh'), sh)
+        none = subprocess.run([self.exe, 'which', 'no-such-tool-xyz'], capture_output=True, text=True,
+                              timeout=10).stdout.strip()
+        self.assertEqual(none, '')
+
     def test_python_and_pythonpath_variables_are_dropped(self):
         env = dict(os.environ, PYTHONPATH='/x', PYTHONHOME='/y')
         out = subprocess.run([self.exe, 'runout', '10000', '/usr/bin/env'], capture_output=True, text=True,
