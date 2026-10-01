@@ -33,6 +33,7 @@ jobs:
           python-version: '3.11'
       - name: Unit tests (Python; the C++ helpers are built with MSVC by the package step)
         continue-on-error: true   # the suite was written for macOS: tighten once it is green on Windows
+        timeout-minutes: 10
         run: python -X utf8 -m unittest discover -s tests -v
       - name: Package
         run: powershell -ExecutionPolicy Bypass -File packaging\windows\build_package.ps1

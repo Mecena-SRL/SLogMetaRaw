@@ -1,6 +1,6 @@
 name: Release packages
 # Builds the Linux and Windows packages and attaches them to a DRAFT release for the tag; the macOS .dmg is built
-# by hand (packaging/build_installer.sh) and uploaded to the same release.
+# by hand (packaging/build_installer.sh) and uploaded to the same release before publishing.
 on:
   push:
     tags: ['v*']
@@ -25,6 +25,9 @@ jobs:
 
   windows:
     runs-on: windows-latest
+    # experimental: a failing Windows build must not block the draft with the other packages
+    continue-on-error: true
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,7 +43,8 @@ jobs:
 
   draft:
     needs: [linux, windows]
-    if: startsWith(github.ref, 'refs/tags/v')
+    # the draft is made from whatever packages were built; Linux is required, Windows is optional
+    if: ${{ !cancelled() && needs.linux.result == 'success' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
