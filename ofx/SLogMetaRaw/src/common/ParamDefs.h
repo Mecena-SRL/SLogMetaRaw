@@ -39,8 +39,6 @@ void hideParam(T* p, OFX::PageParamDescriptor* page)
     p->setAnimates(false);
     page->addChild(*p);
 }
-OFX::DoubleParamDescriptor* defineHiddenDouble(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page,
-                                               const std::string& name, double def);
 OFX::IntParamDescriptor* defineHiddenInt(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page,
                                          const std::string& name, int def);
 

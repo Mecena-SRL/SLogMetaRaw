@@ -5,7 +5,6 @@
 
 struct ClipMeta
 {
-    bool ok = false;
     bool supported = false;
     bool wbEstimated = false;
     double shotTemp = 5600.0, shotTint = 0.0, shotEI = 800.0;

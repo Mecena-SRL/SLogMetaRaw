@@ -159,7 +159,9 @@ def check(current=None, timeout=6.0):
     """
     result = blank(current)
     cached = read_state()
-    if (cached.get('checked_at') or 0) > time.time() - CACHE_TTL and cached.get('ok'):
+    if ((cached.get('checked_at') or 0) > time.time() - CACHE_TTL and cached.get('ok')
+            and bool(cached.get('newer')) == is_newer(result['current'], cached.get('latest') or '')):
+        cached['current'] = result['current']   # a just-installed update must not be offered again
         cached['checked_at'] = time.time()
         return cached
     try:

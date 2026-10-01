@@ -164,14 +164,18 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
     const size_t full = (size_t)W * H, grid = (size_t)w * h;
     const bool dehaze = p.hazeOn != 0;
     ensure(s.L0, full);
-    if (dehaze) ensure(s.J, full * 3);   // Dehaze keeps the decoded source here, then dehazes it in place
+    if (dehaze) {   // Dehaze keeps the decoded source here, then dehazes it in place
+        ensure(s.J, full * 3);
+        if (s.finite.size() < full) s.finite.resize(full);
+    }
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
             for (int x = 0; x < W; ++x) {
                 const size_t i = (size_t)y * W + x;
                 SMf3 c = decoded(src + y * srcRow + (size_t)x * 4, p.gamma);
-                s.L0[i] = finite3(c) ? dt_luma(c, p) : -16.0f;
-                if (dehaze) { s.J[i * 3] = c.x; s.J[i * 3 + 1] = c.y; s.J[i * 3 + 2] = c.z; }
+                const bool ok = finite3(c);
+                s.L0[i] = ok ? dt_luma(c, p) : -16.0f;
+                if (dehaze) { s.J[i * 3] = c.x; s.J[i * 3 + 1] = c.y; s.J[i * 3 + 2] = c.z; s.finite[i] = ok; }
             }
     });
     const float* L = s.L0.data();
@@ -289,8 +293,9 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                     planes->G[i] = o.G;
                 }
                 out[3] = in[3];
-                const SMf3 v = decoded(in, p.gamma);
-                if (!finite3(v)) {
+                // with Dehaze the picture comes from s.J: the source is only checked, not decoded again
+                const SMf3 v = dehaze ? SMf3{} : decoded(in, p.gamma);
+                if (dehaze ? !s.finite[i] : !finite3(v)) {
                     out[0] = in[0]; out[1] = in[1]; out[2] = in[2];
                 } else if (p.view == 1) {
                     const SMf3 c = dt_emit(dt_view_gain(o.G, L[i]), p);

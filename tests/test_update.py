@@ -59,6 +59,17 @@ class State(unittest.TestCase):
             self.assertEqual(result['latest'], '1.1.0')
             os.unlink('/tmp/smr-update-test.json')
 
+    def test_a_cached_offer_is_dropped_once_that_version_is_installed(self):
+        offer = update.blank('2.1.0')
+        offer.update(ok=True, latest='2.1.1', newer=True, checked_at=time.time())
+        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test.json'):
+            update.write_state(offer)
+            with mock.patch.object(update, 'latest_tag', return_value='v2.1.1'):
+                result = update.check('2.1.1')
+            os.unlink('/tmp/smr-update-test.json')
+        self.assertFalse(result['newer'])
+        self.assertEqual(result['current'], '2.1.1')
+
     def test_stale_cache_is_refreshed(self):
         stale = update.blank()
         stale['ok'] = True

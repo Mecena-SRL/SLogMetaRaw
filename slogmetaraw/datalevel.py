@@ -1,40 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Data level (code range) of a Sony clip, and the correction the node must apply.
 
-Why this module exists
-----------------------
-Every transfer function is defined on a *scale*, and there are two in use:
-
-  full  (data, "0-1023")   normalised value 0.0 = code 0,  1.0 = code 1023
-  video (legal, "64-940")  normalised value 0.0 = code 64, 1.0 = code 940
-
-Sony's S-Log curves are published on the **full** scale: S-Log3 black is code 95,
-18% grey code 420, 90% white code 598; S-Log2 and S-Log put black at code 90
-(Sony, "Technical Summary for S-Gamut3.Cine/S-Log3 and S-Gamut3/S-Log3", FAQ Q4:
-*"S-Log3 is recorded as Full range in XAVC, MPEG and HDCAM SR File"*, and there is
-no legal-range option in the camera). Broadcast curves — Rec.709, the Hypergammas,
-Cine1-4, S-Cinetone, HLG — are the opposite: they are legal-anchored, 0 IRE = code
-64, 100 IRE = code 940, with the headroom above 940 used for super-whites.
-
-DaVinci Resolve scales every clip into its 32-bit float pipeline according to the
-clip's *Data Level* attribute, **before** the node graph and before the Resolve
-Colour Management input transform. So the image an OpenFX node receives is
-
-    Data Level = Full   ->  x = CV / 1023
-    Data Level = Video  ->  x = (CV - 64) / 876
-
-and OpenFX has no property that says which one happened (checked against the
-whole OFX 1.4/1.5 header set shipped with Resolve, including ofxColour.h: the
-colour-management API cannot express signal range). Resolve's own manual only
-says that *Auto* decides "based on the codec of the source media" — no flags, no
-per-camera table. When it picks the wrong one for an S-Log clip the log decode
-downstream is fed a mis-scaled curve, and the error is largest in the shadows.
-
-``host`` is Resolve's own clip attribute ('Auto' | 'Full' | 'Video'). While it is
-'Auto' the resolved scale is not observable from any API, so nothing is corrected
-and the script sets it explicitly.
-
-References for the tables below are collected in docs/DATA_LEVELS.md.
+Resolve scales a clip by its Data Level attribute before any node sees it
+(Full: x = CV / 1023, Video: x = (CV - 64) / 876) and OpenFX cannot tell which.
+S-Log curves are full-range; broadcast curves (Rec.709, HLG, Cine, S-Cinetone)
+are legal-anchored. ``host`` is the clip attribute ('Auto' | 'Full' | 'Video'):
+under 'Auto' the applied scale is unobservable, so the script sets it explicitly.
+Background and references: docs/DATA_LEVELS.md.
 """
 
 FULL = 'Full'
