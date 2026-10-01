@@ -6,6 +6,10 @@
 #endif
 #include <limits.h>
 #include <sys/stat.h>
+#ifndef _WIN32
+#include <pwd.h>
+#include <unistd.h>
+#endif
 #ifdef _WIN32
 #include <direct.h>
 #include <windows.h>
@@ -25,6 +29,11 @@ std::string homeDir()
     const char* h = getenv("USERPROFILE");
 #else
     const char* h = getenv("HOME");
+    if (!h || !*h) {   // a host started without HOME: the password database knows
+        struct passwd pwd, *found = nullptr;
+        char buf[4096];
+        if (getpwuid_r(getuid(), &pwd, buf, sizeof(buf), &found) == 0 && found && found->pw_dir) return found->pw_dir;
+    }
 #endif
     return h ? h : "";
 }

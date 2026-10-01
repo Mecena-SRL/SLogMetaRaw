@@ -16,7 +16,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifdef __linux__
+#include <dirent.h>
+#endif
+
 #include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
 
@@ -24,13 +30,64 @@ extern char** environ;
 
 static const size_t kMaxOutput = 65536;
 
+#ifdef __linux__
+// Resolve starts with LD_LIBRARY_PATH pointing at its own libraries (libstdc++, glib, ...): a system python3 or
+// zenity started with them loads those instead of its own and can fail to start. Keep only the entries that are
+// not Resolve's.
+static std::string withoutResolveLibraries(const std::string& value)
+{
+    std::string out;
+    size_t pos = 0;
+    while (pos <= value.size()) {
+        size_t end = value.find(':', pos);
+        if (end == std::string::npos) end = value.size();
+        const std::string part = value.substr(pos, end - pos);
+        std::string lower = part;
+        for (char& ch : lower) ch = (char)tolower((unsigned char)ch);
+        if (!part.empty() && lower.find("resolve") == std::string::npos) out += (out.empty() ? "" : ":") + part;
+        pos = end + 1;
+    }
+    return out;
+}
+#endif
+
 EnvSnapshot EnvSnapshot::capture()
 {
     EnvSnapshot e;
-    for (char** v = environ; v && *v; ++v)
-        if (strncmp(*v, "PYTHONPATH=", 11) != 0 && strncmp(*v, "PYTHONHOME=", 11) != 0) e.vars.push_back(*v);
+    for (char** v = environ; v && *v; ++v) {
+        if (strncmp(*v, "PYTHONPATH=", 11) == 0 || strncmp(*v, "PYTHONHOME=", 11) == 0) continue;
+#ifdef __linux__
+        if (strncmp(*v, "LD_PRELOAD=", 11) == 0) continue;
+        if (strncmp(*v, "LD_LIBRARY_PATH=", 16) == 0) {
+            const std::string kept = withoutResolveLibraries(*v + 16);
+            if (!kept.empty()) e.vars.push_back("LD_LIBRARY_PATH=" + kept);
+            continue;
+        }
+#endif
+        e.vars.push_back(*v);
+    }
     return e;
 }
+
+#ifdef __linux__
+// The macOS flag POSIX_SPAWN_CLOEXEC_DEFAULT does not exist here: close every other descriptor of the host in
+// the child (a socket or file of Resolve must not stay open in a Python that outlives it).
+static void closeInheritedDescriptors(posix_spawn_file_actions_t* fa, int keepA, int keepB)
+{
+    DIR* dir = opendir("/proc/self/fd");
+    if (!dir) return;
+    const int self = dirfd(dir);
+    std::vector<int> fds;
+    while (const dirent* entry = readdir(dir)) {
+        char* end = nullptr;
+        const long fd = strtol(entry->d_name, &end, 10);
+        if (end == entry->d_name || *end || fd < 3 || fd == self || fd == keepA || fd == keepB) continue;
+        fds.push_back((int)fd);
+    }
+    closedir(dir);
+    for (int fd : fds) posix_spawn_file_actions_addclose(fa, fd);   // a descriptor closed meanwhile is ignored
+}
+#endif
 
 int Child::elapsedMs() const
 {
@@ -56,11 +113,14 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
         if (probe >= 0) { close(probe); errPath = stderrPath; }
     }
     posix_spawn_file_actions_addopen(&fa, 2, errPath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+#ifdef __linux__
+    closeInheritedDescriptors(&fa, fds[0], fds[1]);
+#endif
     posix_spawnattr_t at;
     posix_spawnattr_init(&at);
     // Only 0/1/2 reach the child; its own group, so a timeout also kills what it spawned.
     short spawnFlags = POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_SETSIGDEF;
-#ifdef POSIX_SPAWN_CLOEXEC_DEFAULT   // macOS only: elsewhere the host's descriptors are CLOEXEC by convention
+#ifdef POSIX_SPAWN_CLOEXEC_DEFAULT   // macOS only; Linux closes them one by one (closeInheritedDescriptors)
     spawnFlags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
 #endif
     posix_spawnattr_setflags(&at, spawnFlags);
@@ -212,6 +272,11 @@ bool findPython(PythonCommand& cmd, std::string& error)
     if (lib.empty() && stat((supportDir() + "/lib/slogmetaraw").c_str(), &st) == 0) lib = supportDir() + "/lib";
 #ifdef __APPLE__
     if (lib.empty()) lib = "/Library/Application Support/SLogMetaRaw/lib";
+#else
+    // the .deb / .rpm / .run installs put the library here for every user
+    for (const char* shared : { "/usr/lib/slogmetaraw", "/usr/local/lib/slogmetaraw" }) {
+        if (lib.empty() && stat((std::string(shared) + "/slogmetaraw").c_str(), &st) == 0) lib = shared;
+    }
 #endif
     std::vector<std::string> candidates;
     if (const char* forced = getenv("SLOGMETARAW_PYTHON")) candidates.push_back(forced);
@@ -219,11 +284,19 @@ bool findPython(PythonCommand& cmd, std::string& error)
     candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython");
     candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Resources/ResolvePython/ResolvePython");
     candidates.push_back("/opt/homebrew/bin/python3");
-#else
-    candidates.push_back("/opt/resolve/libs/Fusion/ResolvePython");
 #endif
     candidates.push_back("/usr/bin/python3");
     candidates.push_back("/usr/local/bin/python3");
+    if (const char* path = getenv("PATH")) {   // pyenv, conda, a distribution's /bin ...: first python3 on the PATH
+        const std::string list = path;
+        size_t pos = 0;
+        while (pos <= list.size()) {
+            size_t end = list.find(':', pos);
+            if (end == std::string::npos) end = list.size();
+            if (end > pos) candidates.push_back(list.substr(pos, end - pos) + "/python3");
+            pos = end + 1;
+        }
+    }
     for (const std::string& c : candidates) {
         if (access(c.c_str(), X_OK) == 0) {
             cmd.python = c;
