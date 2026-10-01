@@ -666,9 +666,9 @@ def main(resolve, fusion, bmd, selftest=False):
             parent = details.NewItem()
             parent.Text[0] = t('AVVISI')
             details.AddTopLevelItem(parent)
-            for w in r['warnings']:
+            for w in i18n.warning_texts(r):
                 child = details.NewItem()
-                child.Text[0] = str(t(w))
+                child.Text[0] = w
                 parent.AddChild(child)
             parent.Expanded = True
 

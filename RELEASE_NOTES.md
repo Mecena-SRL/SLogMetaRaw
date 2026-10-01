@@ -1,5 +1,15 @@
 # Changelog
 
+## S-Log MetaRaw 2.1.2
+
+Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
+
+### Script
+
+- **Avvisi della clip tradotti anche quando contengono un valore**: "Campionamento parziale (N fotogrammi campione)",
+  "NRT XML illeggibile" e "Data level" restavano in italiano perché si traducevano dopo aver inserito il numero o il
+  testo. Ora la lettura salva modello e argomenti, e la finestra traduce prima di comporre il messaggio (#24).
+
 ## S-Log MetaRaw 2.1.1
 
 Correzioni di stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta
