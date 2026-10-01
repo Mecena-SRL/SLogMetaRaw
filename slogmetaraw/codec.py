@@ -96,13 +96,13 @@ def parse_avc_sps(nal):
     out['profile'] = AVC_PROFILES.get(profile, str(profile))
     out['level'] = '%g' % (level / 10)
     b.ue()
-    chroma, depth_l, depth_c = 1, 8, 8
+    chroma, depth_l = 1, 8
     if profile in (100, 110, 122, 244, 44, 83, 86, 118, 128, 138, 139, 134, 135):
         chroma = b.ue()
         if chroma == 3:
             b.u(1)
         depth_l = b.ue() + 8
-        depth_c = b.ue() + 8
+        b.ue()   # chroma bit depth
         b.u(1)
         if b.u(1):
             for i in range(8 if chroma != 3 else 12):

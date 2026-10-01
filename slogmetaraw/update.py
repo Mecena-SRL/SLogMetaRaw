@@ -7,19 +7,14 @@ script window and the terminal. Being offline is not an error: check() reports a
 never raises. The program only starts the download of the latest installer: it never
 installs anything.
 
-Notes on the design (keep in mind before "simplifying"):
-
-* The check asks the redirect of /releases/latest instead of the JSON API: GitHub
-  answers 302 with the tag in the Location header, it costs a few hundred bytes and
-  carries no x-ratelimit headers, so the common "I am up to date" case spends nothing
-  of the 60 unauthenticated requests per hour. The API is asked only when there really
-  is something newer.
-* urlopen's timeout does NOT bound DNS resolution: on an unreachable name it can block
-  ~30 seconds. Callers must keep these functions off the thread that paints the window.
+The check follows the /releases/latest redirect (no rate limit); the API is asked only
+when there is something newer. urlopen's timeout does NOT bound DNS resolution (~30 s on
+an unreachable name): keep these functions off the thread that paints the window.
 """
 import json
 import os
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -35,6 +30,8 @@ TAG_PAGE = 'https://github.com/%s/releases/tag/%%s' % REPO
 SUPPORT_DIR = os.path.expanduser('~/Library/Application Support/SLogMetaRaw')
 STATE_PATH = os.path.join(SUPPORT_DIR, 'update.json')
 CACHE_TTL = 60  # seconds: a fresh answer is reused instead of asking GitHub again
+# same rule as the plugin's isTrustedDmgUrl: update.json is writable by anyone, so check before opening
+_TRUSTED_DMG = re.compile(r'https://github\.com/%s/releases/download/[A-Za-z0-9._/+-]+\.(?:dmg|DMG|Dmg)' % re.escape(REPO))
 
 SEMVER_RE = re.compile(r'^v?(\d+)\.(\d+)\.(\d+)$')
 TAG_IN_URL_RE = re.compile(r'/releases/tag/([^/?#]+)')
@@ -105,8 +102,6 @@ def release_details(timeout=6.0):
     request = urllib.request.Request(API_LATEST, headers=_API_HEADERS)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         release = json.load(response)
-    # picked by extension, not by name: the installer may be called something else
-    # one day, and an update that broke over a rename would be a poor trade
     dmg = next((a for a in release.get('assets') or []
                 if (a.get('name') or '').lower().endswith('.dmg')), None) or {}
     return {
@@ -143,13 +138,22 @@ def read_state():
         return {}
 
 
+def trusted_dmg_url(url):
+    return isinstance(url, str) and len(url) < 512 and '..' not in url and bool(_TRUSTED_DMG.fullmatch(url))
+
+
 def write_state(result):
+    tmp = '%s.%d.%d.tmp' % (STATE_PATH, os.getpid(), threading.get_ident())   # the plugin writes it too
     try:
         os.makedirs(SUPPORT_DIR, exist_ok=True)
-        with open(STATE_PATH, 'w', encoding='utf-8') as fh:
+        with open(tmp, 'w', encoding='utf-8') as fh:
             json.dump(result, fh, ensure_ascii=False)
+        os.replace(tmp, STATE_PATH)
     except OSError:
-        pass
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
 
 
 def check(current=None, timeout=6.0):
@@ -163,6 +167,8 @@ def check(current=None, timeout=6.0):
             and bool(cached.get('newer')) == is_newer(result['current'], cached.get('latest') or '')):
         cached['current'] = result['current']   # a just-installed update must not be offered again
         cached['checked_at'] = time.time()
+        if not trusted_dmg_url(cached.get('dmg_url')):
+            cached['dmg_url'] = ''
         return cached
     try:
         tag = latest_tag(timeout=timeout)
@@ -175,7 +181,8 @@ def check(current=None, timeout=6.0):
             result['newer'] = is_newer(result['current'], result['latest'])
             if result['newer']:
                 result.update(release_details(timeout=timeout))
-                if not result['dmg_url']:
+                if not trusted_dmg_url(result['dmg_url']):
+                    result['dmg_url'] = ''
                     # a release without an installer: still tell the truth
                     result['error'] = 'La release %s non allega un installer' % result['latest']
             else:

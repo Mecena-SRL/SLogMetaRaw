@@ -126,7 +126,7 @@ class Dispatcher:
 class UIRegression(unittest.TestCase):
     def setUp(self):
         for target, value in (
-            ('_exit_with_resolve', None),
+            ('_exit_with_resolve', threading.Event()),
             ('osx_utils.resolve_window_bounds', None),
             ('osx_utils.display_bounds', (0, 0, 1920, 1080)),
             ('osx_utils.play_sound', None),

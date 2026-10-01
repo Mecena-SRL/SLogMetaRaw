@@ -13,10 +13,9 @@ META_PRELOAD = 64 * 1024
 
 
 class CountingFile:
-    """Positional reads that count system calls and bytes (the performance tests use both).
+    """Unbuffered positional reads, counted for the performance tests; preload() keeps one window in memory.
 
-    No read-ahead: a buffered file reads st_blksize (1 MiB on exFAT disks) for
-    every 2 KB sample. preload() keeps one explicit window in memory instead.
+    A buffered file would read st_blksize (1 MiB on exFAT) for every 2 KB sample.
     """
 
     def __init__(self, path):

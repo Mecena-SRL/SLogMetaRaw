@@ -59,7 +59,7 @@ def _fmt_fps(x):
 
 def _tc_rate(x):
     """Timecode base as the nearest integer (23.976 -> 24, 29.97 -> 30, 59.94 -> 60)."""
-    return int(round(float(x)))
+    return max(1, int(round(float(x))))
 
 
 def _format_name(container, video_codec, width):
@@ -253,6 +253,8 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     if lay:
         head = min(lay['header_end'], mxf.HEAD_MAX)
         f.preload(0, lay['essence'] if lay['essence'] <= mxf.HEAD_MAX else head)
+    else:
+        f.preload(0, head)   # the NRT and picture-level scans read the same head
     xml = out.pop('_sidecar_xml', None) or mxf.find_nrt_xml(f, head)
     if xml:
         _merge_nrt(out, xml)

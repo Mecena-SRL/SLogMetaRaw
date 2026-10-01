@@ -88,7 +88,7 @@ fi
 if [[ "${SLOGMETARAW_IGNORE_RESOLVE:-0}" != 1 ]]; then
   while pgrep -x "Resolve" >/dev/null 2>&1; do
     echo "DaVinci Resolve è aperto: chiudilo, poi premi Invio (oppure scrivi 'a' per annullare)."
-    read -r a
+    read -r a || { echo "Annullato: non è stato rimosso niente."; finish 1; }
     [[ "$a" == "a" || "$a" == "A" ]] && { echo "Annullato: non è stato rimosso niente."; finish 0; }
   done
 fi
