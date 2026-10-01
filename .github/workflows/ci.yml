@@ -24,7 +24,7 @@ jobs:
   macos:
     # Compiles the plugin (Metal included) and runs the whole suite on a real Mac. It builds with CMake against the
     # public OpenFX SDK: the .dmg release itself is still built on a Mac with Resolve (packaging/build_installer.sh).
-    runs-on: macos-14
+    runs-on: macos-15    # the Metal code uses macOS 15 API (guarded): it needs the macOS 15 SDK to compile
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
