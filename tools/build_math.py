@@ -59,7 +59,8 @@ def amalgamate(texts):
                 continue
             m = INCLUDE.match(line)
             if m:
-                target = os.path.normpath(os.path.join(os.path.dirname(rel), m.group(1)))
+                # MODULES uses '/': normpath would turn it into '\\' on Windows and nothing would match
+                target = os.path.normpath(os.path.join(os.path.dirname(rel), m.group(1))).replace(os.sep, '/')
                 if target not in emitted:
                     sys.exit('build_math: %s includes %s, which is not emitted before it' % (rel, target))
                 continue
@@ -86,7 +87,7 @@ def write_if_changed(path, text):
                 return False
     except OSError:
         pass
-    with open(path, 'w', encoding='utf-8') as fh:
+    with open(path, 'w', encoding='utf-8', newline='\n') as fh:   # same bytes on every system
         fh.write(text)
     return True
 
