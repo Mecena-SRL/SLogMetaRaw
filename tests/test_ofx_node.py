@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
 from plugin_build import BUNDLE_BINARY, SUPPORT_REL, test_bin  # noqa: E402
 
-TRUSTED = 'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
+TRUSTED = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
 
 
 def release():
@@ -152,9 +152,9 @@ class Node(unittest.TestCase):
 
     def test_an_untrusted_installer_is_never_offered(self):
         for url in ('https://github.com/someone/SLogMetaRaw/releases/download/v9/x.dmg',
-                    'http://github.com/ivan-94m/SLogMetaRaw/releases/download/v9/x.dmg',
-                    'https://github.com/ivan-94m/SLogMetaRaw/releases/download/../x.dmg',
-                    'https://github.com/ivan-94m/SLogMetaRaw/releases/download/v9/x.dmg?a=1'):
+                    'http://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x.dmg',
+                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/../x.dmg',
+                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x.dmg?a=1'):
             self.tearDown()
             self.setUp()
             self.update_reader('9.9.9', url)

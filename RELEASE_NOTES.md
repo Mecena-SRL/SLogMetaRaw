@@ -1,5 +1,16 @@
 # Changelog
 
+## S-Log MetaRaw 2.2.1
+
+Correzione del controllo aggiornamenti. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
+
+### Plugin e script
+
+- **"controllo non riuscito" accanto alla versione**: il progetto è passato all'organizzazione Mecena-SRL su GitHub e il
+  controllo cercava ancora le release nel vecchio indirizzo (`ivan-94m/SLogMetaRaw`), che ora rimanda altrove. Il
+  controllo e il link di download dell'installer usano il nuovo indirizzo. Chi ha la 2.0.1, la 2.1.x o la 2.2.0 deve
+  installare questa versione a mano dal sito delle Release: da qui in poi gli aggiornamenti si vedono di nuovo.
+
 ## S-Log MetaRaw 2.2.0
 
 Due funzioni nuove. Nessun valore salvato cambia, l'immagine resta identica.
