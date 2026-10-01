@@ -49,6 +49,7 @@ class LauncherRendering(unittest.TestCase):
             self.assertEqual(list(Path(directory).glob('.slogmetaraw-*')), [])
 
 
+@unittest.skipIf(os.name == 'nt', 'install.sh e un programma bash per macOS')
 class ScriptOnlyInstall(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -118,6 +119,7 @@ class Versioning(unittest.TestCase):
     distribution.xml as well, so the disk image could say 1.1.0 while the installer
     window still said 1.0.1."""
 
+    @unittest.skipIf(os.name == 'nt', 'Windows non ha il bit di esecuzione')
     def test_the_package_scripts_are_executable(self):
         """macOS runs preinstall and postinstall with execve. Without the mode bit it
         fails and PackageKit reports "the file does not exist", which stops the whole

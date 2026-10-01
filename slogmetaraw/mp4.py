@@ -6,6 +6,7 @@ sample tables), so even multi-GB clips cost a few KB of I/O.
 """
 import os
 import struct
+import threading
 
 MAX_BOXES = 4096               # per level: a non-ISO file must not become a long walk
 PRELOAD_MAX = 64 * 1024 * 1024
@@ -19,7 +20,9 @@ class CountingFile:
     """
 
     def __init__(self, path):
-        self._fd = os.open(path, os.O_RDONLY)
+        # O_BINARY: Windows would otherwise translate line endings in the bytes it hands back
+        self._fd = os.open(path, os.O_RDONLY | getattr(os, 'O_BINARY', 0))
+        self._lock = threading.Lock()   # Windows has no pread: seek + read must not interleave
         try:
             self.size = os.fstat(self._fd).st_size
         except OSError:
@@ -34,10 +37,24 @@ class CountingFile:
         n = max(0, min(n, self.size - pos))
         if n == 0 or pos < 0:
             return b''
-        data = os.pread(self._fd, n, pos)
+        data = self._read_range(pos, n)
         self.reads += 1
         self.bytes_read += len(data)
         return data
+
+    def _read_range(self, pos, n):
+        if hasattr(os, 'pread'):
+            return os.pread(self._fd, n, pos)
+        with self._lock:
+            os.lseek(self._fd, pos, os.SEEK_SET)
+            chunks = []
+            while n > 0:
+                chunk = os.read(self._fd, n)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                n -= len(chunk)
+            return b''.join(chunks)
 
     def preload(self, pos, n):
         rel = pos - self._base

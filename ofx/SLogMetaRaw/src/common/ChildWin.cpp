@@ -94,12 +94,9 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
         return false;
     }
     HANDLE job = CreateJobObjectA(nullptr, nullptr);
-    if (job) {
-        JOBOBJECT_EXTENDED_LIMIT_INFORMATION li = {};
-        li.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-        SetInformationJobObject(job, JobObjectExtendedLimitInformation, &li, sizeof(li));
-        AssignProcessToJobObject(job, pi.hProcess);
-    }
+    // No KILL_ON_JOB_CLOSE: the "Rileggi" button leaves a detached writer behind on purpose, and closing
+    // the handle after a normal exit must not take it down. killProcess still ends the whole job.
+    if (job) AssignProcessToJobObject(job, pi.hProcess);
     ResumeThread(pi.hThread);
     CloseHandle(pi.hThread);
     c = Child();
@@ -115,7 +112,7 @@ static void closeHandles(Child& c)
 {
     if (c.pipe) { CloseHandle((HANDLE)c.pipe); c.pipe = nullptr; }
     if (c.process) { CloseHandle((HANDLE)c.process); c.process = nullptr; }
-    if (c.job) { CloseHandle((HANDLE)c.job); c.job = nullptr; }   // KILL_ON_JOB_CLOSE
+    if (c.job) { CloseHandle((HANDLE)c.job); c.job = nullptr; }
 }
 
 // Non-blocking: reads what is there; closes the pipe at EOF.
