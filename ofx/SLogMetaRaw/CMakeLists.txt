@@ -5,7 +5,7 @@
 #   cmake --build build --config Release
 #   cmake --install build --prefix <dir>        # <dir>/SLogMetaRaw.ofx.bundle
 #
-# The OpenFX SDK (Support library + headers) is fetched at the pinned tag unless OFX_SDK_DIR points to a
+# The OpenFX SDK (Support library + headers) is fetched at a pinned commit unless OFX_SDK_DIR points to a
 # local copy (e.g. the one in Resolve's Developer folder).
 cmake_minimum_required(VERSION 3.20)
 project(SLogMetaRaw LANGUAGES CXX)
@@ -37,13 +37,13 @@ set(SLOGMETARAW_VERSION "${CMAKE_MATCH_1}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${REPO_ROOT}/slogmetaraw/__init__.py")
 
 # ---- OpenFX SDK
-set(OFX_SDK_DIR "" CACHE PATH "OpenFX SDK root (contains include/ and Support/); fetched from GitHub when empty")
+set(OFX_SDK_DIR "" CACHE PATH "OpenFX SDK root (contains include/ and Support/); fetched from GitHub (pinned commit) when empty")
 if(NOT OFX_SDK_DIR)
   include(FetchContent)
   FetchContent_Declare(openfx
     GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/openfx.git
-    GIT_TAG OFX_Release_1_4_TAG
-    GIT_SHALLOW ON)
+    # the commit the plugin was tested with; the 1.4 release tag lacks the EXPORT/LOCAL macros of its Support library
+    GIT_TAG e40728885390ec16276d11e00025de9b4282060c)
   FetchContent_GetProperties(openfx)
   if(NOT openfx_POPULATED)
     FetchContent_Populate(openfx)
