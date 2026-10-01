@@ -209,6 +209,40 @@ class UIRegression(unittest.TestCase):
         process.wait.assert_called_once()
         self.manager.timer.Stop.assert_called()
 
+    def test_copy_to_clips_pairs_in_order_and_needs_the_tick(self):
+        def clip(uid, name, path):
+            c = mock.Mock()
+            c.GetUniqueId.return_value = uid
+            c.GetName.return_value = name
+            c.GetClipProperty.return_value = path
+            return c
+
+        sony = [clip('s2', 'C0002.MP4', '/C0002.MP4'), clip('s1', 'C0001.MP4', '/C0001.MP4')]
+        prores = [clip('p1', 'A001.mov', '/A001.mov'), clip('p2', 'A002.mov', '/A002.mov')]
+        copied = []
+
+        def interact():
+            win = self.dispatcher.window
+            items = win.GetItems()
+            self.pool.GetSelectedClips.return_value = sony
+            win.On.PairSources.Clicked(None)
+            self.pool.GetSelectedClips.return_value = prores
+            win.On.PairTargets.Clicked(None)
+            self.assertEqual(items['Pairs'].TopLevelItemCount(), 2)
+            self.assertEqual(items['Pairs'].rows[0].Text[0], 'C0001.MP4')
+            win.On.PairCopy.Clicked(None)
+            self.assertIn('Spunta', items['Status'].Text)
+            self.assertEqual(copied, [])
+            items['PairEnable'].Checked = True
+            win.On.PairCopy.Clicked(None)
+            self.assertEqual(copied, [])   # the originals were never read
+            self.assertEqual(items['Pairs'].rows[0].Text[2], 'originale non letto')
+
+        self.dispatcher.run = interact
+        self.project.GetName.return_value = None
+        with mock.patch.object(ui.resolve_io, 'apply_copy', side_effect=lambda *a, **k: copied.append(a)):
+            self.launch()
+
     def test_update_check_runs_on_its_own_timer(self):
         """A slow GitHub must not lock the window: reading and writing stay available while the
         check runs, and its answer arrives on the update timer."""

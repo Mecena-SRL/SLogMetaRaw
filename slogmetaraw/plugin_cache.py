@@ -66,7 +66,7 @@ def _join(*parts):
     return ' · '.join(str(p) for p in parts if p not in (None, ''))
 
 
-def build_record(r):
+def _record(r):
     """Flat record with the values the plugin shows and uses (strings and numbers only)."""
     m, d = r['meta'], r['display']
     k, tint, ei, estimated = camera.shot_values(m)
@@ -154,6 +154,19 @@ def build_record(r):
         'samples_planned': int(sampling.get('planned') or 0),
         'partial': partial,
     }
+
+
+def build_record(r):
+    """The record of one clip; values copied from a Sony clip keep the data level neutral."""
+    rec = _record(r)
+    if r.get('copied_from'):
+        # Values copied from a Sony clip onto another recording (e.g. an external recorder's
+        # ProRes): the data level belongs to the Sony file, so the node leaves it alone.
+        rec.update(level_required=-1, level_host=-1, level_declared=-1, level_gain=1.0,
+                   level_offset=0.0, level_fix=0, data_level='',
+                   level_note='copiato da %s: data level non toccato' % r['copied_from'],
+                   file=_join(os.path.basename(r['path']), 'copiato da %s' % r['copied_from']))
+    return rec
 
 
 def _complete_record_at(path, rec):

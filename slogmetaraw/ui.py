@@ -214,6 +214,8 @@ def main(resolve, fusion, bmd, selftest=False):
         'project': None,    # name of the project the results were read from
         'clips': {},        # uid -> MediaPoolItem (used only while writing, on the UI thread)
         'results': {},      # uid -> result of the read
+        'pair_src': [],     # [(uid, name)] Sony clips, in recording order
+        'pair_dst': [],     # [(uid, clip, name)] clips that receive the values
         'running': None,    # None | 'read' | 'write'
         'done': [],         # rows produced by the reader thread, drained by the timer
         'total': 0,
@@ -296,6 +298,19 @@ def main(resolve, fusion, bmd, selftest=False):
                      'Events': {'CurrentItemChanged': True, 'ItemClicked': True}}),
             ui.Tree({'ID': 'Details', 'Weight': 2}),
         ]),
+        # copy onto clips without metadata of their own (ProRes of an external recorder)
+        ui.HGroup({'Weight': 0}, [
+            ui.CheckBox({'ID': 'PairEnable', 'Weight': 0, 'Text': t('Copia su clip senza metadata'),
+                         'ToolTip': t('Per i ProRes di un registratore esterno: copia i valori delle clip Sony '
+                                      'appena lette. Una tantum, solo su richiesta.')}),
+            ui.Button({'ID': 'PairSources', 'Text': t('Originali = selezione'), 'Weight': 0,
+                       'ToolTip': t('Le clip Sony selezionate nel Media Pool, già lette con "Leggi metadata"')}),
+            ui.Button({'ID': 'PairTargets', 'Text': t('Registratore = selezione'), 'Weight': 0,
+                       'ToolTip': t('Le clip da riempire (es. ProRes), selezionate nel Media Pool')}),
+            ui.Button({'ID': 'PairCopy', 'Text': t('Copia sulle clip'), 'Weight': 0}),
+            ui.Label({'ID': 'PairInfo', 'Weight': 1, 'Text': ''}),
+        ]),
+        ui.Tree({'ID': 'Pairs', 'Weight': 0, 'MinimumSize': [100, 90], 'MaximumSize': [4000, 110]}),
         ui.HGroup({'Weight': 0}, [
             ui.Label({'ID': 'Status', 'Weight': 1, 'Text': ''}),
         ]),
@@ -315,6 +330,11 @@ def main(resolve, fusion, bmd, selftest=False):
     details.ColumnCount = 2
     details.SetHeaderLabels([t('Campo (come Catalyst)'), t('Valore')])
     details.ColumnWidth[0] = 230
+    pairs_tree = itm['Pairs']
+    pairs_tree.ColumnCount = 3
+    pairs_tree.SetHeaderLabels([t('Originale Sony'), t('Registratore esterno'), t('Stato')])
+    for i, cw in enumerate((280, 280, 200)):
+        pairs_tree.ColumnWidth[i] = cw
 
     timer = None
 
@@ -327,7 +347,7 @@ def main(resolve, fusion, bmd, selftest=False):
 
     def set_running(mode):
         state['running'] = mode
-        for key in ('Source', 'Read', 'Write', 'Export'):
+        for key in ('Source', 'Read', 'Write', 'Export', 'PairSources', 'PairTargets', 'PairCopy'):
             itm[key].Enabled = mode is None
         itm['Version'].Enabled = mode is None and not state['updating']
 
@@ -643,6 +663,75 @@ def main(resolve, fusion, bmd, selftest=False):
         status(msg)
         osx_utils.play_sound(state['write_broken'] == 0 and state['write_failed'] == 0)
 
+    # --- copy onto clips without metadata ---------------------------------------------
+
+    def _selected():
+        project = current_project()
+        if project is None:
+            return []
+        clips = project.GetMediaPool().GetSelectedClips() or []
+        return sorted(clips, key=lambda c: resolve_io.natural_key(c.GetName()))
+
+    def _show_pairs(states=None):
+        pairs_tree.Clear()
+        pairs, leftover = resolve_io.pair_clips(state['pair_src'], state['pair_dst'])
+        for i, ((_, sname), (_, _, dname)) in enumerate(pairs):
+            item = pairs_tree.NewItem()
+            item.Text[0], item.Text[1] = sname, dname
+            item.Text[2] = (states or {}).get(i, '')
+            pairs_tree.AddTopLevelItem(item)
+        info = t('%d coppie') % len(pairs)
+        if leftover:
+            info += t(' · %d clip senza partner (numero diverso)') % leftover
+        itm['PairInfo'].Text = info if (state['pair_src'] or state['pair_dst']) else ''
+
+    def on_pair_sources(ev):
+        state['pair_src'] = [(c.GetUniqueId(), c.GetName()) for c in _selected()]
+        _show_pairs()
+        status(t('Originali: %d clip, in ordine di nome. La prima è l\'ancora, le altre seguono in sequenza.')
+               % len(state['pair_src']))
+
+    def on_pair_targets(ev):
+        state['pair_dst'] = [(c.GetUniqueId(), c, c.GetName()) for c in _selected()]
+        _show_pairs()
+        status(t('Registratore: %d clip, in ordine di nome. La prima è l\'ancora, le altre seguono in sequenza.')
+               % len(state['pair_dst']))
+
+    def on_pair_copy(ev):
+        if not itm['PairEnable'].Checked:
+            status(t('Spunta "Copia su clip senza metadata" per abilitare la copia.'))
+            return
+        project = current_project()
+        if project is None or project.GetName() != state['project']:
+            status(t('Il progetto è cambiato: premi di nuovo "Leggi metadata".'))
+            return
+        pairs, _ = resolve_io.pair_clips(state['pair_src'], state['pair_dst'])
+        if not pairs:
+            status(t('Scegli prima gli originali e le clip del registratore.'))
+            return
+        done, states = 0, {}
+        for i, ((uid, sname), (_, target, dname)) in enumerate(pairs):
+            r = state['results'].get(uid)
+            path = resolve_io.any_clip_path(target)
+            if r is None:
+                states[i] = t('originale non letto')
+            elif path.lower().endswith(resolve_io.VIDEO_EXTS):
+                states[i] = t('saltata: è una clip Sony')
+            elif not path:
+                states[i] = t('saltata: file non trovato')
+            else:
+                try:
+                    resolve_io.apply_copy(target, r, sname, overwrite=itm['Overwrite'].Checked,
+                                          add_tags=itm['Tags'].Checked)
+                    states[i] = t('copiata')
+                    done += 1
+                except Exception:
+                    _log_exception('Metadata copy')
+                    states[i] = t('errore (vedi console)')
+        _show_pairs(states)
+        status(t('Metadata copiati su %d clip su %d.') % (done, len(pairs)))
+        osx_utils.play_sound(done == len(pairs))
+
     # --- details / export -----------------------------------------------------
 
     def show_details(uid):
@@ -739,6 +828,9 @@ def main(resolve, fusion, bmd, selftest=False):
     win.On.Read.Clicked = guard(on_read)
     win.On.Write.Clicked = guard(on_write)
     win.On.Export.Clicked = guard(on_export)
+    win.On.PairSources.Clicked = guard(on_pair_sources)
+    win.On.PairTargets.Clicked = guard(on_pair_targets)
+    win.On.PairCopy.Clicked = guard(on_pair_copy)
     win.On.Clips.CurrentItemChanged = guard(on_select)
     win.On.Clips.ItemClicked = guard(on_select)
     # the title bar reaches close_window by event or through the watchdog; the
