@@ -38,15 +38,16 @@ def capture_space(meta):
 
 
 def ltc_to_tc(value):
-    """NRT LTC value 'FFSSMMHH' (BCD, with flag bits) -> 'HH:MM:SS:FF'."""
+    """NRT LTC value 'FFSSMMHH' (BCD, with flag bits) -> 'HH:MM:SS:FF', or 'HH:MM:SS;FF' when drop-frame."""
     if not value or len(value) != 8:
         return None
     try:
         ff, ss, mm, hh = (int(value[i:i + 2], 16) for i in (0, 2, 4, 6))
     except ValueError:
         return None
+    sep = ';' if ff & 0x40 else ':'
     ff, ss, mm, hh = ff & 0x3F, ss & 0x7F, mm & 0x7F, hh & 0x3F
-    return '%02x:%02x:%02x:%02x' % (hh, mm, ss, ff)
+    return '%02x:%02x:%02x%s%02x' % (hh, mm, ss, sep, ff)
 
 
 def parse(xml_bytes):

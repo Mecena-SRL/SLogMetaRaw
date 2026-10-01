@@ -326,15 +326,26 @@ def _read_mxf(f, out, interval, max_samples, deadline):
     _sample(out, _coarse_to_fine(list(range(n + 1))), read_window, deadline, windows + 1, frames)
 
 
+def _dropped(fps, drop):
+    """Frame numbers skipped each minute (except every tenth) in drop-frame timecode."""
+    return fps // 15 if drop and fps % 30 == 0 else 0
+
+
 def tc_to_frames(tc, fps):
-    hh, mm, ss, ff = (int(x) for x in tc.split(':'))
-    return ((hh * 60 + mm) * 60 + ss) * fps + ff
+    drop = _dropped(fps, ';' in tc)
+    hh, mm, ss, ff = (int(x) for x in re.split('[:;]', tc))
+    minutes = hh * 60 + mm
+    return (minutes * 60 + ss) * fps + ff - drop * (minutes - minutes // 10)
 
 
-def frames_to_tc(n, fps):
+def frames_to_tc(n, fps, drop_frame=False):
+    drop = _dropped(fps, drop_frame)
+    if drop:
+        tens, rest = divmod(n, fps * 600 - 9 * drop)
+        n += 9 * drop * tens + (drop * ((rest - drop) // (fps * 60 - drop)) if rest > drop else 0)
     ff = n % fps
     s = n // fps
-    return '%02d:%02d:%02d:%02d' % ((s // 3600) % 24, (s // 60) % 60, s % 60, ff)
+    return '%02d:%02d:%02d%s%02d' % ((s // 3600) % 24, (s // 60) % 60, s % 60, ';' if drop else ':', ff)
 
 
 def _normalise(out):
@@ -346,10 +357,11 @@ def _normalise(out):
     if meta.get('start_tc') and frames:
         # End TC as Resolve/Catalyst show it (exclusive) and duration as timecode
         try:
-            meta['end_tc'] = frames_to_tc(tc_to_frames(meta['start_tc'], tc_fps) + frames, tc_fps)
-            meta['duration_tc'] = frames_to_tc(frames, tc_fps)
+            df = ';' in meta['start_tc']
+            meta['end_tc'] = frames_to_tc(tc_to_frames(meta['start_tc'], tc_fps) + frames, tc_fps, df)
+            meta['duration_tc'] = frames_to_tc(frames, tc_fps, df)
         except (ValueError, TypeError):
-            pass   # a start timecode that is not HH:MM:SS:FF
+            pass   # a start timecode that is not HH:MM:SS:FF (or ;FF)
     for e in out.get('rtmd', []):
         if e['key'] and e['value'] is not None and e['key'] not in meta:
             meta[e['key']] = e['value']
