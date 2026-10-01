@@ -1,5 +1,21 @@
 # Changelog
 
+## S-Log MetaRaw 2.1.2
+
+Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
+
+### Script
+
+- **Avvisi della clip tradotti anche quando contengono un valore**: "Campionamento parziale (N fotogrammi campione)",
+  "NRT XML illeggibile" e "Data level" restavano in italiano perché si traducevano dopo aver inserito il numero o il
+  testo. Ora la lettura salva modello e argomenti, e la finestra traduce prima di comporre il messaggio (#24).
+
+### Lettura dei metadata
+
+- **Timecode drop-frame (29,97/59,94 DF)**: End TC e Length si calcolano con la numerazione drop-frame quando il
+  timecode della clip ha il flag DF, invece di contare non-drop (18 frame di errore ogni 10 minuti). Il timecode DF
+  si mostra con il `;` prima dei frame, come in Resolve (#24).
+
 ## S-Log MetaRaw 2.1.1
 
 Correzioni di stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta
@@ -16,6 +32,12 @@ identica.
 - **Nessun processo "zombie" passando da una clip all'altra**: una lettura dei metadata ancora in corso quando si
   cambia clip ora viene raccolta (o fermata dopo 15 s) invece di restare come processo morto con una pipe aperta per
   tutta la sessione di Resolve.
+- **Detail su CPU con Dehaze: due piani a piena risoluzione in meno** (circa 270 MB in 8K): la luminanza si aggiorna
+  sul posto e i canali della trasmissione usano un piano libero in quel momento. Immagine identica al bit.
+- **Detail su CPU, formati diversi in alternanza** (per esempio viewer HD e render 8K): ogni frame prende il set di
+  lavoro della sua dimensione, invece di prendere quello grande e buttarlo, per poi riallocarlo al frame successivo.
+- **Un nodo salvato da una versione più recente** con uno spazio colore fuori tabella non si dichiara più "ingresso
+  noto" mentre decodifica con i valori di ripiego.
 - Tolto codice non più usato.
 
 ### Lettura dei metadata
@@ -29,6 +51,12 @@ identica.
 - **MXF senza indice**: un pacchetto ANC con lunghezza danneggiata non nasconde più i pacchetti validi che lo seguono;
   la scansione non ricopia più il buffer a ogni blocco letto.
 - **Box `iloc` con estensioni a larghezza zero** non tengono più la CPU occupata per minuti.
+- **`Duration` o timecode NRT danneggiati** (`60x`, cifre non valide, numeri enormi) fanno perdere solo quel campo,
+  non modello, timecode e gamma della clip.
+- **MXF senza indice**: un pacchetto ANC con lunghezza che supera la fine del file (o della finestra di scansione) non
+  nasconde più il pacchetto valido che lo segue.
+- **Timecode con base non valida** (`tcFps` 0 o assurdo) non fa più fallire la lettura della clip.
+- MXF senza partition pack: l'inizio del file si legge una volta sola invece di due.
 
 ### Script
 
@@ -37,6 +65,19 @@ identica.
 - Tolta la voce "Shade" dai Kelvin dei preset di luce: la camera non la registra mai, quindi non veniva mai usata (#24).
 - **Plugin e script che scrivono la stessa clip insieme** non si contendono più lo stesso file temporaneo della scheda.
 - **Dopo un aggiornamento** la finestra non ripropone come novità la versione appena installata.
+- **Clip in cartelle con lettere accentate** (`Città`, `Café`…) non interrompono più la lettura di tutte le clip: il
+  lettore scambia percorsi e risultati sempre in UTF-8, qualunque sia la lingua di sistema di Resolve.
+- **L'ultima clip letta non sparisce più** dall'elenco quando la lettura finisce proprio tra due aggiornamenti della
+  finestra.
+- **Script lanciato da dentro Resolve** (menu Workspace): il controllo "Resolve è stato chiuso?" non parte più nel
+  processo di Resolve, dove poteva chiudere Resolve stesso; e si ferma quando la finestra si chiude.
+- **Link di download controllato**: la finestra apre solo installer pubblicati nelle Release del progetto, come già
+  faceva il plugin; `update.json` si scrive in modo atomico.
+- **Lingua della finestra**: una lingua di sistema senza variante regionale (per esempio `en` prima di `it-IT`) ora
+  viene riconosciuta.
+- Traduzioni spagnole, portoghesi e cinesi delle voci dei dettagli che mancavano (stabilizzatore, filtro ND, preset
+  di luce, frame rate…).
+- Il disinstallatore non resta più in attesa all'infinito se viene eseguito senza terminale mentre Resolve è aperto.
 
 ## S-Log MetaRaw 2.1.0
 

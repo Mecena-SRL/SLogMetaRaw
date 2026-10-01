@@ -54,6 +54,9 @@ def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET):
     """Streaming mode used by the script window (ui.py): one clip path per line on
     stdin, one JSON result per line on stdout. A clip that hangs can be killed from
     outside (the window enforces a per-clip timeout), so the scan always finishes."""
+    # inside Resolve the locale is often ASCII: paths and metadata travel as UTF-8 regardless
+    sys.stdin.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding='utf-8')
     for line in sys.stdin:
         path = line.strip()
         if not path:

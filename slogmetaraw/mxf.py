@@ -273,9 +273,10 @@ def find_rtmd(f, pos, window=WINDOW):
                 start = i + 16
                 continue
             if vs + length > len(buf):
-                if vs + length < window + CHUNK:   # the scan can still reach its end
+                if (len(buf) < window and base + len(buf) < f.size
+                        and vs + length < min(window + CHUNK, f.size - base + 1)):
                     break  # need more data
-                start = i + 16   # a damaged length: try the next packet
+                start = i + 16   # a damaged length, or one past what the scan can read: try the next packet
                 continue
             payload = _anc_value(bytes(buf[vs:vs + length]))
             if payload:
@@ -328,10 +329,7 @@ def find_nrt_xml(f, head=WINDOW):
     return None
 
 
-# --- picture essence descriptor: the only place an MXF states its code range ---
-# SMPTE ST 377-1 CDCI/RGBA essence descriptors carry the reference levels as local
-# tags in the header metadata. Sony XAVC MXF writes them, and they are the only
-# declaration of range an MXF has (there is no colr box and no VUI to trust here).
+# --- picture essence descriptor (SMPTE ST 377-1): the only place an MXF states its code range ---
 CDCI_KEY = bytes.fromhex('060e2b34025301010d01010101012800')  # CDCIEssenceDescriptor
 RGBA_KEY = bytes.fromhex('060e2b34025301010d01010101012900')  # RGBAEssenceDescriptor
 # local tag -> key, as registered in the SMPTE dictionary

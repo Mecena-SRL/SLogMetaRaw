@@ -86,16 +86,19 @@ def _row_values(name, r):
 def _exit_with_resolve():
     """Resolve runs this script in a separate process. If Resolve quits (or crashes)
     while the window is open, that process is left orphaned and can get in the way of
-    the next launch, so it follows its parent out."""
+    the next launch, so it follows its parent out. Set the returned event to stop."""
+    stop = threading.Event()
+    if os.path.basename(sys.executable or '') == 'Resolve':
+        return stop   # a Workspace script runs inside Resolve: its parent is not Resolve
     parent = os.getppid()
 
     def watch():
-        while True:
-            time.sleep(2)
+        while not stop.wait(2):
             if os.getppid() != parent:   # reparented to launchd: Resolve is gone
                 os._exit(0)
 
     threading.Thread(target=watch, daemon=True).start()
+    return stop
 
 
 def _reader_python():
@@ -149,7 +152,7 @@ def _spawn_reader():
                  'runpy.run_module("slogmetaraw", run_name="__main__")')
     return subprocess.Popen([_reader_python(), '-c', bootstrap, lib, '--helper'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL, text=True, bufsize=1)
+                            stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1)
 
 
 def _read_result(proc, deadline, cancelled=None):
@@ -200,7 +203,7 @@ def _stop_reader(proc):
 
 
 def main(resolve, fusion, bmd, selftest=False):
-    _exit_with_resolve()
+    watcher = _exit_with_resolve()
     ui = fusion.UIManager
     disp = bmd.UIDispatcher(ui)
     def current_project():
@@ -467,7 +470,7 @@ def main(resolve, fusion, bmd, selftest=False):
                     proc.stdin.write(path + '\n')
                     proc.stdin.flush()
                     msg = _read_result(proc, time.monotonic() + limit, reader_cancelled)
-                except (BrokenPipeError, OSError):
+                except (OSError, UnicodeError):
                     msg = None
                 if msg is None:
                     _stop_reader(proc)
@@ -513,6 +516,7 @@ def main(resolve, fusion, bmd, selftest=False):
             state['finished'] = True
 
     def _drain_read():
+        finished = state['finished']   # read first: a row added after the loop is drained next tick
         d = state['done']
         while done_idx[0] < len(d):
             row = d[done_idx[0]]
@@ -524,7 +528,7 @@ def main(resolve, fusion, bmd, selftest=False):
         total = state['total']
         n = state['processed']
         set_progress(t('Lettura metadata… %d/%d') % (n, total), int(n * 100 / total) if total else 100)
-        if state['finished']:
+        if finished:
             _finalize_read()
 
     def _finalize_read():
@@ -662,9 +666,9 @@ def main(resolve, fusion, bmd, selftest=False):
             parent = details.NewItem()
             parent.Text[0] = t('AVVISI')
             details.AddTopLevelItem(parent)
-            for w in r['warnings']:
+            for w in i18n.warning_texts(r):
                 child = details.NewItem()
-                child.Text[0] = str(t(w))
+                child.Text[0] = w
                 parent.AddChild(child)
             parent.Expanded = True
 
@@ -840,6 +844,7 @@ def main(resolve, fusion, bmd, selftest=False):
         info = {'status': itm['Status'].Text, 'rows': clips_tree.TopLevelItemCount(),
                 'details': details.TopLevelItemCount()}
         win.Hide()
+        watcher.set()
         return info
     if WATCHDOG_OK:
         try:
@@ -849,6 +854,7 @@ def main(resolve, fusion, bmd, selftest=False):
     try:
         disp.RunLoop()
     finally:
+        watcher.set()
         reader_cancelled.set()
         _stop_timer()
         _stop_update_timer()

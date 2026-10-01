@@ -166,6 +166,27 @@ class Damaged(unittest.TestCase):
         bad = mxf.ANC_KEY + b'\x84\x7f\xff\xff\xff' + bytes(40)
         self.assertTrue(mxf.find_rtmd(Buf(bad + bytes(1000) + good), 0))
 
+    def test_a_damaged_anc_length_past_the_scan_end_does_not_hide_the_next_packet(self):
+        class Buf:
+            def __init__(self, data):
+                self.data, self.size = data, len(data)
+
+            def read_at(self, pos, n):
+                return self.data[pos:pos + n]
+        good = fx._anc(fx.rtmd_payload(0))
+        bad = mxf.ANC_KEY + bytes(3) + b'\x83\x01\x00\x00' + bytes(40)   # 64 KB: past the end of the file
+        self.assertTrue(mxf.find_rtmd(Buf(bad + bytes(1000) + good), 0))
+
+    def test_damaged_nrt_numbers_lose_only_their_field(self):
+        from slogmetaraw import nrt
+        xml = fx.NRT_XML.format(frames=60)
+        for bad in (xml.replace('value="60"', 'value="60x"'), xml.replace('value="60"', 'value="%s"' % ('9' * 400))):
+            out = nrt.parse(bad.encode())
+            self.assertNotIn('duration_frames', out)
+            self.assertTrue(out.get('model'))
+        self.assertIsNone(nrt.ltc_to_tc('0000001G'))
+        self.assertEqual(extract._tc_rate(0.4), 1)
+
     def test_a_bad_mxf_component_depth_is_ignored(self):
         from slogmetaraw import datalevel
         for depth in (1, 3, 64, 1 << 40):
