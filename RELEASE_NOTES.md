@@ -1,5 +1,20 @@
 # Changelog
 
+## S-Log MetaRaw 2.2.2
+
+Correzioni di stabilità e memoria del nodo su GPU (Metal). Nessun controllo cambia, nessun valore salvato cambia,
+l'immagine resta identica.
+
+### Plugin
+
+- **Fotogramma fallito invece di un'immagine sbagliata quando la GPU è senza memoria**: se il Mac non riesce ad
+  allocare un piano di lavoro del Detail, o Resolve non dà un command buffer, il nodo segnala l'errore del fotogramma
+  invece di lanciare i kernel su un buffer mancante (#24).
+- **Niente ricompilazioni a ripetizione se i kernel Metal non compilano**: un errore di compilazione della libreria si
+  ricorda e non si ripete per ogni kernel sotto il lock globale (#24).
+- **Detail su Metal più leggero**: con Dehaze la luma si aggiorna sul posto e il piano del veil-ratio riusa quello
+  temporaneo, come su CPU: due piani a piena risoluzione in meno per set (~280 MB in 8K) (#24).
+
 ## S-Log MetaRaw 2.2.1
 
 Correzione del controllo aggiornamenti. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.

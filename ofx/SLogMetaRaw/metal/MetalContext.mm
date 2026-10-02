@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -13,17 +14,18 @@ id<MTLComputePipelineState> metalPipeline(id<MTLDevice> device, const char* sour
 {
     static std::mutex mutex;
     static std::map<std::pair<id<MTLDevice>, std::string>, id<MTLComputePipelineState>> cache;
-    static std::map<std::pair<id<MTLDevice>, std::string>, int> failures;
+    static std::set<std::pair<id<MTLDevice>, std::string>> failed;
     std::lock_guard<std::mutex> lock(mutex);
     const auto key = std::make_pair(device, std::string(function));
     auto it = cache.find(key);
     if (it != cache.end()) return it->second;
-    if (failures[key] >= 1) return nil;   // compiled once and failed: the source will not change
+    if (failed.count(key)) return nil;   // compiled once and failed: the source will not change
 
-    // one library per source: every kernel of a node comes from the same text, compiled once
+    // one library per source: every kernel of a node comes from the same text, compiled once (failures too)
     static std::map<std::pair<id<MTLDevice>, const char*>, id<MTLLibrary>> libraries;
     const auto libKey = std::make_pair(device, source);
     auto lib = libraries.find(libKey);
+    if (lib != libraries.end() && !lib->second) return nil;
     id<MTLLibrary> library = lib != libraries.end() ? lib->second : nil;
     NSError* err = nil;
     if (!library) {
@@ -40,7 +42,7 @@ id<MTLComputePipelineState> metalPipeline(id<MTLDevice> device, const char* sour
         }
         const std::string text = std::string(kMetalPrelude) + source;
         library = [device newLibraryWithSource:@(text.c_str()) options:options error:&err];
-        if (library) libraries[libKey] = library;
+        libraries[libKey] = library;
     }
     id<MTLComputePipelineState> pipeline = nil;
     if (library) {
@@ -50,7 +52,7 @@ id<MTLComputePipelineState> metalPipeline(id<MTLDevice> device, const char* sour
     if (!pipeline) {
         fprintf(stderr, "S-Log MetaRaw: kernel Metal %s non compilato: %.2000s\n", function,
                 err ? err.localizedDescription.UTF8String : "funzione mancante");
-        ++failures[key];
+        failed.insert(key);
         return nil;
     }
     cache[key] = pipeline;
