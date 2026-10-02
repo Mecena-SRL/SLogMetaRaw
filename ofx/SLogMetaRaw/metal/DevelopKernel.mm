@@ -15,6 +15,7 @@ bool RunDevelopKernel(void* p_CmdQ, int p_Width, int p_Height, int p_RowPixels, 
     id<MTLCommandBuffer> commands = [queue commandBuffer];
     commands.label = @"SLogMetaRawDevelop";
     id<MTLComputeCommandEncoder> encoder = [commands computeCommandEncoder];
+    if (!encoder) return false;
     [encoder setComputePipelineState:pipeline];
     const NSUInteger width = pipeline.threadExecutionWidth;
     [encoder setBuffer:src offset:0 atIndex:0];
