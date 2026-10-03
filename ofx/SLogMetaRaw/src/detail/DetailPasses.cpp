@@ -10,9 +10,16 @@ namespace {
 
 using Plane = std::vector<float>;
 
-void ensure(Plane& v, size_t n)
+template <typename V>
+void ensure(V& v, size_t n)
 {
     if (v.size() < n) v.resize(n);
+}
+
+template <typename V>
+void release(V& v)   // planes this frame does not use go back to the system (J alone is 400 MB in 8K)
+{
+    V().swap(v);
 }
 
 // The 1D filters run on `lanes` adjacent lines at once (lane l at in[j * stride + l]): the vertical pass
@@ -166,7 +173,15 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
     ensure(s.L0, full);
     if (dehaze) {   // Dehaze keeps the decoded source here, then dehazes it in place
         ensure(s.J, full * 3);
-        if (s.finite.size() < full) s.finite.resize(full);
+        ensure(s.finite, full);
+    } else {
+        release(s.J);
+        release(s.finite);
+    }
+    if (p.texture == 0.0f) {
+        release(s.G1);
+        release(s.Lt);
+        release(s.G2);
     }
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)

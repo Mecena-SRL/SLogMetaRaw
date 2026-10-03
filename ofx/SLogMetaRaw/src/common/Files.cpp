@@ -23,6 +23,14 @@
 #include <sstream>
 #include <vector>
 
+#ifdef _WIN32
+using StatBuf = struct _stat64;   // MSVC's plain stat() fails on files over 2 GiB
+static int statPath(const std::string& path, StatBuf* st) { return _stat64(path.c_str(), st); }
+#else
+using StatBuf = struct stat;
+static int statPath(const std::string& path, StatBuf* st) { return stat(path.c_str(), st); }
+#endif
+
 std::string homeDir()
 {
 #ifdef _WIN32
@@ -127,8 +135,8 @@ std::string cacheRecordPath(const std::string& clipPath)
 // A cloud placeholder (SF_DATALESS) downloads when read: minutes of frozen UI and gigabytes.
 bool clipIsReadable(const std::string& path, std::string& why)
 {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0) { why = "file non trovato"; return false; }
+    StatBuf st;
+    if (statPath(path, &st) != 0) { why = "file non trovato"; return false; }
 #ifdef __APPLE__
     if (st.st_flags & 0x40000000 /* SF_DATALESS */) { why = "il file non e in locale (non scaricato)"; return false; }
 #endif
@@ -153,8 +161,8 @@ bool makeDirs(const std::string& path)
 
 bool fileExists(const std::string& path)
 {
-    struct stat st;
-    return stat(path.c_str(), &st) == 0;
+    StatBuf st;
+    return statPath(path, &st) == 0;
 }
 
 bool removeFile(const std::string& path) { return remove(path.c_str()) == 0; }
