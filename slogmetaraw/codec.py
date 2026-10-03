@@ -153,7 +153,7 @@ def _hevc_ptl(b, max_sub_layers_minus1, out):
     b.u(43)
     b.u(1)
     level = b.u(8)
-    out['profile'] = HEVC_PROFILES.get(profile, 'RExt' if profile == 4 else str(profile))
+    out['profile'] = HEVC_PROFILES.get(profile, str(profile))
     out['level'] = '%g' % (level / 30)
     sub_prof, sub_lev = [], []
     for _ in range(max_sub_layers_minus1):
@@ -255,7 +255,7 @@ def parse_hevc_sps(nal):
     return out
 
 
-def parse_sample_entry(fourcc, entry):
+def parse_sample_entry(entry):
     """entry: full visual sample entry bytes (size+fourcc+...)."""
     info = {}
     # child boxes start after the 86-byte visual sample entry header
