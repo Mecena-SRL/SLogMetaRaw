@@ -178,16 +178,23 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     const int ngrid = (int)grid;
 
     id<MTLBuffer> L0 = P("L0", full), tmpFull = P("tmpFull", full), tmpGrid = P("tmpGrid", std::max(grid, (size_t)w * H));
-    id<MTLComputePipelineState> ps = e.use("dt_luma");
-    e.buf(src, 0); e.buf(L0, 1); e.bytes(frame, 2); e.bytes(p, 3); e.grid2(ps, W, H);
-    id<MTLBuffer> L = L0, J = P("J", dehaze ? full * 3 : 1);
+    // with Dehaze the source is decoded once into J, with a finite flag per pixel (a quarter of a plane)
+    id<MTLBuffer> L = L0, J = P("J", dehaze ? full * 3 : 1), fin = P("fin", dehaze ? (full + 3) / 4 : 1);
+    id<MTLComputePipelineState> ps;
+    if (dehaze) {
+        ps = e.use("dt_decode");
+        e.buf(src, 0); e.buf(L0, 1); e.buf(J, 2); e.buf(fin, 3); e.bytes(frame, 4); e.bytes(p, 5); e.grid2(ps, W, H);
+    } else {
+        ps = e.use("dt_luma");
+        e.buf(src, 0); e.buf(L0, 1); e.bytes(frame, 2); e.bytes(p, 3); e.grid2(ps, W, H);
+    }
     id<MTLBuffer> Lw = P("Lw", grid), at = P("at", grid), bt = P("bt", grid);
     if (dehaze) {
         if (transmission) {
             id<MTLBuffer> xa = tmpFull, ch[3] = { P("c0", grid), P("c1", grid), P("c2", grid) };
             for (int c = 0; c < 3; ++c) {
                 ps = e.use("dt_veil_ratio");
-                e.buf(src, 0); e.buf(xa, 1); e.bytes(frame, 2); e.bytes(p, 3); e.bytes(c, 4); e.grid2(ps, W, H);
+                e.buf(J, 0); e.buf(xa, 1); e.bytes(p, 2); e.bytes(c, 3); e.buf(fin, 4); e.grid2(ps, W, H);
                 e.tent(xa, W, H, p.s, tmpGrid, ch[c]);
             }
             e.tent(L0, W, H, p.s, tmpGrid, Lw);
@@ -210,9 +217,8 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
             e.box(mIp, w, h, p.rtx, p.rty, tmpGrid, at);
             e.box(mII, w, h, p.rtx, p.rty, tmpGrid, bt);
         }
-        ps = e.use("dt_haze");   // L in place over L0: each thread reads and writes only its own pixel
-        e.buf(src, 0); e.buf(L0, 1); e.buf(at, 2); e.buf(bt, 3); e.buf(J, 4); e.buf(L, 5); e.bytes(frame, 6);
-        e.bytes(p, 7); e.grid2(ps, W, H);
+        ps = e.use("dt_haze");
+        e.buf(J, 0); e.buf(L, 1); e.buf(at, 2); e.buf(bt, 3); e.buf(fin, 4); e.bytes(p, 5); e.grid2(ps, W, H);
     }
 
     e.tent(L, W, H, p.s, tmpGrid, Lw);
@@ -240,7 +246,7 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     }
     ps = e.use("dt_final");
     e.buf(src, 0); e.buf(dst, 1); e.buf(L, 2); e.buf(Lw, 3); e.buf(Gg, 4); e.buf(aB, 5); e.buf(bB, 6); e.buf(Dg, 7);
-    e.buf(G1, 8); e.buf(G2, 9); e.buf(J, 10); e.bytes(frame, 11); e.bytes(p, 12);
+    e.buf(G1, 8); e.buf(G2, 9); e.buf(J, 10); e.bytes(frame, 11); e.bytes(p, 12); e.buf(fin, 13);
     e.grid2(ps, W, H);
     [enc endEncoding];
     if (!e.ok || !allocated) return false;
