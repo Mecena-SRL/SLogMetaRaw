@@ -416,7 +416,10 @@ class ReaderRuntime(unittest.TestCase):
             self.assertEqual(ui._volume_of('E:\\M4ROOT\\C0001.MP4', []), 'E:')
 
     def test_mount_points_include_the_root(self):
-        self.assertIn('/', ui._mount_points())
+        if os.name == 'nt':
+            self.assertEqual(ui._mount_points(), [])   # the drive in the path is the volume
+        else:
+            self.assertIn('/', ui._mount_points())
 
     @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux only')
     def test_mount_points_read_the_kernel_table(self):
