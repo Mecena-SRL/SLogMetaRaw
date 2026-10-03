@@ -306,14 +306,14 @@ CUSTOM_COLUMNS = (
 def export_csv(results, path):
     """CSV in Resolve's own metadata format (UTF-16), importable via
     File > Import > Metadata; unknown 'Sony …' columns become custom fields."""
-    std = sorted({k for r in results for k in build_fields(r)})
+    fields = [build_fields(r) for r in results]
+    std = sorted({k for f in fields for k in f})
     header = ['File Name', 'Clip Directory'] + std + ['Camera Notes', 'Keywords'] + \
         [c for c, _ in CUSTOM_COLUMNS]
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator='\n')
     w.writerow(header)
-    for r in results:
-        f = build_fields(r)
+    for r, f in zip(results, fields):
         row = [os.path.basename(r['path']), os.path.dirname(r['path'])]
         row += [f.get(k, '') for k in std]
         row += [notes_block(r), ','.join(keywords(r))]

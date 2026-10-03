@@ -2,6 +2,7 @@
 #include "DetailEffect.h"
 #include "ofxImageEffectExt.h"
 
+#include <atomic>
 #include <cstdio>
 #include <memory>
 #include <mutex>
@@ -19,9 +20,12 @@
 static const char* const kIntensities[] = { "localContrast", "localHighlights", "localShadows",
                                             "texture", "clarity", "dehaze" };
 
+static std::atomic<int>& liveNodes() { static std::atomic<int> n(0); return n; }
+
 DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
     : ImageEffect(p_Handle)
 {
+    ++liveNodes();
     try {
         m_DstClip = fetchClip(kOfxImageEffectOutputClipName);
         m_SrcClip = fetchClip(kOfxImageEffectSimpleSourceClipName);
@@ -227,6 +231,11 @@ public:
         if (pool().size() < kKeep && m_S->L0.capacity() <= 2 * m_Pixels) pool().push_back(std::move(m_S));
     }
     DetailScratch& operator*() { return *m_S; }
+    static void drop()
+    {
+        std::lock_guard<std::mutex> lock(mutex());
+        pool().clear();
+    }
 
 private:
     static const size_t kKeep = 2;
@@ -235,6 +244,11 @@ private:
     size_t m_Pixels;
     std::unique_ptr<DetailScratch> m_S;
 };
+}
+
+DetailEffect::~DetailEffect()
+{
+    if (--liveNodes() == 0) ScratchLease::drop();   // the last Detail node is gone: its working planes too
 }
 
 SMDetailControls DetailEffect::readControls(double t)

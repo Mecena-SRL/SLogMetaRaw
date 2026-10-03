@@ -332,7 +332,7 @@ bool openUrl(const std::string& url)
     const std::vector<std::string> argv = { opener, url };
 #endif
     ChildResult r = runProcess(argv, EnvSnapshot::capture(), 3000);
-    return r.finished && r.exitCode == 0;
+    return r.finished && (r.exitCode == 0 || (r.exitCode == -1 && r.termSignal == 0));   // -1: reaped by the host
 }
 
 #endif   // !_WIN32

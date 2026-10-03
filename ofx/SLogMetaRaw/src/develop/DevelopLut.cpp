@@ -62,7 +62,8 @@ static SaveAsk askSavePath(const std::string& name, std::string& path)
 #endif
     const ChildResult r = runProcess(argv, EnvSnapshot::capture(), 10 * 60 * 1000);
     if (!r.started || !r.finished) return SaveAsk::Failed;
-    if (r.exitCode != 0) return SaveAsk::Cancelled;
+    // exit code -1: the host reaped the dialog itself, so the chosen path is the only answer
+    if (r.exitCode != 0 && !(r.exitCode == -1 && r.termSignal == 0)) return SaveAsk::Cancelled;
     path = r.out;
     while (!path.empty() && (path.back() == '\n' || path.back() == '\r')) path.pop_back();
     return path.empty() ? SaveAsk::Cancelled : SaveAsk::Chosen;

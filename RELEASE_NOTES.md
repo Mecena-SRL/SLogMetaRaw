@@ -2,8 +2,8 @@
 
 ## S-Log MetaRaw 2.2.2
 
-Correzioni di stabilità e memoria del nodo su GPU (Metal). Nessun controllo cambia, nessun valore salvato cambia,
-l'immagine resta identica.
+Correzioni di stabilità e memoria del plugin, e dello script su Windows e Linux. Nessun controllo cambia, nessun valore
+salvato cambia, l'immagine resta identica.
 
 ### Plugin
 
@@ -14,6 +14,28 @@ l'immagine resta identica.
   ricorda e non si ripete per ogni kernel sotto il lock globale (#24).
 - **Detail su Metal più leggero**: con Dehaze la luma si aggiorna sul posto e il piano del veil-ratio riusa quello
   temporaneo, come su CPU: due piani a piena risoluzione in meno per set (~280 MB in 8K) (#24).
+- **Dehaze su Metal più veloce**: la sorgente si decodifica una volta sola invece di sei (da 18 a 3 `pow` per pixel
+  con la mappa di trasmissione), come già su CPU (#22).
+- **Detail su CPU, memoria restituita**: i piani di Dehaze (~430 MB in 8K) e Texture si liberano quando il fotogramma
+  non li usa, e i piani di lavoro si liberano quando si chiude l'ultimo nodo Detail.
+- **Windows, clip oltre 2 GiB**: il nodo non trovava mai i metadata delle clip più grandi di 2 GiB (quasi tutte le
+  XAVC), perché ne leggeva la dimensione a 32 bit.
+- **Windows, lettore di metadata scaduto**: viene sempre chiuso, anche quando il processo non entra nel suo job.
+- **Esporta LUT con un host che raccoglie da sé i processi figli**: il file scelto si salva invece di essere ignorato
+  in silenzio; aprire la pagina delle release non segnala più un errore inesistente.
+- **Color Space / Gamma fuori tabella** (un nodo salvato da una versione più recente): seguono il nodo invece di
+  leggere oltre la fine delle tabelle.
+
+### Script
+
+- **Windows: "Leggi metadata" segnava ogni clip come lettura troppo lenta**: il lettore si attende ora con un thread
+  invece di `select()`, che su Windows non accetta pipe.
+- **Linux e Windows: una clip lenta faceva saltare tutte le altre**: i volumi si riconoscono da `/proc/self/mounts`
+  (Linux) o dalla lettera del disco (Windows), così solo le clip dello stesso volume vengono saltate. Su macOS si
+  riconoscono anche i volumi con le parentesi nel nome, per esempio `Card (1)`.
+- **MXF interlacciati (1080i)**: un frame rate NRT come `59.94i` conta i semiquadri; durata, bitrate e campionamento
+  usano ora i fotogrammi (29,97), invece di dimezzare la durata e raddoppiare il bitrate.
+- Tolto codice non più usato.
 
 ## S-Log MetaRaw 2.2.1
 

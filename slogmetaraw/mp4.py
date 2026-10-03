@@ -216,16 +216,13 @@ class MP4:
         self.tracks = []
         self.meta_xml = None          # NonRealTimeMeta XML (bytes)
         self.items = {}               # item name -> (file offset, length), e.g. 'Look Control data'
-        self.brand = None
         self._parse()
 
     def _parse(self):
         f = self.f
         f.preload(0, META_PRELOAD)     # ftyp, uuid and free headers in one read
         for t, p, hl, s in iter_boxes(f, 0, f.size):
-            if t == b'ftyp':
-                self.brand = f.read_at(p + hl, 4).decode('latin1')
-            elif t == b'moov':
+            if t == b'moov':
                 if s <= PRELOAD_MAX:
                     f.preload(p, s + 16)   # + the next top-level header
                 for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):

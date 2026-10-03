@@ -16,6 +16,7 @@ class DetailEffect : public OFX::ImageEffect
 {
 public:
     explicit DetailEffect(OfxImageEffectHandle p_Handle);
+    ~DetailEffect() override;
 
     void render(const OFX::RenderArguments& p_Args) override;
     bool isIdentity(const OFX::IsIdentityArguments& p_Args, OFX::Clip*& p_IdentityClip, double& p_IdentityTime) override;

@@ -52,7 +52,6 @@ struct DetailParams {
     float hazeOmega, hazeMix, hazeLevel;
     float hazeA[3], hazeInvA[3];
     int view;          // 0 picture, 1 gain, 2 base
-    int on;            // anything to do at all
     float toRef[9];    // input RGB -> Rec.2020, for the norm
 };
 

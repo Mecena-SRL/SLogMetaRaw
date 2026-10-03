@@ -96,7 +96,10 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     HANDLE job = CreateJobObjectA(nullptr, nullptr);
     // No KILL_ON_JOB_CLOSE: the "Rileggi" button leaves a detached writer behind on purpose, and closing
     // the handle after a normal exit must not take it down. killProcess still ends the whole job.
-    if (job) AssignProcessToJobObject(job, pi.hProcess);
+    if (job && !AssignProcessToJobObject(job, pi.hProcess)) {   // an empty job would kill nothing
+        CloseHandle(job);
+        job = nullptr;
+    }
     ResumeThread(pi.hThread);
     CloseHandle(pi.hThread);
     c = Child();
@@ -168,7 +171,7 @@ void reapStrays() {}   // handles are closed with the process: nothing to collec
 void killProcess(Child& c)
 {
     if (c.job) TerminateJobObject((HANDLE)c.job, 1);
-    else if (c.process) TerminateProcess((HANDLE)c.process, 1);
+    if (c.process) TerminateProcess((HANDLE)c.process, 1);
     c.exited = true;
     closeHandles(c);
 }

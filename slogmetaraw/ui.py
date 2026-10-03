@@ -13,8 +13,8 @@ chunks on the timer itself, so every Resolve API call stays on the UI thread.
 import datetime
 import json
 import os
+import queue
 import re
-import select
 import shutil
 import subprocess
 import sys
@@ -88,7 +88,7 @@ def _exit_with_resolve():
     while the window is open, that process is left orphaned and can get in the way of
     the next launch, so it follows its parent out. Set the returned event to stop."""
     stop = threading.Event()
-    if os.path.basename(sys.executable or '') == 'Resolve':
+    if os.path.splitext(os.path.basename(sys.executable or ''))[0].lower() == 'resolve':
         return stop   # a Workspace script runs inside Resolve: its parent is not Resolve
     parent = os.getppid()
 
@@ -121,19 +121,27 @@ def _reader_python():
 
 
 def _mount_points():
-    """Mount points from the kernel table; mount(8) does not wait for unresponsive volumes."""
+    """Mount points from the kernel table, which does not wait for unresponsive volumes.
+    Windows needs none: the drive or share in the path is the volume."""
+    if os.name == 'nt':
+        return []
     try:
-        out = subprocess.run(['/sbin/mount'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             universal_newlines=True, timeout=2).stdout
+        if sys.platform.startswith('linux'):
+            with open('/proc/self/mounts', encoding='utf-8', errors='replace') as f:
+                points = [re.sub(r'\\([0-7]{3})', lambda m: chr(int(m.group(1), 8)), line.split()[1])
+                          for line in f if len(line.split()) > 1]
+        else:
+            out = subprocess.run(['/sbin/mount'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                 universal_newlines=True, timeout=2).stdout
+            points = re.findall(r' on (/.*) \([^()]*\)$', out, re.M)   # "/Volumes/Card (1) (exfat, ...)"
     except (OSError, subprocess.SubprocessError):
         return ['/']
-    points = [m.group(1) for m in re.finditer(r' on (/.*?) \(', out)]
     return points or ['/']
 
 
 def _volume_of(path, mounts):
-    """The volume (st_dev) of a clip as its longest mount point, without touching the disk."""
-    best = '/'
+    """The volume of a clip as its longest mount point (or its drive), without touching the disk."""
+    best = os.path.splitdrive(path)[0] or '/'
     for point in mounts:
         if len(point) > len(best) and (path == point or path.startswith(point.rstrip('/') + '/')):
             best = point
@@ -157,32 +165,45 @@ def _spawn_reader():
                             stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1)
 
 
+def _reader_lines(proc):
+    """The reader's output lines, collected by a thread: select() takes no pipes on Windows, and a
+    thread blocked on half a line never holds up the per-clip deadline. None marks the end."""
+    lines = getattr(proc, '_slog_lines', None)
+    if lines is None:
+        lines = proc._slog_lines = queue.Queue()
+
+        def pump():
+            try:
+                for line in proc.stdout:
+                    lines.put(line)
+            except (OSError, ValueError):   # pipe closed by _stop_reader
+                pass
+            lines.put(None)
+
+        threading.Thread(target=pump, daemon=True).start()
+    return lines
+
+
 def _read_result(proc, deadline, cancelled=None):
     """One JSON result line from the reader, or None on timeout/death."""
-    pending = getattr(proc, '_slog_pending', b'')
+    lines = _reader_lines(proc)
     while True:
         if cancelled is not None and cancelled.is_set():
             return None
-        if b'\n' in pending:
-            line, pending = pending.split(b'\n', 1)
-            proc._slog_pending = pending
-            try:
-                return json.loads(line)
-            except ValueError:
-                continue     # stray non-JSON line: keep waiting
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             return None
-        ready, _, _ = select.select([proc.stdout], [], [], min(remaining, 0.5))
-        if ready:
-            # readline() could block forever after select reports only part of
-            # a line. Read available bytes so the per-clip deadline still holds.
-            chunk = os.read(proc.stdout.fileno(), 65536)
-            if not chunk:
-                return None   # child died
-            pending += chunk
-            proc._slog_pending = pending
-        # timeout not reached: loop with the updated deadline
+        try:
+            line = lines.get(timeout=min(remaining, 0.5))
+        except queue.Empty:
+            continue
+        if line is None:
+            lines.put(None)   # child died: it stays dead for later calls
+            return None
+        try:
+            return json.loads(line)
+        except ValueError:
+            continue     # stray non-JSON line: keep waiting
 
 
 def _stop_reader(proc):
@@ -462,7 +483,7 @@ def main(resolve, fusion, bmd, selftest=False):
                 out.append({'uid': c.GetUniqueId(), 'clip': c, 'name': c.GetName(), 'path': path})
         return out
 
-    def read_worker(queue):
+    def read_worker(entries):
         ok = skipped = errors = slow = 0
         cache_error = None
         proc = None
@@ -471,7 +492,7 @@ def main(resolve, fusion, bmd, selftest=False):
         seen = set()      # volumes with a clip already read: the next ones get the shorter limit
         dead = {}         # volume -> clips not read after it stopped answering
         try:
-            for entry in queue:
+            for entry in entries:
                 if reader_cancelled.is_set():
                     break
                 uid, name, path = entry['uid'], entry['name'], entry['path']
