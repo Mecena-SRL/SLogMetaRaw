@@ -1,6 +1,6 @@
 # S-Log MetaRaw — User Guide
 
-> Version **2.2.2** · macOS 12+ · DaVinci Resolve 21 · Sony XAVC `.MP4` / `.MXF`
+> Version **2.2.3** · macOS 12+ · DaVinci Resolve 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
 S-Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin, tint, EI, lens, aperture, shutter, colour profile) and uses it inside DaVinci Resolve. Resolve does this only for FX6/FX9 MXF files; for MP4 from FX30, FX3, a7 and a6000 series it ignores that data.
@@ -43,7 +43,7 @@ Original files are **never modified**: no transcoding, no rewrapping.
 
 ## 2. Install
 
-1. Download `SLogMetaRaw-2.2.2.dmg` from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) and open it.
+1. Download `SLogMetaRaw-2.2.3.dmg` from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) and open it.
 
    ![The DMG window](images/01-dmg.png)
 
@@ -142,7 +142,7 @@ The node is **pointwise**: each pixel depends only on itself. It never makes hal
 
 | Control | What it does |
 |---|---|
-| **Version** (top) | Shows `v2.2.2`. Once a day it asks GitHub for the latest release; if there is one it reads **🟢 v2.2.2 → 2.x.y** and a click opens the DMG download. It never installs anything itself. |
+| **Version** (top) | Shows `v2.2.3`. Once a day it asks GitHub for the latest release; if there is one it reads **🟢 v2.2.3 → 2.x.y** and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). It never installs anything itself. |
 | **Camera** · **Rileggi metadata** (re-read) | The camera that was read. *Rileggi* re-reads the clip, resets every control to the camera values and writes the clip's metadata into the Media Pool. Answers within ~2 s. |
 | **Decode Using** | *Clip* lets you change the controls; *Camera metadata* locks them to the as-shot values (node is transparent). |
 | **White Balance** | As shot, or presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Moving a slider switches it to *Custom*. |
@@ -356,7 +356,7 @@ Leave Color Space/Gamma on **Timeline** in the main node. Enable the script's *A
 
 ## 12. Updates and privacy
 
-- The **nodes** ask GitHub for the latest release at most once a day, in the background. The request carries only the version (`User-Agent: SLogMetaRaw/2.2.2`).
+- The **nodes** ask GitHub for the latest release at most once a day, in the background. The request carries only the version (`User-Agent: SLogMetaRaw/2.2.3`).
 - The **script** checks only when you click its version.
 - A click only opens a download link from this project's GitHub releases. Nothing is installed without you.
 

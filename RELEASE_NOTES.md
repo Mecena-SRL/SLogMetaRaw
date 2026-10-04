@@ -1,5 +1,37 @@
 # Changelog
 
+## S-Log MetaRaw 2.2.3
+
+Correzioni di stabilità del plugin, soprattutto su Windows e Linux. Nessun controllo cambia, nessun valore salvato
+cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Windows, percorsi con accenti**: con una clip in `D:\Riprese\Caffè\…` o un profilo utente con accenti il nodo
+  non trovava i metadata, e il lettore Python riceveva un percorso storpiato. File, cartelle, variabili d'ambiente,
+  processi figli e la finestra "Esporta LUT" usano ora le API Unicode di Windows (#55).
+- **Chiusura improvvisa di Resolve all'uscita**: un controllo aggiornamenti ancora in corso quando Resolve scarica il
+  plugin viene fermato, invece di lasciare un thread attivo nel codice appena scaricato (#55).
+- **"Rileggi metadata" premuto durante una lettura**: la scrittura nel Media Pool non si perde più; la lettura in corso
+  si chiude e parte comunque quella che scrive in Resolve (#55).
+- **Il pulsante della versione propone l'installer del sistema**: `.exe` su Windows, `.deb`, `.rpm` o `.run` su Linux,
+  `.dmg` su macOS. Prima proponeva sempre il `.dmg` (#55).
+- **Detail con ingresso non riconosciuto**: quando il nodo è neutro ma Resolve chiede comunque il fotogramma, l'immagine
+  passa invariata (anche su Metal) invece di essere trattata come S-Log3 (#55).
+
+### Script
+
+- Il controllo aggiornamenti dichiara il sistema nel `User-Agent` e sceglie l'installer della piattaforma; un link
+  rimasto in `update.json` per un altro sistema non viene più proposto.
+
+### Test
+
+- `test_to_resolve.Detached` passa anche su Windows: la finta connessione a Resolve raggiunge il writer, che lì è un
+  processo separato.
+- Corretto `va_start` nel finto host di test (leggeva il valore dal parametro sbagliato).
+- Nuovi test: percorsi e variabili d'ambiente con accenti, "Rileggi" durante una lettura, unload durante un controllo
+  aggiornamenti.
+
 ## S-Log MetaRaw 2.2.2
 
 Correzioni di stabilità e memoria del plugin, e dello script su Windows e Linux. Nessun controllo cambia, nessun valore
