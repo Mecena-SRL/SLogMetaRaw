@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -293,7 +294,19 @@ void DetailEffect::render(const OFX::RenderArguments& p_Args)
     const int W = b.x2 - b.x1, H = b.y2 - b.y1;
     if (!sameLayout(*src, *dst)) OFX::throwSuiteStatusException(kOfxStatErrImageFormat);
     int space = 8, gamma = 9;
-    resolveInput(space, gamma);
+    if (resolveInput(space, gamma) == InputOrigin::Unknown) {   // neutral node the host renders anyway
+        const size_t rowBytes = (size_t)src->getRowBytes();
+#ifdef __APPLE__
+        if (p_Args.isEnabledMetalRender) {
+            if (!RunCopy(p_Args.pMetalCmdQ, rowBytes * H, static_cast<const float*>(src->getPixelData()),
+                         static_cast<float*>(dst->getPixelData())))
+                OFX::throwSuiteStatusException(kOfxStatFailed);
+            return;
+        }
+#endif
+        memcpy(dst->getPixelData(), src->getPixelData(), rowBytes * H);
+        return;
+    }
     // The whole frame arrives (no tiles), so its height is the reference of every radius: the same
     // look at full size, in proxy and in the viewer.
     const SMDetailControls controls = readControls(p_Args.time);

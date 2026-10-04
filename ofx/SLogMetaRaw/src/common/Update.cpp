@@ -28,6 +28,7 @@ struct State
     std::condition_variable done;
     Snapshot snap;
     bool running = false;
+    int loaded = 0;   // plugins of the bundle currently loaded by the host
     std::atomic<bool> cancel{ false };
 };
 static State& state()
@@ -60,7 +61,7 @@ static void finish(const ChildResult& r)
     if (!r.finished || j.empty()) {
         n.kind = Failed;
         if (n.error.empty()) n.error = r.timedOut ? "GitHub non ha risposto in tempo" : "controllo non riuscito";
-    } else if (isNewer(release(), n.latest) && isTrustedDmgUrl(n.url)) {
+    } else if (isNewer(release(), n.latest) && isTrustedInstallerUrl(n.url)) {
         // the installer already ran but Resolve still has the old binary loaded
         const std::string lib = get("lib_version");
         int v[3];
@@ -127,7 +128,7 @@ bool waitManual(int ms)
 bool openInstaller(std::string& error)
 {
     const Snapshot n = snapshot();
-    if (n.kind != Available || !isTrustedDmgUrl(n.url)) {
+    if (n.kind != Available || !isTrustedInstallerUrl(n.url)) {
         error = "nessun installer da aprire";
         return false;
     }
@@ -146,10 +147,21 @@ bool openInstaller(std::string& error)
     return true;
 }
 
-void shutdown()
+void pluginLoaded()
 {
     State& s = state();
+    std::lock_guard<std::mutex> lock(s.mutex);
+    ++s.loaded;
+}
+
+void pluginUnloaded()
+{
+    State& s = state();
+    std::unique_lock<std::mutex> lock(s.mutex);
+    if (s.loaded > 0 && --s.loaded > 0) return;
+    // Last plugin out: the host may dlclose the binary, so the worker must not outlive it.
     s.cancel = true;
+    s.done.wait_for(lock, std::chrono::milliseconds(500), [&] { return !s.running; });
 }
 
 }

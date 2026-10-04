@@ -19,9 +19,10 @@ from slogmetaraw import update, __main__ as cli  # noqa: E402
 
 TMP = tempfile.gettempdir()   # /tmp does not exist on Windows
 
-DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
+EXT = update.installer_exts()[0]
+DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9' + EXT
 DETAILS = {'notes': 'lunghe note\ncon a capo', 'title': 'S-Log MetaRaw  9.9.9\n', 'page': 'p',
-           'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9.dmg', 'size': 1234}
+           'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9' + EXT, 'size': 1234}
 NO_NETWORK = AssertionError('rete non permessa')
 
 
@@ -81,7 +82,18 @@ class State(unittest.TestCase):
             os.unlink(os.path.join(TMP, 'smr-update-test3.json'))
         self.assertEqual(result['dmg_url'], '')
         self.assertTrue(update.trusted_dmg_url(
-            'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1.dmg'))
+            'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1' + EXT))
+
+    def test_only_this_systems_installer_is_offered(self):
+        base = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9'
+        for ext in ('.dmg', '.exe', '.deb', '.rpm', '.run', '.zip'):
+            self.assertEqual(update.trusted_dmg_url(base + ext), ext in update.installer_exts(), ext)
+        assets = [{'name': 'SLogMetaRaw-9.9.9' + e, 'browser_download_url': base + e, 'size': 1}
+                  for e in ('.zip', '.dmg', '.exe', '.deb', '.rpm', '.run')]
+        response = mock.MagicMock()
+        response.__enter__.return_value = io.StringIO(json.dumps({'assets': assets}))
+        with mock.patch('urllib.request.urlopen', return_value=response):
+            self.assertEqual(update.release_details()['dmg_url'], base + EXT)
 
     def test_stale_cache_is_refreshed(self):
         stale = update.blank()

@@ -320,6 +320,8 @@ def update_check(current='', force=False):
         r = dict(update.blank(cur), **st) if fresh else update.check(current=cur)
         latest = r.get('latest') or ''
         newer = update.is_newer(cur, latest)
+        if not update.trusted_dmg_url(r.get('dmg_url')):
+            r['dmg_url'] = ''   # e.g. a .dmg left in update.json on another system
         if newer and not r.get('dmg_url'):
             try:
                 r.update(update.release_details())

@@ -3,6 +3,7 @@
 
 #include "../common/ColourSpaces.h"
 #include "../common/ParamDefs.h"
+#include "../common/Update.h"
 #include "../common/UpdateBadge.h"
 #include "../common/ZoneParams.h"
 #include "DetailEffect.h"
@@ -10,6 +11,9 @@
 using namespace OFX;
 
 DetailFactory::DetailFactory() : PluginFactoryHelper<DetailFactory>(kDetailIdentifier, 1, 0) {}
+
+void DetailFactory::load() { Update::pluginLoaded(); }
+void DetailFactory::unload() { Update::pluginUnloaded(); }
 
 void DetailFactory::describe(ImageEffectDescriptor& p_Desc)
 {

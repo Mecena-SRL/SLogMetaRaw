@@ -24,6 +24,8 @@ Snapshot snapshot();
 // Waits up to ms for the check started by a click; true when it finished.
 bool waitManual(int ms);
 bool openInstaller(std::string& error);
-void shutdown();
+// Load/unload of each plugin of the bundle; the last unload stops a running check.
+void pluginLoaded();
+void pluginUnloaded();
 
 }

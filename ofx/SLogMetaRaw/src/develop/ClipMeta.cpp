@@ -177,6 +177,11 @@ MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std
 
     std::lock_guard<std::mutex> lock(s_Mutex);
     Read& r = s_Reads[path];
+    if (r.running && mode == MetaMode::Reload && !r.reload) {
+        // a --cache read in flight would swallow the click: --to-resolve must run anyway
+        if (!waitProcess(r.child, kReloadWaitMs)) killProcess(r.child);
+        r.running = false;
+    }
     if (r.running) {
         if (waitProcess(r.child, mode == MetaMode::Reload ? kReloadWaitMs : 0)) return settle(path, r, m, status);
         if (r.child.elapsedMs() < kReadLimitMs) {
