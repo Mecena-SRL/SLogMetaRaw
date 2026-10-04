@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <cstdio>
 #include <string>
+
+// OFX strings and every path here are UTF-8; on Windows they go through the "W" APIs.
+#ifdef _WIN32
+std::wstring widen(const std::string& utf8);
+std::string narrow(const wchar_t* wide);
+#endif
+std::string envVar(const char* name);   // "" when unset
+FILE* openFile(const std::string& path, const char* mode);
 
 std::string homeDir();
 std::string supportDir();    // macOS ~/Library/Application Support/SLogMetaRaw, Windows %APPDATA%\SLogMetaRaw, Linux ~/.local/share/SLogMetaRaw

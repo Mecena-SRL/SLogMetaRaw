@@ -32,18 +32,19 @@ enum class SaveAsk { Chosen, Cancelled, Failed };
 static SaveAsk askSavePath(const std::string& name, std::string& path)
 {
 #if defined(_WIN32)
-    char buf[MAX_PATH * 2] = {};
-    snprintf(buf, sizeof(buf), "%s", name.c_str());
-    OPENFILENAMEA o = {};
+    wchar_t buf[MAX_PATH * 2] = {};
+    const std::wstring wname = widen(name);
+    wcsncpy(buf, wname.c_str(), MAX_PATH * 2 - 1);
+    OPENFILENAMEW o = {};
     o.lStructSize = sizeof(o);
-    o.lpstrFilter = "LUT (*.cube)\0*.cube\0\0";
+    o.lpstrFilter = L"LUT (*.cube)\0*.cube\0\0";
     o.lpstrFile = buf;
-    o.nMaxFile = sizeof(buf);
-    o.lpstrDefExt = "cube";
-    o.lpstrTitle = "Salva la LUT";
+    o.nMaxFile = MAX_PATH * 2;
+    o.lpstrDefExt = L"cube";
+    o.lpstrTitle = L"Salva la LUT";
     o.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-    if (!GetSaveFileNameA(&o)) return CommDlgExtendedError() == 0 ? SaveAsk::Cancelled : SaveAsk::Failed;
-    path = buf;
+    if (!GetSaveFileNameW(&o)) return CommDlgExtendedError() == 0 ? SaveAsk::Cancelled : SaveAsk::Failed;
+    path = narrow(buf);
     return SaveAsk::Chosen;
 #else
     std::vector<std::string> argv;

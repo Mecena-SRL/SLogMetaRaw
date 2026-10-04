@@ -4,6 +4,7 @@
 //   run TIMEOUT_MS ARGV...   spawn a child; prints finished/timedOut/exit/signal/bytes/elapsed
 //   which NAME               first executable of that name on PATH (empty line if none)
 //   runout TIMEOUT_MS ARGV...  spawn a child and print what it wrote on stdout, nothing else
+//   utf8files DIR            make, write, read and remove a file under DIR/caffè (UTF-8 paths, "W" APIs on Windows)
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -36,6 +37,19 @@ int main(int argc, char** argv)
     }
     if (argc >= 3 && !strcmp(argv[1], "which")) {
         printf("%s\n", findExecutable(argv[2]).c_str());
+        return 0;
+    }
+    if (argc >= 3 && !strcmp(argv[1], "utf8files")) {
+        const std::string dir = std::string(argv[2]) + "/caff\xC3\xA8";
+        const std::string file = dir + "/n\xC3\xB2te.txt";
+        FILE* f = makeDirs(dir) ? openFile(file, "wb") : nullptr;
+        if (f) { fputs("ok", f); fclose(f); }
+        std::string text;
+        const bool read = readFile(file, text);
+        printf("written=%d read=%d text=%s exists=%d cachekey=%d ", f != nullptr, read, text.c_str(), fileExists(file),
+               cacheRecordPath(file).find("/cache/") != std::string::npos);
+        const bool removed = removeFile(file);
+        printf("removed=%d gone=%d\n", removed, !fileExists(file));
         return 0;
     }
     fprintf(stderr, "uso: common_test cachekey PATH | run TIMEOUT_MS ARGV... | runout TIMEOUT_MS ARGV...\n");

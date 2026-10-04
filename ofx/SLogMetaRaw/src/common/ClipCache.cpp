@@ -21,7 +21,7 @@ static bool recordMatchesFile(const std::map<std::string, std::string>& j, const
     // same value as Python's st_mtime_ns: 100 ns ticks since 1601, rebased to the Unix epoch; the size is
     // 64-bit here, where MSVC's stat() fails on clips over 2 GiB
     WIN32_FILE_ATTRIBUTE_DATA fa;
-    if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &fa)) return false;
+    if (!GetFileAttributesExW(widen(path).c_str(), GetFileExInfoStandard, &fa)) return false;
     const long long ticks = ((long long)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
     const long long ns = (ticks - 116444736000000000LL) * 100;
     const long long bytes = ((long long)fa.nFileSizeHigh << 32) | fa.nFileSizeLow;
