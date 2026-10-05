@@ -1,5 +1,40 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.0
+
+**DaVinci Resolve 20.** Il plugin e lo script funzionano anche con Resolve 20, che a differenza della 21 non ha un
+Python suo: usano il Python 3 installato da python.org (lo stesso che serve al menu Workspace › Scripts di Resolve 20).
+Questa versione contiene anche le correzioni della 2.2.2 e della 2.2.3, mai pubblicate da sole. Nessun controllo cambia,
+nessun valore salvato cambia, l'immagine resta identica. **Resolve 20 non è ancora stato provato su una macchina reale.**
+
+### Plugin
+
+- **macOS: Python di python.org, Homebrew o Command Line Tools.** Senza il Python di Resolve 21 il nodo cerca
+  `/Library/Frameworks/Python.framework`, Homebrew e i Command Line Tools. Non usa più `/usr/bin/python3`: senza i
+  Command Line Tools è un segnaposto che apre la finestra "Installa strumenti" a ogni lettura dei metadata.
+- **Windows: Python registrato (PEP 514).** Il nodo trova i Python 3.6+ installati da python.org o dal Microsoft Store
+  anche se non sono nel `PATH` (l'installer di python.org non li aggiunge, di default). L'alias `python.exe` di
+  WindowsApps, che senza il Python dello Store apre lo Store, non viene più usato.
+- Se Python manca, la riga di stato dice di installarlo da python.org invece di "Python non trovato".
+- **Linux: errore di `xdg-open` di nuovo visibile.** Dopo la correzione della 2.2.3 il pulsante della versione diceva
+  sempre "download avviato"; ora, se `xdg-open` fallisce subito (nessun browser, nessun display), lo dice.
+- Controllo aggiornamenti: il thread viene registrato nello stesso momento in cui parte, così un secondo controllo o lo
+  scaricamento del plugin non possono trovarlo "mancante" mentre gira.
+
+### Installazione
+
+- **Windows: lo script di Resolve si installa anche senza Python nel `PATH`.** L'installer `.exe` e `install.ps1`
+  copiano il menu Workspace › Scripts così com'è; lo script trova la libreria da `%APPDATA%\SLogMetaRaw\lib_path`.
+  Prima, senza `python` nel `PATH`, il menu non veniva installato. `lib_path` è scritto in UTF-8, quindi un nome utente
+  con accenti non lo rompe più.
+- `install.sh` (macOS) usa il Python di python.org o di Homebrew quando manca quello di Resolve 21.
+
+### CI
+
+- I test su macOS e Windows ora bloccano la CI se falliscono (prima giravano senza poterla far fallire).
+- Nuovi test: dove il plugin cerca Python su ogni sistema, launcher non renderizzato con `lib_path` (anche con BOM o
+  non UTF-8), `xdg-open` che fallisce o resta in primo piano.
+
 ## S-Log MetaRaw 2.2.3
 
 Correzioni di stabilità del plugin, soprattutto su Windows e Linux. Nessun controllo cambia, nessun valore salvato

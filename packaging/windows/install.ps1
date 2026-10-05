@@ -38,18 +38,15 @@ if ($Uninstall) {
 }
 
 if (-not (Test-Path $Bundle)) { throw 'SLogMetaRaw.ofx.bundle non trovato (compila con cmake, vedi README).' }
-$Python = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $Python) { $Python = (Get-Command py -ErrorAction SilentlyContinue).Source }
-if (-not $Python) { throw 'Python 3 non trovato.' }
-
 $Lib = Join-Path $Support 'lib'
 New-Item -ItemType Directory -Force $Lib, $Scripts, (Join-Path $Support 'cache') | Out-Null
 Remove-Item -Recurse -Force -LiteralPath (Join-Path $Lib 'slogmetaraw') -ErrorAction SilentlyContinue
 Copy-Item -Recurse (Join-Path $Root 'slogmetaraw') $Lib
 Get-ChildItem -Recurse -Directory -Filter '__pycache__' $Lib | Remove-Item -Recurse -Force
-& $Python (Join-Path $Root 'tools\render_launcher.py') (Join-Path $Root 'resolve_script\SLogMetaRaw.py') $Lib (Join-Path $Scripts 'S-Log MetaRaw.py')
-if ($LASTEXITCODE) { throw 'Creazione dello script di Resolve non riuscita.' }
-Set-Content -Path (Join-Path $Support 'lib_path') -Value $Lib -Encoding ASCII
+# the launcher goes in as is and finds the library through lib_path: no Python needed to install
+# (Resolve 20 and earlier have none of their own). UTF-8 without BOM keeps an accented user folder intact.
+[IO.File]::WriteAllText((Join-Path $Support 'lib_path'), "$Lib`n", (New-Object Text.UTF8Encoding $false))
+Copy-Item -LiteralPath (Join-Path $Root 'resolve_script\SLogMetaRaw.py') -Destination (Join-Path $Scripts 'S-Log MetaRaw.py') -Force
 
 Invoke-Elevated ("New-Item -ItemType Directory -Force -Path '$Plugins' | Out-Null; " +
     "Remove-Item -Recurse -Force -LiteralPath '$PluginTarget' -ErrorAction SilentlyContinue; " +

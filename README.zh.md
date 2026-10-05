@@ -1,7 +1,7 @@
 <p align="center"><img src="assets/icon_1024.png" width="140" alt="S-Log MetaRaw"></p>
 
 <h1 align="center">S-Log MetaRaw</h1>
-<p align="center"><b>为 DaVinci Resolve 21 提供索尼摄影机元数据与场景线性显影控制</b><br>
+<p align="center"><b>为 DaVinci Resolve 20 和 21 提供索尼摄影机元数据与场景线性显影控制</b><br>
 Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-94m</a> · <a href="https://instagram.com/ivan_94m">@ivan_94m</a></p>
 
 <p align="center">
@@ -38,7 +38,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-2.2.3.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-2.3.0.dmg` 并打开。
 2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -54,7 +54,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 **干净安装与卸载。** 每次安装都从干净状态开始：安装程序会完整替换之前的插件和库，并移除开发版安装，不会留下旧版本的任何文件。磁盘映像中的 **Disinstalla S-Log MetaRaw.command**（第一次请右键 › 打开）会移除所有已安装的版本（包括 1.x 和 2.x）以及缓存、设置和日志。它在动手之前会列出全部内容，要求你关闭 Resolve，并询问是否同时删除导出的 CSV。已经写入 Resolve 项目的元数据属于项目本身，会保留。
 
-**系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，以及 DaVinci Resolve 21。**仅在 macOS 上的 Resolve Studio 21.1 中测试过。**
+**系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，以及 DaVinci Resolve 21 或 20。Resolve 20 不自带 Python：请从 [python.org](https://www.python.org/downloads/) 安装 Python 3（其 Workspace › Scripts 菜单本来也需要）。**仅在 macOS 上的 Resolve Studio 21.1 中测试过；Resolve 20 尚未测试。**
 
 **片段：** `.MP4` 或 `.MXF` 格式的索尼 XAVC。脚本全部可以读取。节点可显影 **S-Log3**（S-Gamut3.Cine 或 S-Gamut3）、**S-Log2** 和 **S-Log**（S-Gamut）。遇到其他配置时节点保持中性并给出提示。
 
@@ -99,7 +99,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v2.2.3`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.2.3 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v2.3.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.3.0 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值 |
 | **White Balance** · **Color Temp** · **Tint** | As shot 或预设。从摄影机记录的白点出发，在线性光中进行 Bradford 色适应 |
@@ -152,7 +152,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.2.3`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.3.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 

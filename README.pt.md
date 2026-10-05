@@ -1,7 +1,7 @@
 <p align="center"><img src="assets/icon_1024.png" width="140" alt="S-Log MetaRaw"></p>
 
 <h1 align="center">S-Log MetaRaw</h1>
-<p align="center"><b>Metadados de câmeras Sony e controles de revelação em luz de cena para o DaVinci Resolve 21</b><br>
+<p align="center"><b>Metadados de câmeras Sony e controles de revelação em luz de cena para o DaVinci Resolve 20 e 21</b><br>
 Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-94m</a> · <a href="https://instagram.com/ivan_94m">@ivan_94m</a></p>
 
 <p align="center">
@@ -45,7 +45,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-2.2.3.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-2.3.0.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa S-Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -69,8 +69,9 @@ instaladas, 1.x e 2.x incluídas, com o cache, as configurações e os logs. Ant
 fechar o Resolve e pergunta se deve apagar também os CSV exportados. Os metadados já gravados nos projetos do Resolve
 fazem parte dos projetos e ficam.
 
-**Requisitos:** macOS 12 ou posterior, Apple silicon ou Intel, e DaVinci Resolve 21. **Testado apenas no Resolve Studio
-21.1 em macOS.**
+**Requisitos:** macOS 12 ou posterior, Apple silicon ou Intel, e DaVinci Resolve 21 ou 20. O Resolve 20 não traz
+Python próprio: instale o Python 3 de [python.org](https://www.python.org/downloads/), que o menu Workspace › Scripts
+precisa de qualquer forma. **Testado apenas no Resolve Studio 21.1 em macOS; Resolve 20 ainda não testado.**
 
 **Clipes:** Sony XAVC em `.MP4` ou `.MXF`. O script lê todos. Os nós revelam **S-Log3** (S-Gamut3.Cine ou S-Gamut3),
 **S-Log2** e **S-Log** (S-Gamut). Com outros perfis ficam neutros e avisam.
@@ -129,7 +130,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v2.2.3`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v2.2.3 → 2.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v2.3.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v2.3.0 → 2.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Decode Using** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **White Balance** · **Color Temp** · **Tint** | As shot ou presets. Adaptação cromática Bradford em luz linear, a partir do branco que a câmera registrou |
@@ -208,7 +209,7 @@ ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaz
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/2.2.3`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/2.3.0`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.

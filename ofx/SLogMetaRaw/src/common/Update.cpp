@@ -109,23 +109,26 @@ void start(bool manual, bool hostIsBackground)
     const std::vector<std::string> argv = pythonArgv(py, args);
     const EnvSnapshot env = EnvSnapshot::capture();   // on the UI thread: environ races with the host
     const std::string log = childLogPath();
-    std::thread worker;
-    try {
-        worker = std::thread([argv, env, log]() {
-            ChildResult r;
-            try {
-                r = runProcess(argv, env, kCheckMs, &state().cancel, log);
-            } catch (...) {   // nothing may escape a thread: std::terminate would take the host down
-                r = ChildResult();
-            }
-            finish(r);
-        });
-    } catch (...) {   // no thread available
-        finish(ChildResult());
-        return;
+    // stored under the lock it is created with: a second start() or the last unload must never find a
+    // running worker missing from s.worker (it would be overwritten while joinable, or never joined)
+    bool started = false;
+    {
+        std::lock_guard<std::mutex> lock(s.mutex);
+        try {
+            s.worker = std::thread([argv, env, log]() {
+                ChildResult r;
+                try {
+                    r = runProcess(argv, env, kCheckMs, &state().cancel, log);
+                } catch (...) {   // nothing may escape a thread: std::terminate would take the host down
+                    r = ChildResult();
+                }
+                finish(r);
+            });
+            started = true;
+        } catch (...) {   // no thread available
+        }
     }
-    std::lock_guard<std::mutex> lock(s.mutex);
-    s.worker = std::move(worker);
+    if (!started) finish(ChildResult());
 }
 
 Snapshot snapshot()

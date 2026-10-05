@@ -69,5 +69,75 @@ class FlatJson(unittest.TestCase):
                 self.assertNotIn('latest=2.2', lines)
 
 
+class FindPython(unittest.TestCase):
+    """Resolve 20 and earlier have no Python of their own: the plugin must find the one the user installed."""
+    @classmethod
+    def setUpClass(cls):
+        cls.exe = test_bin('common_test')
+        if not cls.exe:
+            raise unittest.SkipTest('binari di test non compilabili qui')
+
+    def candidates(self, **env):
+        full = dict(os.environ)
+        full.pop('SLOGMETARAW_PYTHON', None)
+        full.update(env)
+        out = subprocess.run([self.exe, 'pythons'], capture_output=True, text=True, timeout=30, env=full)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        lines = out.stdout.splitlines()
+        return lines[:-1], lines[-1][len('found='):]
+
+    def test_forced_python_comes_first(self):
+        listed, found = self.candidates(SLOGMETARAW_PYTHON=sys.executable)
+        self.assertEqual(listed[0], sys.executable)
+        self.assertEqual(found, sys.executable)
+
+    def test_finds_a_python(self):
+        self.assertTrue(self.candidates()[1])
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS only')
+    def test_macos_skips_the_command_line_tools_stub(self):
+        listed, _ = self.candidates(PATH='/usr/bin:/bin:/usr/sbin:/sbin')
+        self.assertNotIn('/usr/bin/python3', listed)
+        framework = '/Library/Frameworks/Python.framework/Versions/Current/bin/python3'
+        self.assertLess(listed.index(framework), listed.index('/usr/local/bin/python3'))
+        self.assertIn('/Library/Developer/CommandLineTools/usr/bin/python3', listed)
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows only')
+    def test_windows_skips_the_store_alias(self):
+        alias = os.path.join(os.environ.get('LOCALAPPDATA', r'C:\Users\x\AppData\Local'), 'Microsoft', 'WindowsApps')
+        listed, _ = self.candidates(PATH=alias)
+        self.assertFalse([c for c in listed if '\\windowsapps\\python.exe' in c.lower().replace('/', '\\')], listed)
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows only')
+    def test_windows_lists_the_registered_pythons(self):
+        import winreg
+        expected = []
+        for root, view in ((winreg.HKEY_CURRENT_USER, 0), (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY),
+                           (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY)):
+            try:
+                core = winreg.OpenKey(root, r'Software\Python\PythonCore', 0, winreg.KEY_READ | view)
+            except OSError:
+                continue
+            with core:
+                for i in range(winreg.QueryInfoKey(core)[0]):
+                    tag = winreg.EnumKey(core, i)
+                    try:
+                        major, minor = (int(x) for x in tag.split('-')[0].rstrip('t').split('.')[:2])
+                        with winreg.OpenKey(core, tag + r'\InstallPath') as ip:
+                            try:
+                                exe = winreg.QueryValueEx(ip, 'ExecutablePath')[0]
+                            except OSError:
+                                exe = os.path.join(winreg.QueryValueEx(ip, '')[0], 'python.exe')
+                    except (OSError, ValueError):
+                        continue
+                    if major == 3 and minor >= 6 and exe:
+                        expected.append(os.path.normcase(exe))
+        if not expected:
+            self.skipTest('nessun Python 3.6+ registrato (PEP 514)')
+        listed, _ = self.candidates(PATH='')
+        listed = [os.path.normcase(c) for c in listed]
+        for exe in expected:
+            self.assertIn(exe, listed)
+
 if __name__ == '__main__':
     unittest.main()

@@ -2,7 +2,9 @@
 """S-Log MetaRaw launcher for DaVinci Resolve: Workspace > Scripts.
 
 Installed by install.sh into Fusion/Scripts/Utility; LIB_DIR is replaced at
-install time with the folder that contains the 'slogmetaraw' package.
+install time with the folder that contains the 'slogmetaraw' package. A copy left
+as is (the Windows installer, which may find no Python to render it) reads that
+folder from the lib_path file the installer writes next to the plugin's state.
 Startup failures are reported in a dialog and in launcher.log (macOS ~/Library/Logs/SLogMetaRaw,
 Windows %APPDATA%\\SLogMetaRaw\\logs, Linux ~/.local/share/SLogMetaRaw/logs).
 """
@@ -168,13 +170,36 @@ def _fusion(namespace, resolve):
     return resolve.Fusion()
 
 
+def _support_dir():
+    # same folder as slogmetaraw/paths.support_dir()
+    home = os.path.expanduser('~')
+    if sys.platform == 'darwin':
+        return os.path.join(home, 'Library', 'Application Support', 'SLogMetaRaw')
+    if os.name == 'nt':
+        return os.path.join(os.environ.get('APPDATA') or os.path.join(home, 'AppData', 'Roaming'), 'SLogMetaRaw')
+    return os.path.join(os.environ.get('XDG_DATA_HOME') or os.path.join(home, '.local', 'share'), 'SLogMetaRaw')
+
+
+def _lib_dir():
+    """The library folder: the rendered LIB_DIR, else the one recorded in <support>/lib_path."""
+    if not LIB_DIR.startswith('__'):
+        return LIB_DIR
+    try:
+        with open(os.path.join(_support_dir(), 'lib_path'), encoding='utf-8-sig') as stream:
+            recorded = stream.read().strip()
+    except (OSError, ValueError):   # missing, or not UTF-8: the installers' default folder
+        recorded = ''
+    return recorded or os.path.join(_support_dir(), 'lib')
+
+
 def _load_ui():
-    if not os.path.isfile(os.path.join(LIB_DIR, 'slogmetaraw', '__init__.py')):
+    lib_dir = _lib_dir()
+    if not os.path.isfile(os.path.join(lib_dir, 'slogmetaraw', '__init__.py')):
         raise RuntimeError('La libreria S-Log MetaRaw non si trova in:\n%s\n'
-                           'Reinstalla lo script dalla cartella del programma.' % LIB_DIR)
-    if LIB_DIR in sys.path:
-        sys.path.remove(LIB_DIR)
-    sys.path.insert(0, LIB_DIR)
+                           'Reinstalla lo script dalla cartella del programma.' % lib_dir)
+    if lib_dir in sys.path:
+        sys.path.remove(lib_dir)
+    sys.path.insert(0, lib_dir)
     for name in list(sys.modules):
         if name == 'slogmetaraw' or name.startswith('slogmetaraw.'):
             del sys.modules[name]  # always pick up the installed version
@@ -185,7 +210,7 @@ def _load_ui():
 def main(namespace=None):
     namespace = globals() if namespace is None else namespace
     _log('Avvio: Python %s; eseguibile=%s; libreria=%s; globals=%s' % (
-        sys.version.split()[0], sys.executable, LIB_DIR,
+        sys.version.split()[0], sys.executable, _lib_dir(),
         ', '.join(name for name in ('bmd', 'resolve', 'fusion', 'fu', 'app')
                   if namespace.get(name) is not None)))
     try:

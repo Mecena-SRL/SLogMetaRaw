@@ -127,6 +127,22 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
                 launcher._load_ui()
         self.assertIn(missing, str(result.exception))
 
+    def test_unrendered_copy_reads_lib_path(self):
+        # the Windows installer copies the launcher as is: the library folder comes from lib_path
+        support = Path(self.temp.name) / 'support'
+        lib = Path(self.temp.name) / 'libreria di Ivàn'
+        (lib / 'slogmetaraw').mkdir(parents=True)
+        support.mkdir()
+        self.assertTrue(launcher.LIB_DIR.startswith('__'))   # the checkout's copy is never rendered
+        with patch.object(launcher, '_support_dir', return_value=str(support)):
+            self.assertEqual(launcher._lib_dir(), str(support / 'lib'))   # no lib_path: the default folder
+            (support / 'lib_path').write_bytes(b'\xef\xbb\xbf' + str(lib).encode('utf-8') + b'\r\n')
+            self.assertEqual(launcher._lib_dir(), str(lib))
+            (support / 'lib_path').write_bytes(b'C:\\Users\\Iv\xe0n\n')   # ANSI from an older installer
+            self.assertEqual(launcher._lib_dir(), str(support / 'lib'))
+        with patch.object(launcher, 'LIB_DIR', str(lib)):
+            self.assertEqual(launcher._lib_dir(), str(lib))
+
     def test_error_dialog_passes_unicode_and_quotes_as_data(self):
         message = 'Libreria d\'Ivan: "è mancante"'
         # the macOS dialog (osascript): Windows and Linux use their own native boxes

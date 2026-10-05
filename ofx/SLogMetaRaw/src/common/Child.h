@@ -50,6 +50,7 @@ struct PythonCommand
     std::string python, lib;
 };
 bool findPython(PythonCommand& cmd, std::string& error);
+std::vector<std::string> pythonCandidates();   // where findPython looks, in order (existing or not)
 std::vector<std::string> pythonArgv(const PythonCommand& cmd, const std::vector<std::string>& args);
 std::string childLogPath();      // <logDir()>/plugin-child.log
 // Opens a URL in the default browser. False when it could not be started.

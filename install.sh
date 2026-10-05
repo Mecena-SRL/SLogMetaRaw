@@ -20,13 +20,19 @@ for arg in "$@"; do
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
-# Resolve 21.1 includes Python; no separate installation is needed to render the launcher.
-PYTHON_BIN="/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython"
-if [[ ! -x "$PYTHON_BIN" ]]; then
+# Resolve 21 includes Python; Resolve 20 uses the Python 3 from python.org (or Homebrew), which the
+# Workspace > Scripts menu needs anyway.
+PYTHON_BIN=""
+for candidate in "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython" \
+                 "/Library/Frameworks/Python.framework/Versions/Current/bin/python3" \
+                 "/opt/homebrew/bin/python3" "/usr/local/bin/python3"; do
+  if [[ -x "$candidate" ]]; then PYTHON_BIN="$candidate"; break; fi
+done
+if [[ -z "$PYTHON_BIN" ]]; then
   PYTHON_BIN="$(command -v python3 || true)"
 fi
 if [[ -z "$PYTHON_BIN" ]]; then
-  echo "ERRORE: Python 3 non trovato. Installa DaVinci Resolve 21.1 o Python 3." >&2
+  echo "ERRORE: Python 3 non trovato. Installa DaVinci Resolve 21 o Python 3 da python.org (Resolve 20)." >&2
   exit 1
 fi
 SCRIPTS="$HOME/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility"
