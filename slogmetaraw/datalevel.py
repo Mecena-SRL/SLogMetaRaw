@@ -13,8 +13,7 @@ FULL = 'Full'
 VIDEO = 'Video'
 AUTO = 'Auto'
 
-# The two scales, in 10-bit code values. Every other bit depth is the same
-# fractions of full scale, so one set of numbers covers 8, 10, 12 and 16 bit.
+# The two scales, in 10-bit code values; same fraction of full scale at every other bit depth.
 CV_MAX = 1023.0
 CV_BLACK = 64.0          # 0 IRE on the video scale
 CV_WHITE = 940.0         # 100 IRE on the video scale
@@ -54,9 +53,7 @@ FULL_SCALE_GAMMAS = {
 FULL_SCALE_XML_GAMMAS = {'s-log', 's-log2', 's-log3', 's-log3-cine', 'slog', 'slog2', 'slog3',
                          'aces', 'acescct', 'acesproxy', 'scene-linear', 'cine-log'}
 
-# Curves worth naming in the note because they are the usual source of confusion:
-# they are legal range *with* super-whites, which Resolve cannot express at all
-# (it has Video and Full, no "extended video").
+# Legal range *with* super-whites: Resolve has no "extended video" to express that.
 SUPER_WHITE_GAMMAS = {
     'Cine1': 109, 'Cine3': 109, 'Cine4': 109, 'ITU-R BT.709-5': 109, 'Standard': 109,
     'Still': 109, 'R709 180%': 109, 'R709 800%': 109,
@@ -99,9 +96,7 @@ def required_level(meta):
 
 
 # --- 2. what the file itself declares ---------------------------------------
-# Sony writes the range in at most one of these places, and not always. Order is
-# by authority: Sony's own per-clip acquisition metadata first, then the
-# container/bitstream flags.
+# Checked in order of authority: Sony's own acquisition metadata, then container/bitstream flags.
 
 def _mxf_level(meta):
     """MXF CDCI reference levels -> FULL / VIDEO, using ffmpeg's mxf_get_color_range rule."""
@@ -133,9 +128,7 @@ def declared_level(meta):
                      % (meta.get('mxf_black_ref'), meta.get('mxf_white_ref'),
                         meta.get('mxf_component_depth')))
     if meta.get('container') == 'MXF':
-        # In an MXF the SPS is located by scanning for a start code inside
-        # interleaved essence, so a VUI flag read from it is not trustworthy
-        # enough to declare the range; the picture descriptor above is.
+        # The SPS is located by scanning interleaved essence for a start code, so its VUI flag isn't trustworthy here.
         return None, 'MXF senza livelli di riferimento nel descrittore immagine'
     vui = meta.get('v_full_range')
     if vui is not None:

@@ -106,8 +106,7 @@ def _reader_python():
     executable = sys.executable or ''
     if executable and 'python' in os.path.basename(executable).lower():
         return executable
-    # An in-process Workspace script reports Contents/MacOS/Resolve as its
-    # executable. Launching that with -m opens another Resolve, not a reader.
+    # An in-process Workspace script reports Resolve as sys.executable; -m would launch another Resolve.
     marker = '.app/Contents/'
     if marker in executable:
         contents = executable.split(marker, 1)[0] + marker
@@ -146,9 +145,7 @@ def _spawn_reader():
     Parsing runs in a child so that a clip stuck on a dead volume can be killed:
     the scan must always be able to finish."""
     lib = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # ResolvePython runs in isolated mode via ResolvePython._pth, so it ignores
-    # PYTHONPATH (and the working directory). Pass the installation path as data
-    # and add it explicitly before running the helper module.
+    # ResolvePython._pth puts it in isolated mode (ignores PYTHONPATH), so pass the install path as an argv data item instead.
     bootstrap = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
                  'runpy.run_module("slogmetaraw", run_name="__main__")')
     # -X utf8 also makes os.open() accept accented paths when the locale is ASCII (#39)
@@ -175,8 +172,7 @@ def _read_result(proc, deadline, cancelled=None):
             return None
         ready, _, _ = select.select([proc.stdout], [], [], min(remaining, 0.5))
         if ready:
-            # readline() could block forever after select reports only part of
-            # a line. Read available bytes so the per-clip deadline still holds.
+            # readline() could block forever after select reports only a partial line.
             chunk = os.read(proc.stdout.fileno(), 65536)
             if not chunk:
                 return None   # child died
@@ -255,8 +251,7 @@ def main(resolve, fusion, bmd, selftest=False):
         'ID': 'SLogMetaRawWin',
         'WindowTitle': t('S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)') % __version__,
         'Geometry': [x, y, w, h],
-        # No 'Events': {'Close': True}: on Resolve 21.1 (macOS) it swallows the
-        # title-bar close without forwarding it, and the window cannot be closed.
+        # No 'Events': {'Close': True}: on Resolve 21.1 (macOS) it swallows the title-bar close.
     }, ui.VGroup({'Spacing': 4}, [
         # the version doubles as the update action: green and clickable when newer
         ui.HGroup({'Weight': 0}, [
@@ -273,8 +268,7 @@ def main(resolve, fusion, bmd, selftest=False):
             ui.Button({'ID': 'Write', 'Text': t('2 · Scrivi in Resolve'), 'Weight': 0}),
             ui.Button({'ID': 'Export', 'Text': t('Esporta CSV'), 'Weight': 0,
                        'ToolTip': t('CSV con i campi custom, da importare in Resolve')}),
-            # Do not call this widget Close: that name is reserved by the
-            # window-level event namespace in Resolve's UIDispatcher.
+            # Do not call this widget Close: reserved by Resolve's UIDispatcher window-level events.
             ui.Button({'ID': 'CloseButton', 'Text': t('Chiudi'), 'Weight': 0,
                        'ToolTip': t('Chiude la finestra S-Log MetaRaw')}),
         ]),
@@ -370,9 +364,7 @@ def main(resolve, fusion, bmd, selftest=False):
                 hide()
         except Exception:
             _log_exception(context)
-        # Resolve 21.x can leave the proxy visible after Hide() while the
-        # dispatcher is unwinding. Setting the property is harmless when the
-        # proxy is healthy and fixes that stale native wrapper case.
+        # Resolve 21.x can leave the proxy visible after Hide() while the dispatcher is unwinding.
         try:
             win.Visible = False
         except Exception:
@@ -805,15 +797,13 @@ def main(resolve, fusion, bmd, selftest=False):
         update_timer = ui.Timer({'ID': 'UpdateTimer', 'Interval': TIMER_MS})
         if timer is None or update_timer is None:
             raise RuntimeError('UIManager Timer unavailable')
-        # Timeout events of a standalone UITimer reach the dispatcher only: a
-        # handler registered as win.On.ProgressTimer is accepted but never called.
+        # Timeout events of a standalone UITimer reach the dispatcher only, never win.On.ProgressTimer.
         disp.On.Timeout = guard(on_timer)
         TIMER_OK = True
     except Exception:
         timer = update_timer = None
 
-    # Always-on slow timer: catches a native close that Resolve never reported
-    # as an event. Without it the "Chiudi" button still closes the window.
+    # Always-on slow timer: catches a native close that Resolve never reported as an event.
     WATCHDOG_OK = False
     watchdog = None
     try:
@@ -834,8 +824,7 @@ def main(resolve, fusion, bmd, selftest=False):
     win.On.PairCopy.Clicked = guard(on_pair_copy)
     win.On.Clips.CurrentItemChanged = guard(on_select)
     win.On.Clips.ItemClicked = guard(on_select)
-    # the title bar reaches close_window by event or through the watchdog; the
-    # "Chiudi" button always works
+    # the title bar reaches close_window by event or through the watchdog
     win.On.CloseButton.Clicked = close_window
     win.On.SLogMetaRawWin.Close = close_window
 

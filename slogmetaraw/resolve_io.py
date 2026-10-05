@@ -33,9 +33,8 @@ RESOLVE_COLOR_SPACES = {
 }
 
 
-# Resolve's per-clip "Data Level" attribute: 'Auto', 'Full' or 'Video'. It is the
-# scale Resolve uses when it decodes the clip into its 32-bit float pipeline, and
-# it is applied before the node graph, so it decides what an OpenFX node receives.
+# Resolve's per-clip "Data Level" ('Auto'/'Full'/'Video'): the decode scale applied
+# before the node graph, so it decides what an OpenFX node receives.
 DATA_LEVEL_PROPERTY = 'Data Level'
 
 
