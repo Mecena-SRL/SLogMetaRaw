@@ -18,11 +18,28 @@ cambia, l'immagine resta identica.
   `.dmg` su macOS. Prima proponeva sempre il `.dmg` (#55).
 - **Detail con ingresso non riconosciuto**: quando il nodo è neutro ma Resolve chiede comunque il fotogramma, l'immagine
   passa invariata (anche su Metal) invece di essere trattata come S-Log3 (#55).
+- **Windows e Linux, metadata letti ma non visti dal nodo**: lo script e il plugin calcolavano il nome della scheda
+  della clip in modo diverso (su Windows le barre del percorso, su Linux gli accenti scomposti), quindi il nodo non
+  trovava le schede scritte dallo script né dal proprio lettore. Ora usano la stessa grafia del percorso (#57).
+- **Chiusura improvvisa durante il controllo aggiornamenti**: una risposta troncata (controllo annullato o scaduto)
+  faceva lanciare un'eccezione nel thread del controllo, e Resolve si chiudeva. Ora la risposta incompleta si scarta;
+  il thread viene anche atteso fino alla fine prima che il plugin sia scaricato (#57).
+- **Linux, il browser si chiudeva da solo**: il pulsante della versione apriva l'installer con `xdg-open` e dopo 3 s
+  chiudeva il browser appena avviato. Ora il browser parte staccato (#57).
+- **Meno memoria su Metal con il Detail**: i piani di lavoro di Dehaze, Clarity e Texture si liberano quando il
+  controllo torna a zero, e tutti si liberano quando si chiude l'ultimo nodo Detail (fino a ~1 GB in 8K) (#57).
 
 ### Script
 
 - Il controllo aggiornamenti dichiara il sistema nel `User-Agent` e sceglie l'installer della piattaforma; un link
   rimasto in `update.json` per un altro sistema non viene più proposto.
+- **La lettura non si blocca più su un disco di rete caduto**: un lettore che non si lasciava chiudere teneva la
+  finestra ferma su "Lettura metadata… n/N" (#57).
+- **Windows, "scheda per il plugin non salvata"**: se il plugin stava leggendo la scheda proprio mentre lo script la
+  riscriveva, la scrittura falliva. Ora riprova per mezzo secondo (#57).
+- Una clip con un ritorno a capo (`\r`) nel nome non sfasa più i risultati delle clip successive.
+- Esporta CSV funziona anche con progetti che hanno `: \ * ? " < > |` nel nome (Windows).
+- Linux: il messaggio d'errore dello script si vede anche quando contiene `<` o `&`.
 
 ### Test
 
@@ -30,7 +47,7 @@ cambia, l'immagine resta identica.
   processo separato.
 - Corretto `va_start` nel finto host di test (leggeva il valore dal parametro sbagliato).
 - Nuovi test: percorsi e variabili d'ambiente con accenti, "Rileggi" durante una lettura, unload durante un controllo
-  aggiornamenti.
+  aggiornamenti, stesso nome di scheda tra plugin e script, JSON troncato, scrittura con il file occupato su Windows.
 
 ## S-Log MetaRaw 2.2.2
 
