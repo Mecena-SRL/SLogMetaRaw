@@ -259,6 +259,37 @@ packaging/           instalador, guías, desinstalador
 docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 ```
 
+### Linux y Windows (renderizado por CPU, experimental)
+
+El plugin también compila para Linux y Windows con CMake. Estos ports renderizan por CPU (todavía sin Metal, CUDA ni
+OpenCL) y no se han probado dentro de DaVinci Resolve: la build compatible sigue siendo la de macOS.
+
+**Instalación en Linux** (descarga desde **Releases** el archivo adecuado para tu distribución):
+
+| Archivo | Para |
+|---|---|
+| `slogmetaraw_<versión>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<versión>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<versión>-linux-x86_64.run` | cualquier distribución: `sh SLogMetaRaw-*.run` (`--user` sin sudo, `--uninstall`) |
+| `SLogMetaRaw-<versión>-linux-x86_64.tar.gz` | lo mismo, sin empaquetar: ejecuta `install.sh` |
+
+El plugin va a `/usr/OFX/Plugins`; la librería Python a `/usr/lib/slogmetaraw` (.deb/.rpm) o a
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). El paquete coloca el script de menú en
+`/opt/resolve/Fusion/Scripts/Utility` si Resolve está ahí; si no, ejecuta una vez `slogmetaraw-setup` (para tu
+usuario). Reinicia Resolve. Basta con Python 3.6 (incluso en Rocky/RHEL 8). El binario se compila contra glibc 2.28:
+se carga en Rocky/Alma/RHEL 8+, Ubuntu 20.04+ y Debian 10+.
+
+```bash
+# compílalo tú mismo (cmake, un compilador C++17, python3; el SDK OpenFX se descarga, o fija OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/: .tar.gz, .run, .deb, .rpm
+# Windows (PowerShell): cmake, Visual Studio Build Tools, python; Inno Setup es opcional
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ instalador .exe con Inno Setup)
+```
+
+El estado vive en `~/.local/share/SLogMetaRaw` en Linux y `%APPDATA%\SLogMetaRaw` en Windows. `.github/workflows/`
+compila los paquetes e instala el .deb/.rpm en Rocky 8/9, Ubuntu 20.04-24.04 y Debian 12 en cada cambio; empujar una
+etiqueta `v*` los adjunta a una release en borrador.
+
 ---
 
 ## Límites conocidos

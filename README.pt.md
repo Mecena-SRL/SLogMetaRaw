@@ -256,6 +256,37 @@ packaging/           instalador, guias, desinstalador
 docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 ```
 
+### Linux e Windows (renderização por CPU, experimental)
+
+O plugin também compila para Linux e Windows com CMake. Esses ports renderizam na CPU (ainda sem Metal, CUDA ou
+OpenCL) e não foram testados dentro do DaVinci Resolve: a build compatível continua sendo a do macOS.
+
+**Instalação no Linux** (baixe em **Releases** o arquivo certo para sua distribuição):
+
+| Arquivo | Para |
+|---|---|
+| `slogmetaraw_<versão>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<versão>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<versão>-linux-x86_64.run` | qualquer distribuição: `sh SLogMetaRaw-*.run` (`--user` sem sudo, `--uninstall`) |
+| `SLogMetaRaw-<versão>-linux-x86_64.tar.gz` | o mesmo, descompactado: execute `install.sh` |
+
+O plugin vai para `/usr/OFX/Plugins`; a biblioteca Python para `/usr/lib/slogmetaraw` (.deb/.rpm) ou
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). O pacote coloca o script de menu em
+`/opt/resolve/Fusion/Scripts/Utility` quando o Resolve está lá; caso contrário, execute uma vez `slogmetaraw-setup`
+(para o seu usuário). Reinicie o Resolve. Basta o Python 3.6 (mesmo no Rocky/RHEL 8). O binário é compilado contra
+glibc 2.28: carrega no Rocky/Alma/RHEL 8+, Ubuntu 20.04+ e Debian 10+.
+
+```bash
+# compile você mesmo (cmake, um compilador C++17, python3; o SDK OpenFX é baixado, ou defina OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/: .tar.gz, .run, .deb, .rpm
+# Windows (PowerShell): cmake, Visual Studio Build Tools, python; Inno Setup é opcional
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ instalador .exe com Inno Setup)
+```
+
+O estado fica em `~/.local/share/SLogMetaRaw` no Linux e `%APPDATA%\SLogMetaRaw` no Windows. `.github/workflows/`
+compila os pacotes e instala o .deb/.rpm no Rocky 8/9, Ubuntu 20.04-24.04 e Debian 12 a cada mudança; enviar uma tag
+`v*` os anexa a uma release em rascunho.
+
 ---
 
 ## Limites conhecidos
