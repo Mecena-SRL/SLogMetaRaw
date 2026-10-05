@@ -70,5 +70,24 @@ class LinuxChild(unittest.TestCase):
         self.assertNotIn('PYTHONHOME', out)
 
 
+    def open_url(self, script):
+        with tempfile.TemporaryDirectory() as tmp:
+            opener = os.path.join(tmp, 'xdg-open')
+            with open(opener, 'w') as fh:
+                fh.write('#!/bin/sh\n' + script + '\n')
+            os.chmod(opener, 0o755)
+            env = dict(os.environ, PATH=tmp + os.pathsep + os.environ.get('PATH', ''))
+            out = subprocess.run([self.exe, 'openurl', 'https://example.com/x'], capture_output=True, text=True,
+                                 timeout=30, env=env)
+            return out.stdout.strip()
+
+    def test_open_url_reports_a_failing_xdg_open(self):
+        self.assertEqual(self.open_url('exit 4'), 'opened=0')   # no handler, no display
+
+    def test_open_url_leaves_a_foreground_browser_running(self):
+        self.assertEqual(self.open_url('exit 0'), 'opened=1')
+        self.assertEqual(self.open_url('exec sleep 4'), 'opened=1')   # xdg-open waiting on the browser
+
+
 if __name__ == '__main__':
     unittest.main()

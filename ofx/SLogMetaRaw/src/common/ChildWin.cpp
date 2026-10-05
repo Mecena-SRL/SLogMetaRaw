@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <cctype>
+#include <cwchar>
 
 #include "Files.h"
 #include "FlatJson.h"
@@ -199,24 +201,82 @@ static const char* kBootstrap = "import runpy, sys; sys.path.insert(0, sys.argv.
 bool findPython(PythonCommand& cmd, std::string& error)
 {
     std::string lib;
-    if (readFile(supportDir() + "/lib_path", lib)) lib = trim(lib);
+    if (readFile(supportDir() + "/lib_path", lib)) {
+        if (lib.compare(0, 3, "\xEF\xBB\xBF") == 0) lib.erase(0, 3);   // the installer writes UTF-8 with a BOM
+        lib = trim(lib);
+    }
     if (lib.empty() && fileExists(supportDir() + "/lib/slogmetaraw")) lib = supportDir() + "/lib";
-    std::vector<std::string> candidates;
-    const std::string forced = envVar("SLOGMETARAW_PYTHON");
-    if (!forced.empty()) candidates.push_back(forced);
-    const std::string pf = envVar("ProgramFiles");
-    candidates.push_back((pf.empty() ? std::string("C:/Program Files") : pf) + "/Blackmagic Design/DaVinci Resolve/python.exe");
-    const std::string onPath = findExecutable("python");
-    if (!onPath.empty()) candidates.push_back(onPath);
-    for (const std::string& c : candidates) {
+    for (const std::string& c : pythonCandidates()) {
         if (GetFileAttributesW(widen(c).c_str()) != INVALID_FILE_ATTRIBUTES) {
             cmd.python = c;
             cmd.lib = lib;
             return true;
         }
     }
-    error = "Python non trovato";
+    error = "Python 3 non trovato (Resolve 20 o precedenti: installa Python 3 da python.org)";
     return false;
+}
+
+// PEP 514: the python.org installers (and the Microsoft Store one) register every Python 3 under
+// Software\Python\PythonCore\<tag>. Newest first; 3.6 is the oldest the library runs on.
+static void registeredPythons(std::vector<std::string>& out)
+{
+    struct Found { long minor; std::string exe; };
+    std::vector<Found> found;
+    const struct { HKEY root; REGSAM view; } hives[] = {
+        { HKEY_CURRENT_USER, 0 }, { HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY }, { HKEY_LOCAL_MACHINE, KEY_WOW64_32KEY } };
+    for (const auto& h : hives) {
+        HKEY core = nullptr;
+        if (RegOpenKeyExW(h.root, L"Software\\Python\\PythonCore", 0, KEY_READ | h.view, &core) != ERROR_SUCCESS)
+            continue;
+        for (DWORD i = 0;; ++i) {
+            wchar_t tag[64];
+            DWORD len = 64;
+            if (RegEnumKeyExW(core, i, tag, &len, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS) break;
+            wchar_t* dot = nullptr;
+            const long major = wcstol(tag, &dot, 10);
+            const long minor = (dot && *dot == L'.') ? wcstol(dot + 1, nullptr, 10) : -1;
+            if (major != 3 || minor < 6) continue;
+            const std::wstring sub = std::wstring(tag) + L"\\InstallPath";
+            wchar_t buf[1024];
+            DWORD size = sizeof(buf);
+            std::string exe;
+            if (RegGetValueW(core, sub.c_str(), L"ExecutablePath", RRF_RT_REG_SZ, nullptr, buf, &size) == ERROR_SUCCESS) {
+                exe = narrow(buf);
+            } else {
+                size = sizeof(buf);
+                if (RegGetValueW(core, sub.c_str(), nullptr, RRF_RT_REG_SZ, nullptr, buf, &size) == ERROR_SUCCESS) {
+                    exe = narrow(buf);
+                    if (!exe.empty() && exe.back() != '\\' && exe.back() != '/') exe += '\\';
+                    if (!exe.empty()) exe += "python.exe";
+                }
+            }
+            if (!exe.empty()) found.push_back({ minor, exe });
+        }
+        RegCloseKey(core);
+    }
+    std::stable_sort(found.begin(), found.end(), [](const Found& a, const Found& b) { return a.minor > b.minor; });
+    for (const Found& f : found) out.push_back(f.exe);
+}
+
+// Resolve 21 ships its own python.exe; Resolve 20 and earlier use the Python 3 the user installed, which the
+// python.org installer leaves off the PATH by default. The python.exe in WindowsApps found on the PATH is the
+// Microsoft Store alias: without the Store Python it opens the Store instead of running anything.
+std::vector<std::string> pythonCandidates()
+{
+    std::vector<std::string> candidates;
+    const std::string forced = envVar("SLOGMETARAW_PYTHON");
+    if (!forced.empty()) candidates.push_back(forced);
+    const std::string pf = envVar("ProgramFiles");
+    candidates.push_back((pf.empty() ? std::string("C:/Program Files") : pf) + "/Blackmagic Design/DaVinci Resolve/python.exe");
+    registeredPythons(candidates);
+    std::string onPath = findExecutable("python");
+    std::string lower = onPath;
+    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) { return (char)tolower(ch); });
+    std::replace(lower.begin(), lower.end(), '/', '\\');
+    if (lower.find("\\microsoft\\windowsapps\\") != std::string::npos) onPath.clear();
+    if (!onPath.empty()) candidates.push_back(onPath);
+    return candidates;
 }
 
 std::vector<std::string> pythonArgv(const PythonCommand& cmd, const std::vector<std::string>& args)

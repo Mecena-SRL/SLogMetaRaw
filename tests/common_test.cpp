@@ -6,6 +6,8 @@
 //   runout TIMEOUT_MS ARGV...  spawn a child and print what it wrote on stdout, nothing else
 //   utf8files DIR            make, write, read and remove a file under DIR/caffè (UTF-8 paths, "W" APIs on Windows)
 //   json TEXT                parseFlatJson(TEXT) as sorted key=value lines
+//   openurl URL              openUrl(URL): prints opened=0|1
+//   pythons                  where findPython looks, one per line, then "found=<python>" (or "found=")
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -56,6 +58,17 @@ int main(int argc, char** argv)
     }
     if (argc >= 3 && !strcmp(argv[1], "json")) {
         for (const auto& kv : parseFlatJson(argv[2])) printf("%s=%s\n", kv.first.c_str(), kv.second.c_str());
+        return 0;
+    }
+    if (argc >= 3 && !strcmp(argv[1], "openurl")) {
+        printf("opened=%d\n", openUrl(argv[2]) ? 1 : 0);
+        return 0;
+    }
+    if (argc >= 2 && !strcmp(argv[1], "pythons")) {
+        for (const std::string& c : pythonCandidates()) printf("%s\n", c.c_str());
+        PythonCommand cmd;
+        std::string error;
+        printf("found=%s\n", findPython(cmd, error) ? cmd.python.c_str() : "");
         return 0;
     }
     fprintf(stderr, "uso: common_test cachekey PATH | run TIMEOUT_MS ARGV... | runout TIMEOUT_MS ARGV...\n");

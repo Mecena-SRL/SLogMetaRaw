@@ -1,5 +1,5 @@
 ; SPDX-License-Identifier: GPL-3.0-or-later
-; Inno Setup script: iscc /DAppVersion=2.2.3 /DStageDir=<staged folder> /DOutDir=<dist> SLogMetaRaw.iss
+; Inno Setup script: iscc /DAppVersion=2.3.0 /DStageDir=<staged folder> /DOutDir=<dist> SLogMetaRaw.iss
 [Setup]
 AppName=S-Log MetaRaw
 AppVersion={#AppVersion}
@@ -22,20 +22,23 @@ Uninstallable=yes
 Source: "{#StageDir}\SLogMetaRaw.ofx.bundle\*"; DestDir: "{commoncf64}\OFX\Plugins\SLogMetaRaw.ofx.bundle"; Flags: recursesubdirs ignoreversion
 ; the Python library and the launcher script, per user (the user running the installer)
 Source: "{#StageDir}\slogmetaraw\*"; DestDir: "{userappdata}\SLogMetaRaw\lib\slogmetaraw"; Flags: recursesubdirs ignoreversion
-Source: "{#StageDir}\tools\render_launcher.py"; DestDir: "{app}\tools"; Flags: ignoreversion
-Source: "{#StageDir}\resolve_script\SLogMetaRaw.py"; DestDir: "{app}\resolve_script"; Flags: ignoreversion
-
-[Run]
-; render the launcher into Resolve's Scripts folder (needs python on PATH; the .py is skipped otherwise)
-Filename: "python"; Parameters: """{app}\tools\render_launcher.py"" ""{app}\resolve_script\SLogMetaRaw.py"" ""{userappdata}\SLogMetaRaw\lib"" ""{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\S-Log MetaRaw.py"""; Flags: runhidden; StatusMsg: "Installo lo script di Resolve..."
+; the launcher goes in as is: it finds the library through lib_path, so no Python is needed to install it
+; (Resolve 20 and earlier have none of their own, and python.org leaves its Python off the PATH)
+Source: "{#StageDir}\resolve_script\SLogMetaRaw.py"; DestDir: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility"; DestName: "S-Log MetaRaw.py"; Flags: ignoreversion
 
 [Code]
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Lines: TArrayOfString;
 begin
   if CurStep = ssInstall then
     ForceDirectories(ExpandConstant('{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility'));
-  if CurStep = ssPostInstall then
-    SaveStringToFile(ExpandConstant('{userappdata}\SLogMetaRaw\lib_path'), ExpandConstant('{userappdata}\SLogMetaRaw\lib') + #10, False);
+  if CurStep = ssPostInstall then begin
+    { UTF-8: a user folder with accents must reach the plugin and the launcher intact }
+    SetArrayLength(Lines, 1);
+    Lines[0] := ExpandConstant('{userappdata}\SLogMetaRaw\lib');
+    SaveStringsToUTF8File(ExpandConstant('{userappdata}\SLogMetaRaw\lib_path'), Lines, False);
+  end;
 end;
 
 [UninstallDelete]

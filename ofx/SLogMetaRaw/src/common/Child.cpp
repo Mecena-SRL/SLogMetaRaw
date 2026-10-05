@@ -278,34 +278,52 @@ bool findPython(PythonCommand& cmd, std::string& error)
         if (lib.empty() && stat((std::string(shared) + "/slogmetaraw").c_str(), &st) == 0) lib = shared;
     }
 #endif
-    std::vector<std::string> candidates;
-    if (const char* forced = getenv("SLOGMETARAW_PYTHON")) candidates.push_back(forced);
-#ifdef __APPLE__
-    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython");
-    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Resources/ResolvePython/ResolvePython");
-    candidates.push_back("/opt/homebrew/bin/python3");
-#endif
-    candidates.push_back("/usr/bin/python3");
-    candidates.push_back("/usr/local/bin/python3");
-    if (const char* path = getenv("PATH")) {   // pyenv, conda, a distribution's /bin ...: first python3 on the PATH
-        const std::string list = path;
-        size_t pos = 0;
-        while (pos <= list.size()) {
-            size_t end = list.find(':', pos);
-            if (end == std::string::npos) end = list.size();
-            if (end > pos) candidates.push_back(list.substr(pos, end - pos) + "/python3");
-            pos = end + 1;
-        }
-    }
-    for (const std::string& c : candidates) {
+    for (const std::string& c : pythonCandidates()) {
         if (access(c.c_str(), X_OK) == 0) {
             cmd.python = c;
             cmd.lib = lib;
             return true;
         }
     }
-    error = "Python non trovato";
+    error = "Python 3 non trovato (Resolve 20 o precedenti: installa Python 3 da python.org)";
     return false;
+}
+
+// Resolve 21 ships ResolvePython; Resolve 20 and earlier use the Python 3 the user installed (python.org,
+// Homebrew, the Command Line Tools). On macOS /usr/bin/python3 is skipped: without the Command Line Tools it
+// is a stub that opens an installation dialog every time the plugin starts a child.
+std::vector<std::string> pythonCandidates()
+{
+    std::vector<std::string> candidates;
+    if (const char* forced = getenv("SLOGMETARAW_PYTHON")) candidates.push_back(forced);
+#ifdef __APPLE__
+    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Applications/ResolvePython");
+    candidates.push_back("/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Resources/ResolvePython/ResolvePython");
+    candidates.push_back("/Library/Frameworks/Python.framework/Versions/Current/bin/python3");
+    candidates.push_back("/opt/homebrew/bin/python3");
+    candidates.push_back("/usr/local/bin/python3");
+    candidates.push_back("/Library/Developer/CommandLineTools/usr/bin/python3");
+    candidates.push_back("/Applications/Xcode.app/Contents/Developer/usr/bin/python3");
+#else
+    candidates.push_back("/usr/bin/python3");
+    candidates.push_back("/usr/local/bin/python3");
+#endif
+    if (const char* path = getenv("PATH")) {   // pyenv, conda, a distribution's /bin ...: first python3 on the PATH
+        const std::string list = path;
+        size_t pos = 0;
+        while (pos <= list.size()) {
+            size_t end = list.find(':', pos);
+            if (end == std::string::npos) end = list.size();
+            std::string dir = list.substr(pos, end - pos);
+            while (dir.size() > 1 && dir.back() == '/') dir.pop_back();
+#ifdef __APPLE__
+            if (dir == "/usr/bin") dir.clear();
+#endif
+            if (!dir.empty()) candidates.push_back(dir + "/python3");
+            pos = end + 1;
+        }
+    }
+    return candidates;
 }
 
 std::vector<std::string> pythonArgv(const PythonCommand& cmd, const std::vector<std::string>& args)
@@ -330,9 +348,14 @@ bool openUrl(const std::string& url)
     const std::string opener = findExecutable("xdg-open");
     if (opener.empty()) return false;
     // In the background with no pipe: xdg-open may run the browser in the foreground, and the timeout's
-    // group kill (or a closed stdout) would take the browser down with it.
-    const std::vector<std::string> argv = { "/bin/sh", "-c", "\"$0\" \"$1\" </dev/null >/dev/null 2>&1 &",
-                                            opener, url };
+    // group kill (or a closed stdout) would take the browser down with it. An xdg-open that ends within
+    // 2 s reports its own result (no handler, no display); one still running has started the browser.
+    const std::vector<std::string> argv = {
+        "/bin/sh", "-c",
+        "\"$0\" \"$1\" </dev/null >/dev/null 2>&1 & pid=$!; i=0; "
+        "while [ $i -lt 20 ]; do kill -0 $pid 2>/dev/null || { wait $pid; exit $?; }; sleep 0.1; i=$((i+1)); done; "
+        "exit 0",
+        opener, url };
 #endif
     ChildResult r = runProcess(argv, EnvSnapshot::capture(), 3000);
     return r.finished && (r.exitCode == 0 || (r.exitCode == -1 && r.termSignal == 0));   // -1: reaped by the host
