@@ -88,14 +88,59 @@ salvato cambia, l'immagine resta identica.
 
 ## S-Log MetaRaw 2.2.1
 
-Correzione del controllo aggiornamenti. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
+Prima versione per **Linux** e **Windows** (sperimentali, render su CPU) e correzione del controllo aggiornamenti.
+Su macOS nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
 
-### Plugin e script
+### macOS
 
 - **"controllo non riuscito" accanto alla versione**: il progetto è passato all'organizzazione Mecena-SRL su GitHub e il
   controllo cercava ancora le release nel vecchio indirizzo (`ivan-94m/SLogMetaRaw`), che ora rimanda altrove. Il
   controllo e il link di download dell'installer usano il nuovo indirizzo. Chi ha la 2.0.1, la 2.1.x o la 2.2.0 deve
   installare questa versione a mano dal sito delle Release: da qui in poi gli aggiornamenti si vedono di nuovo.
+
+### Linux (sperimentale)
+
+- **Quattro modi per installarlo**: `.deb` (Ubuntu, Debian, Mint), `.rpm` (Rocky, Alma, RHEL, CentOS, Fedora), `.run`
+  (qualsiasi distribuzione: `sh SLogMetaRaw-*.run`, con `--user` senza sudo e `--uninstall`) e `.tar.gz` con
+  `install.sh`. Il plugin va in `/usr/OFX/Plugins`; il pacchetto mette lo script di menu in
+  `/opt/resolve/Fusion/Scripts/Utility` se Resolve è lì, altrimenti `slogmetaraw-setup` lo installa per l'utente.
+- **Compatibilità**: il binario è costruito contro glibc 2.28 con libstdc++ incorporata, quindi si carica su
+  Rocky/Alma/RHEL 8 e successivi, Ubuntu 20.04 e successivi, Debian 10 e successivi. La libreria Python gira anche con
+  Python 3.6, quello di Rocky/RHEL 8.
+- **Provato in CI**: installazione e rimozione dei pacchetti su Rocky 8 e 9, Ubuntu 20.04, 22.04 e 24.04, Debian 12,
+  con il plugin che si carica e la libreria che si importa con il `python3` di ciascuna. **Non provato dentro DaVinci
+  Resolve.**
+- Il Python che il plugin avvia non eredita le librerie di Resolve (`LD_LIBRARY_PATH`) né i suoi file aperti; la
+  finestra di salvataggio di "Esporta LUT" usa zenity o kdialog.
+
+### Windows (sperimentale)
+
+- **Installer** `SLogMetaRaw-2.2.1-windows-x64-setup.exe` (chiede i diritti di amministratore) e archivio `.zip` con
+  `install.ps1`. Serve Python nel `PATH` per creare lo script di Resolve. Il plugin va in
+  `C:\Program Files\Common Files\OFX\Plugins`, lo stato in `%APPDATA%\SLogMetaRaw`.
+- **Non provato dentro DaVinci Resolve.** La suite di test Python gira su Windows ma non è ancora un controllo
+  bloccante.
+
+### Libreria e script (tutti i sistemi)
+
+- **Lettura delle clip su Windows**: senza `os.pread`, `signal.alarm` e `os.fork`, che Windows non ha. "Rileggi metadata"
+  scrive in Resolve con un processo separato.
+- **Lingua dell'interfaccia**: segue `LANG` su Linux e il locale su Windows (prima era sempre inglese fuori da macOS).
+- **Collegamento a Resolve** da un `python3` di sistema: `DaVinciResolveScript` si cerca anche nelle cartelle di
+  Resolve (`RESOLVE_SCRIPT_API` e le predefinite di ogni sistema).
+- **Cartelle di stato per sistema**: `~/Library/Application Support/SLogMetaRaw` su macOS,
+  `~/.local/share/SLogMetaRaw` su Linux, `%APPDATA%\SLogMetaRaw` su Windows; il plugin e la libreria usano le stesse.
+
+### Per chi sviluppa
+
+- Il plugin si compila anche con CMake, su Linux, Windows e macOS; la CI compila e prova ogni modifica su tutti e tre i
+  sistemi e costruisce i pacchetti Linux e Windows. Il `.dmg` per Mac si costruisce ancora su un Mac con Resolve
+  (`packaging/build_installer.sh`).
+
+### Limiti noti
+
+- Su Linux e Windows il render è solo su CPU: niente CUDA, OpenCL né Metal.
+- Su Linux e Windows il pulsante della versione controlla le release ma non propone ancora l'installer per quel sistema.
 
 ## S-Log MetaRaw 2.2.0
 
