@@ -81,8 +81,9 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     int cs = 0, gm = 0;
     m_ColorSpace->getValueAtTime(p_Time, cs);
     m_Gamma->getValueAtTime(p_Time, gm);
-    p.outSpace = cs == 0 ? nodeSpace : cs - 1;
-    p.outGamma = gm == 0 ? nodeGamma : gm - 1;
+    // 0 follows the node; a choice outside the table (a grade from a newer build) does too
+    p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : nodeSpace;
+    p.outGamma = gm >= 1 && gm <= kGammaCount ? gm - 1 : nodeGamma;
     p.convert = (p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
     // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)

@@ -329,10 +329,13 @@ bool openUrl(const std::string& url)
 #else
     const std::string opener = findExecutable("xdg-open");
     if (opener.empty()) return false;
-    const std::vector<std::string> argv = { opener, url };
+    // In the background with no pipe: xdg-open may run the browser in the foreground, and the timeout's
+    // group kill (or a closed stdout) would take the browser down with it.
+    const std::vector<std::string> argv = { "/bin/sh", "-c", "\"$0\" \"$1\" </dev/null >/dev/null 2>&1 &",
+                                            opener, url };
 #endif
     ChildResult r = runProcess(argv, EnvSnapshot::capture(), 3000);
-    return r.finished && r.exitCode == 0;
+    return r.finished && (r.exitCode == 0 || (r.exitCode == -1 && r.termSignal == 0));   // -1: reaped by the host
 }
 
 #endif   // !_WIN32

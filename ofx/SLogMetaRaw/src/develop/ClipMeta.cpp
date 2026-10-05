@@ -7,7 +7,6 @@
 #include "../common/Files.h"
 #include "../common/FlatJson.h"
 
-
 #include <cctype>
 #include <cstdlib>
 #include <mutex>
@@ -97,18 +96,12 @@ std::mutex s_Mutex;
 std::map<std::string, Read> s_Reads;
 }
 
-// A finished reader: the record decides. The old --to-resolve answer ({"ok":..}) is still accepted.
+// A finished reader: the record decides.
 static MetaOutcome settle(const std::string& path, Read& r, ClipMeta& m, std::string& status)
 {
     r.running = false;
     const std::map<std::string, std::string> out = parseFlatJson(r.child.out);
     if (readRecord(path, m)) {
-        if (out.count("ok")) {
-            std::map<std::string, std::string> j = out;
-            m.resolveNote = atoi(j["ok"].c_str()) == 1
-                ? "scritti in Resolve su questa clip (" + j["written"] + " campi)"
-                : "scrittura in Resolve non riuscita: " + j["error"];
-        }
         status = r.reload ? "Metadata letti dal file"
                           : "Metadata letti dal file: lancia lo script S-Log MetaRaw per registrarli in Resolve";
         r.failure.clear();
@@ -177,6 +170,11 @@ MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std
 
     std::lock_guard<std::mutex> lock(s_Mutex);
     Read& r = s_Reads[path];
+    if (r.running && mode == MetaMode::Reload && !r.reload) {
+        // a --cache read in flight would swallow the click: --to-resolve must run anyway
+        if (!waitProcess(r.child, kReloadWaitMs)) killProcess(r.child);
+        r.running = false;
+    }
     if (r.running) {
         if (waitProcess(r.child, mode == MetaMode::Reload ? kReloadWaitMs : 0)) return settle(path, r, m, status);
         if (r.child.elapsedMs() < kReadLimitMs) {

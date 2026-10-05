@@ -2,6 +2,7 @@
 #include "MetalKernels.h"
 
 #include <algorithm>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -50,6 +51,12 @@ public:
         auto& list = m_Free[device][key];
         if (list.size() < 3) list.push_back(s);
     }
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        m_Free.clear();
+        m_Recent.clear();
+    }
 
 private:
     static constexpr size_t kSizes = 2;
@@ -64,10 +71,11 @@ Pool& pool()
     return *p;
 }
 
+// floats <= 1: a plane the frame binds but does not use; a big buffer left from an earlier frame is let go.
 id<MTLBuffer> plane(id<MTLDevice> device, Scratch& s, const char* name, size_t floats)
 {
     __strong id<MTLBuffer>& b = s.planes[name];
-    if (!b || b.length < floats * sizeof(float))
+    if (!b || b.length < floats * sizeof(float) || (floats <= 1 && b.length > sizeof(float)))
         b = [device newBufferWithLength:std::max<size_t>(floats, 1) * sizeof(float) options:MTLResourceStorageModePrivate];
     return b;
 }
@@ -162,26 +170,45 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     const bool dehaze = p.hazeOn != 0, transmission = dehaze && p.hazeMix == 0.0f;
     const std::string key = std::to_string(W) + "x" + std::to_string(H);
     std::shared_ptr<Scratch> s = pool().acquire(device, key);
-    auto P = [&](const char* name, size_t n) { return plane(device, *s, name, n); };
+    bool allocated = true;   // a plane the device could not allocate fails the frame instead of binding nil
+    auto P = [&](const char* name, size_t n) {
+        id<MTLBuffer> b = plane(device, *s, name, n);
+        if (!b) allocated = false;
+        return b;
+    };
 
     id<MTLCommandBuffer> commands = [queue commandBuffer];
     commands.label = @"SLogMetaRawDetail";
     id<MTLComputeCommandEncoder> enc = [commands computeCommandEncoder];
+    if (!enc) return false;
     Encoder e(device, enc);
     DtPass frame = { W, H, W, H, 1, 0.0f, 0, p_RowPixels };
     const int ngrid = (int)grid;
 
     id<MTLBuffer> L0 = P("L0", full), tmpFull = P("tmpFull", full), tmpGrid = P("tmpGrid", std::max(grid, (size_t)w * H));
-    id<MTLComputePipelineState> ps = e.use("dt_luma");
-    e.buf(src, 0); e.buf(L0, 1); e.bytes(frame, 2); e.bytes(p, 3); e.grid2(ps, W, H);
-    id<MTLBuffer> L = L0, J = P("J", dehaze ? full * 3 : 1);
+    // with Dehaze the source is decoded once into J, with a finite flag per pixel (a quarter of a plane)
+    id<MTLBuffer> L = L0, J = P("J", dehaze ? full * 3 : 1), fin = P("fin", dehaze ? (full + 3) / 4 : 1);
+    id<MTLComputePipelineState> ps;
+    if (dehaze) {
+        ps = e.use("dt_decode");
+        e.buf(src, 0); e.buf(L0, 1); e.buf(J, 2); e.buf(fin, 3); e.bytes(frame, 4); e.bytes(p, 5); e.grid2(ps, W, H);
+    } else {
+        ps = e.use("dt_luma");
+        e.buf(src, 0); e.buf(L0, 1); e.bytes(frame, 2); e.bytes(p, 3); e.grid2(ps, W, H);
+    }
+    auto drop = [&](std::initializer_list<const char*> names) {   // planes this frame does not touch
+        for (const char* n : names) s->planes.erase(n);
+    };
     id<MTLBuffer> Lw = P("Lw", grid), at = P("at", grid), bt = P("bt", grid);
+    if (!transmission) drop({ "c0", "c1", "c2", "E", "g2", "g3" });
+    if (p.clarity == 0.0f) drop({ "a2", "b2", "a3", "b3" });
+    if (p.texture == 0.0f) drop({ "Lt", "tmpTex" });
     if (dehaze) {
         if (transmission) {
-            id<MTLBuffer> xa = P("xa", full), ch[3] = { P("c0", grid), P("c1", grid), P("c2", grid) };
+            id<MTLBuffer> xa = tmpFull, ch[3] = { P("c0", grid), P("c1", grid), P("c2", grid) };
             for (int c = 0; c < 3; ++c) {
                 ps = e.use("dt_veil_ratio");
-                e.buf(src, 0); e.buf(xa, 1); e.bytes(frame, 2); e.bytes(p, 3); e.bytes(c, 4); e.grid2(ps, W, H);
+                e.buf(J, 0); e.buf(xa, 1); e.bytes(p, 2); e.bytes(c, 3); e.buf(fin, 4); e.grid2(ps, W, H);
                 e.tent(xa, W, H, p.s, tmpGrid, ch[c]);
             }
             e.tent(L0, W, H, p.s, tmpGrid, Lw);
@@ -204,10 +231,8 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
             e.box(mIp, w, h, p.rtx, p.rty, tmpGrid, at);
             e.box(mII, w, h, p.rtx, p.rty, tmpGrid, bt);
         }
-        L = P("L", full);
         ps = e.use("dt_haze");
-        e.buf(src, 0); e.buf(L0, 1); e.buf(at, 2); e.buf(bt, 3); e.buf(J, 4); e.buf(L, 5); e.bytes(frame, 6);
-        e.bytes(p, 7); e.grid2(ps, W, H);
+        e.buf(J, 0); e.buf(L, 1); e.buf(at, 2); e.buf(bt, 3); e.buf(fin, 4); e.bytes(p, 5); e.grid2(ps, W, H);
     }
 
     e.tent(L, W, H, p.s, tmpGrid, Lw);
@@ -235,11 +260,13 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     }
     ps = e.use("dt_final");
     e.buf(src, 0); e.buf(dst, 1); e.buf(L, 2); e.buf(Lw, 3); e.buf(Gg, 4); e.buf(aB, 5); e.buf(bB, 6); e.buf(Dg, 7);
-    e.buf(G1, 8); e.buf(G2, 9); e.buf(J, 10); e.bytes(frame, 11); e.bytes(p, 12);
+    e.buf(G1, 8); e.buf(G2, 9); e.buf(J, 10); e.bytes(frame, 11); e.bytes(p, 12); e.buf(fin, 13);
     e.grid2(ps, W, H);
     [enc endEncoding];
-    if (!e.ok) return false;
+    if (!e.ok || !allocated) return false;
     [commands addCompletedHandler:^(id<MTLCommandBuffer>) { pool().release(device, key, s); }];
     [commands commit];
     return true;
 }
+
+void DropDetailScratch() { pool().clear(); }

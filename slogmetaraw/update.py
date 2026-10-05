@@ -14,6 +14,7 @@ an unreachable name): keep these functions off the thread that paints the window
 import json
 import os
 import re
+import sys
 import threading
 import time
 import urllib.error
@@ -30,14 +31,29 @@ TAG_PAGE = 'https://github.com/%s/releases/tag/%%s' % REPO
 SUPPORT_DIR = paths.support_dir()
 STATE_PATH = os.path.join(SUPPORT_DIR, 'update.json')
 CACHE_TTL = 60  # seconds: a fresh answer is reused instead of asking GitHub again
-# same rule as the plugin's isTrustedDmgUrl: update.json is writable by anyone, so check before opening
-_TRUSTED_DMG = re.compile(r'https://github\.com/%s/releases/download/[A-Za-z0-9._/+-]+\.(?:dmg|DMG|Dmg)' % re.escape(REPO))
+
+
+def installer_exts():
+    """The installers of this system, preferred first. The key stays 'dmg_url' for older readers."""
+    if sys.platform == 'win32':
+        return ('.exe',)
+    if sys.platform.startswith('linux'):
+        if os.path.exists('/etc/debian_version'):
+            return ('.deb', '.run')
+        if os.path.exists('/etc/redhat-release'):
+            return ('.rpm', '.run')
+        return ('.run', '.deb', '.rpm')
+    return ('.dmg',)
+
+
+# same rule as the plugin's isTrustedInstallerUrl: update.json is writable by anyone, so check before opening
+_TRUSTED_URL = re.compile(r'https://github\.com/%s/releases/download/[A-Za-z0-9._/+-]+' % re.escape(REPO))
 
 SEMVER_RE = re.compile(r'^v?(\d+)\.(\d+)\.(\d+)$')
 TAG_IN_URL_RE = re.compile(r'/releases/tag/([^/?#]+)')
 
 # GitHub answers 403 to a request without a User-Agent.
-_AGENT = 'SLogMetaRaw/%s (macOS)' % __version__
+_AGENT = 'SLogMetaRaw/%s (%s)' % (__version__, sys.platform)
 _HEADERS = {'User-Agent': _AGENT}
 _API_HEADERS = dict(_HEADERS, **{'Accept': 'application/vnd.github+json'})
 
@@ -102,8 +118,9 @@ def release_details(timeout=6.0):
     request = urllib.request.Request(API_LATEST, headers=_API_HEADERS)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         release = json.load(response)
-    dmg = next((a for a in release.get('assets') or []
-                if (a.get('name') or '').lower().endswith('.dmg')), None) or {}
+    assets = release.get('assets') or []
+    dmg = next((a for ext in installer_exts() for a in assets
+                if (a.get('name') or '').lower().endswith(ext)), None) or {}
     return {
         'notes': release.get('body') or '',
         'title': release.get('name') or '',
@@ -139,21 +156,16 @@ def read_state():
 
 
 def trusted_dmg_url(url):
-    return isinstance(url, str) and len(url) < 512 and '..' not in url and bool(_TRUSTED_DMG.fullmatch(url))
+    return (isinstance(url, str) and len(url) < 512 and '..' not in url and bool(_TRUSTED_URL.fullmatch(url))
+            and url.lower().endswith(installer_exts()))
 
 
 def write_state(result):
-    tmp = '%s.%d.%d.tmp' % (STATE_PATH, os.getpid(), threading.get_ident())   # the plugin writes it too
     try:
         os.makedirs(SUPPORT_DIR, exist_ok=True)
-        with open(tmp, 'w', encoding='utf-8') as fh:
-            json.dump(result, fh, ensure_ascii=False)
-        os.replace(tmp, STATE_PATH)
+        paths.write_json(STATE_PATH, result, '.%d' % threading.get_ident())   # the plugin writes it too
     except OSError:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        pass
 
 
 def check(current=None, timeout=6.0):

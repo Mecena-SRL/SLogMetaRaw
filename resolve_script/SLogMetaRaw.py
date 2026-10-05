@@ -65,7 +65,7 @@ def _show_dialog(text):
             import ctypes
             ctypes.windll.user32.MessageBoxW(None, text, 'S-Log MetaRaw', 0x30)
         else:
-            for tool in (['zenity', '--warning', '--title=S-Log MetaRaw', '--text=' + text],
+            for tool in (['zenity', '--warning', '--no-markup', '--title=S-Log MetaRaw', '--text=' + text],
                          ['kdialog', '--title', 'S-Log MetaRaw', '--sorry', text]):
                 try:
                     subprocess.run(tool, timeout=30, check=False)

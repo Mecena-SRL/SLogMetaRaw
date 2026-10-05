@@ -296,11 +296,11 @@ static OfxStatus paramGetPropertySet(OfxParamHandle param, OfxPropertySetHandle*
 
 static OfxStatus paramGetNumKeys(OfxParamHandle, unsigned int* n) { *n = 0; return kOfxStatOK; }
 
-static OfxStatus paramSetValueAtTime(OfxParamHandle handle, OfxTime, ...)
+static OfxStatus paramSetValueAtTime(OfxParamHandle handle, OfxTime time, ...)
 {
     Param* p = reinterpret_cast<Param*>(handle);
     va_list ap;
-    va_start(ap, handle);   // no animation: a keyed set is a plain set
+    va_start(ap, time);   // no animation: a keyed set is a plain set
     if (p->type == kOfxParamTypeDouble) p->doubleValue = va_arg(ap, double);
     else if (isIntLike(p->type)) p->intValue = va_arg(ap, int);
     va_end(ap);

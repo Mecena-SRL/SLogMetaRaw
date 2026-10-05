@@ -2,7 +2,9 @@
 #include "DetailEffect.h"
 #include "ofxImageEffectExt.h"
 
+#include <atomic>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -19,9 +21,12 @@
 static const char* const kIntensities[] = { "localContrast", "localHighlights", "localShadows",
                                             "texture", "clarity", "dehaze" };
 
+static std::atomic<int>& liveNodes() { static std::atomic<int> n(0); return n; }
+
 DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
     : ImageEffect(p_Handle)
 {
+    ++liveNodes();
     try {
         m_DstClip = fetchClip(kOfxImageEffectOutputClipName);
         m_SrcClip = fetchClip(kOfxImageEffectSimpleSourceClipName);
@@ -227,6 +232,11 @@ public:
         if (pool().size() < kKeep && m_S->L0.capacity() <= 2 * m_Pixels) pool().push_back(std::move(m_S));
     }
     DetailScratch& operator*() { return *m_S; }
+    static void drop()
+    {
+        std::lock_guard<std::mutex> lock(mutex());
+        pool().clear();
+    }
 
 private:
     static const size_t kKeep = 2;
@@ -235,6 +245,16 @@ private:
     size_t m_Pixels;
     std::unique_ptr<DetailScratch> m_S;
 };
+}
+
+DetailEffect::~DetailEffect()
+{
+    if (--liveNodes() == 0) {   // the last Detail node is gone: its working planes too
+        ScratchLease::drop();
+#ifdef __APPLE__
+        DropDetailScratch();
+#endif
+    }
 }
 
 SMDetailControls DetailEffect::readControls(double t)
@@ -279,7 +299,19 @@ void DetailEffect::render(const OFX::RenderArguments& p_Args)
     const int W = b.x2 - b.x1, H = b.y2 - b.y1;
     if (!sameLayout(*src, *dst)) OFX::throwSuiteStatusException(kOfxStatErrImageFormat);
     int space = 8, gamma = 9;
-    resolveInput(space, gamma);
+    if (resolveInput(space, gamma) == InputOrigin::Unknown) {   // neutral node the host renders anyway
+        const size_t rowBytes = (size_t)src->getRowBytes();
+#ifdef __APPLE__
+        if (p_Args.isEnabledMetalRender) {
+            if (!RunCopy(p_Args.pMetalCmdQ, rowBytes * H, static_cast<const float*>(src->getPixelData()),
+                         static_cast<float*>(dst->getPixelData())))
+                OFX::throwSuiteStatusException(kOfxStatFailed);
+            return;
+        }
+#endif
+        memcpy(dst->getPixelData(), src->getPixelData(), rowBytes * H);
+        return;
+    }
     // The whole frame arrives (no tiles), so its height is the reference of every radius: the same
     // look at full size, in proxy and in the viewer.
     const SMDetailControls controls = readControls(p_Args.time);

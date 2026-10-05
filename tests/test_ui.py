@@ -395,6 +395,44 @@ class ReaderRuntime(unittest.TestCase):
         finally:
             ui._stop_reader(process)
 
+    def test_lines_split_across_writes_and_death(self):
+        process = subprocess.Popen(
+            [sys.executable, '-c', 'import sys,time; w=sys.stdout.write; f=sys.stdout.flush; '
+             'w("noise\\n{\\"ok\\""); f(); time.sleep(0.2); w(": true}\\n"); f()'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        try:
+            self.assertEqual(ui._read_result(process, time.monotonic() + 5), {'ok': True})
+            self.assertIsNone(ui._read_result(process, time.monotonic() + 5))
+            self.assertIsNone(ui._read_result(process, time.monotonic() + 5))
+        finally:
+            ui._stop_reader(process)
+
+    def test_volume_of_clip(self):
+        mounts = ['/', '/Volumes/Card (1)', '/media/x/CARD A']
+        self.assertEqual(ui._volume_of('/Volumes/Card (1)/C0001.MP4', mounts), '/Volumes/Card (1)')
+        self.assertEqual(ui._volume_of('/media/x/CARD A/M4ROOT/C0001.MP4', mounts), '/media/x/CARD A')
+        self.assertEqual(ui._volume_of('/Users/a/C0001.MP4', mounts), '/')
+        if os.name == 'nt':
+            self.assertEqual(ui._volume_of('E:\\M4ROOT\\C0001.MP4', []), 'E:')
+
+    def test_mount_points_include_the_root(self):
+        if os.name == 'nt':
+            self.assertEqual(ui._mount_points(), [])   # the drive in the path is the volume
+        else:
+            self.assertIn('/', ui._mount_points())
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux only')
+    def test_mount_points_read_the_kernel_table(self):
+        table = 'proc /proc proc rw 0 0\n/dev/sdb1 /media/x/CARD\\040A exfat rw 0 0\n'
+        with mock.patch('builtins.open', mock.mock_open(read_data=table)):
+            self.assertEqual(ui._mount_points(), ['/proc', '/media/x/CARD A'])
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS only')
+    def test_mount_points_parse_names_with_brackets(self):
+        out = '/dev/disk4s1 on /Volumes/Card (1) (exfat, local, nodev, nosuid)\n'
+        with mock.patch.object(ui.subprocess, 'run', return_value=SimpleNamespace(stdout=out)):
+            self.assertEqual(ui._mount_points(), ['/Volumes/Card (1)'])
+
     def test_helper_imports_package_with_isolated_resolve_python(self):
         app = '/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents'
         runtime = os.path.join(app, 'Resources/ResolvePython/ResolvePython')

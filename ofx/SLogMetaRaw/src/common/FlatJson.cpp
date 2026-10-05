@@ -49,6 +49,7 @@ std::map<std::string, std::string> parseFlatJson(const std::string& s)
                 v += s[i++];
             }
         }
+        if (i >= n) return false;   // cut off: a killed child's partial output
         ++i;
         return true;
     };
@@ -57,7 +58,7 @@ std::map<std::string, std::string> parseFlatJson(const std::string& s)
         std::string key, val;
         if (!readString(key)) break;
         while (i < n && (s[i] == ' ' || s[i] == ':')) ++i;
-        if (i < n && s[i] == '"') readString(val);
+        if (i < n && s[i] == '"') { if (!readString(val)) break; }
         else { size_t j = i; while (j < n && s[j] != ',' && s[j] != '}') ++j; val = trim(s.substr(i, j - i)); i = j; }
         out[key] = val;
     }

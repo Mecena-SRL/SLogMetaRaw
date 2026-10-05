@@ -47,10 +47,13 @@ def find_sidecar(path):
 
 
 def _fps_value(s):
+    """Frames per second from an NRT rate: "59.94i" counts fields, so it is 29.97 frames."""
     if not s:
         return None
-    m = re.match(r'(\d+(?:\.\d+)?)', str(s))
-    return float(m.group(1)) if m else None
+    m = re.match(r'(\d+(?:\.\d+)?)\s*([ip]?)', str(s).strip().lower())
+    if not m:
+        return None
+    return float(m.group(1)) / (2 if m.group(2) == 'i' else 1)
 
 
 def _fmt_fps(x):
@@ -203,7 +206,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
         meta['lens_profile_bytes'] = m.items['Lens profile'][1]
     video = m.track(handler=b'vide')
     if video:
-        info = codec.parse_sample_entry(video.codec, video.sample_entry)
+        info = codec.parse_sample_entry(video.sample_entry)
         meta.update({'v_' + k: v for k, v in info.items()})
         meta['frames'] = video.sample_count()
         stts = video.tables.get(b'stts')

@@ -10,7 +10,7 @@ from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from slogmetaraw import __main__ as cli, mp4  # noqa: E402
+from slogmetaraw import __main__ as cli, mp4, paths, plugin_cache  # noqa: E402
 
 
 class NoPread(unittest.TestCase):
@@ -83,6 +83,43 @@ class NoFork(unittest.TestCase):
                 if fork is not None:
                     os.fork = fork
         spawn.assert_called_once()
+
+
+class SharedFiles(unittest.TestCase):
+    def test_replace_retries_while_the_plugin_reads(self):
+        real = os.replace
+        calls = []
+
+        def busy(src, dst):
+            calls.append(dst)
+            if len(calls) < 3:
+                raise PermissionError(5, 'Accesso negato')
+            real(src, dst)
+
+        with tempfile.TemporaryDirectory() as d:
+            target = os.path.join(d, 'rec.json')
+            with mock.patch.object(paths.os, 'name', 'nt'), mock.patch.object(paths.os, 'replace', busy), \
+                    mock.patch.object(paths.time, 'sleep'):
+                paths.write_json(target, {'a': 1})
+            self.assertEqual(len(calls), 3)
+            with open(target, encoding='utf-8') as fh:
+                self.assertEqual(fh.read(), '{"a": 1}')
+            self.assertEqual(os.listdir(d), ['rec.json'])
+
+    def test_gives_up_without_leaving_a_temporary_file(self):
+        def busy(src, dst):
+            raise PermissionError(5, 'Accesso negato')
+
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(paths.os, 'replace', busy), self.assertRaises(PermissionError):
+                paths.write_json(os.path.join(d, 'rec.json'), {})
+            self.assertEqual(os.listdir(d), [])
+
+    def test_cache_key_spelling_on_windows(self):
+        import ntpath
+        with mock.patch.object(plugin_cache.os, 'name', 'nt'), mock.patch.object(plugin_cache.os, 'path', ntpath):
+            # _wfullpath in the plugin: full path, forward slashes, no symlink resolution
+            self.assertEqual(plugin_cache.canonical_path('C:\\Riprese\\..\\Clip\\A001.MP4'), 'C:/Clip/A001.MP4')
 
 
 if __name__ == '__main__':

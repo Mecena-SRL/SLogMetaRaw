@@ -13,7 +13,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
 from plugin_build import BUNDLE_BINARY, SUPPORT_REL, test_bin  # noqa: E402
 
-TRUSTED = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
+EXT = '.exe' if sys.platform == 'win32' else '.dmg' if sys.platform == 'darwin' else '.run'
+TRUSTED = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9' + EXT
 
 
 def release():
@@ -130,6 +131,12 @@ class Node(unittest.TestCase):
         self.run_host(self.clip('a.MP4'))
         self.assertLess(self.elapsed, 3.0)
 
+    def test_reload_during_a_cache_read_still_writes_into_resolve(self):
+        self.fake_library('if sys.argv[1] == "--cache":\n    time.sleep(1)\n')
+        self.run_host(self.clip('a.MP4'), '--begin-edit')
+        self.assertTrue(any(l.startswith('--cache') for l in self.launches()))
+        self.assertTrue(any(l.startswith('--to-resolve') for l in self.launches()), self.launches())
+
     # ---- the version button
 
     def update_reader(self, latest, url, lib=None):
@@ -151,10 +158,11 @@ class Node(unittest.TestCase):
         self.assertTrue(any(l.startswith('--update-check') and '--force' in l for l in self.launches()))
 
     def test_an_untrusted_installer_is_never_offered(self):
-        for url in ('https://github.com/someone/SLogMetaRaw/releases/download/v9/x.dmg',
-                    'http://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x.dmg',
-                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/../x.dmg',
-                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x.dmg?a=1'):
+        for url in ('https://github.com/someone/SLogMetaRaw/releases/download/v9/x' + EXT,
+                    'http://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x' + EXT,
+                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/../x' + EXT,
+                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x' + EXT + '?a=1',
+                    'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9/x.zip'):
             self.tearDown()
             self.setUp()
             self.update_reader('9.9.9', url)
@@ -166,6 +174,14 @@ class Node(unittest.TestCase):
         v = self.run_host('--no-reload', '--change', 'version', '--change', 'version')
         self.assertIn('[open] ' + TRUSTED, self.stderr)
         self.assertIn('nel browser', v['label:version'])
+
+    def test_unloading_stops_a_running_check(self):
+        done = Path(self.tmp.name) / 'check-finished'
+        self.fake_library('time.sleep(2)\nopen(%r, "w").write("x")\n' % str(done))
+        self.run_host('--no-reload', '--change', 'version')
+        self.assertLess(self.elapsed, 2.0)
+        time.sleep(2.5)
+        self.assertFalse(done.exists(), 'il controllo deve fermarsi quando il plugin viene scaricato')
 
     def test_an_installed_but_not_loaded_update_asks_for_a_restart(self):
         self.update_reader('9.9.9', TRUSTED, lib='9.9.9')

@@ -1,5 +1,91 @@
 # Changelog
 
+## S-Log MetaRaw 2.2.3
+
+Correzioni di stabilità del plugin, soprattutto su Windows e Linux. Nessun controllo cambia, nessun valore salvato
+cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Windows, percorsi con accenti**: con una clip in `D:\Riprese\Caffè\…` o un profilo utente con accenti il nodo
+  non trovava i metadata, e il lettore Python riceveva un percorso storpiato. File, cartelle, variabili d'ambiente,
+  processi figli e la finestra "Esporta LUT" usano ora le API Unicode di Windows (#55).
+- **Chiusura improvvisa di Resolve all'uscita**: un controllo aggiornamenti ancora in corso quando Resolve scarica il
+  plugin viene fermato, invece di lasciare un thread attivo nel codice appena scaricato (#55).
+- **"Rileggi metadata" premuto durante una lettura**: la scrittura nel Media Pool non si perde più; la lettura in corso
+  si chiude e parte comunque quella che scrive in Resolve (#55).
+- **Il pulsante della versione propone l'installer del sistema**: `.exe` su Windows, `.deb`, `.rpm` o `.run` su Linux,
+  `.dmg` su macOS. Prima proponeva sempre il `.dmg` (#55).
+- **Detail con ingresso non riconosciuto**: quando il nodo è neutro ma Resolve chiede comunque il fotogramma, l'immagine
+  passa invariata (anche su Metal) invece di essere trattata come S-Log3 (#55).
+- **Windows e Linux, metadata letti ma non visti dal nodo**: lo script e il plugin calcolavano il nome della scheda
+  della clip in modo diverso (su Windows le barre del percorso, su Linux gli accenti scomposti), quindi il nodo non
+  trovava le schede scritte dallo script né dal proprio lettore. Ora usano la stessa grafia del percorso (#57).
+- **Chiusura improvvisa durante il controllo aggiornamenti**: una risposta troncata (controllo annullato o scaduto)
+  faceva lanciare un'eccezione nel thread del controllo, e Resolve si chiudeva. Ora la risposta incompleta si scarta;
+  il thread viene anche atteso fino alla fine prima che il plugin sia scaricato (#57).
+- **Linux, il browser si chiudeva da solo**: il pulsante della versione apriva l'installer con `xdg-open` e dopo 3 s
+  chiudeva il browser appena avviato. Ora il browser parte staccato (#57).
+- **Meno memoria su Metal con il Detail**: i piani di lavoro di Dehaze, Clarity e Texture si liberano quando il
+  controllo torna a zero, e tutti si liberano quando si chiude l'ultimo nodo Detail (fino a ~1 GB in 8K) (#57).
+
+### Script
+
+- Il controllo aggiornamenti dichiara il sistema nel `User-Agent` e sceglie l'installer della piattaforma; un link
+  rimasto in `update.json` per un altro sistema non viene più proposto.
+- **La lettura non si blocca più su un disco di rete caduto**: un lettore che non si lasciava chiudere teneva la
+  finestra ferma su "Lettura metadata… n/N" (#57).
+- **Windows, "scheda per il plugin non salvata"**: se il plugin stava leggendo la scheda proprio mentre lo script la
+  riscriveva, la scrittura falliva. Ora riprova per mezzo secondo (#57).
+- Una clip con un ritorno a capo (`\r`) nel nome non sfasa più i risultati delle clip successive.
+- Esporta CSV funziona anche con progetti che hanno `: \ * ? " < > |` nel nome (Windows).
+- Linux: il messaggio d'errore dello script si vede anche quando contiene `<` o `&`.
+
+### Test
+
+- `test_to_resolve.Detached` passa anche su Windows: la finta connessione a Resolve raggiunge il writer, che lì è un
+  processo separato.
+- Corretto `va_start` nel finto host di test (leggeva il valore dal parametro sbagliato).
+- Nuovi test: percorsi e variabili d'ambiente con accenti, "Rileggi" durante una lettura, unload durante un controllo
+  aggiornamenti, stesso nome di scheda tra plugin e script, JSON troncato, scrittura con il file occupato su Windows.
+
+## S-Log MetaRaw 2.2.2
+
+Correzioni di stabilità e memoria del plugin, e dello script su Windows e Linux. Nessun controllo cambia, nessun valore
+salvato cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Fotogramma fallito invece di un'immagine sbagliata quando la GPU è senza memoria**: se il Mac non riesce ad
+  allocare un piano di lavoro del Detail, o Resolve non dà un command buffer, il nodo segnala l'errore del fotogramma
+  invece di lanciare i kernel su un buffer mancante (#24).
+- **Niente ricompilazioni a ripetizione se i kernel Metal non compilano**: un errore di compilazione della libreria si
+  ricorda e non si ripete per ogni kernel sotto il lock globale (#24).
+- **Detail su Metal più leggero**: con Dehaze la luma si aggiorna sul posto e il piano del veil-ratio riusa quello
+  temporaneo, come su CPU: due piani a piena risoluzione in meno per set (~280 MB in 8K) (#24).
+- **Dehaze su Metal più veloce**: la sorgente si decodifica una volta sola invece di sei (da 18 a 3 `pow` per pixel
+  con la mappa di trasmissione), come già su CPU (#22).
+- **Detail su CPU, memoria restituita**: i piani di Dehaze (~430 MB in 8K) e Texture si liberano quando il fotogramma
+  non li usa, e i piani di lavoro si liberano quando si chiude l'ultimo nodo Detail.
+- **Windows, clip oltre 2 GiB**: il nodo non trovava mai i metadata delle clip più grandi di 2 GiB (quasi tutte le
+  XAVC), perché ne leggeva la dimensione a 32 bit.
+- **Windows, lettore di metadata scaduto**: viene sempre chiuso, anche quando il processo non entra nel suo job.
+- **Esporta LUT con un host che raccoglie da sé i processi figli**: il file scelto si salva invece di essere ignorato
+  in silenzio; aprire la pagina delle release non segnala più un errore inesistente.
+- **Color Space / Gamma fuori tabella** (un nodo salvato da una versione più recente): seguono il nodo invece di
+  leggere oltre la fine delle tabelle.
+
+### Script
+
+- **Windows: "Leggi metadata" segnava ogni clip come lettura troppo lenta**: il lettore si attende ora con un thread
+  invece di `select()`, che su Windows non accetta pipe.
+- **Linux e Windows: una clip lenta faceva saltare tutte le altre**: i volumi si riconoscono da `/proc/self/mounts`
+  (Linux) o dalla lettera del disco (Windows), così solo le clip dello stesso volume vengono saltate. Su macOS si
+  riconoscono anche i volumi con le parentesi nel nome, per esempio `Card (1)`.
+- **MXF interlacciati (1080i)**: un frame rate NRT come `59.94i` conta i semiquadri; durata, bitrate e campionamento
+  usano ora i fotogrammi (29,97), invece di dimezzare la durata e raddoppiare il bitrate.
+- Tolto codice non più usato.
+
 ## S-Log MetaRaw 2.2.1
 
 Correzione del controllo aggiornamenti. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.

@@ -3,10 +3,16 @@
 import unittest
 
 from slogmetaraw import nrt
-from slogmetaraw.extract import frames_to_tc, tc_to_frames
+from slogmetaraw.extract import _fps_value, frames_to_tc, tc_to_frames
 
 
 class Timecode(unittest.TestCase):
+    def test_interlaced_rate_counts_fields(self):
+        self.assertEqual(_fps_value('59.94i'), 29.97)
+        self.assertEqual(_fps_value('50i'), 25.0)
+        self.assertEqual(_fps_value('25p'), 25.0)
+        self.assertIsNone(_fps_value('p'))
+
     def test_non_drop_is_unchanged(self):
         self.assertEqual(frames_to_tc(1800, 30), '00:01:00:00')
         self.assertEqual(tc_to_frames('01:00:00:00', 25), 90000)

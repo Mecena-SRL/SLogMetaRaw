@@ -3,6 +3,8 @@
 
 #include <cstdio>
 
+#include "../common/Files.h"
+
 bool writeCubeLut(const DevelopParams& params, int size, const std::string& title, const std::string& path,
                   std::string& error)
 {
@@ -12,7 +14,7 @@ bool writeCubeLut(const DevelopParams& params, int size, const std::string& titl
     }
     DevelopParams p = params;
     p.fcMode = 0;   // a LUT of the false colour view would be a lie
-    FILE* f = fopen(path.c_str(), "wb");
+    FILE* f = openFile(path, "wb");
     if (!f) {
         error = "impossibile scrivere il file";
         return false;

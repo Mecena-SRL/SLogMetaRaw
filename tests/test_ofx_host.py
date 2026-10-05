@@ -16,6 +16,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
 from plugin_build import BUNDLE_BINARY as BINARY, SUPPORT_REL, test_bin  # noqa: E402
+sys.path.insert(0, ROOT)
+from slogmetaraw import __version__  # noqa: E402
 
 GOLDEN = {0: os.path.join(ROOT, 'tests', 'golden', 'params_develop.txt'),
           1: os.path.join(ROOT, 'tests', 'golden', 'params_detail.txt')}
@@ -55,9 +57,7 @@ class OfxHost(unittest.TestCase):
         is a change of what Resolve saves with every grade: update the golden file on purpose."""
         for index, golden in GOLDEN.items():
             out = self.host('--plugin', str(index), '--dump-params', '--no-reload')
-            release = open(os.path.join(ROOT, 'slogmetaraw', '__init__.py'), encoding='utf-8').read() \
-                .split("__version__ = '")[1].split("'")[0]
-            got = [l.replace('|v%s|' % release, '|v{release}|') for l in out.splitlines() if l.startswith('param:')]
+            got = [l.replace('|v%s|' % __version__, '|v{release}|') for l in out.splitlines() if l.startswith('param:')]
             with open(golden, encoding='utf-8') as fh:
                 self.assertEqual(got, fh.read().splitlines(), golden)
 

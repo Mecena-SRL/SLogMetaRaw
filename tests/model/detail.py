@@ -149,8 +149,6 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         p['hlE'] = -a * k
         p['hlAmount'] = a
         p['hlWhiteLin'] = T.SM_T5_GREY * 2.0 ** max(v['localWhite'], top - k * D)
-    p['on'] = int(p['toneOn'] or p['hlE'] != 0.0 or p['clarity'] != 0.0 or p['texture'] != 0.0 or p['hazeOn']
-                  or p['view'])
     return p
 
 

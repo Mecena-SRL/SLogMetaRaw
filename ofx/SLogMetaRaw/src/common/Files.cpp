@@ -19,14 +19,48 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <sstream>
 #include <vector>
+
+#ifdef _WIN32
+std::wstring widen(const std::string& utf8)
+{
+    if (utf8.empty()) return std::wstring();
+    const int n = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), nullptr, 0);
+    std::wstring w(n > 0 ? n : 0, L'\0');
+    if (n > 0) MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), &w[0], n);
+    return w;
+}
+
+std::string narrow(const wchar_t* wide)
+{
+    if (!wide || !*wide) return std::string();
+    const int n = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
+    std::string s(n > 1 ? n - 1 : 0, '\0');
+    if (n > 1) WideCharToMultiByte(CP_UTF8, 0, wide, -1, &s[0], n, nullptr, nullptr);
+    return s;
+}
+
+std::string envVar(const char* name) { return narrow(_wgetenv(widen(name).c_str())); }
+FILE* openFile(const std::string& path, const char* mode) { return _wfopen(widen(path).c_str(), widen(mode).c_str()); }
+
+using StatBuf = struct _stat64;   // MSVC's plain stat() fails on files over 2 GiB
+static int statPath(const std::string& path, StatBuf* st) { return _wstat64(widen(path).c_str(), st); }
+#else
+std::string envVar(const char* name)
+{
+    const char* v = getenv(name);
+    return v ? v : "";
+}
+FILE* openFile(const std::string& path, const char* mode) { return fopen(path.c_str(), mode); }
+
+using StatBuf = struct stat;
+static int statPath(const std::string& path, StatBuf* st) { return stat(path.c_str(), st); }
+#endif
 
 std::string homeDir()
 {
 #ifdef _WIN32
-    const char* h = getenv("USERPROFILE");
+    return envVar("USERPROFILE");
 #else
     const char* h = getenv("HOME");
     if (!h || !*h) {   // a host started without HOME: the password database knows
@@ -34,8 +68,8 @@ std::string homeDir()
         char buf[4096];
         if (getpwuid_r(getuid(), &pwd, buf, sizeof(buf), &found) == 0 && found && found->pw_dir) return found->pw_dir;
     }
-#endif
     return h ? h : "";
+#endif
 }
 
 // Where the plugin and the Python library share their state; slogmetaraw/paths.py mirrors this.
@@ -44,8 +78,8 @@ std::string supportDir()
 #if defined(__APPLE__)
     return homeDir() + "/Library/Application Support/SLogMetaRaw";
 #elif defined(_WIN32)
-    const char* a = getenv("APPDATA");
-    return (a && *a ? std::string(a) : homeDir() + "/AppData/Roaming") + "/SLogMetaRaw";
+    const std::string a = envVar("APPDATA");
+    return (a.empty() ? homeDir() + "/AppData/Roaming" : a) + "/SLogMetaRaw";
 #else
     const char* x = getenv("XDG_DATA_HOME");
     return (x && *x ? std::string(x) : homeDir() + "/.local/share") + "/SLogMetaRaw";
@@ -63,12 +97,15 @@ std::string logDir()
 
 bool readFile(const std::string& path, std::string& out)
 {
-    std::ifstream f(path, std::ios::binary);
+    FILE* f = openFile(path, "rb");
     if (!f) return false;
-    std::stringstream ss;
-    ss << f.rdbuf();
-    out = ss.str();
-    return true;
+    out.clear();
+    char buf[8192];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) out.append(buf, n);
+    const bool ok = !ferror(f);
+    fclose(f);
+    return ok;
 }
 
 // Hosts hand out NFD or NFC spellings of the same path; the cache key must not depend on it.
@@ -96,8 +133,8 @@ std::string normalizeNFC(const std::string& s)
 std::string canonicalPath(const std::string& path)
 {
 #ifdef _WIN32
-    char buf[MAX_PATH * 4];
-    std::string full = _fullpath(buf, path.c_str(), sizeof(buf)) ? std::string(buf) : path;
+    wchar_t buf[MAX_PATH * 4];
+    std::string full = _wfullpath(buf, widen(path).c_str(), MAX_PATH * 4) ? narrow(buf) : path;
     for (char& c : full)
         if (c == '\\') c = '/';
     return full;
@@ -127,8 +164,8 @@ std::string cacheRecordPath(const std::string& clipPath)
 // A cloud placeholder (SF_DATALESS) downloads when read: minutes of frozen UI and gigabytes.
 bool clipIsReadable(const std::string& path, std::string& why)
 {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0) { why = "file non trovato"; return false; }
+    StatBuf st;
+    if (statPath(path, &st) != 0) { why = "file non trovato"; return false; }
 #ifdef __APPLE__
     if (st.st_flags & 0x40000000 /* SF_DATALESS */) { why = "il file non e in locale (non scaricato)"; return false; }
 #endif
@@ -142,7 +179,7 @@ bool makeDirs(const std::string& path)
             const std::string part = path.substr(0, i);
 #ifdef _WIN32
             if (part.size() == 2 && part[1] == ':') continue;   // drive root
-            if (_mkdir(part.c_str()) != 0 && errno != EEXIST) return false;
+            if (_wmkdir(widen(part).c_str()) != 0 && errno != EEXIST) return false;
 #else
             if (mkdir(part.c_str(), 0755) != 0 && errno != EEXIST) return false;
 #endif
@@ -153,17 +190,21 @@ bool makeDirs(const std::string& path)
 
 bool fileExists(const std::string& path)
 {
-    struct stat st;
-    return stat(path.c_str(), &st) == 0;
+    StatBuf st;
+    return statPath(path, &st) == 0;
 }
 
+#ifdef _WIN32
+bool removeFile(const std::string& path) { return _wremove(widen(path).c_str()) == 0; }
+#else
 bool removeFile(const std::string& path) { return remove(path.c_str()) == 0; }
+#endif
 
 std::string findExecutable(const std::string& name)
 {
 #ifdef _WIN32
-    char found[MAX_PATH];
-    return SearchPathA(nullptr, name.c_str(), ".exe", MAX_PATH, found, nullptr) ? std::string(found) : "";
+    wchar_t found[MAX_PATH];
+    return SearchPathW(nullptr, widen(name).c_str(), L".exe", MAX_PATH, found, nullptr) ? narrow(found) : "";
 #else
     std::string list = getenv("PATH") ? getenv("PATH") : "";
     list += ":/usr/bin:/usr/local/bin:/bin";   // a host can start with a stripped PATH

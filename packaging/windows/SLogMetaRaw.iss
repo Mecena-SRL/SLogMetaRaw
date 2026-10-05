@@ -1,5 +1,5 @@
 ; SPDX-License-Identifier: GPL-3.0-or-later
-; Inno Setup script: iscc /DAppVersion=2.2.1 /DStageDir=<staged folder> /DOutDir=<dist> SLogMetaRaw.iss
+; Inno Setup script: iscc /DAppVersion=2.2.3 /DStageDir=<staged folder> /DOutDir=<dist> SLogMetaRaw.iss
 [Setup]
 AppName=S-Log MetaRaw
 AppVersion={#AppVersion}

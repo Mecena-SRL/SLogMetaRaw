@@ -703,7 +703,6 @@ struct DetailParams {
     float hazeOmega, hazeMix, hazeLevel;
     float hazeA[3], hazeInvA[3];
     int view;          // 0 picture, 1 gain, 2 base
-    int on;            // anything to do at all
     float toRef[9];    // input RGB -> Rec.2020, for the norm
 };
 
@@ -1330,7 +1329,6 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
         p->hazeInvA[c] = (float)(1.0 / a);
     }
     p->view = v.viewGain ? 1 : (v.viewBase ? 2 : 0);
-    p->on = (p->toneOn || p->hlE != 0.0f || p->clarity != 0.0f || p->texture != 0.0f || p->hazeOn || p->view) ? 1 : 0;
 
     const float* a = SM_XYZ_TO_RGB + SM_T5_REF * 9;
     const float* b = SM_RGB_TO_XYZ + space * 9;

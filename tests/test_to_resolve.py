@@ -23,24 +23,25 @@ from plugin_build import SUPPORT_REL  # noqa: E402
 RESULT = {'meta': {}, 'display': {}, 'sections': [], 'warnings': [], 'path': '/fake/clip.MP4'}
 REPORT = {'written': 34, 'failed': 1, 'clips': 1, 'data_level': {'host': 'Full'}}
 
-# A child like the plugin's, with a fake Resolve: argv = root, connection mode, clip, marker file.
-CHILD = r'''
-import sys, threading, time
-sys.path.insert(0, sys.argv[1])
-from slogmetaraw import __main__ as cli, connect
-mode, clip, marker = sys.argv[2:5]
+# A fake Resolve for the child and, on Windows, for the writer it starts as a new process: a sitecustomize
+# that every Python of the test inherits through PYTHONPATH. Mode and marker file come from the environment.
+FAKE_RESOLVE = r'''
+import os, sys, threading, time
+if os.environ.get('SMR_FAKE_MODE'):
+    sys.path.insert(0, os.environ['SMR_FAKE_ROOT'])
+    from slogmetaraw import connect
+    mode, marker = os.environ['SMR_FAKE_MODE'], os.environ['SMR_FAKE_MARKER']
 
-def fake_connect(timeout=None):
-    open(marker, 'w').close()
-    if mode == 'blocked':
-        threading.Event().wait()
-    time.sleep(float(mode))
-    return object()
+    def fake_connect(timeout=None):
+        open(marker, 'w').close()
+        if mode == 'blocked':
+            threading.Event().wait()
+        time.sleep(float(mode))
+        return object()
 
-connect.connect = fake_connect
-connect.apply_path = lambda resolve, path, r: {'written': 34, 'failed': 0, 'clips': 1,
-                                               'data_level': {'host': 'Full'}}
-sys.exit(cli.main(['--to-resolve', clip]))
+    connect.connect = fake_connect
+    connect.apply_path = lambda resolve, path, r: {'written': 34, 'failed': 0, 'clips': 1,
+                                                   'data_level': {'host': 'Full'}}
 '''
 
 
@@ -52,6 +53,10 @@ class Detached(unittest.TestCase):
         cls.home = tempfile.mkdtemp()
         cls.clip = os.path.join(cls.home, 'C0001.MP4')
         fx.build_mp4(cls.clip, frames=250)
+        cls.site = os.path.join(cls.home, 'site')
+        os.mkdir(cls.site)
+        with open(os.path.join(cls.site, 'sitecustomize.py'), 'w', encoding='utf-8') as fh:
+            fh.write(FAKE_RESOLVE)
 
     @classmethod
     def tearDownClass(cls):
@@ -59,11 +64,17 @@ class Detached(unittest.TestCase):
 
     def start(self, mode, **env):
         self.marker = os.path.join(self.home, 'connected-%s' % mode)
-        extra, env = env, dict(os.environ, HOME=self.home)
-        env.pop('SLOGMETARAW_TEST_NO_RESOLVE', None)
+        extra = env
+        env = dict(os.environ, HOME=self.home, USERPROFILE=self.home,
+                   APPDATA=os.path.join(self.home, 'AppData', 'Roaming'), PYTHONPATH=self.site,
+                   SMR_FAKE_ROOT=ROOT, SMR_FAKE_MODE=mode, SMR_FAKE_MARKER=self.marker)
+        for name in ('SLOGMETARAW_TEST_NO_RESOLVE', 'XDG_DATA_HOME'):
+            env.pop(name, None)
         env.update(extra)
         self.began = time.monotonic()
-        proc = subprocess.Popen([sys.executable, '-c', CHILD, ROOT, mode, self.clip, self.marker],
+        proc = subprocess.Popen([sys.executable, '-c', 'import sys; sys.path.insert(0, sys.argv[1]); '
+                                 'from slogmetaraw import __main__ as cli; sys.exit(cli.main(sys.argv[2:]))',
+                                 ROOT, '--to-resolve', self.clip],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
         first = proc.stdout.readline()
         self.first_after = time.monotonic() - self.began

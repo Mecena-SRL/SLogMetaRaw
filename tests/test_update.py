@@ -17,9 +17,12 @@ sys.path.insert(0, ROOT)
 
 from slogmetaraw import update, __main__ as cli  # noqa: E402
 
-DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9.dmg'
+TMP = tempfile.gettempdir()   # /tmp does not exist on Windows
+
+EXT = update.installer_exts()[0]
+DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9' + EXT
 DETAILS = {'notes': 'lunghe note\ncon a capo', 'title': 'S-Log MetaRaw  9.9.9\n', 'page': 'p',
-           'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9.dmg', 'size': 1234}
+           'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9' + EXT, 'size': 1234}
 NO_NETWORK = AssertionError('rete non permessa')
 
 
@@ -50,49 +53,60 @@ class State(unittest.TestCase):
         fresh['ok'] = True
         fresh['latest'] = '1.1.0'
         fresh['checked_at'] = time.time()
-        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test.json'):
+        with mock.patch.object(update, 'STATE_PATH', os.path.join(TMP, 'smr-update-test.json')):
             update.write_state(fresh)
             with mock.patch.object(update, 'latest_tag',
                                    side_effect=AssertionError('rete non permessa')):
                 result = update.check()
             self.assertTrue(result['ok'])
             self.assertEqual(result['latest'], '1.1.0')
-            os.unlink('/tmp/smr-update-test.json')
+            os.unlink(os.path.join(TMP, 'smr-update-test.json'))
 
     def test_a_cached_offer_is_dropped_once_that_version_is_installed(self):
         offer = update.blank('2.1.0')
         offer.update(ok=True, latest='2.1.1', newer=True, checked_at=time.time())
-        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test.json'):
+        with mock.patch.object(update, 'STATE_PATH', os.path.join(TMP, 'smr-update-test.json')):
             update.write_state(offer)
             with mock.patch.object(update, 'latest_tag', return_value='v2.1.1'):
                 result = update.check('2.1.1')
-            os.unlink('/tmp/smr-update-test.json')
+            os.unlink(os.path.join(TMP, 'smr-update-test.json'))
         self.assertFalse(result['newer'])
         self.assertEqual(result['current'], '2.1.1')
 
     def test_a_cached_download_link_outside_the_releases_is_not_offered(self):
         offer = update.blank('2.1.0')
         offer.update(ok=True, latest='2.1.1', newer=True, checked_at=time.time(), dmg_url='https://example.com/x.dmg')
-        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test3.json'):
+        with mock.patch.object(update, 'STATE_PATH', os.path.join(TMP, 'smr-update-test3.json')):
             update.write_state(offer)
             result = update.check('2.1.0')
-            os.unlink('/tmp/smr-update-test3.json')
+            os.unlink(os.path.join(TMP, 'smr-update-test3.json'))
         self.assertEqual(result['dmg_url'], '')
         self.assertTrue(update.trusted_dmg_url(
-            'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1.dmg'))
+            'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v2.1.1/SLogMetaRaw-2.1.1' + EXT))
+
+    def test_only_this_systems_installer_is_offered(self):
+        base = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9'
+        for ext in ('.dmg', '.exe', '.deb', '.rpm', '.run', '.zip'):
+            self.assertEqual(update.trusted_dmg_url(base + ext), ext in update.installer_exts(), ext)
+        assets = [{'name': 'SLogMetaRaw-9.9.9' + e, 'browser_download_url': base + e, 'size': 1}
+                  for e in ('.zip', '.dmg', '.exe', '.deb', '.rpm', '.run')]
+        response = mock.MagicMock()
+        response.__enter__.return_value = io.StringIO(json.dumps({'assets': assets}))
+        with mock.patch('urllib.request.urlopen', return_value=response):
+            self.assertEqual(update.release_details()['dmg_url'], base + EXT)
 
     def test_stale_cache_is_refreshed(self):
         stale = update.blank()
         stale['ok'] = True
         stale['checked_at'] = time.time() - 10 * update.CACHE_TTL
-        with mock.patch.object(update, 'STATE_PATH', '/tmp/smr-update-test2.json'):
+        with mock.patch.object(update, 'STATE_PATH', os.path.join(TMP, 'smr-update-test2.json')):
             update.write_state(stale)
             with mock.patch.object(update, 'latest_tag', return_value='v9.9.9'):
                 with mock.patch.object(update, 'release_details', return_value={}):
                     result = update.check()
             self.assertEqual(result['tag'], 'v9.9.9')
             self.assertTrue(result['newer'])
-            os.unlink('/tmp/smr-update-test2.json')
+            os.unlink(os.path.join(TMP, 'smr-update-test2.json'))
 
 
 class PluginCli(unittest.TestCase):

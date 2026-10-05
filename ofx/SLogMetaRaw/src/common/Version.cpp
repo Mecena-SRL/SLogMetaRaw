@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "Version.h"
 
+#include <cctype>
+
 bool parseSemver(const std::string& text, int out[3])
 {
     size_t i = (!text.empty() && (text[0] == 'v' || text[0] == 'V')) ? 1 : 0;
@@ -27,7 +29,7 @@ bool isNewer(const std::string& current, const std::string& latest)
     return false;
 }
 
-bool isTrustedDmgUrl(const std::string& url)
+bool isTrustedInstallerUrl(const std::string& url)
 {
     static const std::string prefix = "https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/";
     if (url.size() >= 512 || url.compare(0, prefix.size(), prefix) != 0 || url.find("..") != std::string::npos)
@@ -37,6 +39,13 @@ bool isTrustedDmgUrl(const std::string& url)
               || c == '/' || c == '+' || c == '-' || c == ':'))
             return false;
     if (url.find(':', prefix.size()) != std::string::npos) return false;
-    const std::string tail = url.size() >= 4 ? url.substr(url.size() - 4) : "";
-    return tail == ".dmg" || tail == ".DMG" || tail == ".Dmg";
+    std::string tail = url.size() >= 4 ? url.substr(url.size() - 4) : "";
+    for (char& c : tail) c = (char)tolower((unsigned char)c);
+#if defined(_WIN32)
+    return tail == ".exe";
+#elif defined(__APPLE__)
+    return tail == ".dmg";
+#else
+    return tail == ".deb" || tail == ".rpm" || tail == ".run";
+#endif
 }

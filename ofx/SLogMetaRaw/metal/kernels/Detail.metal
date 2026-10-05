@@ -21,17 +21,31 @@ kernel void dt_luma(const device float* src [[buffer(0)]], device float* L [[buf
     L[(int)id.y * p.W + (int)id.x] = finite ? dt_luma(c, p) : -16.0f;
 }
 
-// Decoded channel c of the frame divided by the veil, 0 where the pixel is not finite.
-kernel void dt_veil_ratio(const device float* src [[buffer(0)]], device float* out [[buffer(1)]],
-                          constant DtPass& q [[buffer(2)]], constant DetailParams& p [[buffer(3)]],
-                          constant int& channel [[buffer(4)]], uint2 id [[thread_position_in_grid]])
+// With Dehaze the frame is decoded once into J (3 planes, W*H apart), with its luma and a finite flag.
+kernel void dt_decode(const device float* src [[buffer(0)]], device float* L [[buffer(1)]],
+                      device float* J [[buffer(2)]], device uchar* fin [[buffer(3)]],
+                      constant DtPass& q [[buffer(4)]], constant DetailParams& p [[buffer(5)]],
+                      uint2 id [[thread_position_in_grid]])
 {
     if ((int)id.x >= p.W || (int)id.y >= p.H) return;
-    const int i = ((int)id.y * q.rowPixels + (int)id.x) * 4;
+    const int i = ((int)id.y * q.rowPixels + (int)id.x) * 4, o = (int)id.y * p.W + (int)id.x, n = p.W * p.H;
     SMf3 c = smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma));
     const bool finite = isfinite(c.x) && isfinite(c.y) && isfinite(c.z);
-    const float v = channel == 0 ? c.x : (channel == 1 ? c.y : c.z);
-    out[(int)id.y * p.W + (int)id.x] = finite ? v * p.hazeInvA[channel] : 0.0f;
+    L[o] = finite ? dt_luma(c, p) : -16.0f;
+    J[o] = c.x;
+    J[n + o] = c.y;
+    J[2 * n + o] = c.z;
+    fin[o] = finite ? 1 : 0;
+}
+
+// Channel c of the decoded frame divided by the veil, 0 where the pixel is not finite.
+kernel void dt_veil_ratio(const device float* J [[buffer(0)]], device float* out [[buffer(1)]],
+                          constant DetailParams& p [[buffer(2)]], constant int& channel [[buffer(3)]],
+                          const device uchar* fin [[buffer(4)]], uint2 id [[thread_position_in_grid]])
+{
+    if ((int)id.x >= p.W || (int)id.y >= p.H) return;
+    const int o = (int)id.y * p.W + (int)id.x;
+    out[o] = fin[o] ? J[channel * p.W * p.H + o] * p.hazeInvA[channel] : 0.0f;
 }
 
 inline float tent_at(const device float* in, int stride, int n, int i, int s)
@@ -183,23 +197,21 @@ kernel void dt_zero(device float* out [[buffer(0)]], constant int& n [[buffer(1)
     if ((int)id < n) out[id] = 0.0f;
 }
 
-// Dehaze at full size: J (3 planes, W*H apart) and its L.
-kernel void dt_haze(const device float* src [[buffer(0)]], const device float* L0 [[buffer(1)]],
+// Dehaze at full size: J in place, and its L in place over L0 (each thread touches only its own pixel).
+kernel void dt_haze(device float* J [[buffer(0)]], device float* L [[buffer(1)]],
                     const device float* at [[buffer(2)]], const device float* bt [[buffer(3)]],
-                    device float* J [[buffer(4)]], device float* L [[buffer(5)]],
-                    constant DtPass& q [[buffer(6)]], constant DetailParams& p [[buffer(7)]],
+                    const device uchar* fin [[buffer(4)]], constant DetailParams& p [[buffer(5)]],
                     uint2 id [[thread_position_in_grid]])
 {
     const int x = (int)id.x, y = (int)id.y;
     if (x >= p.W || y >= p.H) return;
-    const int i = (y * q.rowPixels + x) * 4, o = y * p.W + x, n = p.W * p.H;
-    SMf3 v = smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma));
+    const int o = y * p.W + x, n = p.W * p.H;
+    SMf3 v = smf3(J[o], J[n + o], J[2 * n + o]);
     float t = 1.0f;
     if (p.hazeMix == 0.0f)
-        t = sm_clamp(dt_bilinear(at, p.w, p.h, p.s, x, y) * (L0[o] - p.hazeLevel)
+        t = sm_clamp(dt_bilinear(at, p.w, p.h, p.s, x, y) * (L[o] - p.hazeLevel)
                      + dt_bilinear(bt, p.w, p.h, p.s, x, y) + 1.0f, SM_DT_HAZE_MIN_T, 1.0f);
-    const bool finite = isfinite(v.x) && isfinite(v.y) && isfinite(v.z);
-    SMf3 j = finite ? dt_haze_pixel(v, t, p) : v;
+    SMf3 j = fin[o] ? dt_haze_pixel(v, t, p) : v;
     J[o] = j.x;
     J[n + o] = j.y;
     J[2 * n + o] = j.z;
@@ -213,7 +225,8 @@ kernel void dt_final(const device float* src [[buffer(0)]], device float* dst [[
                      const device float* bB [[buffer(6)]], const device float* Dg [[buffer(7)]],
                      const device float* G1 [[buffer(8)]], const device float* G2 [[buffer(9)]],
                      const device float* J [[buffer(10)]], constant DtPass& q [[buffer(11)]],
-                     constant DetailParams& p [[buffer(12)]], uint2 id [[thread_position_in_grid]])
+                     constant DetailParams& p [[buffer(12)]], const device uchar* fin [[buffer(13)]],
+                     uint2 id [[thread_position_in_grid]])
 {
     const int x = (int)id.x, y = (int)id.y;
     if (x >= p.W || y >= p.H) return;
@@ -223,19 +236,21 @@ kernel void dt_final(const device float* src [[buffer(0)]], device float* dst [[
     const DtOut r = dt_gain(L[o], dt_bilinear(Lw, p.w, p.h, p.s, x, y), Gg[o], dt_bilinear(aB, p.w, p.h, p.s, x, y),
                             dt_bilinear(bB, p.w, p.h, p.s, x, y), dt_bilinear(Dg, p.w, p.h, p.s, x, y), g1, g2, p);
     dst[i + 3] = src[i + 3];
-    SMf3 v = smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma));
+    const bool dehaze = p.hazeOn != 0;   // with Dehaze the picture comes from J: the source is not decoded again
+    const SMf3 v = dehaze ? smf3(J[o], J[n + o], J[2 * n + o])
+                          : smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma));
     SMf3 out;
-    if (!(isfinite(v.x) && isfinite(v.y) && isfinite(v.z))) {
+    if (dehaze ? !fin[o] : !(isfinite(v.x) && isfinite(v.y) && isfinite(v.z))) {
         out = smf3(src[i], src[i + 1], src[i + 2]);
     } else if (p.view == 1) {
         out = dt_emit(dt_view_gain(r.G, L[o]), p);
     } else if (p.view == 2) {
         const float g = sm_encode(SM_T5_GREY * SM_EXP2(r.B), p.gamma);
         out = smf3(g, g, g);
-    } else if (r.G == 0.0f && p.hazeOn == 0) {
+    } else if (r.G == 0.0f && !dehaze) {
         out = smf3(src[i], src[i + 1], src[i + 2]);
     } else {
-        SMf3 j = dt_apply(p.hazeOn != 0 ? smf3(J[o], J[n + o], J[2 * n + o]) : v, r, p);
+        SMf3 j = dt_apply(v, r, p);
         out = smf3(sm_encode(j.x, p.gamma), sm_encode(j.y, p.gamma), sm_encode(j.z, p.gamma));
     }
     dst[i] = out.x;

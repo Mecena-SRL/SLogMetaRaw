@@ -3,6 +3,7 @@
 
 #include "../common/ColourSpaces.h"
 #include "../common/ParamDefs.h"
+#include "../common/Update.h"
 #include "../common/UpdateBadge.h"
 #include "ClipMeta.h"
 #include "DevelopEffect.h"
@@ -12,6 +13,9 @@
 using namespace OFX;
 
 DevelopFactory::DevelopFactory() : PluginFactoryHelper<DevelopFactory>(kDevelopIdentifier, 1, 4) {}
+
+void DevelopFactory::load() { Update::pluginLoaded(); }
+void DevelopFactory::unload() { Update::pluginUnloaded(); }
 
 void DevelopFactory::describe(ImageEffectDescriptor& p_Desc)
 {

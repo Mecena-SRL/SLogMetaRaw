@@ -17,20 +17,25 @@ static bool recordMatchesFile(const std::map<std::string, std::string>& j, const
     auto num = [&](const char* k) { auto it = j.find(k); return it == j.end() ? 0LL : atoll(it->second.c_str()); };
     const long long size = num("file_size"), mtime = num("file_mtime_ns");
     if (size == 0 && mtime == 0) return true;   // records of synthetic test inputs
+#ifdef _WIN32
+    // same value as Python's st_mtime_ns: 100 ns ticks since 1601, rebased to the Unix epoch; the size is
+    // 64-bit here, where MSVC's stat() fails on clips over 2 GiB
+    WIN32_FILE_ATTRIBUTE_DATA fa;
+    if (!GetFileAttributesExW(widen(path).c_str(), GetFileExInfoStandard, &fa)) return false;
+    const long long ticks = ((long long)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
+    const long long ns = (ticks - 116444736000000000LL) * 100;
+    const long long bytes = ((long long)fa.nFileSizeHigh << 32) | fa.nFileSizeLow;
+#else
     struct stat st;
     if (stat(path.c_str(), &st) != 0) return false;
 #if defined(__APPLE__)
     const long long ns = (long long)st.st_mtimespec.tv_sec * 1000000000LL + st.st_mtimespec.tv_nsec;
-#elif defined(_WIN32)
-    // same value as Python's st_mtime_ns: 100 ns ticks since 1601, rebased to the Unix epoch
-    WIN32_FILE_ATTRIBUTE_DATA fa;
-    if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &fa)) return false;
-    const long long ticks = ((long long)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
-    const long long ns = (ticks - 116444736000000000LL) * 100;
 #else
     const long long ns = (long long)st.st_mtim.tv_sec * 1000000000LL + st.st_mtim.tv_nsec;
 #endif
-    return (long long)st.st_size == size && ns == mtime;
+    const long long bytes = (long long)st.st_size;
+#endif
+    return bytes == size && ns == mtime;
 }
 
 bool readClipRecord(const std::string& clipPath, std::map<std::string, std::string>& record)

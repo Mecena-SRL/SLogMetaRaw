@@ -18,12 +18,12 @@ static const size_t kMaxOutput = 65536;
 EnvSnapshot EnvSnapshot::capture()
 {
     EnvSnapshot e;
-    char* block = GetEnvironmentStringsA();
+    wchar_t* block = GetEnvironmentStringsW();
     if (!block) return e;
-    for (const char* v = block; *v; v += strlen(v) + 1) {
-        if (_strnicmp(v, "PYTHONPATH=", 11) != 0 && _strnicmp(v, "PYTHONHOME=", 11) != 0) e.vars.push_back(v);
+    for (const wchar_t* v = block; *v; v += wcslen(v) + 1) {
+        if (_wcsnicmp(v, L"PYTHONPATH=", 11) != 0 && _wcsnicmp(v, L"PYTHONHOME=", 11) != 0) e.vars.push_back(narrow(v));
     }
-    FreeEnvironmentStringsA(block);
+    FreeEnvironmentStringsW(block);
     return e;
 }
 
@@ -57,23 +57,22 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     if (!CreatePipe(&rd, &wr, &sa, 0)) { error = "pipe non disponibile"; return false; }
     SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
 
-    HANDLE in = CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
+    HANDLE in = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
     HANDLE err = INVALID_HANDLE_VALUE;
     if (!stderrPath.empty())
-        err = CreateFileA(stderrPath.c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_ALWAYS,
+        err = CreateFileW(widen(stderrPath).c_str(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_ALWAYS,
                           FILE_ATTRIBUTE_NORMAL, nullptr);
     if (err == INVALID_HANDLE_VALUE)
-        err = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
+        err = CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
 
     std::string cmd;
     for (const std::string& a : argv) cmd += (cmd.empty() ? "" : " ") + quoteArg(a);
-    std::vector<char> cmdBuf(cmd.begin(), cmd.end());
-    cmdBuf.push_back('\0');
-    std::string envBlock;
-    for (const std::string& e : env.vars) envBlock += e + '\0';
-    envBlock += '\0';
+    std::wstring cmdBuf = widen(cmd);   // CreateProcessW may write into the command line
+    std::wstring envBlock;
+    for (const std::string& e : env.vars) envBlock += widen(e) + L'\0';
+    envBlock += L'\0';
 
-    STARTUPINFOA si = {};
+    STARTUPINFOW si = {};
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
     si.hStdInput = in;
@@ -81,9 +80,9 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     si.hStdError = err;
     PROCESS_INFORMATION pi = {};
     // CREATE_SUSPENDED: the process joins the job before it can start a grandchild outside it
-    const BOOL ok = CreateProcessA(argv[0].c_str(), cmdBuf.data(), nullptr, nullptr, TRUE,
-                                   CREATE_NO_WINDOW | CREATE_SUSPENDED, envBlock.empty() ? nullptr : &envBlock[0],
-                                   nullptr, &si, &pi);
+    const BOOL ok = CreateProcessW(widen(argv[0]).c_str(), &cmdBuf[0], nullptr, nullptr, TRUE,
+                                   CREATE_NO_WINDOW | CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT,
+                                   env.vars.empty() ? nullptr : &envBlock[0], nullptr, &si, &pi);
     const DWORD lastError = GetLastError();
     CloseHandle(wr);
     CloseHandle(in);
@@ -93,10 +92,13 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
         error = "avvio non riuscito (errore " + std::to_string(lastError) + ")";
         return false;
     }
-    HANDLE job = CreateJobObjectA(nullptr, nullptr);
+    HANDLE job = CreateJobObjectW(nullptr, nullptr);
     // No KILL_ON_JOB_CLOSE: the "Rileggi" button leaves a detached writer behind on purpose, and closing
     // the handle after a normal exit must not take it down. killProcess still ends the whole job.
-    if (job) AssignProcessToJobObject(job, pi.hProcess);
+    if (job && !AssignProcessToJobObject(job, pi.hProcess)) {   // an empty job would kill nothing
+        CloseHandle(job);
+        job = nullptr;
+    }
     ResumeThread(pi.hThread);
     CloseHandle(pi.hThread);
     c = Child();
@@ -168,7 +170,7 @@ void reapStrays() {}   // handles are closed with the process: nothing to collec
 void killProcess(Child& c)
 {
     if (c.job) TerminateJobObject((HANDLE)c.job, 1);
-    else if (c.process) TerminateProcess((HANDLE)c.process, 1);
+    if (c.process) TerminateProcess((HANDLE)c.process, 1);
     c.exited = true;
     closeHandles(c);
 }
@@ -200,14 +202,14 @@ bool findPython(PythonCommand& cmd, std::string& error)
     if (readFile(supportDir() + "/lib_path", lib)) lib = trim(lib);
     if (lib.empty() && fileExists(supportDir() + "/lib/slogmetaraw")) lib = supportDir() + "/lib";
     std::vector<std::string> candidates;
-    if (const char* forced = getenv("SLOGMETARAW_PYTHON")) candidates.push_back(forced);
-    const char* pf = getenv("ProgramFiles");
-    const std::string base = pf ? pf : "C:/Program Files";
-    candidates.push_back(base + "/Blackmagic Design/DaVinci Resolve/python.exe");
-    char found[MAX_PATH];
-    if (SearchPathA(nullptr, "python", ".exe", MAX_PATH, found, nullptr)) candidates.push_back(found);
+    const std::string forced = envVar("SLOGMETARAW_PYTHON");
+    if (!forced.empty()) candidates.push_back(forced);
+    const std::string pf = envVar("ProgramFiles");
+    candidates.push_back((pf.empty() ? std::string("C:/Program Files") : pf) + "/Blackmagic Design/DaVinci Resolve/python.exe");
+    const std::string onPath = findExecutable("python");
+    if (!onPath.empty()) candidates.push_back(onPath);
     for (const std::string& c : candidates) {
-        if (GetFileAttributesA(c.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        if (GetFileAttributesW(widen(c).c_str()) != INVALID_FILE_ATTRIBUTES) {
             cmd.python = c;
             cmd.lib = lib;
             return true;
@@ -233,7 +235,7 @@ std::string childLogPath()
 
 bool openUrl(const std::string& url)
 {
-    return (INT_PTR)ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL) > 32;
+    return (INT_PTR)ShellExecuteW(nullptr, L"open", widen(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL) > 32;
 }
 
 #endif   // _WIN32
