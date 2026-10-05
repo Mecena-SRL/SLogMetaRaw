@@ -207,7 +207,11 @@ def _read_result(proc, deadline, cancelled=None):
 
 
 def _stop_reader(proc):
-    """Reap helper processes and close their pipes, including after a timeout."""
+    """Reap helper processes and close their pipes, including after a timeout.
+
+    A child stuck in uninterruptible I/O (dead network volume) survives kill(): its stdout stays open,
+    because close() would wait for the pump thread's blocked read and freeze the scan.
+    """
     if proc is None:
         return
     try:
@@ -216,13 +220,13 @@ def _stop_reader(proc):
         proc.wait(timeout=2)
     except (OSError, subprocess.TimeoutExpired):
         pass
-    finally:
-        for pipe in (proc.stdin, proc.stdout):
-            if pipe is not None:
-                try:
-                    pipe.close()
-                except OSError:
-                    pass
+    pipes = (proc.stdin, proc.stdout) if proc.poll() is not None else (proc.stdin,)
+    for pipe in pipes:
+        if pipe is not None:
+            try:
+                pipe.close()
+            except OSError:
+                pass
 
 
 def main(resolve, fusion, bmd, selftest=False):
@@ -479,7 +483,7 @@ def main(resolve, fusion, bmd, selftest=False):
         out = []
         for c in clips:
             path = resolve_io.clip_path(c)
-            if path and '\n' not in path:    # the reader takes one path per line
+            if path and '\n' not in path and '\r' not in path:    # the reader takes one path per line
                 out.append({'uid': c.GetUniqueId(), 'clip': c, 'name': c.GetName(), 'path': path})
         return out
 
@@ -797,7 +801,7 @@ def main(resolve, fusion, bmd, selftest=False):
             return
         os.makedirs(EXPORT_DIR, exist_ok=True)
         stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        name = '%s_%s.csv' % ((state['project'] or 'SLogMetaRaw').replace('/', '-'), stamp)
+        name = '%s_%s.csv' % (re.sub(r'[\\/:*?"<>|]', '-', state['project'] or 'SLogMetaRaw'), stamp)
         path = resolve_io.export_csv(list(state['results'].values()), os.path.join(EXPORT_DIR, name))
         status(t('CSV salvato: %s  →  in Resolve: File › Import › Metadata, con "crea campi custom" attivo.') % path)
 

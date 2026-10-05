@@ -161,17 +161,11 @@ def trusted_dmg_url(url):
 
 
 def write_state(result):
-    tmp = '%s.%d.%d.tmp' % (STATE_PATH, os.getpid(), threading.get_ident())   # the plugin writes it too
     try:
         os.makedirs(SUPPORT_DIR, exist_ok=True)
-        with open(tmp, 'w', encoding='utf-8') as fh:
-            json.dump(result, fh, ensure_ascii=False)
-        os.replace(tmp, STATE_PATH)
+        paths.write_json(STATE_PATH, result, '.%d' % threading.get_ident())   # the plugin writes it too
     except OSError:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        pass
 
 
 def check(current=None, timeout=6.0):

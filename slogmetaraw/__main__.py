@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 
+from . import paths as _paths
 from .extract import read_clip, DatalessError, FULL_SAMPLES
 
 EXTS = ('.mp4', '.mxf')
@@ -162,16 +163,10 @@ def write_to_resolve(path, r, on_connected=None, connect_timeout=None):
 
 
 def _save_status(path, status):
-    tmp = '%s.%d.tmp' % (path, os.getpid())
     try:
-        with open(tmp, 'w', encoding='utf-8') as fh:
-            json.dump(status, fh, ensure_ascii=False)
-        os.replace(tmp, path)
+        _paths.write_json(path, status)
     except OSError:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+        pass
 
 
 def _resolve_writer(path, r, status_path):

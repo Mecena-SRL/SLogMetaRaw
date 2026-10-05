@@ -9,14 +9,13 @@ The file name hash (FNV-1a 64 of the UTF-8 path) is duplicated in the plugin.
 """
 import json
 import os
+import sys
 import unicodedata
 
 from . import camera, datalevel, paths, resolve_io
 
 CACHE_DIR = os.path.join(paths.support_dir(), 'cache')
-# 5: MXF read from the partition pack (long FX6 clips came out unsupported).
-# 6: FX6 tint in the camera's units (the file stores hundredths). The plugin re-reads older records.
-VERSION = 6
+VERSION = 6   # the plugin re-reads older records
 
 
 def fnv1a64(text):
@@ -28,13 +27,16 @@ def fnv1a64(text):
 
 
 def canonical_path(clip_path):
-    """Return the one path spelling shared with the OpenFX plugin.
+    """The path spelling hashed for the cache file name: the same as canonicalPath in the plugin's Files.cpp.
 
-    Resolve can expose the same file through a symlink while its scripting API
-    reports the physical path. Hashing those two spellings made the script and
-    node look in different cache files. NFC also handles decomposed macOS paths.
+    macOS and Linux resolve symlinks (Resolve may report the physical path); macOS also folds NFD to NFC.
+    Windows takes the full path with forward slashes, as _wfullpath does there.
     """
-    return unicodedata.normalize('NFC', os.path.realpath(os.path.expanduser(clip_path)))
+    p = os.path.expanduser(clip_path)
+    if os.name == 'nt':
+        return os.path.abspath(p).replace('\\', '/')
+    p = os.path.realpath(p)
+    return unicodedata.normalize('NFC', p) if sys.platform == 'darwin' else p
 
 
 def cache_path(clip_path):
@@ -190,15 +192,5 @@ def write_cache(r, keep_complete=False):
     path = os.path.join(CACHE_DIR, fnv1a64(rec['path']) + '.json')
     if (rec['partial'] or keep_complete) and _complete_record_at(path, rec):
         return path
-    tmp = '%s.%d.tmp' % (path, os.getpid())   # the plugin's reader and the script may write at once
-    try:
-        with open(tmp, 'w', encoding='utf-8') as fh:
-            json.dump(rec, fh, ensure_ascii=False)
-        os.replace(tmp, path)  # atomic: the plugin never sees a half-written file
-    except OSError:            # disk full or read-only: leave no half-written file behind
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    paths.write_json(path, rec)
     return path
