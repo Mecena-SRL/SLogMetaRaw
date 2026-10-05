@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-// Records older than this are read again: 5 fixed long MXF files, 6 the FX6 tint scale.
+// Records older than this are read again (VERSION in slogmetaraw/plugin_cache.py).
 const int kRecordVersion = 6;
 
 // False when there is no record, it is older than kRecordVersion, or it belongs to another file

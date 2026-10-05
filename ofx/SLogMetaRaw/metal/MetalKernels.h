@@ -12,3 +12,5 @@ bool RunDevelopKernel(void* p_CmdQ, int p_Width, int p_Height, int p_RowPixels, 
                       const float* p_Input, float* p_Output);
 // Pass-through: the first p_Bytes of the input buffer into the output buffer.
 bool RunCopy(void* p_CmdQ, size_t p_Bytes, const float* p_Input, float* p_Output);
+// Frees the Detail working planes kept between frames (the last Detail node is gone).
+void DropDetailScratch();

@@ -7,7 +7,6 @@
 #include "../common/Files.h"
 #include "../common/FlatJson.h"
 
-
 #include <cctype>
 #include <cstdlib>
 #include <mutex>
@@ -97,18 +96,12 @@ std::mutex s_Mutex;
 std::map<std::string, Read> s_Reads;
 }
 
-// A finished reader: the record decides. The old --to-resolve answer ({"ok":..}) is still accepted.
+// A finished reader: the record decides.
 static MetaOutcome settle(const std::string& path, Read& r, ClipMeta& m, std::string& status)
 {
     r.running = false;
     const std::map<std::string, std::string> out = parseFlatJson(r.child.out);
     if (readRecord(path, m)) {
-        if (out.count("ok")) {
-            std::map<std::string, std::string> j = out;
-            m.resolveNote = atoi(j["ok"].c_str()) == 1
-                ? "scritti in Resolve su questa clip (" + j["written"] + " campi)"
-                : "scrittura in Resolve non riuscita: " + j["error"];
-        }
         status = r.reload ? "Metadata letti dal file"
                           : "Metadata letti dal file: lancia lo script S-Log MetaRaw per registrarli in Resolve";
         r.failure.clear();

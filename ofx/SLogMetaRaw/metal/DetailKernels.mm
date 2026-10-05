@@ -2,6 +2,7 @@
 #include "MetalKernels.h"
 
 #include <algorithm>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -50,6 +51,12 @@ public:
         auto& list = m_Free[device][key];
         if (list.size() < 3) list.push_back(s);
     }
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        m_Free.clear();
+        m_Recent.clear();
+    }
 
 private:
     static constexpr size_t kSizes = 2;
@@ -64,10 +71,11 @@ Pool& pool()
     return *p;
 }
 
+// floats <= 1: a plane the frame binds but does not use; a big buffer left from an earlier frame is let go.
 id<MTLBuffer> plane(id<MTLDevice> device, Scratch& s, const char* name, size_t floats)
 {
     __strong id<MTLBuffer>& b = s.planes[name];
-    if (!b || b.length < floats * sizeof(float))
+    if (!b || b.length < floats * sizeof(float) || (floats <= 1 && b.length > sizeof(float)))
         b = [device newBufferWithLength:std::max<size_t>(floats, 1) * sizeof(float) options:MTLResourceStorageModePrivate];
     return b;
 }
@@ -188,7 +196,13 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
         ps = e.use("dt_luma");
         e.buf(src, 0); e.buf(L0, 1); e.bytes(frame, 2); e.bytes(p, 3); e.grid2(ps, W, H);
     }
+    auto drop = [&](std::initializer_list<const char*> names) {   // planes this frame does not touch
+        for (const char* n : names) s->planes.erase(n);
+    };
     id<MTLBuffer> Lw = P("Lw", grid), at = P("at", grid), bt = P("bt", grid);
+    if (!transmission) drop({ "c0", "c1", "c2", "E", "g2", "g3" });
+    if (p.clarity == 0.0f) drop({ "a2", "b2", "a3", "b3" });
+    if (p.texture == 0.0f) drop({ "Lt", "tmpTex" });
     if (dehaze) {
         if (transmission) {
             id<MTLBuffer> xa = tmpFull, ch[3] = { P("c0", grid), P("c1", grid), P("c2", grid) };
@@ -254,3 +268,5 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     [commands commit];
     return true;
 }
+
+void DropDetailScratch() { pool().clear(); }

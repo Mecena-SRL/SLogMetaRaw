@@ -249,7 +249,12 @@ private:
 
 DetailEffect::~DetailEffect()
 {
-    if (--liveNodes() == 0) ScratchLease::drop();   // the last Detail node is gone: its working planes too
+    if (--liveNodes() == 0) {   // the last Detail node is gone: its working planes too
+        ScratchLease::drop();
+#ifdef __APPLE__
+        DropDetailScratch();
+#endif
+    }
 }
 
 SMDetailControls DetailEffect::readControls(double t)

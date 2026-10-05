@@ -21,12 +21,13 @@ namespace Update {
 
 static const int kCheckMs = 40000;   // urlopen's timeout does not bound DNS: ~30 s on a dead name
 
-// Never destroyed: a detached worker may still hold it when the host unloads the bundle.
+// Never destroyed: a worker still cancelling may hold it when the host unloads the bundle.
 struct State
 {
     std::mutex mutex;
     std::condition_variable done;
     Snapshot snap;
+    std::thread worker;   // joined before the next check and at the last unload
     bool running = false;
     int loaded = 0;   // plugins of the bundle currently loaded by the host
     std::atomic<bool> cancel{ false };
@@ -77,6 +78,7 @@ static void finish(const ChildResult& r)
 void start(bool manual, bool hostIsBackground)
 {
     State& s = state();
+    std::thread previous;   // it already ran finish(): only returning
     {
         std::lock_guard<std::mutex> lock(s.mutex);
         if (s.running) {
@@ -92,7 +94,9 @@ void start(bool manual, bool hostIsBackground)
         s.snap.kind = Checking;
         s.snap.manual = manual;
         ++s.snap.serial;
+        previous = std::move(s.worker);
     }
+    if (previous.joinable()) previous.join();
     PythonCommand py;
     std::string error;
     if (!findPython(py, error)) {
@@ -105,10 +109,23 @@ void start(bool manual, bool hostIsBackground)
     const std::vector<std::string> argv = pythonArgv(py, args);
     const EnvSnapshot env = EnvSnapshot::capture();   // on the UI thread: environ races with the host
     const std::string log = childLogPath();
-    std::thread([argv, env, log]() {
-        ChildResult r = runProcess(argv, env, kCheckMs, &state().cancel, log);
-        finish(r);
-    }).detach();
+    std::thread worker;
+    try {
+        worker = std::thread([argv, env, log]() {
+            ChildResult r;
+            try {
+                r = runProcess(argv, env, kCheckMs, &state().cancel, log);
+            } catch (...) {   // nothing may escape a thread: std::terminate would take the host down
+                r = ChildResult();
+            }
+            finish(r);
+        });
+    } catch (...) {   // no thread available
+        finish(ChildResult());
+        return;
+    }
+    std::lock_guard<std::mutex> lock(s.mutex);
+    s.worker = std::move(worker);
 }
 
 Snapshot snapshot()
@@ -161,7 +178,11 @@ void pluginUnloaded()
     if (s.loaded > 0 && --s.loaded > 0) return;
     // Last plugin out: the host may dlclose the binary, so the worker must not outlive it.
     s.cancel = true;
-    s.done.wait_for(lock, std::chrono::milliseconds(500), [&] { return !s.running; });
+    if (!s.done.wait_for(lock, std::chrono::milliseconds(500), [&] { return !s.running; })) return;
+    // finish() has run, but the thread still executes the binary's code until it returns
+    std::thread worker = std::move(s.worker);
+    lock.unlock();
+    if (worker.joinable()) worker.join();
 }
 
 }
