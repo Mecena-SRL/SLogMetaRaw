@@ -45,7 +45,7 @@ Original files are **never modified**: no transcoding, no rewrapping.
 
 ## 2. Install
 
-1. Download `SLogMetaRaw-2.3.0.dmg` from [Releases](https://github.com/ivan-94m/SLogMetaRaw/releases) and open it.
+1. Download `SLogMetaRaw-2.3.0.dmg` from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) and open it.
 
    ![The DMG window](images/01-dmg.png)
 
@@ -180,7 +180,7 @@ Set *Decode Using* to **Clip** first: in *Camera metadata* the controls are lock
 
 ARRI-style bands in stops around 18% grey. Everything else turns grey.
 
-![Exposure bands](https://raw.githubusercontent.com/ivan-94m/SLogMetaRaw/main/docs/falsecolor_bands.png)
+![Exposure bands](https://raw.githubusercontent.com/Mecena-SRL/SLogMetaRaw/main/docs/falsecolor_bands.png)
 
 | Colour | Meaning |
 |---|---|
@@ -209,7 +209,7 @@ Pick a surface that should be neutral and move the slider until it stays grey. A
 
 ![Temperature false colour](images/11-falsecolor-temp.png)
 
-Deep dive (Italian): [docs/FALSE_COLOR.md](https://github.com/ivan-94m/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md)
+Deep dive (Italian): [docs/FALSE_COLOR.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md)
 
 ---
 
@@ -236,7 +236,7 @@ All sliders run −100…+100, in Camera Raw order. Highlights is a film shoulde
 
 ![Highlights 0 vs −100](images/15-highlights-before-after.png)
 
-![Tone curve](https://raw.githubusercontent.com/ivan-94m/SLogMetaRaw/main/docs/tone_curve.png)
+![Tone curve](https://raw.githubusercontent.com/Mecena-SRL/SLogMetaRaw/main/docs/tone_curve.png)
 
 > **The honest cost of a pointwise node:** whatever it compresses, it compresses the texture inside it too. Recovery that keeps texture lives in the Detail node.
 
@@ -256,7 +256,7 @@ Zone edges are carried through Contrast, so they stay in scene stops whatever Co
 
 The node is pointwise, so Generate LUT includes it. Use **65 points**: with ±100 sliders the error stays within ~3.5 S-Log3 code values. At 33 points the S-Log3 linear toe (Shadows +100) reaches ~10 CV. Some extreme Zones (Black or Shadow +3) exceed that even at 65 — keep the node live for those grades.
 
-Deep dive (Italian): [docs/TONE_MAPPING.md](https://github.com/ivan-94m/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md)
+Deep dive (Italian): [docs/TONE_MAPPING.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md)
 
 ---
 
@@ -296,7 +296,7 @@ It works **by areas**, over an edge-aware base: it moves large areas of light wi
 - Texture near strong edges can grow grain 1.25–1.7×.
 - Dehaze needs a real haze to remove.
 
-Deep dive (Italian): [docs/DETAIL.md](https://github.com/ivan-94m/SLogMetaRaw/blob/main/docs/DETAIL.md)
+Deep dive (Italian): [docs/DETAIL.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DETAIL.md)
 
 ---
 
@@ -348,7 +348,7 @@ Leave Color Space/Gamma on **Timeline** in the main node. Enable the script's *A
 
 **Non-log profiles** (Cine, HLG, S-Cinetone): the nodes stay neutral and say so in *Stato*.
 
-**Wrong Data Level.** If blacks look lifted or crushed straight out of the camera, Resolve is decoding on the wrong code-value scale. Run the script with *Correct the Data Level* on (project-wide fix), or use *Avanzate › Data level in ingresso* on a single clip. Background (Italian): [docs/DATA_LEVELS.md](https://github.com/ivan-94m/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
+**Wrong Data Level.** If blacks look lifted or crushed straight out of the camera, Resolve is decoding on the wrong code-value scale. Run the script with *Correct the Data Level* on (project-wide fix), or use *Avanzate › Data level in ingresso* on a single clip. Background (Italian): [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 
 **Cameras without Kelvin** (e.g. a6300): Kelvin is estimated from the light preset and flagged.
 
@@ -427,4 +427,4 @@ It is unsigned: right-click › Open (or System Settings › Privacy & Security 
 
 ---
 
-**Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m) · [GNU GPL v3.0+](https://github.com/ivan-94m/SLogMetaRaw/blob/main/LICENSE) · [Release notes](https://github.com/ivan-94m/SLogMetaRaw/blob/main/RELEASE_NOTES.md)
+**Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m) · [GNU GPL v3.0+](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/LICENSE) · [Release notes](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/RELEASE_NOTES.md)
