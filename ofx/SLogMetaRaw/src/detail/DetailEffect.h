@@ -6,6 +6,7 @@
 
 #include "../../gen/DevelopMath.h"
 #include "../common/UpdateBadge.h"
+#include "../common/ZoneParams.h"
 
 const int kDetailSettingsVersion = 1;
 
@@ -35,6 +36,7 @@ private:
 
     bool m_Ready = false;
     UpdateBadge m_Badge;
+    ZoneParamSet m_Zones;
     OFX::Clip* m_DstClip = nullptr;
     OFX::Clip* m_SrcClip = nullptr;
     OFX::StringParam* m_Info = nullptr;

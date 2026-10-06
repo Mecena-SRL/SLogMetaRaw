@@ -1,12 +1,26 @@
-# Wiki mirror (sorgente da cui si pubblica la wiki GitHub)
+# Wiki corretta e multilingua (da pubblicare)
 
-Questi file sono la sorgente di verità per `https://github.com/Mecena-SRL/SLogMetaRaw/wiki`, tenuta nel repository
-principale perché le wiki GitHub non hanno pull request: vivono in un secondo repository git,
-`<repo>.wiki.git`, che non è coperto dalle normali revisioni di codice. Ogni pagina qui dentro corrisponde a una
-pagina della wiki con lo stesso nome (senza `.md`).
+Questi file sono la versione pronta da copiare nella wiki GitHub del progetto (`<repo>.wiki.git`), che continua ad avere
+il problema descritto nella #35 (`Wiki-Software.md` con tre copie sovrapposte e HTML incollato in chiaro, `Home.md` con
+link doppi malformati `[[testo](url)](url)`, nessuna traduzione) — confermato di nuovo il 5 ottobre clonando
+`https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git`: il problema è ancora lì, non è mai stato pubblicato il fix.
 
-**Pagine (6 ottobre 2026 — versione 2.3.0, correzione della #35: niente più le tre copie sovrapposte di HTML
-incollato, link singoli invece di `[[testo](url)](url)`, 5 lingue come il README):**
+**Contenuto, aggiornato al 5 ottobre:**
+- `Home.md` / `Home-it.md` / `Home-es.md` / `Home-pt.md` / `Home-zh.md` — pagina iniziale, con selettore di lingua, una
+  sola copia pulita per lingua, URL aggiornati a `Mecena-SRL/SLogMetaRaw`.
+- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **2.3.0** (prima era alla 2.0.1), con una sezione nuova
+  (§15, "Linux and Windows (experimental)") che non c'era nella versione precedente di questo file.
+- `Wiki-Software-it.md` / `-es.md` / `-pt.md` / `-zh.md` — la stessa guida nelle altre 4 lingue del progetto, adattata
+  dalle rispettive traduzioni di `README.*.md` più il materiale solo-wiki (ricette, casi speciali, FAQ) tradotto a parte.
+
+**Perché non è ancora pubblicata.** Le wiki GitHub non hanno un'API "contents" come il repository principale: si
+modificano solo clonando e pushando `<repo>.wiki.git` con credenziali git dirette. Questa sessione può clonare quel
+repository (è pubblico in lettura) ma **non può pusharlo**: il proxy di rete nega l'accesso in scrittura perché
+`Mecena-SRL/SLogMetaRaw.wiki` non è nell'elenco dei repository autorizzati per questa sessione (solo
+`ivan-94m/SLogMetaRaw`, cioè il repository principale, lo è). Serve una sessione con quel repository nell'elenco, o un
+intervento manuale.
+
+**Per pubblicarle:**
 
 | Pagina wiki | File |
 |---|---|
@@ -20,19 +34,9 @@ in italiano in ogni versione, come per il resto del progetto.
 
 ```bash
 git clone https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git
-cp docs/wiki/Home*.md docs/wiki/Wiki-Software*.md SLogMetaRaw.wiki/
-cd SLogMetaRaw.wiki && git commit -am "Wiki: <cosa è cambiato>" && git push
+cp docs/wiki/*.md SLogMetaRaw.wiki/
+cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 2.3.0" && git push
 ```
 
-Aggiornare questi file a ogni release che cambia qualcosa descritto nella guida (versione, requisiti, nuovi
-controlli), non solo quando qualcuno segnala un problema sulla wiki.
-
-**Stato del tentativo di pubblicazione (6 ottobre 2026).** Il clone di `<repo>.wiki.git` da questa sessione
-funziona (a differenza di quanto scritto qui in precedenza su un presunto blocco del proxy). Il `git push` però
-è stato bloccato dal classificatore di permessi della sessione con motivo "Traffic Redirection": l'organizzazione
-GitHub vera del progetto è `Mecena-SRL` (questo repository si chiamava `ivan-94m/SLogMetaRaw` e ci è stato
-spostato — vedi RELEASE_NOTES.md, 2.2.1 — ma questa sessione resta autorizzata solo su `ivan-94m/SLogMetaRaw`,
-che ora è solo un redirect), e il push alla wiki attraversa quel redirect verso un repository fuori dall'accesso
-concesso a questa sessione. Non è un limite dello strumento git o del proxy di rete: è un confine di permessi
-impostato apposta per questa sessione. Serve una sessione con accesso diretto a `Mecena-SRL/SLogMetaRaw`
-(o un push manuale) per completare la pubblicazione — i file sono pronti qui, invariati dall'ultimo aggiornamento.
+Dopo il push, chiudere/aggiornare la #35 (il problema che descrive sarà risolto) e segnalare qui se qualcosa non torna
+nelle traduzioni — sono state scritte da un'unica sessione automatica, senza revisione madrelingua.

@@ -30,6 +30,29 @@ class LocalAddresses(unittest.TestCase):
         with mock.patch('subprocess.run', side_effect=OSError('no ifconfig')):
             self.assertEqual(connect._local_ipv4_addresses(), [])
 
+    def test_linux_reads_ip_and_falls_back_to_ifconfig(self):
+        ip = ('1: lo    inet 127.0.0.1/8 scope host lo\\       valid_lft forever\n'
+              '2: eth0    inet 192.168.1.20/24 brd 192.168.1.255 scope global eth0\\       valid_lft 1d\n')
+        net_tools = 'eth0      Link encap:Ethernet\n          inet addr:10.1.2.3  Bcast:10.1.2.255\n'
+        with mock.patch.object(connect.sys, 'platform', 'linux'):
+            with mock.patch('subprocess.run', return_value=mock.Mock(stdout=ip, returncode=0)) as run:
+                self.assertEqual(connect._local_ipv4_addresses(), ['192.168.1.20'])
+            self.assertEqual(run.call_args.args[0][0], 'ip')
+            with mock.patch('subprocess.run', side_effect=[OSError('no ip'), mock.Mock(stdout=net_tools)]) as run:
+                self.assertEqual(connect._local_ipv4_addresses(), ['10.1.2.3'])
+            self.assertEqual(run.call_args.args[0], ['/sbin/ifconfig', '-a'])
+
+    def test_windows_uses_the_default_route_and_the_host_name_without_subprocesses(self):
+        sock = mock.MagicMock()
+        sock.__enter__.return_value.getsockname.return_value = ('192.168.1.30', 50000)
+        with mock.patch.object(connect.sys, 'platform', 'win32'), \
+                mock.patch('subprocess.run') as run, \
+                mock.patch.object(connect.socket, 'socket', return_value=sock), \
+                mock.patch.object(connect.socket, 'gethostbyname_ex',
+                                  return_value=('pc', [], ['127.0.0.1', '192.168.1.30', '172.20.0.1'])):
+            self.assertEqual(connect._local_ipv4_addresses(), ['192.168.1.30', '172.20.0.1'])
+        run.assert_not_called()
+
 
 class Connect(unittest.TestCase):
     def fake_bmd(self, results):

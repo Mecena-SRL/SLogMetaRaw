@@ -38,7 +38,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-2.3.0.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-2.3.1.dmg` 并打开。
 2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -99,7 +99,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v2.3.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.3.0 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v2.3.1`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.3.1 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值 |
 | **White Balance** · **Color Temp** · **Tint** | As shot 或预设。从摄影机记录的白点出发，在线性光中进行 Bradford 色适应 |
@@ -152,7 +152,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.3.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.3.1`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
@@ -188,6 +188,37 @@ tests/               测试与参考模型（示例片段不在仓库中）
 packaging/           安装程序、指南、卸载程序
 docs/                TONE_MAPPING、DETAIL、FALSE_COLOR、DATA_LEVELS
 ```
+
+### Linux 与 Windows（CPU 渲染，实验性）
+
+该插件也可以用 CMake 为 Linux 和 Windows 编译。这些移植版本仅使用 CPU 渲染（尚无 Metal、CUDA 或 OpenCL 支持），
+且尚未在 DaVinci Resolve 内部测试过：目前仍以 macOS 版本为官方支持对象。
+
+**Linux 安装**（从 **Releases** 下载适合你发行版的文件）：
+
+| 文件 | 适用于 |
+|---|---|
+| `slogmetaraw_<版本>_amd64.deb` | Ubuntu、Debian、Mint：`sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<版本>-1.x86_64.rpm` | Rocky、Alma、RHEL、CentOS、Fedora：`sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<版本>-linux-x86_64.run` | 任意发行版：`sh SLogMetaRaw-*.run`（免 sudo 用 `--user`，卸载用 `--uninstall`） |
+| `SLogMetaRaw-<版本>-linux-x86_64.tar.gz` | 同上，未打包版本：运行其中的 `install.sh` |
+
+插件安装到 `/usr/OFX/Plugins`；Python 库安装到 `/usr/lib/slogmetaraw`（.deb/.rpm）或
+`~/.local/share/SLogMetaRaw`（.run、.tar.gz）。如果系统中有 Resolve，安装包会把菜单脚本放到
+`/opt/resolve/Fusion/Scripts/Utility`；否则请为当前用户运行一次 `slogmetaraw-setup`。然后重启 Resolve。
+只需 Python 3.6 及以上（Rocky/RHEL 8 也满足）。该二进制基于 glibc 2.28 编译，可在 Rocky/Alma/RHEL 8+、
+Ubuntu 20.04+ 和 Debian 10+ 上运行。
+
+```bash
+# 自行编译（需要 cmake、C++17 编译器、python3；OpenFX SDK 会自动下载，或设置 OFX_SDK_DIR）
+./packaging/linux/build_package.sh          # dist/：.tar.gz、.run、.deb、.rpm
+# Windows（PowerShell）：需要 cmake、Visual Studio Build Tools、python；Inno Setup 可选
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip（以及用 Inno Setup 生成的安装程序 .exe）
+```
+
+状态文件在 Linux 上位于 `~/.local/share/SLogMetaRaw`，在 Windows 上位于 `%APPDATA%\SLogMetaRaw`。
+`.github/workflows/` 会在每次改动时构建这些安装包，并在 Rocky 8/9、Ubuntu 20.04-24.04 和 Debian 12 上安装
+.deb/.rpm 进行验证；推送 `v*` 标签会把它们附加到一个草稿 release。
 
 ---
 

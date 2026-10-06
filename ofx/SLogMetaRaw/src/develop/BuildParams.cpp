@@ -109,7 +109,7 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
                     + (p.fcMode == 1 ? "esposizione" : p.fcMode == 2 ? "temperatura" : p.fcMode == 3 ? "tint" : "zone")
                     + ") · " + *p_NodeInfo;
 
-    const SMToneControls tones = readToneControls(*this, p_Time);
+    const SMToneControls tones = readToneControls(*this, m_Zones, p_Time);
     sm_set_tone(&p, &tones, p.outSpace, p.convert, p.expo);
     return true;
 }

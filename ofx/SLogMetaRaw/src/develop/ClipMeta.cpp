@@ -8,8 +8,10 @@
 #include "../common/FlatJson.h"
 
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <mutex>
+#include <thread>
 
 const DetailField kDetails[] = {
     { "lens", "infoLens", "Obiettivo" }, { "focal", "infoFocal", "Focale" },
@@ -140,6 +142,16 @@ static void sweepReads(const std::string& current)
         if (!r.running && stale && it->first != current) it = s_Reads.erase(it);
         else ++it;
     }
+}
+
+void stopReads()
+{
+    std::lock_guard<std::mutex> lock(s_Mutex);
+    for (auto& kv : s_Reads)
+        if (kv.second.running) killProcess(kv.second.child);
+    s_Reads.clear();
+    // a killed reader exits within milliseconds, unless stuck on a dead network disk: never wait for that one
+    for (int i = 0; i < 20 && !reapStrays(); ++i) std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std::string& status)

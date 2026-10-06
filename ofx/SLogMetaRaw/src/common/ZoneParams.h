@@ -24,7 +24,13 @@ struct ZoneValues
     double pivot = 0.0;
     double exp[kZoneCount] = {}, sat[kZoneCount] = {}, range[kZoneCount] = {}, falloff[kZoneCount] = {};
 };
-// Reads the values at a time; missing parameters keep their defaults.
-ZoneValues readZoneValues(OFX::ImageEffect& effect, const std::string& prefix, double time);
+// The zone parameters, looked up once at construction: no name lookups while rendering.
+struct ZoneParamSet
+{
+    OFX::DoubleParam* pivot = nullptr;
+    OFX::DoubleParam *exp[kZoneCount] = {}, *sat[kZoneCount] = {}, *range[kZoneCount] = {}, *falloff[kZoneCount] = {};
+    void bind(OFX::ImageEffect& effect, const std::string& prefix);
+    ZoneValues read(double time) const;   // missing parameters keep their defaults
+};
 // Back to the defaults, keys removed ("Azzera zone").
 void resetZoneParams(OFX::ImageEffect& effect, const std::string& prefix);

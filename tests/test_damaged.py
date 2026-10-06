@@ -138,7 +138,7 @@ class Damaged(unittest.TestCase):
         t.tables[b'stsz'] = bytes(4) + (7).to_bytes(4, 'big') + (10).to_bytes(4, 'big')
         t.tables[b'stco'] = bytes(4)
         t.tables[b'stsc'] = bytes(4) + (1).to_bytes(4, 'big') + b''.join(v.to_bytes(4, 'big') for v in (1, 10, 1))
-        self.assertEqual(t.chunk_offsets(), [])
+        self.assertEqual(t.chunk_count(), 0)
         t.tables[b'stsc'] = bytes(3)
         self.assertEqual(t.sample_offsets([0, 1]), {})
 

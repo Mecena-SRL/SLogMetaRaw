@@ -74,18 +74,34 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
     for (const std::string& e : env.vars) envBlock += widen(e) + L'\0';
     envBlock += L'\0';
 
-    STARTUPINFOW si = {};
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdInput = in;
-    si.hStdOutput = wr;
-    si.hStdError = err;
+    STARTUPINFOEXW si = {};
+    si.StartupInfo.cb = sizeof(si);
+    si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    si.StartupInfo.hStdInput = in;
+    si.StartupInfo.hStdOutput = wr;
+    si.StartupInfo.hStdError = err;
+    // Only the three standard handles reach the child, not every inheritable handle Resolve holds open.
+    std::vector<HANDLE> inherit;
+    for (HANDLE h : { in, wr, err })
+        if (h && h != INVALID_HANDLE_VALUE) inherit.push_back(h);
+    SIZE_T attrSize = 0;
+    InitializeProcThreadAttributeList(nullptr, 1, 0, &attrSize);
+    std::vector<char> attrBuf(attrSize);
+    auto* attrs = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attrBuf.data());
+    DWORD flags = CREATE_NO_WINDOW | CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT;
+    if (attrSize && InitializeProcThreadAttributeList(attrs, 1, 0, &attrSize)) {
+        if (UpdateProcThreadAttribute(attrs, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherit.data(),
+                                      inherit.size() * sizeof(HANDLE), nullptr, nullptr)) {
+            si.lpAttributeList = attrs;
+            flags |= EXTENDED_STARTUPINFO_PRESENT;
+        }
+    }
     PROCESS_INFORMATION pi = {};
     // CREATE_SUSPENDED: the process joins the job before it can start a grandchild outside it
-    const BOOL ok = CreateProcessW(widen(argv[0]).c_str(), &cmdBuf[0], nullptr, nullptr, TRUE,
-                                   CREATE_NO_WINDOW | CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT,
-                                   env.vars.empty() ? nullptr : &envBlock[0], nullptr, &si, &pi);
+    const BOOL ok = CreateProcessW(widen(argv[0]).c_str(), &cmdBuf[0], nullptr, nullptr, TRUE, flags,
+                                   env.vars.empty() ? nullptr : &envBlock[0], nullptr, &si.StartupInfo, &pi);
     const DWORD lastError = GetLastError();
+    if (si.lpAttributeList) DeleteProcThreadAttributeList(attrs);
     CloseHandle(wr);
     CloseHandle(in);
     CloseHandle(err);
@@ -167,7 +183,7 @@ bool waitProcess(Child& c, int timeoutMs, const std::atomic<bool>* cancel)
     }
 }
 
-void reapStrays() {}   // handles are closed with the process: nothing to collect
+bool reapStrays() { return true; }   // handles are closed with the process: nothing to collect
 
 void killProcess(Child& c)
 {

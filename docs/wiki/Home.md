@@ -9,3 +9,5 @@ Sony camera metadata and scene-referred development controls for DaVinci Resolve
 - [Release notes](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/RELEASE_NOTES.md)
 - Technical deep dives (Italian): [Tone mapping](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md) · [Detail](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DETAIL.md) · [False colour](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md) · [Data levels](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 - [Report a problem](https://github.com/Mecena-SRL/SLogMetaRaw/issues)
+
+**User Guide in your language:** [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh)

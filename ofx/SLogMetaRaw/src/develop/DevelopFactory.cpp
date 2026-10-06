@@ -15,7 +15,11 @@ using namespace OFX;
 DevelopFactory::DevelopFactory() : PluginFactoryHelper<DevelopFactory>(kDevelopIdentifier, 1, 4) {}
 
 void DevelopFactory::load() { Update::pluginLoaded(); }
-void DevelopFactory::unload() { Update::pluginUnloaded(); }
+void DevelopFactory::unload()
+{
+    stopReads();
+    Update::pluginUnloaded();
+}
 
 void DevelopFactory::describe(ImageEffectDescriptor& p_Desc)
 {

@@ -77,7 +77,8 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
     inet 0.0.0.0 netmask 0xffffff00
     inet invalid-address netmask 0xffffff00
 '''
-        with patch.object(launcher.subprocess, 'run', return_value=types.SimpleNamespace(stdout=output)) as run:
+        with patch.object(launcher.subprocess, 'run', return_value=types.SimpleNamespace(stdout=output)) as run, \
+                patch.object(launcher.sys, 'platform', 'darwin'):
             self.assertEqual(launcher._local_ipv4_addresses(), ['192.168.1.11', '10.0.0.3'])
         self.assertEqual(run.call_args.args[0], ['/sbin/ifconfig', '-a'])
 

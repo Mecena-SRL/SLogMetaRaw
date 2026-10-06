@@ -45,7 +45,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-2.3.0.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-2.3.1.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa S-Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -130,7 +130,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v2.3.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v2.3.0 → 2.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v2.3.1`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v2.3.1 → 2.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Decode Using** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **White Balance** · **Color Temp** · **Tint** | As shot ou presets. Adaptação cromática Bradford em luz linear, a partir do branco que a câmera registrou |
@@ -209,7 +209,7 @@ ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaz
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/2.3.0`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/2.3.1`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
@@ -255,6 +255,37 @@ tests/               testes e modelos de referência (os clipes de teste não es
 packaging/           instalador, guias, desinstalador
 docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
 ```
+
+### Linux e Windows (renderização por CPU, experimental)
+
+O plugin também compila para Linux e Windows com CMake. Esses ports renderizam na CPU (ainda sem Metal, CUDA ou
+OpenCL) e não foram testados dentro do DaVinci Resolve: a build compatível continua sendo a do macOS.
+
+**Instalação no Linux** (baixe em **Releases** o arquivo certo para sua distribuição):
+
+| Arquivo | Para |
+|---|---|
+| `slogmetaraw_<versão>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<versão>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<versão>-linux-x86_64.run` | qualquer distribuição: `sh SLogMetaRaw-*.run` (`--user` sem sudo, `--uninstall`) |
+| `SLogMetaRaw-<versão>-linux-x86_64.tar.gz` | o mesmo, descompactado: execute `install.sh` |
+
+O plugin vai para `/usr/OFX/Plugins`; a biblioteca Python para `/usr/lib/slogmetaraw` (.deb/.rpm) ou
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). O pacote coloca o script de menu em
+`/opt/resolve/Fusion/Scripts/Utility` quando o Resolve está lá; caso contrário, execute uma vez `slogmetaraw-setup`
+(para o seu usuário). Reinicie o Resolve. Basta o Python 3.6 (mesmo no Rocky/RHEL 8). O binário é compilado contra
+glibc 2.28: carrega no Rocky/Alma/RHEL 8+, Ubuntu 20.04+ e Debian 10+.
+
+```bash
+# compile você mesmo (cmake, um compilador C++17, python3; o SDK OpenFX é baixado, ou defina OFX_SDK_DIR)
+./packaging/linux/build_package.sh          # dist/: .tar.gz, .run, .deb, .rpm
+# Windows (PowerShell): cmake, Visual Studio Build Tools, python; Inno Setup é opcional
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip (+ instalador .exe com Inno Setup)
+```
+
+O estado fica em `~/.local/share/SLogMetaRaw` no Linux e `%APPDATA%\SLogMetaRaw` no Windows. `.github/workflows/`
+compila os pacotes e instala o .deb/.rpm no Rocky 8/9, Ubuntu 20.04-24.04 e Debian 12 a cada mudança; enviar uma tag
+`v*` os anexa a uma release em rascunho.
 
 ---
 
