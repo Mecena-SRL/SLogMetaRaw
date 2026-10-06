@@ -22,8 +22,8 @@ static void setIfDifferent(P* p, V v)
     if (p->getValue() != v) p->setValue(v);
 }
 
-// settingsVersion says which meaning the saved values had; history in RELEASE_NOTES.md.
-// 0 is a new node (or a value the host did not save): treated as current.
+// settingsVersion says which meaning saved values had (history in RELEASE_NOTES.md); 0 means a new
+// node, or one the host did not save, and is treated as current.
 void DevelopEffect::migrateSettings()
 {
     // refSource is newer than the settings versions: a node that already read its clip is camera-referenced

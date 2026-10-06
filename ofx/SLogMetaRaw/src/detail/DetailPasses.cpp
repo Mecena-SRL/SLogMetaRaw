@@ -23,7 +23,7 @@ void release(V& v)   // planes this frame does not use go back to the system (J 
 }
 
 // The 1D filters run on `lanes` adjacent lines at once (lane l at in[j * stride + l]): the vertical pass
-// walks rows of a column block instead of single columns. Each lane sums in the same order as one line.
+// walks rows of a column block instead of single columns.
 const int kLanes = 32;
 
 // Separable filter over a W x H plane: horizontal pass into tmp, vertical pass into out.

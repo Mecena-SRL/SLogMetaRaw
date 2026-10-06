@@ -80,8 +80,8 @@ void DetailEffect::syncClip()
     refreshInfo();
 }
 
-// Declared, then what Resolve reports, then the clip's camera encoding (YRGB: the node after the
-// develop still receives it). An unrecognised colourspace from the host leaves the node neutral.
+// Priority: declared input, then what Resolve reports, then the clip's camera encoding (still YRGB after
+// the develop); an unrecognised host colourspace leaves the node neutral rather than guessing.
 InputOrigin DetailEffect::resolveInput(int& space, int& gamma) const
 {
     int input = 0;
@@ -189,7 +189,6 @@ bool DetailEffect::isIdentity(const OFX::IsIdentityArguments& p_Args, OFX::Clip*
 }
 
 namespace {
-// The host's worker threads for the CPU passes.
 class HostThreads : public OFX::MultiThread::Processor
 {
 public:
@@ -204,8 +203,8 @@ private:
     const std::function<void(int, int)>& m_Fn;
 };
 
-// Working planes shared by every Detail node, at most kKeep sets. A frame takes the set sized for it;
-// a set more than twice its size is freed on release, so an 8K render does not pin memory for HD work.
+// Working planes shared by every Detail node (at most kKeep sets); a set over twice the needed size is
+// freed on release, so an 8K render does not pin memory for HD work.
 class ScratchLease
 {
 public:

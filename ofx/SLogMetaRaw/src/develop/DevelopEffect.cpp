@@ -64,8 +64,7 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         fetchLegacyTones(*this);
     } catch (...) {
     }
-    // Some hosts refuse parameter changes while an instance is being created; beginEdit retries.
-    // Only the cache here: opening a project must never wait for a reader per node.
+    // beginEdit retries since some hosts refuse edits at creation; CacheOnly here so opening a project never waits on a reader.
     try {
         migrateSettings();
         syncMetadata(MetaMode::CacheOnly);
