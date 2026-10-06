@@ -22,7 +22,17 @@ intervento manuale.
 
 **Per pubblicarle:**
 
-```
+| Pagina wiki | File |
+|---|---|
+| Home | `Home.md` / `Home-it.md` / `Home-es.md` / `Home-pt.md` / `Home-zh.md` |
+| User Guide | `Wiki-Software.md` / `Wiki-Software-it.md` / `Wiki-Software-es.md` / `Wiki-Software-pt.md` / `Wiki-Software-zh.md` |
+
+Solo la guida utente è tradotta in tutte le lingue; il testo tecnico dei deep dive (`docs/TONE_MAPPING.md` ecc.) resta
+in italiano in ogni versione, come per il resto del progetto.
+
+## Come ripubblicare dopo una modifica qui
+
+```bash
 git clone https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git
 cp docs/wiki/*.md SLogMetaRaw.wiki/
 cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 2.3.0" && git push
