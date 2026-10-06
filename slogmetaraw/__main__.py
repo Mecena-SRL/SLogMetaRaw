@@ -170,10 +170,9 @@ def _save_status(path, status):
 
 
 def _resolve_writer(path, r, status_path):
-    """Body of the detached grandchild: bounded connection and write, then the status file.
+    """Body of the detached grandchild: bounded connect+write, then the status file.
 
-    The Resolve calls stay on the main thread; a watchdog thread writes the timeout
-    status and ends the process, since a call blocked inside fusionscript never returns.
+    A watchdog thread ends the process on timeout, since a blocked fusionscript call never returns.
     """
     lock = threading.Lock()
     finished = []
@@ -263,12 +262,10 @@ def _detach(job):
 
 
 def to_resolve(paths, detach=True):
-    """One clip for the plugin's "Rileggi metadata" button.
-
-    Reads the clip (budget CLIP_BUDGET), refreshes the plugin record and prints one
-    flat JSON line at once: {"cache": 1} or {"cache": 0, "error": ...}. The write
-    into Resolve then runs detached; its outcome lands in <fnv>.resolve.json next to
-    the record. Exit code 1 only when the clip could not be read."""
+    """Plugin's "Rileggi metadata" button: reads the clip, writes the plugin record and
+    prints one flat JSON line at once: {"cache": 1} or {"cache": 0, "error": ...}. The
+    write into Resolve then runs detached, its outcome landing in <fnv>.resolve.json.
+    Exit code 1 only when the clip could not be read."""
     if not paths:
         _emit({'cache': 0, 'error': 'manca il percorso della clip'})
         return 1
@@ -301,11 +298,9 @@ def to_resolve(paths, detach=True):
 # --- update check for the plugin's version button ----------------------------
 
 def update_check(current='', force=False):
-    """One flat JSON line (strings and 0/1 integers) about the newest release; exit 0 even offline.
-
-    A result younger than UPDATE_TTL is reused, so the automatic check of the
-    plugin reaches GitHub at most once a day; force (a click) asks again.
-    """
+    """One flat JSON line about the newest release; exit 0 even offline. A result younger
+    than UPDATE_TTL is reused, so the plugin's automatic check reaches GitHub at most
+    once a day; force (a click) asks again."""
     from . import update, __version__
     cur = current or __version__
     try:

@@ -1,29 +1,35 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Riflette
-la 2.1.1 (base `main` 2.1.0). Va rigenerato quando cambia la struttura dei moduli, non a ogni
-commit.
+la 2.3.0 (`main`). Va rigenerato quando cambia la struttura dei moduli, non a ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
 
 ```
 __main__.py ──> extract.py ──> codec.py
-   │                 ├──────> datalevel.py
-   │                 ├──────> mp4.py
-   │                 ├──────> mxf.py
-   │                 ├──────> nrt.py
-   │                 └──────> rtmd.py
+   │     │            ├──────> datalevel.py
+   │     │            ├──────> mp4.py
+   │     │            ├──────> mxf.py
+   │     │            ├──────> nrt.py
+   │     │            └──────> rtmd.py
+   │     └──> paths.py
    │
 ui.py ──> i18n.py
    ├────> osx_utils.py
+   ├────> paths.py
+   ├────> resolve_io.py ──> datalevel.py
    ├────> plugin_cache.py ──> camera.py
    │                     ├──> datalevel.py
-   │                     └──> resolve_io.py ──> datalevel.py
-   └────> update.py
+   │                     ├──> paths.py
+   │                     └──> resolve_io.py
+   └────> update.py ──> paths.py
 
 connect.py            (standalone: apertura/attivazione Resolve via AppleScript)
 resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui.py)
 ```
+
+`paths.py` è un leaf condiviso (percorsi cache/config) usato da `__main__.py`, `ui.py`,
+`plugin_cache.py` e `update.py`.
 
 - **Entry point CLI/plugin**: `__main__.py` — modalità `--cache`, `--to-resolve`,
   `--update-check`, `--helper` (contratto con il plugin OFX C++, vedi sotto).
@@ -36,18 +42,19 @@ resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui
 
 ```
 Plugin.cpp  (registra le due factory OFX)
-  ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
-  │                                 BuildParams, ToneParams, ClipMeta
+  ├──> develop/DevelopFactory.h ──> DevelopEffect, ToneParams, ClipMeta, LutExport
+  │          (DevelopEffect a sua volta ──> DevelopProcessor, DevelopSync, BuildParams, DevelopLut)
   └──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
 
 common/  (condiviso dai due nodi)
   ClipCache, ColourSpaces, Files, FlatJson, ImageLayout, ParamDefs, Update, UpdateBadge,
-  Version, ZoneParams, Child (spawn del processo Python __main__.py)
+  Version, ZoneParams, Child + ChildWin (spawn del processo Python __main__.py, variante Windows)
 ```
 
 - **Develop** (nodo principale): legge i metadata via `common/Child.h` → `python3 -m
   slogmetaraw --cache/--to-resolve`, li cachea (`ClipCache`), costruisce i parametri
-  (`BuildParams`, `ToneParams`) e sincronizza col pannello (`DevelopSync`).
+  (`BuildParams`, `ToneParams`) e sincronizza col pannello (`DevelopSync`). `LutExport`/
+  `DevelopLut` esportano la LUT corrente su file.
 - **Detail** (secondo nodo): recupero locale/texture; non legge metadata clip, lavora sui pixel
   in ingresso (`DetailPasses`, GPU Metal + fallback CPU).
 - `common/Update*` interroga GitHub Releases (stesso schema JSON di `slogmetaraw/update.py`, letto
@@ -58,8 +65,8 @@ common/  (condiviso dai due nodi)
 - Formato JSON flat di `__main__.py --cache`/`--to-resolve`/`--update-check`: consumato da
   `common/Child.cpp` (C++) — cambiare le chiavi richiede aggiornare entrambi i lati.
 - `camera.py` — i codici gamut/gamma devono restare identici a
-  `ofx/SLogMetaRaw/DevelopMath.h`.
+  `ofx/SLogMetaRaw/gen/DevelopMath.h` (generato da `math/*.h`).
 - `datalevel.py` è importato sia da Python (`extract`, `plugin_cache`, `resolve_io`) sia
-  concettualmente specchiato in `common/` lato C++ per le stesse scale di codice.
+  specchiato lato C++ in `common/ColourSpaces.h` (`kLevelNames`, stesso ordine di codice).
 
-_Ultimo aggiornamento: manutenzione 2.1.1, 29/09/2026 — struttura dei moduli invariata._
+_Ultimo aggiornamento: manutenzione 2.3.0, 06/10/2026._
