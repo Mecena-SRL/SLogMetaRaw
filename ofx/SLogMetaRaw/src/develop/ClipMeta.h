@@ -28,3 +28,5 @@ enum class MetaMode { CacheOnly, Read, Reload };
 // CacheOnly never starts a child (instance creation). Read starts or polls a background reader and
 // waits at most kSyncWaitMs on the UI thread; Reload re-reads the file and writes into Resolve.
 MetaOutcome acquireMeta(const std::string& clipPath, MetaMode mode, ClipMeta& m, std::string& status);
+// At unload: kills the readers still running and collects them, so none outlives the plugin as a zombie.
+void stopReads();

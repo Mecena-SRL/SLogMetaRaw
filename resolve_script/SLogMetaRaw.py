@@ -98,23 +98,40 @@ def _retry(obtain, message, attempts=40, interval=0.25):
 
 
 def _local_ipv4_addresses():
-    """Assigned addresses on this Mac only; never discover other Resolve hosts.
+    """Addresses assigned to this computer only; never discover other Resolve hosts.
 
-    Resolve can register scripting on the Mac's interface address while refusing
-    127.0.0.1. Read the local interface inventory instead of using pinghosts(),
-    which can discover Resolve instances belonging to other computers.
+    macOS lists them with ifconfig, Linux with ip (ifconfig is often missing); Windows has neither, so it takes the
+    address of the default route (a UDP connect sends nothing) and those of the host name.
     """
-    try:
-        result = subprocess.run(['/sbin/ifconfig', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                universal_newlines=True, timeout=2, check=True)
-    except (OSError, subprocess.SubprocessError):
-        return []
+    candidates = []
+    if sys.platform == 'win32':
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(('192.0.2.1', 9))
+                candidates.append(s.getsockname()[0])
+        except OSError:
+            pass
+        try:
+            candidates += socket.gethostbyname_ex(socket.gethostname())[2]
+        except OSError:
+            pass
+    else:
+        commands = [['/sbin/ifconfig', '-a']] if sys.platform == 'darwin' else [['ip', '-4', '-o', 'addr', 'show'],
+                                                                                 ['/sbin/ifconfig', '-a']]
+        for command in commands:
+            try:
+                listing = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                         universal_newlines=True, timeout=2, check=True).stdout
+            except (OSError, subprocess.SubprocessError):
+                continue
+            for line in listing.splitlines():
+                fields = line.split()
+                # "inet 10.0.0.3 netmask" (ifconfig), "inet 10.0.0.3/24" (ip), "inet addr:10.0.0.3" (old net-tools)
+                candidates += [fields[i + 1].split('/')[0].replace('addr:', '')
+                               for i in range(len(fields) - 1) if fields[i] == 'inet']
+            break
     addresses = []
-    for line in result.stdout.splitlines():
-        fields = line.split()
-        if len(fields) < 2 or fields[0] != 'inet':
-            continue
-        address = fields[1]
+    for address in candidates:
         try:
             socket.inet_pton(socket.AF_INET, address)
         except OSError:

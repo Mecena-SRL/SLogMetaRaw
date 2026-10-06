@@ -16,7 +16,6 @@
 #include "../common/ClipCache.h"
 #include "../common/ColourSpaces.h"
 #include "../common/ImageLayout.h"
-#include "../common/ZoneParams.h"
 
 static const char* const kIntensities[] = { "localContrast", "localHighlights", "localShadows",
                                             "texture", "clarity", "dehaze" };
@@ -42,15 +41,11 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         return;
     }
     try {   // fetched here, on the main thread: a first fetch on a render thread races with the UI
+        m_Zones.bind(*this, "localZone");
         for (const char* n : kIntensities) (void)getParam(n);
         for (const char* n : { "preserveDetail", "detailRadius", "edgeThreshold", "noiseThreshold", "clarityCenter",
                                "hazeLevel", "hazeWarmth", "localWhite", "viewGain", "viewBase" })
             (void)getParam(n);
-        static const char* const fields[] = { "Exp", "Range", "Falloff" };
-        if (paramExists("localZonePivot")) (void)getParam("localZonePivot");
-        for (int z = 0; z < kZoneCount; ++z)
-            for (const char* f : fields)
-                if (paramExists(zoneParamName("localZone", z, f))) (void)getParam(zoneParamName("localZone", z, f));
     } catch (...) {
     }
     try {
@@ -130,7 +125,7 @@ bool DetailEffect::neutralAt(double p_Time) const
     DetailEffect* self = const_cast<DetailEffect*>(this);
     for (const char* name : kIntensities)
         if (self->fetchDoubleParam(name)->getValueAtTime(p_Time) != 0.0) return false;
-    const ZoneValues z = readZoneValues(*self, "localZone", p_Time);
+    const ZoneValues z = m_Zones.read(p_Time);
     for (int i = 0; i < kZoneCount; ++i)
         if (z.exp[i] != 0.0) return false;
     return !self->fetchBooleanParam("viewGain")->getValueAtTime(p_Time)
@@ -275,7 +270,7 @@ SMDetailControls DetailEffect::readControls(double t)
     c.hazeLevel = d("hazeLevel");
     c.hazeWarmth = d("hazeWarmth");
     c.localWhite = d("localWhite");
-    const ZoneValues z = readZoneValues(*this, "localZone", t);
+    const ZoneValues z = m_Zones.read(t);
     c.zonePivot = z.pivot;
     for (int i = 0; i < kZoneCount; ++i) {
         c.zoneExp[i] = z.exp[i];

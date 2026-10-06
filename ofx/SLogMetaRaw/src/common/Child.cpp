@@ -215,13 +215,14 @@ bool waitProcess(Child& c, int timeoutMs, const std::atomic<bool>* cancel)
 static std::mutex s_StrayMutex;
 static std::vector<long long> s_Strays;
 
-void reapStrays()
+bool reapStrays()
 {
     std::lock_guard<std::mutex> lock(s_StrayMutex);
     s_Strays.erase(std::remove_if(s_Strays.begin(), s_Strays.end(), [](long long p) {
         pid_t r = waitpid((pid_t)p, nullptr, WNOHANG);
         return r == (pid_t)p || (r < 0 && errno == ECHILD);
     }), s_Strays.end());
+    return s_Strays.empty();
 }
 
 void killProcess(Child& c)

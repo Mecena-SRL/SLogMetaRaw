@@ -7,6 +7,7 @@
 #include "ofxsImageEffect.h"
 
 #include "../../gen/DevelopMath.h"
+#include "../common/ZoneParams.h"
 
 struct ToneSlider
 {
@@ -19,7 +20,7 @@ extern const ToneSlider kToneSliders[7];
 
 void defineToneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page, OFX::GroupParamDescriptor* tones,
                       OFX::GroupParamDescriptor* zones);
-SMToneControls readToneControls(OFX::ImageEffect& effect, double time);
+SMToneControls readToneControls(OFX::ImageEffect& effect, const ZoneParamSet& zones, double time);
 std::vector<std::string> toneParamNames();   // every control of Toni and Zone
 void resetTones(OFX::ImageEffect& effect);   // "Azzera toni"
 void resetZones(OFX::ImageEffect& effect);   // "Azzera zone"

@@ -62,11 +62,11 @@ void defineToneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* p
     defineButton(d, page, "zoneReset", "Azzera zone", "Riporta le zone e il Soft Clip ai valori iniziali", zones);
 }
 
-SMToneControls readToneControls(OFX::ImageEffect& e, double time)
+SMToneControls readToneControls(OFX::ImageEffect& e, const ZoneParamSet& zones, double time)
 {
     SMToneControls c = sm_tone_defaults();
     for (const ToneSlider& t : kToneSliders) c.*(t.field) = e.fetchDoubleParam(t.name)->getValueAtTime(time);
-    const ZoneValues z = readZoneValues(e, "zone", time);
+    const ZoneValues z = zones.read(time);
     c.zonePivot = z.pivot;
     for (int i = 0; i < kZoneCount; ++i) {
         c.zoneExp[i] = z.exp[i];

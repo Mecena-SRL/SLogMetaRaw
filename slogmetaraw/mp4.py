@@ -121,23 +121,17 @@ class Track:
 
     def sample_size(self, idx):
         stsz = self.tables[b'stsz']
-        fixed = struct.unpack('>I', stsz[4:8])[0]
-        if fixed:
-            return fixed
-        return struct.unpack('>I', stsz[12 + 4 * idx:16 + 4 * idx])[0]
+        fixed = struct.unpack_from('>I', stsz, 4)[0]
+        return fixed or struct.unpack_from('>I', stsz, 12 + 4 * idx)[0]
 
-    def chunk_offsets(self):
-        if b'stco' in self.tables:
-            d = self.tables[b'stco']
-            if len(d) < 8:
-                return []
-            n = min(struct.unpack('>I', d[4:8])[0], (len(d) - 8) // 4)
-            return list(struct.unpack('>%dI' % n, d[8:8 + 4 * n]))
-        d = self.tables[b'co64']
-        if len(d) < 8:
-            return []
-        n = min(struct.unpack('>I', d[4:8])[0], (len(d) - 8) // 8)
-        return list(struct.unpack('>%dQ' % n, d[8:8 + 8 * n]))
+    def _chunk_table(self):
+        """(payload, format, entry size, entries) of stco or co64, read in place: a 3 h clip has ~650k chunks."""
+        d, fmt, width = (self.tables[b'stco'], '>I', 4) if b'stco' in self.tables else (self.tables[b'co64'], '>Q', 8)
+        n = min(struct.unpack_from('>I', d, 4)[0], (len(d) - 8) // width) if len(d) >= 8 else 0
+        return d, fmt, width, n
+
+    def chunk_count(self):
+        return self._chunk_table()[3]
 
     def sample_offsets(self, wanted):
         """Return {sample_index: file_offset} for the requested sample indices."""
@@ -150,14 +144,14 @@ class Track:
             return {}
         n = min(struct.unpack('>I', stsc[4:8])[0], (len(stsc) - 8) // 12)
         runs = [struct.unpack('>III', stsc[8 + 12 * i:20 + 12 * i]) for i in range(n)]
-        chunks = self.chunk_offsets()
+        cdata, cfmt, cwidth, nchunks = self._chunk_table()
         out = {}
         stsz = self.tables[b'stsz']
-        fixed = struct.unpack('>I', stsz[4:8])[0]
+        fixed = struct.unpack_from('>I', stsz, 4)[0]
         sample = 0
         w = 0
         for ri, (first_chunk, per_chunk, _desc) in enumerate(runs):
-            last_chunk = min(runs[ri + 1][0] - 1 if ri + 1 < len(runs) else len(chunks), len(chunks))
+            last_chunk = min(runs[ri + 1][0] - 1 if ri + 1 < len(runs) else nchunks, nchunks)
             if per_chunk == 0 or first_chunk < 1:
                 continue   # a damaged run: skipping it must not walk billions of empty chunks
             for c in range(first_chunk, last_chunk + 1):
@@ -167,14 +161,14 @@ class Track:
                 if wanted[w] >= chunk_end:
                     sample = chunk_end
                     continue
-                off = chunks[c - 1]
+                off = struct.unpack_from(cfmt, cdata, 8 + cwidth * (c - 1))[0]
                 for s in range(sample, chunk_end):
                     if s == wanted[w]:
                         out[s] = off
                         w += 1
                         if w == len(wanted):
                             return out
-                    off += fixed if fixed else self.sample_size(s)
+                    off += fixed or struct.unpack_from('>I', stsz, 12 + 4 * s)[0]
                 sample = chunk_end
         return out
 
