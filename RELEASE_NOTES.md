@@ -1,5 +1,27 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.1
+
+Correzioni rimandate dall'audit del 5 ottobre (#57): processi figli, connessione a Resolve su Windows e Linux, memoria
+dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Nessun lettore metadata resta vivo dopo la chiusura di Resolve**: i lettori ancora in corso quando Resolve scarica il
+  plugin vengono fermati e raccolti, invece di restare processi zombie con una pipe aperta.
+- **Windows: i processi figli ricevono solo i propri handle**: il lettore e il controllo aggiornamenti ereditavano tutti
+  gli handle ereditabili aperti da Resolve (file, pipe); ora solo ingresso, uscita ed errori standard.
+- Parametri delle zone cercati una volta alla creazione del nodo invece che a ogni fotogramma (17 ricerche per nome in
+  meno per fotogramma, nel Develop e nel Detail).
+
+### Script
+
+- **"Rileggi metadata" si collega a Resolve anche su Windows e Linux** quando Resolve rifiuta `127.0.0.1`: il ripiego
+  sugli indirizzi locali usava solo `/sbin/ifconfig`, che manca su Windows e su gran parte dei Linux. Ora usa `ip` su
+  Linux e l'indirizzo della route predefinita su Windows; vale anche per il menu Workspace › Scripts.
+- **Meno memoria con le clip MP4 lunghe**: gli offset dei chunk si leggono direttamente dalla tabella `stco`/`co64`
+  invece di copiarli tutti in una lista (circa 20 MB in meno per una clip di 3 ore a 60p).
+
 ## S-Log MetaRaw 2.3.0
 
 **DaVinci Resolve 20.** Il plugin e lo script funzionano anche con Resolve 20, che a differenza della 21 non ha un

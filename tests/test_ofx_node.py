@@ -126,6 +126,14 @@ class Node(unittest.TestCase):
         self.assertEqual(len(self.launches()), 1)
         self.assertIn('--max-samples', self.launches()[0])
 
+    def test_unloading_stops_a_reader_still_running(self):
+        done = Path(self.tmp.name) / 'read-finished'
+        self.fake_library('time.sleep(2)\nopen(%r, "w").write("x")\n' % str(done))
+        v = self.run_host(self.clip('a.MP4'))
+        self.assertIn('in corso', v['camera'])
+        time.sleep(2.5)
+        self.assertFalse(done.exists(), 'il lettore deve fermarsi quando il plugin viene scaricato')
+
     def test_reload_waits_two_seconds_at_most(self):
         self.fake_library('time.sleep(5)\n')
         self.run_host(self.clip('a.MP4'))

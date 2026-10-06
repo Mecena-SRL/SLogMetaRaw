@@ -33,7 +33,7 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
 bool waitProcess(Child& c, int timeoutMs, const std::atomic<bool>* cancel = nullptr);
 // SIGKILL to the whole process group (Windows: terminates the job). Never blocks: an unreaped pid is collected by reapStrays().
 void killProcess(Child& c);
-void reapStrays();
+bool reapStrays();   // true when no killed child is left to collect
 
 struct ChildResult
 {

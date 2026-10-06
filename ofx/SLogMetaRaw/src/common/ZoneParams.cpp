@@ -41,18 +41,28 @@ void defineZoneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* p
     }
 }
 
-ZoneValues readZoneValues(OFX::ImageEffect& effect, const std::string& prefix, double time)
+void ZoneParamSet::bind(OFX::ImageEffect& effect, const std::string& prefix)
+{
+    auto get = [&](const std::string& name) { return effect.paramExists(name) ? effect.fetchDoubleParam(name) : nullptr; };
+    pivot = get(prefix + "Pivot");
+    for (int z = 0; z < kZoneCount; ++z) {
+        exp[z] = get(zoneParamName(prefix, z, "Exp"));
+        sat[z] = get(zoneParamName(prefix, z, "Sat"));
+        range[z] = get(zoneParamName(prefix, z, "Range"));
+        falloff[z] = get(zoneParamName(prefix, z, "Falloff"));
+    }
+}
+
+ZoneValues ZoneParamSet::read(double time) const
 {
     ZoneValues v;
-    auto get = [&](const std::string& name, double def) {
-        return effect.paramExists(name) ? effect.fetchDoubleParam(name)->getValueAtTime(time) : def;
-    };
-    v.pivot = get(prefix + "Pivot", 0.0);
+    auto get = [&](OFX::DoubleParam* p, double def) { return p ? p->getValueAtTime(time) : def; };
+    v.pivot = get(pivot, 0.0);
     for (int z = 0; z < kZoneCount; ++z) {
-        v.exp[z] = get(zoneParamName(prefix, z, "Exp"), 0.0);
-        v.sat[z] = get(zoneParamName(prefix, z, "Sat"), 0.0);
-        v.range[z] = get(zoneParamName(prefix, z, "Range"), kZones[z].range);
-        v.falloff[z] = get(zoneParamName(prefix, z, "Falloff"), kZones[z].falloff);
+        v.exp[z] = get(exp[z], 0.0);
+        v.sat[z] = get(sat[z], 0.0);
+        v.range[z] = get(range[z], kZones[z].range);
+        v.falloff[z] = get(falloff[z], kZones[z].falloff);
     }
     return v;
 }
