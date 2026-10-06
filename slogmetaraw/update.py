@@ -1,15 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Update check against the project's GitHub Releases.
+"""Update check against the project's GitHub Releases: no server, no account, no token.
 
-The Releases page is the whole distribution channel: no server, no account, no token.
-Nothing here draws a window or talks to DaVinci Resolve, so the same code serves the
-script window and the terminal. Being offline is not an error: check() reports and
-never raises. The program only starts the download of the latest installer: it never
-installs anything.
-
-The check follows the /releases/latest redirect (no rate limit); the API is asked only
-when there is something newer. urlopen's timeout does NOT bound DNS resolution (~30 s on
-an unreachable name): keep these functions off the thread that paints the window.
+Pure logic (no UI, no Resolve calls), shared by the script window and the terminal.
+check() never raises; being offline is reported, not an error, and it only starts the
+installer download, never runs it. Uses the /releases/latest redirect (no rate limit)
+and calls the API only when something is newer. urlopen's timeout does NOT bound DNS
+resolution (~30 s on an unreachable name): call these off the thread that paints the window.
 """
 import json
 import os

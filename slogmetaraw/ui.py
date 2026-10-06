@@ -84,9 +84,9 @@ def _row_values(name, r):
 
 
 def _exit_with_resolve():
-    """Resolve runs this script in a separate process. If Resolve quits (or crashes)
-    while the window is open, that process is left orphaned and can get in the way of
-    the next launch, so it follows its parent out. Set the returned event to stop."""
+    """If Resolve quits while the window is open, this process would be left orphaned
+    and could get in the way of the next launch, so it follows its parent out.
+    Set the returned event to stop."""
     stop = threading.Event()
     if os.path.splitext(os.path.basename(sys.executable or ''))[0].lower() == 'resolve':
         return stop   # a Workspace script runs inside Resolve: its parent is not Resolve
@@ -154,9 +154,8 @@ def _spawn_reader():
     Parsing runs in a child so that a clip stuck on a dead volume can be killed:
     the scan must always be able to finish."""
     lib = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # ResolvePython runs in isolated mode via ResolvePython._pth, so it ignores
-    # PYTHONPATH (and the working directory). Pass the installation path as data
-    # and add it explicitly before running the helper module.
+    # ResolvePython runs isolated via ResolvePython._pth, ignoring PYTHONPATH: pass
+    # the installation path as data and add it explicitly before running the helper.
     bootstrap = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
                  'runpy.run_module("slogmetaraw", run_name="__main__")')
     # -X utf8 also makes os.open() accept accented paths when the locale is ASCII (#39)
@@ -395,9 +394,8 @@ def main(resolve, fusion, bmd, selftest=False):
                 hide()
         except Exception:
             _log_exception(context)
-        # Resolve 21.x can leave the proxy visible after Hide() while the
-        # dispatcher is unwinding. Setting the property is harmless when the
-        # proxy is healthy and fixes that stale native wrapper case.
+        # Resolve 21.x can leave the proxy visible after Hide() while the dispatcher
+        # is unwinding; setting the property directly fixes that stale case.
         try:
             win.Visible = False
         except Exception:

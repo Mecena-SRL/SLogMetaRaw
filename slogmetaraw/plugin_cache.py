@@ -49,11 +49,7 @@ def resolve_status_path(clip_path):
 
 
 def _file_identity(clip_path):
-    """Return cheap fields that let the node reject a stale cache record.
-
-    Size plus nanosecond mtime avoids hashing multi-gigabyte XAVC media. Zeroes
-    preserve useful records made from synthetic inputs used by automated tests.
-    """
+    """Cheap fields to detect a stale cache record: size+mtime_ns avoids hashing multi-GB media."""
     try:
         st = os.stat(clip_path)
     except OSError:
@@ -137,8 +133,7 @@ def _record(r):
         'white_balance': wb,
         'color': _join(m.get('color_space'),
                        'Data level %s' % m['data_level'] if m.get('data_level') else ''),
-        # data level: everything the node needs to put the image on the scale the
-        # capture gamma is defined on. Codes: -1 unknown, 0 Video (64-940), 1 Full.
+        # data level the node needs to apply; codes: -1 unknown, 0 Video (64-940), 1 Full.
         'level_required': LEVEL_CODE.get(lv['required'], -1),
         'level_host': LEVEL_CODE.get(lv['host'], -1),
         'level_declared': LEVEL_CODE.get(lv['declared'], -1),
@@ -162,8 +157,7 @@ def build_record(r):
     """The record of one clip; values copied from a Sony clip keep the data level neutral."""
     rec = _record(r)
     if r.get('copied_from'):
-        # Values copied from a Sony clip onto another recording (e.g. an external recorder's
-        # ProRes): the data level belongs to the Sony file, so the node leaves it alone.
+        # copied from a Sony clip (e.g. an external recorder's ProRes): data level is the Sony file's, left alone
         rec.update(level_required=-1, level_host=-1, level_declared=-1, level_gain=1.0,
                    level_offset=0.0, level_fix=0, data_level='',
                    level_note='copiato da %s: data level non toccato' % r['copied_from'],

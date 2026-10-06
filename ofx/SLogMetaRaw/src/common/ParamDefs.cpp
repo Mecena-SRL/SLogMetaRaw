@@ -38,7 +38,7 @@ StringParamDescriptor* defineInfo(ImageEffectDescriptor& d, PageParamDescriptor*
     p->setLabels(label, label, label);
     p->setStringType(eStringTypeSingleLine);
     p->setDefault(def);            // never an empty box before the metadata is read
-    p->setEnabled(false);          // read-only
+    p->setEnabled(false);
     p->setAnimates(false);
     p->setEvaluateOnChange(false);
     if (group) p->setParent(*group);

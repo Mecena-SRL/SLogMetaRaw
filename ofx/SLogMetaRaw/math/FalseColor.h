@@ -33,10 +33,8 @@ SM_FN SMf3 sm_hsl_rgb(float h, float s, float l) {
     return smf3(sm_hsl_channel(p, q, h + 1.0f / 3.0f), sm_hsl_channel(p, q, h), sm_hsl_channel(p, q, h - 1.0f / 3.0f));
 }
 
-// Temperature (2) and tint (3): the picture in grey; a pixel is coloured only when its cast lies on this
-// slider's axis (orange/blue, green/magenta), with its saturation boosted up to 8x near neutral as
-// CineMatch does, faded out where the pixel is too dark or too bright to carry a hue. The axis comes
-// from the sliders' own response (sm_fc_calibrate), so grey means "this slider is right here".
+// Temperature/tint views: a pixel is coloured only when its cast lies on this slider's axis (orange/blue,
+// green/magenta, from the calibrated response sm_fc_calibrate), saturation boosted near neutral as CineMatch does.
 SM_FN SMf3 sm_fc_balance(SMf3 xyz, SM_CREF(DevelopParams) p, float ev, float mono) {
     float d = xyz.x + 15.0f * xyz.y + 3.0f * xyz.z;
     SMf3 rgb = sm_from_xyz(xyz, 1);

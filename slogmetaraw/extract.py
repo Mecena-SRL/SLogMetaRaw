@@ -404,8 +404,7 @@ def _normalise(out):
         meta['gamma_name'] = gamma
     if 'white_balance_k' not in meta:
         _warn(out, 'Temperatura colore non registrata dalla camera in questo file.')
-    # v_full_range is always present but may be None (VUI absent): fall back to
-    # the colr box only then, never when the VUI explicitly said "video range".
+    # v_full_range is None only when the VUI is absent: fall back to the colr box then.
     fr = meta.get('v_full_range')
     if fr is None:
         fr = meta.get('v_colr_full_range')
@@ -420,9 +419,8 @@ def _normalise(out):
 def _data_level(out):
     """Work out which code-value scale this clip is on, and record it in meta.
 
-    The comparison with what Resolve is doing needs the clip's Data Level
-    attribute, which only exists when Resolve is reachable: callers that have it
-    (resolve_io, plugin_cache) re-run datalevel.decide with the real value.
+    Resolve's own Data Level attribute is only known when Resolve is reachable:
+    callers that have it (resolve_io, plugin_cache) re-run datalevel.decide with it.
     """
     meta = out['meta']
     host = meta.get('resolve_data_level') or datalevel.AUTO

@@ -92,16 +92,15 @@ SM_FN SMf3 sm_oklab_chroma(SMf3 xyz, float m) {
     return sm_mul(SM_OKLAB, 27, smf3(l.x * l.x * l.x, l.y * l.y * l.y, l.z * l.z * l.z));
 }
 
-// Where Highlights compresses (hl < 0): the path to white, chroma 2^(KAPPA hl) at constant hue, lowered further
-// by w where a channel of `space` would pass the white (the display-white taper). Both nodes use it.
-// Oklab only holds for real colours: past the spectral locus (S-Gamut3.Cine reaches there on LEDs and neon) its
-// cones go negative and the path would too, so there it fades into the straight line in linear light.
-// The share of b over a that keeps the channel >= 0, with a 2% margin: landing on exactly 0 would leave float
-// noise that a power curve turns into visible code-value differences between CPU and GPU.
+// Share of b over a keeping the channel >= 0, with a 2% margin: float noise landing on exactly 0 would
+// become a visible CPU/GPU mismatch once a power curve amplifies it.
 SM_FN float sm_t5_keep_positive(float t, float a, float b) {
     a = SM_MAX(a, 0.0f);
     return b < 0.0f ? SM_MIN(t, 0.98f * a / (a - b)) : t;
 }
+// Highlights compression (hl < 0): path to white at constant hue (chroma 2^(KAPPA*hl)), tapered by w towards
+// the display white; both nodes use it. Past the spectral locus Oklab's cones go negative (e.g. S-Gamut3.Cine
+// on LEDs/neon), so there it falls back to the straight line in linear light.
 SM_FN SMf3 sm_t5_hl_white(SMf3 xyz, float hl, float w, float whiteLin, int space, int outSpace) {
     float m = SM_EXP2(SM_T5_HL_KAPPA * hl);
     if (w > 0.0f)
