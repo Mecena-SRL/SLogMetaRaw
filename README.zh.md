@@ -189,6 +189,37 @@ packaging/           安装程序、指南、卸载程序
 docs/                TONE_MAPPING、DETAIL、FALSE_COLOR、DATA_LEVELS
 ```
 
+### Linux 与 Windows（CPU 渲染，实验性）
+
+该插件也可以用 CMake 为 Linux 和 Windows 编译。这些移植版本仅使用 CPU 渲染（尚无 Metal、CUDA 或 OpenCL 支持），
+且尚未在 DaVinci Resolve 内部测试过：目前仍以 macOS 版本为官方支持对象。
+
+**Linux 安装**（从 **Releases** 下载适合你发行版的文件）：
+
+| 文件 | 适用于 |
+|---|---|
+| `slogmetaraw_<版本>_amd64.deb` | Ubuntu、Debian、Mint：`sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<版本>-1.x86_64.rpm` | Rocky、Alma、RHEL、CentOS、Fedora：`sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<版本>-linux-x86_64.run` | 任意发行版：`sh SLogMetaRaw-*.run`（免 sudo 用 `--user`，卸载用 `--uninstall`） |
+| `SLogMetaRaw-<版本>-linux-x86_64.tar.gz` | 同上，未打包版本：运行其中的 `install.sh` |
+
+插件安装到 `/usr/OFX/Plugins`；Python 库安装到 `/usr/lib/slogmetaraw`（.deb/.rpm）或
+`~/.local/share/SLogMetaRaw`（.run、.tar.gz）。如果系统中有 Resolve，安装包会把菜单脚本放到
+`/opt/resolve/Fusion/Scripts/Utility`；否则请为当前用户运行一次 `slogmetaraw-setup`。然后重启 Resolve。
+只需 Python 3.6 及以上（Rocky/RHEL 8 也满足）。该二进制基于 glibc 2.28 编译，可在 Rocky/Alma/RHEL 8+、
+Ubuntu 20.04+ 和 Debian 10+ 上运行。
+
+```bash
+# 自行编译（需要 cmake、C++17 编译器、python3；OpenFX SDK 会自动下载，或设置 OFX_SDK_DIR）
+./packaging/linux/build_package.sh          # dist/：.tar.gz、.run、.deb、.rpm
+# Windows（PowerShell）：需要 cmake、Visual Studio Build Tools、python；Inno Setup 可选
+powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zip（以及用 Inno Setup 生成的安装程序 .exe）
+```
+
+状态文件在 Linux 上位于 `~/.local/share/SLogMetaRaw`，在 Windows 上位于 `%APPDATA%\SLogMetaRaw`。
+`.github/workflows/` 会在每次改动时构建这些安装包，并在 Rocky 8/9、Ubuntu 20.04-24.04 和 Debian 12 上安装
+.deb/.rpm 进行验证；推送 `v*` 标签会把它们附加到一个草稿 release。
+
 ---
 
 ## 已知限制

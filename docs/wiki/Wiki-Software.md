@@ -1,5 +1,7 @@
 # S-Log MetaRaw — User Guide
 
+**English** · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home)
+
 > Version **2.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
@@ -21,7 +23,8 @@ S-Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin
 12. [Updates and privacy](#12-updates-and-privacy)
 13. [Uninstall](#13-uninstall)
 14. [Troubleshooting / FAQ](#14-troubleshooting--faq)
-15. [Known limits](#15-known-limits)
+15. [Linux and Windows (experimental)](#15-linux-and-windows-experimental)
+16. [Known limits](#16-known-limits)
 
 ---
 
@@ -415,12 +418,39 @@ It is unsigned: right-click › Open (or System Settings › Privacy & Security 
 
 ---
 
-## 15. Known limits
+## 15. Linux and Windows (experimental)
+
+The plugin also builds for Linux and Windows with CMake. These ports render on the **CPU only** (no Metal, CUDA or
+OpenCL yet) and have not been tested inside DaVinci Resolve itself: the macOS build remains the supported one.
+
+**Linux** (download from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases); pick what fits your distribution):
+
+| File | For |
+|---|---|
+| `slogmetaraw_<version>_amd64.deb` | Ubuntu, Debian, Mint: `sudo apt install ./slogmetaraw_*.deb` |
+| `slogmetaraw-<version>-1.x86_64.rpm` | Rocky, Alma, RHEL, CentOS, Fedora: `sudo dnf install ./slogmetaraw-*.rpm` |
+| `SLogMetaRaw-<version>-linux-x86_64.run` | any distribution: `sh SLogMetaRaw-*.run` (`--user` without sudo, `--uninstall`) |
+| `SLogMetaRaw-<version>-linux-x86_64.tar.gz` | the same, unpacked: run `install.sh` inside |
+
+The plugin goes to `/usr/OFX/Plugins`; the Python library to `/usr/lib/slogmetaraw` (.deb/.rpm) or
+`~/.local/share/SLogMetaRaw` (.run, .tar.gz). Restart Resolve. Python 3.6+ is enough. The binary is built against
+glibc 2.28, so it loads on Rocky/Alma/RHEL 8+, Ubuntu 20.04+ and Debian 10+.
+
+**Windows:** build it yourself with `powershell -File packaging\windows\build_package.ps1` (cmake, Visual Studio
+Build Tools, python; Inno Setup is optional for the `.exe`). State lives in `%APPDATA%\SLogMetaRaw`.
+
+A tag `v*` pushed to the repository makes CI attach the Linux packages (and, best-effort, the Windows package) to a
+**draft** GitHub Release automatically — see [Known limits](#16-known-limits) for what's still missing (GPU
+acceleration, a tested macOS-equivalent image pipeline).
+
+---
+
+## 16. Known limits
 
 - Resolve's Camera Raw panel and gyro stabilisation cannot be unlocked for MP4: they live inside Resolve's decoders. S-Log MetaRaw rebuilds the colour controls, it doesn't open a door into Resolve.
 - S-Log2 follows Sony's document; Resolve's S-Log2 curve differs by ~0.15 stop.
 - Still to verify on more files: XAVC HS (HEVC), HLG, S-Cinetone, power zooms.
-- Tested only on Resolve Studio 21.1 on macOS.
+- Tested only on Resolve Studio 21.1 on macOS. The Linux and Windows builds are CPU-only and untested inside Resolve (see [§15](#15-linux-and-windows-experimental)).
 - Independent hobby project, provided as is, with no warranty and no liability for professional use. Not affiliated with or endorsed by Sony or Blackmagic Design.
 
 ---
