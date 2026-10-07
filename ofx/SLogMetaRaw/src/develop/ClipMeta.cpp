@@ -8,6 +8,7 @@
 #include "../common/FlatJson.h"
 
 #include <cctype>
+#include <cmath>
 #include <chrono>
 #include <cstdlib>
 #include <mutex>
@@ -49,8 +50,9 @@ bool parseClipRecord(const std::map<std::string, std::string>& record, ClipMeta&
     m.colorSpace = j["color_space"];
     m.fields = j;
     if (!(m.shotTint >= -100.0 && m.shotTint <= 100.0)) m.shotTint = m.shotTint < -100.0 ? -100.0 : (m.shotTint > 100.0 ? 100.0 : 0.0);
-    if (m.shotTemp <= 0.0) m.shotTemp = 5600.0;
-    if (m.shotEI <= 0.0) m.shotEI = 800.0;
+    // json.dumps writes NaN/Infinity bare: atof accepts them
+    if (!(m.shotTemp > 0.0 && std::isfinite(m.shotTemp))) m.shotTemp = 5600.0;
+    if (!(m.shotEI > 0.0 && std::isfinite(m.shotEI))) m.shotEI = 800.0;
     return true;
 }
 

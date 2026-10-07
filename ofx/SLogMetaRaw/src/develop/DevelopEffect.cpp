@@ -60,8 +60,8 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         fprintf(stderr, "S-Log MetaRaw: nodo disattivato, parametro mancante\n");
         return;
     }
-    m_RefEI = m_ShotEI->getValue();
     try {
+        m_RefEI = m_ShotEI->getValue();
         fetchLegacyTones(*this);
     } catch (...) {
     }

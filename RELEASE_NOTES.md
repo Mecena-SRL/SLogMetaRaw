@@ -1,5 +1,38 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.2
+
+Manutenzione del 7 ottobre: stabilità del plugin e dello script, meno memoria nel Detail. Nessun controllo cambia,
+nessun valore salvato cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Controllo aggiornamenti: un errore di memoria nel thread non chiude più Resolve.** La lettura della risposta
+  avveniva fuori dal `try` del thread; ora un'eccezione chiude il controllo come "non riuscito".
+- **Valori `NaN`/`Infinity` nella scheda della clip ignorati**: una temperatura o un EI non finito rendeva nera
+  l'immagine del nodo (ogni pixel `NaN`); ora si usano i valori predefiniti, come per i valori mancanti.
+- Lettura dell'EI di riferimento alla creazione del nodo protetta come gli altri parametri.
+- Linux: la pipe del processo figlio nasce già con `O_CLOEXEC`, così un altro processo avviato da Resolve nello
+  stesso istante non la eredita.
+- **Detail: meno memoria quando Dehaze o Clarity sono spenti.** I piani della mappa di trasmissione (Dehaze) e quelli
+  di Clarity si liberano quando non servono, come già quelli del Texture (render CPU).
+
+### Script
+
+- **Windows: la finestra trova Python anche dentro Resolve** (stessa ricerca del plugin: `SLOGMETARAW_PYTHON`, Python
+  di Resolve, Python registrati, `python` nel `PATH` escluso l'alias dello Store) e il lettore non apre più una
+  finestra di console.
+- Linux: il lettore parte senza `PYTHONPATH`, `PYTHONHOME`, `LD_PRELOAD` e le librerie di Resolve in
+  `LD_LIBRARY_PATH`, come i processi del plugin.
+- **Un lettore che si chiude su una clip è un errore su quella clip**, non più un volume "lento": prima tutte le altre
+  clip dello stesso disco venivano saltate.
+- Windows: lo scrittore staccato di "Rileggi metadata" ha un limite di tempo anche durante la lettura della clip (un
+  disco di rete caduto lo lasciava attivo per sempre).
+- `--update-check` non stampa più un traceback se `update.json` contiene una dimensione non intera.
+- Una risposta tardiva del controllo aggiornamenti non può più sovrascrivere quella di un controllo più recente.
+- **Meno memoria con le clip MP4 lunghe**: il bitrate si somma senza creare una tupla di un intero per fotogramma
+  (circa 22 MB in meno per una clip di 3 ore a 60p).
+
 ## S-Log MetaRaw 2.3.1
 
 Correzioni rimandate dall'audit del 5 ottobre (#57): processi figli, connessione a Resolve su Windows e Linux, memoria

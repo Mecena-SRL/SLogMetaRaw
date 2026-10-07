@@ -183,6 +183,13 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
         release(s.Lt);
         release(s.G2);
     }
+    if (!(dehaze && p.hazeMix == 0.0f)) {   // transmission map planes
+        for (Plane& c : s.ch) release(c);
+        release(s.E); release(s.at); release(s.bt); release(s.g2); release(s.g3);
+    }
+    if (p.clarity == 0.0f) {
+        release(s.a2); release(s.b2); release(s.a3); release(s.b3);
+    }
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
             for (int x = 0; x < W; ++x) {

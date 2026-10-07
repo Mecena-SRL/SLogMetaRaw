@@ -98,9 +98,14 @@ bool spawnProcess(const std::vector<std::string>& argv, const EnvSnapshot& env, 
                   const std::string& stderrPath)
 {
     int fds[2];
+#ifdef __linux__
+    if (pipe2(fds, O_CLOEXEC) != 0) { error = "pipe non disponibile"; return false; }   // no leak to a concurrent fork
+#else
     if (pipe(fds) != 0) { error = "pipe non disponibile"; return false; }
     fcntl(fds[0], F_SETFD, FD_CLOEXEC);
-    fcntl(fds[1], F_SETFD, FD_CLOEXEC);   // dup2 onto fd 1 clears it in the child
+    fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+#endif
+    // dup2 onto fd 1 clears FD_CLOEXEC in the child
     fcntl(fds[0], F_SETFL, fcntl(fds[0], F_GETFL) | O_NONBLOCK);
 
     posix_spawn_file_actions_t fa;

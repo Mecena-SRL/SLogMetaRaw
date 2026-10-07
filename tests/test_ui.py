@@ -172,6 +172,25 @@ class UIRegression(unittest.TestCase):
         self.assertIn('reader unavailable', result['status'])
         self.assertTrue(self.dispatcher.window.GetItems()['Read'].Enabled)
 
+    def test_reader_that_dies_is_an_error_not_a_slow_volume(self):
+        self.add_clip()
+        for code, expect in ((1, 'lente 0 · errori 1'), (None, 'lente 1 · errori 0')):
+            with self.subTest(code=code):
+                process = mock.Mock()
+                process.poll.return_value = code
+                with mock.patch.object(ui, '_spawn_reader', return_value=process):
+                    with mock.patch.object(ui, '_read_result', return_value=None):
+                        result = self.launch(selftest=True)
+                self.assertIn(expect, result['status'])
+                self.assertEqual('non risponde' in result['status'], code is None)
+
+    def test_reader_env_drops_resolve_python_and_libraries(self):
+        env = {'PYTHONHOME': '/r', 'PYTHONPATH': '/r', 'LD_PRELOAD': 'x.so', 'HOME': '/h',
+               'LD_LIBRARY_PATH': '/opt/resolve/libs:/usr/local/lib'}
+        with mock.patch.dict(ui.os.environ, env, clear=True), mock.patch.object(ui.sys, 'platform', 'linux'):
+            out = ui._reader_env()
+        self.assertEqual(out, {'HOME': '/h', 'LD_LIBRARY_PATH': '/usr/local/lib'})
+
     def test_dispatcher_timeout_finishes_read_and_writes_on_ui_thread(self):
         self.add_clip()
         process = mock.Mock()

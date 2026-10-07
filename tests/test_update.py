@@ -195,5 +195,18 @@ def cli_version():
     return __version__
 
 
+
+class Helpers(unittest.TestCase):
+    def test_size_from_a_hand_edited_record_never_raises(self):
+        for value, want in ((1234, 1234), ('1.5e6', 1500000), ('x', 0), (None, 0), (float('inf'), 0)):
+            self.assertEqual(cli._int(value), want)
+
+    def test_stsz_sum_matches_struct(self):
+        import struct
+        from slogmetaraw.extract import _sum_u32be
+        values = [0, 1, 2 ** 32 - 1, 123456789]
+        buf = b'\0' * 12 + struct.pack('>4I', *values)
+        self.assertEqual(_sum_u32be(buf, 12, 4), sum(values))
+
 if __name__ == '__main__':
     unittest.main()
