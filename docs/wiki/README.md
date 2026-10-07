@@ -2,23 +2,34 @@
 
 Questi file sono la versione pronta da copiare nella wiki GitHub del progetto (`<repo>.wiki.git`), che continua ad avere
 il problema descritto nella #35 (`Wiki-Software.md` con tre copie sovrapposte e HTML incollato in chiaro, `Home.md` con
-link doppi malformati `[[testo](url)](url)`, nessuna traduzione) — confermato di nuovo il 5 ottobre clonando
-`https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git`: il problema è ancora lì, non è mai stato pubblicato il fix.
+link doppi malformati `[[testo](url)](url)`, nessuna traduzione) — confermato di nuovo il 7 ottobre clonando
+`https://github.com/ivan-94m/SLogMetaRaw.wiki.git`: il problema è ancora lì, non è mai stato pubblicato il fix.
 
-**Contenuto, aggiornato al 5 ottobre:**
+**Contenuto, aggiornato al 7 ottobre:**
 - `Home.md` / `Home-it.md` / `Home-es.md` / `Home-pt.md` / `Home-zh.md` — pagina iniziale, con selettore di lingua, una
   sola copia pulita per lingua, URL aggiornati a `Mecena-SRL/SLogMetaRaw`.
-- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **2.3.0** (prima era alla 2.0.1), con una sezione nuova
-  (§15, "Linux and Windows (experimental)") che non c'era nella versione precedente di questo file.
+- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **2.3.1** (release corrente; prima era alla 2.0.1, poi
+  portata alla 2.3.0 il 5 ottobre), con una sezione nuova (§15, "Linux and Windows (experimental)") che non c'era nella
+  versione precedente di questo file.
 - `Wiki-Software-it.md` / `-es.md` / `-pt.md` / `-zh.md` — la stessa guida nelle altre 4 lingue del progetto, adattata
   dalle rispettive traduzioni di `README.*.md` più il materiale solo-wiki (ricette, casi speciali, FAQ) tradotto a parte.
 
 **Perché non è ancora pubblicata.** Le wiki GitHub non hanno un'API "contents" come il repository principale: si
 modificano solo clonando e pushando `<repo>.wiki.git` con credenziali git dirette. Questa sessione può clonare quel
-repository (è pubblico in lettura) ma **non può pusharlo**: il proxy di rete nega l'accesso in scrittura perché
-`Mecena-SRL/SLogMetaRaw.wiki` non è nell'elenco dei repository autorizzati per questa sessione (solo
-`ivan-94m/SLogMetaRaw`, cioè il repository principale, lo è). Serve una sessione con quel repository nell'elenco, o un
-intervento manuale.
+repository (è pubblico in lettura, sia come `ivan-94m/SLogMetaRaw.wiki` che come `Mecena-SRL/SLogMetaRaw.wiki`) ma
+**non può pusharlo**, per due motivi distinti verificati il 7 ottobre:
+1. `ivan-94m/SLogMetaRaw.wiki` non può essere aggiunto all'elenco dei repository autorizzati di questa sessione: il
+   tool di attach (`add_repo`) risolve i repository tramite l'API di GitHub, che non espone le wiki come repository a
+   sé stanti (restituisce "not found" anche se il clone pubblico funziona).
+2. `Mecena-SRL/SLogMetaRaw` (il nome attuale del repository dopo il trasferimento da `ivan-94m`, con scrittura
+   confermata disponibile per questo account) non può essere aggiunto **in questa sessione** perché l'ambiente
+   effettua il checkout in una cartella basata sul nome del repository, e `ivan-94m/SLogMetaRaw` (il repository
+   principale di questa sessione) occupa già la cartella `SLogMetaRaw`: due repository con lo stesso nome da owner
+   diversi non possono coesistere nella stessa sessione.
+
+Serve quindi una sessione dedicata con `Mecena-SRL/SLogMetaRaw` come sorgente (non `ivan-94m/SLogMetaRaw`), oppure un
+intervento manuale: clonare `Mecena-SRL/SLogMetaRaw.wiki.git`, copiare questi file dentro, commit e push con un account
+che ha accesso in scrittura al repository.
 
 **Per pubblicarle:**
 
@@ -35,7 +46,7 @@ in italiano in ogni versione, come per il resto del progetto.
 ```bash
 git clone https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git
 cp docs/wiki/*.md SLogMetaRaw.wiki/
-cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 2.3.0" && git push
+cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 2.3.1" && git push
 ```
 
 Dopo il push, chiudere/aggiornare la #35 (il problema che descrive sarà risolto) e segnalare qui se qualcosa non torna

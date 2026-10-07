@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **2.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **2.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -46,7 +46,7 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 
 ## 2. 安装
 
-1. 从 [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) 下载 `SLogMetaRaw-2.3.0.dmg` 并打开。
+1. 从 [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) 下载 `SLogMetaRaw-2.3.1.dmg` 并打开。
 
    ![DMG 窗口](images/01-dmg.png)
 
@@ -145,7 +145,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | 显示 `v2.3.0`。每天最多向 GitHub 查询一次最新版本；如果有新版本，会显示 **🟢 v2.3.0 → 2.x.y**，点击会打开适合你系统的安装程序下载页面（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西。 |
+| **版本**（顶部） | 显示 `v2.3.1`。每天最多向 GitHub 查询一次最新版本；如果有新版本，会显示 **🟢 v2.3.1 → 2.x.y**，点击会打开适合你系统的安装程序下载页面（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西。 |
 | **Camera** · **Rileggi metadata**（重新读取） | 读取到的摄影机。*Rileggi* 会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池。约 2 秒内响应。 |
 | **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值（节点变为透明）。 |
 | **White Balance** | As shot，或预设（Daylight、Cloudy、Shade、Tungsten、Fluorescent、Flash）。移动任意滑块会切换为 *Custom*。 |
@@ -359,7 +359,7 @@ S-Log MetaRaw          Color Space/Gamma: Timeline
 
 ## 12. 更新与隐私
 
-- **节点**每天最多向 GitHub 查询一次最新版本，在后台进行。请求中只包含版本号（`User-Agent: SLogMetaRaw/2.3.0`）。
+- **节点**每天最多向 GitHub 查询一次最新版本，在后台进行。请求中只包含版本号（`User-Agent: SLogMetaRaw/2.3.1`）。
 - **脚本**只在你点击其版本号时才检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
