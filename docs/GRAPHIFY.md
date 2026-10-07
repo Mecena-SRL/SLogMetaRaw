@@ -1,9 +1,9 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
-Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Riflette lo
-sviluppo corrente non ancora rilasciato sopra la 2.2.1 pubblicata (pacchettizzazione Linux/Windows,
-binario macOS universale, Esporta LUT). Va rigenerato quando cambia la struttura dei moduli, non a
-ogni commit.
+Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. La struttura
+rispecchia l'attuale `main`, alla 2.3.1 pubblicata: nessuna modifica di codice non ancora rilasciata
+al momento di questo aggiornamento. Va rigenerato quando cambia la struttura dei moduli, non a ogni
+commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
 
@@ -89,5 +89,5 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: revisione comprensiva dei commenti di tutto il repo, 02/10/2026 —
-aggiunti LutExport/DevelopLut, ChildWin, paths.py e il nuovo packaging Linux/Windows._
+_Ultimo aggiornamento: 07/10/2026 — verifica di routine dopo la 2.3.1, nessun modulo cambiato
+(solo wiki/README); corretto il riferimento alla versione pubblicata nell'intestazione._
