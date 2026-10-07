@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · **Italiano** · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-it)
 
-> Versione **2.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versione **2.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testato solo su DaVinci Resolve Studio 21.1 su macOS.
 
 S-Log MetaRaw legge i dati di ripresa che le camere Sony scrivono in ogni file (Kelvin, tinta, EI, obiettivo, diaframma, shutter, profilo colore) e li usa dentro DaVinci Resolve. Resolve lo fa solo per i file MXF di FX6/FX9; per gli MP4 di FX30, FX3, serie a7 e a6000 ignora questi dati.
@@ -46,7 +46,7 @@ I file originali non vengono **mai modificati**: nessuna transcodifica, nessun r
 
 ## 2. Installazione
 
-1. Scarica `SLogMetaRaw-2.3.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
+1. Scarica `SLogMetaRaw-2.3.1.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
 
    ![La finestra del DMG](images/01-dmg.png)
 
@@ -143,7 +143,7 @@ Il nodo è **puntuale**: ogni pixel dipende solo da sé stesso. Non crea mai alo
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | Mostra `v2.3.0`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v2.3.0 → 2.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
+| **Versione** (in cima) | Mostra `v2.3.1`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v2.3.1 → 2.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
 | **Camera** · **Rileggi metadata** | La camera che è stata letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool. Risponde in circa 2 s. |
 | **Decode Using** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa (il nodo è trasparente). |
 | **White Balance** | As shot, oppure preset (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Muovere un cursore lo porta su *Custom*. |
@@ -357,7 +357,7 @@ Lascia Color Space/Gamma su **Timeline** nel nodo principale. Attiva l'opzione d
 
 ## 12. Aggiornamenti e privacy
 
-- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/2.3.0`).
+- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/2.3.1`).
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre solo un link di download dalle release GitHub di questo progetto. Niente viene installato senza di te.
 

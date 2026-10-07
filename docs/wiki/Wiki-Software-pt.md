@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **2.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **2.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O S-Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -46,7 +46,7 @@ Os arquivos originais **nunca são modificados**: sem transcodificação, sem re
 
 ## 2. Instalação
 
-1. Baixe `SLogMetaRaw-2.3.0.dmg` em [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e abra-o.
+1. Baixe `SLogMetaRaw-2.3.1.dmg` em [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e abra-o.
 
    ![The DMG window](images/01-dmg.png)
 
@@ -145,7 +145,7 @@ O nó é **pontual**: cada pixel depende só de si mesmo. Nunca cria halos, e o 
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | Mostra `v2.3.0`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v2.3.0 → 2.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
+| **Versão** (no topo) | Mostra `v2.3.1`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v2.3.1 → 2.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
 | **Camera** · **Rileggi metadata** (reler) | A câmera que foi lida. *Rileggi* relê o clipe, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool. Responde em cerca de 2 s. |
 | **Decode Using** | *Clip* permite mudar os controles; *Camera metadata* os trava nos valores de gravação (o nó fica transparente). |
 | **White Balance** | As shot, ou presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Mover um controle desliza para *Custom*. |
@@ -359,7 +359,7 @@ Deixe Color Space/Gamma em **Timeline** no nó principal. Ative o *Definir tamb�
 
 ## 12. Atualizações e privacidade
 
-- Os **nós** perguntam ao GitHub pela última release no máximo uma vez por dia, em segundo plano. A requisição leva só a versão (`User-Agent: SLogMetaRaw/2.3.0`).
+- Os **nós** perguntam ao GitHub pela última release no máximo uma vez por dia, em segundo plano. A requisição leva só a versão (`User-Agent: SLogMetaRaw/2.3.1`).
 - O **script** só consulta quando você clica na versão dele.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
 
