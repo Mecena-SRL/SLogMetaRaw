@@ -114,10 +114,69 @@ def _reader_python():
         bundled = os.path.join(contents, 'Resources', 'ResolvePython', 'ResolvePython')
         if os.path.isfile(bundled) and os.access(bundled, os.X_OK):
             return bundled
+    if os.name == 'nt':   # Resolve.exe hosts the script: same search as the plugin (ChildWin.cpp)
+        for python in _windows_pythons():
+            if os.path.isfile(python):
+                return python
     python = shutil.which('python3')
     if python:
         return python
     raise RuntimeError('Python 3 executable not found for the metadata reader')
+
+
+def _windows_pythons():
+    forced = os.environ.get('SLOGMETARAW_PYTHON')
+    if forced:
+        yield forced
+    yield os.path.join(os.environ.get('ProgramFiles') or r'C:\Program Files',
+                       'Blackmagic Design', 'DaVinci Resolve', 'python.exe')
+    try:
+        import winreg
+        found = []
+        for root, view in ((winreg.HKEY_CURRENT_USER, 0), (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY),
+                           (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY)):
+            try:
+                core = winreg.OpenKey(root, r'Software\Python\PythonCore', 0, winreg.KEY_READ | view)
+            except OSError:
+                continue
+            with core:
+                i = 0
+                while True:
+                    try:
+                        tag = winreg.EnumKey(core, i)
+                    except OSError:
+                        break
+                    i += 1
+                    m = re.match(r'3\.(\d+)', tag)
+                    if not m or int(m.group(1)) < 6:
+                        continue
+                    try:
+                        with winreg.OpenKey(core, tag + r'\InstallPath') as k:
+                            try:
+                                exe = winreg.QueryValueEx(k, 'ExecutablePath')[0]
+                            except OSError:
+                                exe = os.path.join(winreg.QueryValueEx(k, '')[0], 'python.exe')
+                    except OSError:
+                        continue
+                    found.append((int(m.group(1)), exe))
+        for _, exe in sorted(found, key=lambda f: -f[0]):
+            yield exe
+    except ImportError:
+        pass
+    python = shutil.which('python') or ''
+    if python and '\\microsoft\\windowsapps\\' not in python.lower().replace('/', '\\'):
+        yield python   # the WindowsApps alias opens the Store instead of running Python
+
+
+def _reader_env():
+    """Resolve's environment without what breaks another Python (same filter as Child.cpp)."""
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('PYTHONPATH', 'PYTHONHOME', 'LD_PRELOAD')}
+    if sys.platform.startswith('linux') and 'LD_LIBRARY_PATH' in env:
+        kept = [p for p in env.pop('LD_LIBRARY_PATH').split(':') if p and 'resolve' not in p.lower()]
+        if kept:
+            env['LD_LIBRARY_PATH'] = ':'.join(kept)
+    return env
 
 
 def _mount_points():
@@ -153,16 +212,14 @@ def _spawn_reader():
 
     Parsing runs in a child so that a clip stuck on a dead volume can be killed:
     the scan must always be able to finish."""
+    from .__main__ import _BOOTSTRAP
     lib = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # ResolvePython runs in isolated mode via ResolvePython._pth, so it ignores
-    # PYTHONPATH (and the working directory). Pass the installation path as data
-    # and add it explicitly before running the helper module.
-    bootstrap = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
-                 'runpy.run_module("slogmetaraw", run_name="__main__")')
+    # ResolvePython ignores PYTHONPATH (isolated via ._pth): the library path goes in as data.
     # -X utf8 also makes os.open() accept accented paths when the locale is ASCII (#39)
-    return subprocess.Popen([_reader_python(), '-X', 'utf8', '-c', bootstrap, lib, '--helper'],
+    return subprocess.Popen([_reader_python(), '-X', 'utf8', '-c', _BOOTSTRAP, lib, '--helper'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1)
+                            stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1, env=_reader_env(),
+                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
 
 
 def _reader_lines(proc):
@@ -520,13 +577,18 @@ def main(resolve, fusion, bmd, selftest=False):
                 except (OSError, UnicodeError):
                     msg = None
                 if msg is None:
+                    code = proc.poll()
                     _stop_reader(proc)
                     proc = None
                     if reader_cancelled.is_set():
                         break
-                    row['values'] = [name] + [''] * 9 + [t('saltata: lettura troppo lenta (>%ds)') % limit]
-                    dead[volume] = 1
-                    slow += 1
+                    if code is not None:   # the reader died on this clip: the volume is not slow
+                        row['values'] = [name] + [''] * 9 + [t('errore: %s') % ('reader exit %d' % code)]
+                        errors += 1
+                    else:
+                        row['values'] = [name] + [''] * 9 + [t('saltata: lettura troppo lenta (>%ds)') % limit]
+                        dead[volume] = 1
+                        slow += 1
                 elif msg.get('ok'):
                     r = msg['result']
                     try:
@@ -873,15 +935,17 @@ def main(resolve, fusion, bmd, selftest=False):
             _log_exception('Update check')
             result = upd.blank()
             result['error'] = str(exc)
-        if state['update_serial'] == serial:   # an answer after the time limit is dropped
-            state['update_done'] = result
+        state['update_done'] = (serial, result)   # the tick drops an answer from an older check
 
     def _update_tick():
         if not state['updating']:
             return
         if update_thread[0] is not None:
             update_thread[0].join(GIL_YIELD)
-        if state['update_done'] is not None:
+        done = state['update_done']
+        if done is not None and done[0] != state['update_serial']:
+            state['update_done'] = done = None
+        if done is not None:
             _apply_update()
         elif time.monotonic() - state['update_started'] > UPDATE_TIMEOUT:
             state['updating'] = False
@@ -895,7 +959,7 @@ def main(resolve, fusion, bmd, selftest=False):
     def _apply_update():
         state['updating'] = False
         set_running(state['running'])
-        res = state['update_done'] or upd.blank()
+        res = state['update_done'][1] if state['update_done'] else upd.blank()
         itm['UpdateIcon'].Text = ''
         if res.get('newer') and res.get('dmg_url'):
             state['update_newer'] = True
