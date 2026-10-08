@@ -1,5 +1,32 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.3
+
+Interventi rimandati dalla manutenzione del 7 ottobre (#66) e CI Windows di nuovo verde (#70). Contiene anche la
+2.3.2, mai pubblicata da sola. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica (render
+CPU del Detail verificato bit per bit con la 2.3.2).
+
+### Plugin
+
+- Develop e Detail: i parametri di Toni, Zone e Detail si cercano una volta alla creazione del nodo invece che per nome
+  a ogni fotogramma (20 ricerche in meno per fotogramma nel Develop, 24 nel Detail).
+- **Detail, passo finale più leggero (CPU)**: le coordinate bilineari si calcolano una volta per pixel per le quattro
+  griglie invece di quattro volte, anche nel Dehaze; con Clarity a zero la sua griglia non si alloca né si legge.
+- Linux/macOS: un lettore metadata già terminato non viene più colpito da `kill`, così un pid riusato da un altro
+  processo non può riceverlo.
+
+### Script
+
+- **Windows: la finestra si chiude quando Resolve si chiude o va in crash.** Il controllo si basava sul cambio del
+  processo padre, che su Windows non avviene mai; ora attende la fine del processo di Resolve.
+- Il menu Workspace › Scripts usa la ricerca degli indirizzi locali della libreria invece di una copia propria (la
+  correzione della 2.3.1 era stata fatta due volte).
+
+### CI
+
+- Windows: i test degli indirizzi locali forzano la piattaforma che simulano, invece di leggere l'indirizzo reale del
+  runner (#70).
+
 ## S-Log MetaRaw 2.3.2
 
 Manutenzione del 7 ottobre: stabilità del plugin e dello script, meno memoria nel Detail. Nessun controllo cambia,

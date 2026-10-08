@@ -402,6 +402,34 @@ class UIRegression(unittest.TestCase):
                 self.launch()
 
 
+class FollowResolve(unittest.TestCase):
+    def follow(self, getppid, end_parent):
+        exited = threading.Event()
+        with mock.patch.object(ui.os, 'getppid', getppid), \
+                mock.patch.object(ui.os, '_exit', side_effect=lambda code: exited.set()), \
+                mock.patch.object(ui.sys, 'executable', 'python3'):
+            stop = ui._exit_with_resolve()
+            try:
+                self.assertFalse(exited.wait(2.5))
+                end_parent()
+                self.assertTrue(exited.wait(5))
+            finally:
+                stop.set()
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX reparenting')
+    def test_script_exits_when_reparented(self):
+        parent = [4242]
+        self.follow(lambda: parent[0], lambda: parent.__setitem__(0, 1))
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows parent handle')
+    def test_windows_script_exits_with_its_parent(self):
+        # os.getppid() never changes on Windows: the parent's handle must be waited on
+        parent = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+        self.addCleanup(parent.wait)
+        self.addCleanup(parent.kill)
+        self.follow(lambda: parent.pid, lambda: (parent.kill(), parent.wait()))
+
+
 class ReaderRuntime(unittest.TestCase):
     def test_partial_helper_output_obeys_clip_deadline(self):
         process = subprocess.Popen(

@@ -35,7 +35,7 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_FcTint = fetchBooleanParam("fcTint");
         m_FcZones = fetchBooleanParam("fcZones");
         for (const std::string& name : toneParamNames()) (void)getParam(name);   // all present, or not ready
-        m_Zones.bind(*this, "zone");
+        m_Tones.bind(*this);
         m_NodeInput = fetchChoiceParam("nodeInput");
         m_NodeInfo = fetchStringParam("nodeInfo");
         m_DataLevel = fetchChoiceParam("dataLevel");

@@ -232,6 +232,7 @@ bool reapStrays()
 
 void killProcess(Child& c)
 {
+    checkExit(c);   // gone already, or reaped by the host: its pid may belong to another process now
     if (c.pid > 0 && !c.exited) {
         kill(-(pid_t)c.pid, SIGKILL);
         kill((pid_t)c.pid, SIGKILL);

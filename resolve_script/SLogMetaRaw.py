@@ -9,7 +9,6 @@ Startup failures are reported in a dialog and in launcher.log (macOS ~/Library/L
 Windows %APPDATA%\\SLogMetaRaw\\logs, Linux ~/.local/share/SLogMetaRaw/logs).
 """
 import os
-import socket
 import subprocess
 import sys
 import time
@@ -98,47 +97,10 @@ def _retry(obtain, message, attempts=40, interval=0.25):
 
 
 def _local_ipv4_addresses():
-    """Addresses assigned to this computer only; never discover other Resolve hosts.
-
-    macOS lists them with ifconfig, Linux with ip (ifconfig is often missing); Windows has neither, so it takes the
-    address of the default route (a UDP connect sends nothing) and those of the host name.
-    """
-    candidates = []
-    if sys.platform == 'win32':
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.connect(('192.0.2.1', 9))
-                candidates.append(s.getsockname()[0])
-        except OSError:
-            pass
-        try:
-            candidates += socket.gethostbyname_ex(socket.gethostname())[2]
-        except OSError:
-            pass
-    else:
-        commands = [['/sbin/ifconfig', '-a']] if sys.platform == 'darwin' else [['ip', '-4', '-o', 'addr', 'show'],
-                                                                                 ['/sbin/ifconfig', '-a']]
-        for command in commands:
-            try:
-                listing = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                         universal_newlines=True, timeout=2, check=True).stdout
-            except (OSError, subprocess.SubprocessError):
-                continue
-            for line in listing.splitlines():
-                fields = line.split()
-                # "inet 10.0.0.3 netmask" (ifconfig), "inet 10.0.0.3/24" (ip), "inet addr:10.0.0.3" (old net-tools)
-                candidates += [fields[i + 1].split('/')[0].replace('addr:', '')
-                               for i in range(len(fields) - 1) if fields[i] == 'inet']
-            break
-    addresses = []
-    for address in candidates:
-        try:
-            socket.inet_pton(socket.AF_INET, address)
-        except OSError:
-            continue
-        if address != '0.0.0.0' and not address.startswith('127.') and address not in addresses:
-            addresses.append(address)
-    return addresses
+    """Addresses assigned to this computer only (slogmetaraw.connect, shared with the plugin's child)."""
+    _import_library()
+    from slogmetaraw.connect import _local_ipv4_addresses as addresses
+    return addresses()
 
 
 def _connect(namespace, bmd):
@@ -166,7 +128,11 @@ def _connect(namespace, bmd):
                 return resolve
         except Exception as exc:
             last_error = exc
-    for address in _local_ipv4_addresses():
+    try:
+        addresses = _local_ipv4_addresses()
+    except (ImportError, RuntimeError):   # no library: _load_ui reports it once connected
+        addresses = []
+    for address in addresses:
         try:
             resolve = bmd.scriptapp('Resolve', address, 1.0)
             if resolve is not None and resolve is not False:
@@ -209,7 +175,7 @@ def _lib_dir():
     return recorded or os.path.join(_support_dir(), 'lib')
 
 
-def _load_ui():
+def _import_library():
     lib_dir = _lib_dir()
     if not os.path.isfile(os.path.join(lib_dir, 'slogmetaraw', '__init__.py')):
         raise RuntimeError('La libreria S-Log MetaRaw non si trova in:\n%s\n'
@@ -220,6 +186,10 @@ def _load_ui():
     for name in list(sys.modules):
         if name == 'slogmetaraw' or name.startswith('slogmetaraw.'):
             del sys.modules[name]  # always pick up the installed version
+
+
+def _load_ui():
+    _import_library()
     from slogmetaraw import ui
     return ui
 

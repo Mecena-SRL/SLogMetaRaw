@@ -19,6 +19,16 @@
 
 static const char* const kIntensities[] = { "localContrast", "localHighlights", "localShadows",
                                             "texture", "clarity", "dehaze" };
+// the intensities first, in the order of kIntensities
+static const struct { const char* name; double SMDetailControls::*field; } kDetailSliders[kDetailSliderCount] = {
+    { "localContrast", &SMDetailControls::localContrast }, { "localHighlights", &SMDetailControls::localHighlights },
+    { "localShadows", &SMDetailControls::localShadows }, { "texture", &SMDetailControls::texture },
+    { "clarity", &SMDetailControls::clarity }, { "dehaze", &SMDetailControls::dehaze },
+    { "preserveDetail", &SMDetailControls::preserveDetail }, { "detailRadius", &SMDetailControls::detailRadius },
+    { "edgeThreshold", &SMDetailControls::edgeThreshold }, { "noiseThreshold", &SMDetailControls::noiseThreshold },
+    { "clarityCenter", &SMDetailControls::clarityCenter }, { "hazeLevel", &SMDetailControls::hazeLevel },
+    { "hazeWarmth", &SMDetailControls::hazeWarmth }, { "localWhite", &SMDetailControls::localWhite } };
+static const int kIntensityCount = sizeof(kIntensities) / sizeof(kIntensities[0]);
 
 static std::atomic<int>& liveNodes() { static std::atomic<int> n(0); return n; }
 
@@ -40,12 +50,13 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         fprintf(stderr, "S-Log MetaRaw Detail: nodo disattivato, parametro mancante\n");
         return;
     }
-    try {   // fetched here, on the main thread: a first fetch on a render thread races with the UI
+    // fetched on the main thread (a first fetch while rendering races with the UI); a missing one reads its default
+    try {
         m_Zones.bind(*this, "localZone");
-        for (const char* n : kIntensities) (void)getParam(n);
-        for (const char* n : { "preserveDetail", "detailRadius", "edgeThreshold", "noiseThreshold", "clarityCenter",
-                               "hazeLevel", "hazeWarmth", "localWhite", "viewGain", "viewBase" })
-            (void)getParam(n);
+        for (int i = 0; i < kDetailSliderCount; ++i)
+            if (paramExists(kDetailSliders[i].name)) m_Sliders[i] = fetchDoubleParam(kDetailSliders[i].name);
+        if (paramExists("viewGain")) m_ViewGain = fetchBooleanParam("viewGain");
+        if (paramExists("viewBase")) m_ViewBase = fetchBooleanParam("viewBase");
     } catch (...) {
     }
     try {
@@ -122,14 +133,12 @@ bool DetailEffect::neutralAt(double p_Time) const
 {
     int space = 0, gamma = 0;
     if (resolveInput(space, gamma) == InputOrigin::Unknown) return true;
-    DetailEffect* self = const_cast<DetailEffect*>(this);
-    for (const char* name : kIntensities)
-        if (self->fetchDoubleParam(name)->getValueAtTime(p_Time) != 0.0) return false;
+    for (int i = 0; i < kIntensityCount; ++i)
+        if (m_Sliders[i] && m_Sliders[i]->getValueAtTime(p_Time) != 0.0) return false;
     const ZoneValues z = m_Zones.read(p_Time);
     for (int i = 0; i < kZoneCount; ++i)
         if (z.exp[i] != 0.0) return false;
-    return !self->fetchBooleanParam("viewGain")->getValueAtTime(p_Time)
-        && !self->fetchBooleanParam("viewBase")->getValueAtTime(p_Time);
+    return !(m_ViewGain && m_ViewGain->getValueAtTime(p_Time)) && !(m_ViewBase && m_ViewBase->getValueAtTime(p_Time));
 }
 
 void DetailEffect::resetAll()
@@ -252,24 +261,11 @@ DetailEffect::~DetailEffect()
     }
 }
 
-SMDetailControls DetailEffect::readControls(double t)
+SMDetailControls DetailEffect::readControls(double t) const
 {
     SMDetailControls c = sm_detail_defaults();
-    auto d = [&](const char* name) { return fetchDoubleParam(name)->getValueAtTime(t); };
-    c.localContrast = d("localContrast");
-    c.localHighlights = d("localHighlights");
-    c.localShadows = d("localShadows");
-    c.texture = d("texture");
-    c.clarity = d("clarity");
-    c.dehaze = d("dehaze");
-    c.preserveDetail = d("preserveDetail");
-    c.detailRadius = d("detailRadius");
-    c.edgeThreshold = d("edgeThreshold");
-    c.noiseThreshold = d("noiseThreshold");
-    c.clarityCenter = d("clarityCenter");
-    c.hazeLevel = d("hazeLevel");
-    c.hazeWarmth = d("hazeWarmth");
-    c.localWhite = d("localWhite");
+    for (int i = 0; i < kDetailSliderCount; ++i)
+        if (m_Sliders[i]) c.*(kDetailSliders[i].field) = m_Sliders[i]->getValueAtTime(t);
     const ZoneValues z = m_Zones.read(t);
     c.zonePivot = z.pivot;
     for (int i = 0; i < kZoneCount; ++i) {
@@ -277,8 +273,8 @@ SMDetailControls DetailEffect::readControls(double t)
         c.zoneRange[i] = z.range[i];
         c.zoneFalloff[i] = z.falloff[i];
     }
-    c.viewGain = fetchBooleanParam("viewGain")->getValueAtTime(t) ? 1 : 0;
-    c.viewBase = fetchBooleanParam("viewBase")->getValueAtTime(t) ? 1 : 0;
+    c.viewGain = m_ViewGain && m_ViewGain->getValueAtTime(t) ? 1 : 0;
+    c.viewBase = m_ViewBase && m_ViewBase->getValueAtTime(t) ? 1 : 0;
     return c;
 }
 

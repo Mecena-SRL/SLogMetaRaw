@@ -91,10 +91,24 @@ def _exit_with_resolve():
     if os.path.splitext(os.path.basename(sys.executable or ''))[0].lower() == 'resolve':
         return stop   # a Workspace script runs inside Resolve: its parent is not Resolve
     parent = os.getppid()
+    if os.name == 'nt':   # Windows never reparents: wait on the parent's handle instead
+        import ctypes
+        kernel32 = ctypes.WinDLL('kernel32')
+        kernel32.OpenProcess.restype = ctypes.c_void_p
+        kernel32.WaitForSingleObject.argtypes = (ctypes.c_void_p, ctypes.c_uint32)
+        handle = kernel32.OpenProcess(0x00100000, False, parent)   # SYNCHRONIZE
+        if not handle:
+            return stop
+
+        def gone():
+            return kernel32.WaitForSingleObject(handle, 0) == 0   # WAIT_OBJECT_0: the parent exited
+    else:
+        def gone():
+            return os.getppid() != parent   # reparented to launchd/init: Resolve is gone
 
     def watch():
         while not stop.wait(2):
-            if os.getppid() != parent:   # reparented to launchd: Resolve is gone
+            if gone():
                 os._exit(0)
 
     threading.Thread(target=watch, daemon=True).start()
