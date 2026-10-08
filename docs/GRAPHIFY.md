@@ -89,5 +89,5 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: revisione comprensiva dei commenti di tutto il repo, 02/10/2026 —
-aggiunti LutExport/DevelopLut, ChildWin, paths.py e il nuovo packaging Linux/Windows._
+_Ultimo aggiornamento: revisione commenti 08/10/2026 — verificata la mappa contro main (Resolve 20,
+installer Windows senza Python, correzioni 2.3.1): nessun modulo nuovo o rimosso, struttura invariata._
