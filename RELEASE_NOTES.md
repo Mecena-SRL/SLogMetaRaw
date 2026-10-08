@@ -1,5 +1,65 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.3
+
+Interventi rimandati dalla manutenzione del 7 ottobre (#66) e CI Windows di nuovo verde (#70). Contiene anche la
+2.3.2, mai pubblicata da sola. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica (render
+CPU del Detail verificato bit per bit con la 2.3.2).
+
+### Plugin
+
+- Develop e Detail: i parametri di Toni, Zone e Detail si cercano una volta alla creazione del nodo invece che per nome
+  a ogni fotogramma (20 ricerche in meno per fotogramma nel Develop, 24 nel Detail).
+- **Detail, passo finale più leggero (CPU)**: le coordinate bilineari si calcolano una volta per pixel per le quattro
+  griglie invece di quattro volte, anche nel Dehaze; con Clarity a zero la sua griglia non si alloca né si legge.
+- Linux/macOS: un lettore metadata già terminato non viene più colpito da `kill`, così un pid riusato da un altro
+  processo non può riceverlo.
+
+### Script
+
+- **Windows: la finestra si chiude quando Resolve si chiude o va in crash.** Il controllo si basava sul cambio del
+  processo padre, che su Windows non avviene mai; ora attende la fine del processo di Resolve.
+- Il menu Workspace › Scripts usa la ricerca degli indirizzi locali della libreria invece di una copia propria (la
+  correzione della 2.3.1 era stata fatta due volte).
+
+### CI
+
+- Windows: i test degli indirizzi locali forzano la piattaforma che simulano, invece di leggere l'indirizzo reale del
+  runner (#70).
+
+## S-Log MetaRaw 2.3.2
+
+Manutenzione del 7 ottobre: stabilità del plugin e dello script, meno memoria nel Detail. Nessun controllo cambia,
+nessun valore salvato cambia, l'immagine resta identica.
+
+### Plugin
+
+- **Controllo aggiornamenti: un errore di memoria nel thread non chiude più Resolve.** La lettura della risposta
+  avveniva fuori dal `try` del thread; ora un'eccezione chiude il controllo come "non riuscito".
+- **Valori `NaN`/`Infinity` nella scheda della clip ignorati**: una temperatura o un EI non finito rendeva nera
+  l'immagine del nodo (ogni pixel `NaN`); ora si usano i valori predefiniti, come per i valori mancanti.
+- Lettura dell'EI di riferimento alla creazione del nodo protetta come gli altri parametri.
+- Linux: la pipe del processo figlio nasce già con `O_CLOEXEC`, così un altro processo avviato da Resolve nello
+  stesso istante non la eredita.
+- **Detail: meno memoria quando Dehaze o Clarity sono spenti.** I piani della mappa di trasmissione (Dehaze) e quelli
+  di Clarity si liberano quando non servono, come già quelli del Texture (render CPU).
+
+### Script
+
+- **Windows: la finestra trova Python anche dentro Resolve** (stessa ricerca del plugin: `SLOGMETARAW_PYTHON`, Python
+  di Resolve, Python registrati, `python` nel `PATH` escluso l'alias dello Store) e il lettore non apre più una
+  finestra di console.
+- Linux: il lettore parte senza `PYTHONPATH`, `PYTHONHOME`, `LD_PRELOAD` e le librerie di Resolve in
+  `LD_LIBRARY_PATH`, come i processi del plugin.
+- **Un lettore che si chiude su una clip è un errore su quella clip**, non più un volume "lento": prima tutte le altre
+  clip dello stesso disco venivano saltate.
+- Windows: lo scrittore staccato di "Rileggi metadata" ha un limite di tempo anche durante la lettura della clip (un
+  disco di rete caduto lo lasciava attivo per sempre).
+- `--update-check` non stampa più un traceback se `update.json` contiene una dimensione non intera.
+- Una risposta tardiva del controllo aggiornamenti non può più sovrascrivere quella di un controllo più recente.
+- **Meno memoria con le clip MP4 lunghe**: il bitrate si somma senza creare una tupla di un intero per fotogramma
+  (circa 22 MB in meno per una clip di 3 ore a 60p).
+
 ## S-Log MetaRaw 2.3.1
 
 Correzioni rimandate dall'audit del 5 ottobre (#57): processi figli, connessione a Resolve su Windows e Linux, memoria

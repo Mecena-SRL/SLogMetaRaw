@@ -172,6 +172,25 @@ class UIRegression(unittest.TestCase):
         self.assertIn('reader unavailable', result['status'])
         self.assertTrue(self.dispatcher.window.GetItems()['Read'].Enabled)
 
+    def test_reader_that_dies_is_an_error_not_a_slow_volume(self):
+        self.add_clip()
+        for code, expect in ((1, 'lente 0 · errori 1'), (None, 'lente 1 · errori 0')):
+            with self.subTest(code=code):
+                process = mock.Mock()
+                process.poll.return_value = code
+                with mock.patch.object(ui, '_spawn_reader', return_value=process):
+                    with mock.patch.object(ui, '_read_result', return_value=None):
+                        result = self.launch(selftest=True)
+                self.assertIn(expect, result['status'])
+                self.assertEqual('non risponde' in result['status'], code is None)
+
+    def test_reader_env_drops_resolve_python_and_libraries(self):
+        env = {'PYTHONHOME': '/r', 'PYTHONPATH': '/r', 'LD_PRELOAD': 'x.so', 'HOME': '/h',
+               'LD_LIBRARY_PATH': '/opt/resolve/libs:/usr/local/lib'}
+        with mock.patch.dict(ui.os.environ, env, clear=True), mock.patch.object(ui.sys, 'platform', 'linux'):
+            out = ui._reader_env()
+        self.assertEqual(out, {'HOME': '/h', 'LD_LIBRARY_PATH': '/usr/local/lib'})
+
     def test_dispatcher_timeout_finishes_read_and_writes_on_ui_thread(self):
         self.add_clip()
         process = mock.Mock()
@@ -381,6 +400,34 @@ class UIRegression(unittest.TestCase):
         with mock.patch.object(ui.upd, 'check', side_effect=ValueError('broken cache')):
             with mock.patch.object(ui, '_log_exception'):
                 self.launch()
+
+
+class FollowResolve(unittest.TestCase):
+    def follow(self, getppid, end_parent):
+        exited = threading.Event()
+        with mock.patch.object(ui.os, 'getppid', getppid), \
+                mock.patch.object(ui.os, '_exit', side_effect=lambda code: exited.set()), \
+                mock.patch.object(ui.sys, 'executable', 'python3'):
+            stop = ui._exit_with_resolve()
+            try:
+                self.assertFalse(exited.wait(2.5))
+                end_parent()
+                self.assertTrue(exited.wait(5))
+            finally:
+                stop.set()
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX reparenting')
+    def test_script_exits_when_reparented(self):
+        parent = [4242]
+        self.follow(lambda: parent[0], lambda: parent.__setitem__(0, 1))
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows parent handle')
+    def test_windows_script_exits_with_its_parent(self):
+        # os.getppid() never changes on Windows: the parent's handle must be waited on
+        parent = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+        self.addCleanup(parent.wait)
+        self.addCleanup(parent.kill)
+        self.follow(lambda: parent.pid, lambda: (parent.kill(), parent.wait()))
 
 
 class ReaderRuntime(unittest.TestCase):
