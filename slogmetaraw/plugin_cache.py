@@ -1,11 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Per-clip JSON records read by the SLogMetaRaw OpenFX plugin.
 
-The plugin knows its source file path (Resolve's kOfxImageEffectPropSrcFilePath)
-and looks for ~/Library/Application Support/SLogMetaRaw/cache/<fnv1a64(path)>.json.
-The script writes these records while registering metadata in Resolve; if one is
-missing the plugin runs `ResolvePython -m slogmetaraw --cache <path>` itself.
-The file name hash (FNV-1a 64 of the UTF-8 path) is duplicated in the plugin.
+The plugin looks for <paths.support_dir()>/cache/<fnv1a64(canonical path)>.json; the
+script writes these records, and the plugin runs `--cache <path>` itself when one is
+missing. The hash and the path canonicalisation are duplicated in the plugin (Files.cpp).
 """
 import json
 import os

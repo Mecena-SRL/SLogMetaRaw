@@ -122,7 +122,11 @@ void start(bool manual, bool hostIsBackground)
                 } catch (...) {   // nothing may escape a thread: std::terminate would take the host down
                     r = ChildResult();
                 }
-                finish(r);
+                try {
+                    finish(r);
+                } catch (...) {   // bad_alloc while parsing: still release waiters
+                    finish(ChildResult());
+                }
             });
             started = true;
         } catch (...) {   // no thread available

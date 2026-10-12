@@ -62,10 +62,21 @@ void defineToneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* p
     defineButton(d, page, "zoneReset", "Azzera zone", "Riporta le zone e il Soft Clip ai valori iniziali", zones);
 }
 
-SMToneControls readToneControls(OFX::ImageEffect& e, const ZoneParamSet& zones, double time)
+void ToneParamSet::bind(OFX::ImageEffect& e)
+{
+    auto get = [&](const char* name) { return e.paramExists(name) ? e.fetchDoubleParam(name) : nullptr; };
+    for (int i = 0; i < 7; ++i) sliders[i] = get(kToneSliders[i].name);
+    softClip = e.paramExists("softClip") ? e.fetchBooleanParam("softClip") : nullptr;
+    softClipLevel = get("softClipLevel");
+    softClipColor = get("softClipColor");
+    zones.bind(e, "zone");
+}
+
+SMToneControls ToneParamSet::read(double time) const
 {
     SMToneControls c = sm_tone_defaults();
-    for (const ToneSlider& t : kToneSliders) c.*(t.field) = e.fetchDoubleParam(t.name)->getValueAtTime(time);
+    for (int i = 0; i < 7; ++i)
+        if (sliders[i]) c.*(kToneSliders[i].field) = sliders[i]->getValueAtTime(time);
     const ZoneValues z = zones.read(time);
     c.zonePivot = z.pivot;
     for (int i = 0; i < kZoneCount; ++i) {
@@ -74,9 +85,9 @@ SMToneControls readToneControls(OFX::ImageEffect& e, const ZoneParamSet& zones, 
         c.zoneRange[i] = z.range[i];
         c.zoneFalloff[i] = z.falloff[i];
     }
-    c.softClip = e.fetchBooleanParam("softClip")->getValueAtTime(time) ? 1 : 0;
-    c.softClipLevel = e.fetchDoubleParam("softClipLevel")->getValueAtTime(time);
-    c.softClipColor = e.fetchDoubleParam("softClipColor")->getValueAtTime(time);
+    if (softClip) c.softClip = softClip->getValueAtTime(time) ? 1 : 0;
+    if (softClipLevel) c.softClipLevel = softClipLevel->getValueAtTime(time);
+    if (softClipColor) c.softClipColor = softClipColor->getValueAtTime(time);
     return c;
 }
 

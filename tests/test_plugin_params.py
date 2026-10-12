@@ -127,7 +127,7 @@ class PluginParams(unittest.TestCase):
         fields = re.findall(r'&SMToneControls::(\w+)', self.src)
         self.assertEqual(sorted(fields), sorted(['contrast', 'highlights', 'shadows', 'whites', 'blacks',
                                                   'vibrance', 'saturation']))
-        self.assertIn('readToneControls(*this, m_Zones, p_Time)', body(self.src, 'bool DevelopEffect::buildParams'))
+        self.assertIn('m_Tones.read(p_Time)', body(self.src, 'bool DevelopEffect::buildParams'))
         self.assertIn('sm_set_tone(&p, &tones', body(self.src, 'bool DevelopEffect::buildParams'))
 
     def test_the_1_1_tones_are_kept_by_name_but_never_rendered(self):

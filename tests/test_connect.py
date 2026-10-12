@@ -23,11 +23,13 @@ class LocalAddresses(unittest.TestCase):
                   '\tinet 0.0.0.0 --> 0.0.0.0\n'
                   '\tinet 10.9.0.5 --> 10.9.0.5 netmask 0xffffffff\n'
                   '\tinet 192.168.1.11 netmask 0xffffff00\n')
-        with mock.patch('subprocess.run', return_value=mock.Mock(stdout=output, returncode=0)):
+        with mock.patch.object(connect.sys, 'platform', 'darwin'), \
+                mock.patch('subprocess.run', return_value=mock.Mock(stdout=output, returncode=0)):
             self.assertEqual(connect._local_ipv4_addresses(), ['192.168.1.11', '10.9.0.5'])
 
     def test_ifconfig_failure_gives_no_addresses(self):
-        with mock.patch('subprocess.run', side_effect=OSError('no ifconfig')):
+        with mock.patch.object(connect.sys, 'platform', 'darwin'), \
+                mock.patch('subprocess.run', side_effect=OSError('no ifconfig')):
             self.assertEqual(connect._local_ipv4_addresses(), [])
 
     def test_linux_reads_ip_and_falls_back_to_ifconfig(self):

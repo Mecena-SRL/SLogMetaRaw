@@ -22,6 +22,29 @@ void release(V& v)   // planes this frame does not use go back to the system (J 
     V().swap(v);
 }
 
+// dt_bilinear with the coordinates computed once, for the grids sampled at the same pixel: same operations, same bits
+struct Tap
+{
+    int i00, i01, i10, i11;
+    float fx, fy;
+    Tap(int w, int h, int s, int x, int y)
+    {
+        const float u = sm_clamp(((float)x + 0.5f) / (float)s - 0.5f, 0.0f, (float)(w - 1));
+        const float v = sm_clamp(((float)y + 0.5f) / (float)s - 0.5f, 0.0f, (float)(h - 1));
+        const int i0 = (int)u, j0 = (int)v;
+        const int i1 = i0 + 1 < w ? i0 + 1 : w - 1, j1 = j0 + 1 < h ? j0 + 1 : h - 1;
+        fx = u - (float)i0;
+        fy = v - (float)j0;
+        i00 = j0 * w + i0; i01 = j0 * w + i1; i10 = j1 * w + i0; i11 = j1 * w + i1;
+    }
+    float operator()(const float* grid) const
+    {
+        const float top = grid[i00] + (grid[i01] - grid[i00]) * fx;
+        const float bot = grid[i10] + (grid[i11] - grid[i10]) * fx;
+        return top + (bot - top) * fy;
+    }
+};
+
 // The 1D filters run on `lanes` adjacent lines at once (lane l at in[j * stride + l]): the vertical pass
 // walks rows of a column block instead of single columns. Each lane sums in the same order as one line.
 const int kLanes = 32;
@@ -183,6 +206,13 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
         release(s.Lt);
         release(s.G2);
     }
+    if (!(dehaze && p.hazeMix == 0.0f)) {   // transmission map planes
+        for (Plane& c : s.ch) release(c);
+        release(s.E); release(s.at); release(s.bt); release(s.g2); release(s.g3);
+    }
+    if (p.clarity == 0.0f) {
+        release(s.a2); release(s.b2); release(s.a3); release(s.b3); release(s.Dg);
+    }
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
             for (int x = 0; x < W; ++x) {
@@ -248,9 +278,11 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                     const size_t i = (size_t)y * W + x;
                     const SMf3 v = smf3(s.J[i * 3], s.J[i * 3 + 1], s.J[i * 3 + 2]);
                     float t = 1.0f;
-                    if (p.hazeMix == 0.0f)
-                        t = sm_clamp(dt_bilinear(s.at.data(), w, h, p.s, x, y) * (L[i] - p.hazeLevel)
-                                     + dt_bilinear(s.bt.data(), w, h, p.s, x, y) + 1.0f, SM_DT_HAZE_MIN_T, 1.0f);
+                    if (p.hazeMix == 0.0f) {
+                        const Tap tap(w, h, p.s, x, y);
+                        t = sm_clamp(tap(s.at.data()) * (L[i] - p.hazeLevel) + tap(s.bt.data()) + 1.0f,
+                                     SM_DT_HAZE_MIN_T, 1.0f);
+                    }
                     SMf3 j = finite3(v) ? dt_haze_pixel(v, t, p) : v;
                     s.J[i * 3] = j.x; s.J[i * 3 + 1] = j.y; s.J[i * 3 + 2] = j.z;
                     s.L0[i] = finite3(j) ? dt_luma(j, p) : -16.0f;   // in place: only index i is read
@@ -263,14 +295,12 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
     ensure(s.aB, grid);
     ensure(s.bB, grid);
     guided(par, s.Lw.data(), w, h, p.rBx, p.rBy, p.eps, s.aB.data(), s.bB.data(), s.g0, s.g1, s.tmp);
-    ensure(s.Dg, grid);
     if (p.clarity != 0.0f) {
+        ensure(s.Dg, grid);
         ensure(s.a2, grid); ensure(s.b2, grid); ensure(s.a3, grid); ensure(s.b3, grid);
         guided(par, s.Lw.data(), w, h, p.r2x, p.r2y, p.eps, s.a2.data(), s.b2.data(), s.g0, s.g1, s.tmp);
         guided(par, s.Lw.data(), w, h, p.r3x, p.r3y, p.eps, s.a3.data(), s.b3.data(), s.g0, s.g1, s.tmp);
         for (size_t i = 0; i < grid; ++i) s.Dg[i] = (s.a2[i] - s.a3[i]) * s.Lw[i] + (s.b2[i] - s.b3[i]);
-    } else {
-        std::fill(s.Dg.begin(), s.Dg.begin() + grid, 0.0f);
     }
     ensure(s.Gg, full);
     gauss(par, L, W, H, p.gG, p.nG, s.Gg.data(), s.tmp);
@@ -297,10 +327,9 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                 const size_t i = (size_t)y * W + x;
                 const float G1 = p.texture != 0.0f ? s.G1[i] : 0.0f;
                 const float G2 = p.texture != 0.0f ? dt_bilinear(s.G2.data(), p.wt, p.ht, p.st, x, y) : 0.0f;
-                const float Dg = dt_bilinear(s.Dg.data(), w, h, p.s, x, y);
-                const DtOut o = dt_gain(L[i], dt_bilinear(s.Lw.data(), w, h, p.s, x, y), s.Gg[i],
-                                        dt_bilinear(s.aB.data(), w, h, p.s, x, y),
-                                        dt_bilinear(s.bB.data(), w, h, p.s, x, y), Dg, G1, G2, p);
+                const Tap t(w, h, p.s, x, y);
+                const float Dg = p.clarity != 0.0f ? t(s.Dg.data()) : 0.0f;
+                const DtOut o = dt_gain(L[i], t(s.Lw.data()), s.Gg[i], t(s.aB.data()), t(s.bB.data()), Dg, G1, G2, p);
                 if (planes) {
                     planes->B[i] = o.B;
                     planes->Dg[i] = Dg;

@@ -9,6 +9,7 @@
 #include "../common/ZoneParams.h"
 
 const int kDetailSettingsVersion = 1;
+const int kDetailSliderCount = 14;
 
 // Where the input encoding came from, shown in the info line.
 enum class InputOrigin { Declared, Host, Camera, Assumed, Unknown };
@@ -30,7 +31,7 @@ private:
     void syncClip();                                  // camera encoding of the clip, from the cache only
     InputOrigin resolveInput(int& space, int& gamma) const;
     bool neutralAt(double p_Time) const;
-    SMDetailControls readControls(double p_Time);
+    SMDetailControls readControls(double p_Time) const;
     void refreshInfo();
     void resetAll();
 
@@ -45,4 +46,7 @@ private:
     OFX::IntParam* m_CamSpace = nullptr;
     OFX::IntParam* m_CamGamma = nullptr;
     OFX::IntParam* m_SettingsVersion = nullptr;
+    OFX::DoubleParam* m_Sliders[kDetailSliderCount] = {};   // kDetailSliders (DetailEffect.cpp), bound at construction
+    OFX::BooleanParam* m_ViewGain = nullptr;
+    OFX::BooleanParam* m_ViewBase = nullptr;
 };

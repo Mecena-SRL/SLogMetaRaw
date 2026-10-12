@@ -7,7 +7,7 @@
 #include "../../gen/DevelopMath.h"
 #include "ClipMeta.h"
 #include "../common/UpdateBadge.h"
-#include "../common/ZoneParams.h"
+#include "ToneParams.h"
 
 const int kSettingsVersion = 5;   // bump when the meaning of a saved parameter changes
 const int kWBCustom = 7;
@@ -43,7 +43,7 @@ private:
 
     bool m_Ready = false;   // false when a parameter is missing: the node then stays transparent
     UpdateBadge m_Badge;
-    ZoneParamSet m_Zones;
+    ToneParamSet m_Tones;
     // what the Camera line and Stato say, composed in one place (composeStatus)
     std::string m_CameraName, m_Detail;
     MetaOutcome m_Outcome = MetaOutcome::Missing;

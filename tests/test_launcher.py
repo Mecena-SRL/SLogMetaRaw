@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Regression tests for Resolve's menu entry, without requiring a running host."""
+import contextlib
 import importlib.util
 import io
 import os
+import sys
 from pathlib import Path
 import tempfile
 import types
@@ -77,14 +79,31 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
     inet 0.0.0.0 netmask 0xffffff00
     inet invalid-address netmask 0xffffff00
 '''
-        with patch.object(launcher.subprocess, 'run', return_value=types.SimpleNamespace(stdout=output)) as run, \
+        with self.library(), \
+                patch.object(launcher.subprocess, 'run', return_value=types.SimpleNamespace(stdout=output)) as run, \
                 patch.object(launcher.sys, 'platform', 'darwin'):
             self.assertEqual(launcher._local_ipv4_addresses(), ['192.168.1.11', '10.0.0.3'])
         self.assertEqual(run.call_args.args[0], ['/sbin/ifconfig', '-a'])
 
     def test_interface_inventory_failure_does_not_mask_connection_error(self):
-        with patch.object(launcher.subprocess, 'run', side_effect=OSError('unavailable')):
+        with self.library(), patch.object(launcher.subprocess, 'run', side_effect=OSError('unavailable')), \
+                patch.object(launcher.sys, 'platform', 'darwin'):
             self.assertEqual(launcher._local_ipv4_addresses(), [])
+
+    def test_missing_library_leaves_the_connection_error(self):
+        bmd = Mock()
+        bmd.scriptapp.side_effect = RuntimeError('refused')
+        with patch.object(launcher, 'LIB_DIR', os.path.join(self.temp.name, 'missing')):
+            with self.assertRaisesRegex(RuntimeError, 'refused'):
+                launcher._connect({}, bmd)
+
+    def library(self):
+        """The checkout's library, imported without leaking modules or sys.path into the other tests."""
+        stack = contextlib.ExitStack()
+        stack.enter_context(patch.object(launcher, 'LIB_DIR', str(ROOT)))
+        stack.enter_context(patch.dict(sys.modules))
+        stack.enter_context(patch.object(sys, 'path', list(sys.path)))
+        return stack
 
     def test_retry_waits_for_connection_and_rejects_false(self):
         connected = object()

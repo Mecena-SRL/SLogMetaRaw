@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Release check shared by every instance of both plugins. A detached worker runs
+// Release check shared by every instance of both plugins. A worker thread (joined at unload) runs
 // `slogmetaraw --update-check`; labels are applied on the UI thread only (UpdateBadge).
 #pragma once
 #include <string>

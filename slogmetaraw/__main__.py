@@ -224,12 +224,12 @@ def _resolve_writer_cli(args):
     path = args[0]
     from . import plugin_cache
     status_path = plugin_cache.resolve_status_path(path)
+    _alarm(RESOLVE_ALARM + int(math.ceil(CLIP_BUDGET)) + 5)   # a read stuck on a dead share must end too
     try:
         r = read_clip(path, max_samples=FULL_SAMPLES, deadline=time.monotonic() + CLIP_BUDGET)
     except Exception as exc:
         _save_status(status_path, _status(error='lettura metadata: %s' % exc))
         return 1
-    _alarm(RESOLVE_ALARM)
     _resolve_writer(path, r, status_path)
     return 0
 
@@ -329,8 +329,15 @@ def update_check(current='', force=False):
            'lib_version': __version__, 'latest': latest, 'tag': r.get('tag') or '',
            'title': ' '.join(str(r.get('title') or '').split())[:120],
            'dmg_url': r.get('dmg_url') or '', 'dmg_name': r.get('dmg_name') or '',
-           'size': int(r.get('size') or 0), 'error': error})
+           'size': _int(r.get('size')), 'error': error})
     return 0
+
+
+def _int(value):
+    try:
+        return int(float(value or 0))
+    except (TypeError, ValueError, OverflowError):
+        return 0
 
 
 def _update_cli(args):

@@ -11,9 +11,11 @@ read_clip(path) -> {
 }
 Nothing is written to the clip or next to it.
 """
+import array
 import os
 import re
 import struct
+import sys
 import time
 import xml.etree.ElementTree as ET
 
@@ -33,6 +35,17 @@ MXF_WINDOWS = 12     # byte-scan windows when an MXF has no usable index
 
 class DatalessError(Exception):
     pass
+
+
+def _sum_u32be(buf, offset, n):
+    """Sum of n big-endian uint32 without a tuple of n ints (25 MB for 3 h at 60p)."""
+    a = array.array('I')
+    if a.itemsize != 4:
+        return sum(struct.unpack('>%dI' % n, buf[offset:offset + 4 * n]))
+    a.frombytes(buf[offset:offset + 4 * n])
+    if sys.byteorder == 'little':
+        a.byteswap()
+    return sum(a)
 
 
 def find_sidecar(path):
@@ -218,7 +231,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
             stsz = video.tables.get(b'stsz', b'')
             fixed, n = struct.unpack('>II', stsz[4:12]) if len(stsz) >= 12 else (0, 0)
             n = n if fixed else min(n, (len(stsz) - 12) // 4)
-            total = fixed * n if fixed else sum(struct.unpack('>%dI' % n, stsz[12:12 + 4 * n]))
+            total = fixed * n if fixed else _sum_u32be(stsz, 12, n)
             meta['duration_s'] = secs
             meta['bitrate_mbps'] = total * 8 / secs / 1e6 if secs else None
     audio = m.track(handler=b'soun')

@@ -20,7 +20,16 @@ extern const ToneSlider kToneSliders[7];
 
 void defineToneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page, OFX::GroupParamDescriptor* tones,
                       OFX::GroupParamDescriptor* zones);
-SMToneControls readToneControls(OFX::ImageEffect& effect, const ZoneParamSet& zones, double time);
+// Toni and Zone, looked up once at construction: no name lookups while rendering.
+struct ToneParamSet
+{
+    OFX::DoubleParam* sliders[7] = {};   // kToneSliders
+    OFX::BooleanParam* softClip = nullptr;
+    OFX::DoubleParam *softClipLevel = nullptr, *softClipColor = nullptr;
+    ZoneParamSet zones;
+    void bind(OFX::ImageEffect& effect);
+    SMToneControls read(double time) const;   // missing parameters keep their defaults
+};
 std::vector<std::string> toneParamNames();   // every control of Toni and Zone
 void resetTones(OFX::ImageEffect& effect);   // "Azzera toni"
 void resetZones(OFX::ImageEffect& effect);   // "Azzera zone"
