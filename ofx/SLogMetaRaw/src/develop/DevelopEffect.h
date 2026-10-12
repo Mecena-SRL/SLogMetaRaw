@@ -54,7 +54,7 @@ private:
     OFX::Clip* m_SrcClip = nullptr;
 
     OFX::StringParam* m_Camera = nullptr;
-    OFX::StringParam* m_Details[16] = {};
+    OFX::StringParam* m_Details[16] = {};  // headroom over kDetailCount (12); keep >= kDetailCount
     OFX::StringParam* m_Status = nullptr;
     OFX::ChoiceParam* m_DecodeUsing = nullptr;
     OFX::ChoiceParam* m_WBMode = nullptr;
