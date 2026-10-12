@@ -5,3 +5,4 @@ __pycache__/
 /dist/
 /ofx/SLogMetaRaw/build/
 /ofx/SLogMetaRaw/.ofxsdk
+/ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle/

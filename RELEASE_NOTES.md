@@ -22,10 +22,20 @@ CPU del Detail verificato bit per bit con la 2.3.2).
 - Il menu Workspace › Scripts usa la ricerca degli indirizzi locali della libreria invece di una copia propria (la
   correzione della 2.3.1 era stata fatta due volte).
 
-### CI
+### Installazione da sorgente
+
+- **`./install.sh` non installa più un plugin di un'altra versione.** Il repository conteneva ancora il plugin
+  compilato della 2.0.0: chi clonava e lanciava `install.sh` senza `make` riceveva il plugin 2.0.0 con lo script
+  nuovo. Il binario non è più nel repository; `install.sh` compila il plugin da sé quando trova l'SDK OpenFX di
+  Resolve e `clang++`, e se il plugin presente è di un'altra versione lo segnala e non lo installa.
+
+### CI e rilasci
 
 - Windows: i test degli indirizzi locali forzano la piattaforma che simulano, invece di leggere l'indirizzo reale del
   runner (#70).
+- **Il `.dmg` per macOS si costruisce nel workflow di rilascio**, insieme ai pacchetti Linux e Windows, invece che a
+  mano su un Mac: ogni tag `v*` produce una bozza di release completa. Il plugin è compilato con l'SDK OpenFX
+  pubblico (lo stesso dei test macOS in CI), universale arm64 + x86_64 e firmato ad-hoc come prima.
 
 ## S-Log MetaRaw 2.3.2
 

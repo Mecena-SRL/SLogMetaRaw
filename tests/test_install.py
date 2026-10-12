@@ -107,6 +107,19 @@ class ScriptOnlyInstall(unittest.TestCase):
         self.assertFalse((scripts / 'SLogMetaRaw.py').exists())
         self.assertFalse(self.sudo_log.exists())
 
+    def test_plugin_of_another_version_is_not_installed(self):
+        """A checkout once carried a 2.0.0 bundle next to a newer library: install.sh copied it as is."""
+        (self.checkout / 'slogmetaraw/__init__.py').write_text("__version__ = '9.9.9'\n", encoding='utf-8')
+        contents = self.checkout / 'ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle/Contents'
+        contents.mkdir(parents=True)
+        (contents / 'Info.plist').write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict>'
+            '<key>CFBundleShortVersionString</key><string>2.0.0</string></dict></plist>\n', encoding='utf-8')
+        result = self.install('--dev')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('plugin non installato', result.stdout)
+        self.assertFalse(self.sudo_log.exists())
+
     def test_unknown_option_does_not_install(self):
         result = self.install('--invalid')
         self.assertEqual(result.returncode, 2)

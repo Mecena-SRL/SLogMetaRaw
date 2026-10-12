@@ -56,8 +56,19 @@ printf '%s\n' "$LIB" > "$HOME/Library/Application Support/SLogMetaRaw/lib_path"
 
 # SLogMetaRaw OpenFX plugin (needs administrator rights for /Library/OFX/Plugins)
 BUNDLE="$HERE/ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle"
+RESOLVE_SDK="/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/OpenFX"
+VERSION="$(sed -n "s/^__version__ = '\(.*\)'$/\1/p" "$HERE/slogmetaraw/__init__.py")"
+if [[ "$SCRIPT_ONLY" != 1 && -d "$RESOLVE_SDK" ]] && command -v make >/dev/null && command -v clang++ >/dev/null; then
+  echo "Compilo il plugin (make in ofx/SLogMetaRaw)..."
+  make -s -C "$HERE/ofx/SLogMetaRaw" || { echo "ERRORE: compilazione del plugin non riuscita" >&2; exit 1; }
+fi
+BUILT="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$BUNDLE/Contents/Info.plist" 2>/dev/null || true)"
 if [[ "$SCRIPT_ONLY" == 1 ]]; then
   echo "Script e libreria aggiornati; plugin OpenFX lasciato invariato."
+elif [[ -d "$BUNDLE" && -n "$VERSION" && "$BUILT" != "$VERSION" ]]; then
+  # a plugin built from another version would read the library's cache and settings in a different format
+  echo "ATTENZIONE: il plugin in $BUNDLE è la versione ${BUILT:-sconosciuta}, la libreria è la $VERSION:" \
+       "plugin non installato. Esegui 'make' in ofx/SLogMetaRaw (serve l'SDK OpenFX di Resolve) o usa il .dmg."
 elif [[ -d "$BUNDLE" ]]; then
   echo "Installo il plugin SLogMetaRaw in /Library/OFX/Plugins (serve la password di amministratore)..."
   sudo rm -rf "/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle"
