@@ -83,7 +83,8 @@ en1: flags=8863<UP,BROADCAST,RUNNING>
         self.assertEqual(run.call_args.args[0], ['/sbin/ifconfig', '-a'])
 
     def test_interface_inventory_failure_does_not_mask_connection_error(self):
-        with patch.object(launcher.subprocess, 'run', side_effect=OSError('unavailable')):
+        with patch.object(launcher.subprocess, 'run', side_effect=OSError('unavailable')), \
+                patch.object(launcher.sys, 'platform', 'darwin'):
             self.assertEqual(launcher._local_ipv4_addresses(), [])
 
     def test_retry_waits_for_connection_and_rejects_false(self):
