@@ -1,5 +1,12 @@
 # Changelog
 
+## S-Log MetaRaw 2.3.4
+
+### Plugin
+
+- Detail su Metal: senza Dehaze, o con Dehaze e mix diverso da zero, le griglie di trasmissione `at`/`bt` non si
+  allocano più (come già su CPU dalla 2.3.2). L'immagine non cambia.
+
 ## S-Log MetaRaw 2.3.3
 
 Interventi rimandati dalla manutenzione del 7 ottobre (#66) e CI Windows di nuovo verde (#70). Contiene anche la
