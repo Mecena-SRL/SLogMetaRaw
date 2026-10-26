@@ -199,7 +199,8 @@ bool RunDetailKernels(void* p_CmdQ, const DetailParams& p, int p_RowPixels, cons
     auto drop = [&](std::initializer_list<const char*> names) {   // planes this frame does not touch
         for (const char* n : names) s->planes.erase(n);
     };
-    id<MTLBuffer> Lw = P("Lw", grid), at = P("at", grid), bt = P("bt", grid);
+    // the transmission grids are read only when Dehaze has no mix: otherwise a placeholder (as on CPU)
+    id<MTLBuffer> Lw = P("Lw", grid), at = P("at", transmission ? grid : 1), bt = P("bt", transmission ? grid : 1);
     if (!transmission) drop({ "c0", "c1", "c2", "E", "g2", "g3" });
     if (p.clarity == 0.0f) drop({ "a2", "b2", "a3", "b3" });
     if (p.texture == 0.0f) drop({ "Lt", "tmpTex" });
