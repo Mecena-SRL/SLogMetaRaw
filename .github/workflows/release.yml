@@ -1,9 +1,21 @@
 name: Release packages
 # Builds the macOS .dmg and the Linux and Windows packages and attaches them to a DRAFT release for the tag.
+# Without a tag: Actions > Release packages > Run workflow on main with the version (e.g. 2.3.3); the tag vX.Y.Z is
+# created on that commit and the release is published with the RELEASE_NOTES.md section, unless "draft" is ticked.
+# Run without a version it only builds the packages (artifacts of the run, no release).
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 2.3.3); empty = build the packages only'
+        required: false
+        default: ''
+      draft:
+        description: 'Draft only: publish it by hand from GitHub'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -68,10 +80,26 @@ jobs:
 
   draft:
     needs: [linux-packages, windows, macos]
-    # the draft is made from whatever packages were built; Linux and macOS are required, Windows is optional
-    if: ${{ !cancelled() && needs.linux-packages.result == 'success' && needs.macos.result == 'success' && startsWith(github.ref, 'refs/tags/v') }}
+    # the release is made from whatever packages were built; Linux and macOS are required, Windows is optional
+    if: ${{ !cancelled() && needs.linux-packages.result == 'success' && needs.macos.result == 'success' && (startsWith(github.ref, 'refs/tags/v') || inputs.version != '') }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Tag and notes
+        id: meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then TAG="v${INPUT_VERSION#v}"; else TAG="$GITHUB_REF_NAME"; fi
+          VERSION="${TAG#v}"
+          grep -q "^__version__ = '${VERSION}'$" slogmetaraw/__init__.py \
+            || { echo "::error::$TAG is not slogmetaraw.__version__"; exit 1; }
+          # the "## S-Log MetaRaw X.Y.Z" section of RELEASE_NOTES.md, without its heading
+          awk -v h="## S-Log MetaRaw ${VERSION}" '$0 == h {on = 1; next} on && /^## / {exit} on' RELEASE_NOTES.md \
+            > "$RUNNER_TEMP/notes.md"
+          [ -s "$RUNNER_TEMP/notes.md" ] || { echo "::error::no section for ${VERSION} in RELEASE_NOTES.md"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           pattern: '*-package*'    # linux-packages, windows-package, macos-package; not the intermediate linux-plugin
@@ -79,5 +107,10 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: S-Log MetaRaw ${{ steps.meta.outputs.version }}
+          body_path: ${{ runner.temp }}/notes.md
+          # a pushed tag keeps making a draft; Run workflow publishes unless "draft" is ticked
+          draft: ${{ inputs.version == '' || inputs.draft }}
           files: dist/*
