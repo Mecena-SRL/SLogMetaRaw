@@ -36,6 +36,8 @@ CPU del Detail verificato bit per bit con la 2.3.2).
 - **Il `.dmg` per macOS si costruisce nel workflow di rilascio**, insieme ai pacchetti Linux e Windows, invece che a
   mano su un Mac: ogni tag `v*` produce una bozza di release completa. Il plugin è compilato con l'SDK OpenFX
   pubblico (lo stesso dei test macOS in CI), universale arm64 + x86_64 e firmato ad-hoc come prima.
+- La release si pubblica anche da **Actions › Release packages › Run workflow** con la versione: il tag viene creato
+  da GitHub su `main` e le note sono la sezione di questo file.
 
 ## S-Log MetaRaw 2.3.2
 
