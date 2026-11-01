@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlante della logica · S-Log MetaRaw</title>
+<style>
+:root{--bg:#f6f6f3;--panel:#fff;--ink:#1d1f24;--mute:#6a6f78;--line:#d9dad5;--sel:#2f6fdb;
+--event:#7a4fd1;--function:#2f6fdb;--decision:#b07a00;--data:#0f8a6a;--persistence:#c25b12;--process:#4b5563;
+--async:#0e7490;--external:#6b7280;--end:#1d1f24;--err:#c0392b;--prop:#8e44ad}
+@media (prefers-color-scheme:dark){:root{--bg:#16181c;--panel:#1f2228;--ink:#e8e8e6;--mute:#9aa0a8;--line:#353a42;--sel:#6ea2ff;--end:#e8e8e6}}
+*{box-sizing:border-box}
+body{margin:0;font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+header{display:flex;gap:12px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:14px;margin:0;font-weight:600}
+.chip{display:inline-block;padding:1px 7px;border-radius:10px;border:1px solid var(--line);font-size:11px;color:var(--mute);white-space:nowrap}
+.chip.warn{border-color:#d9a400;color:#9a7300}.chip.bad{border-color:var(--err);color:var(--err)}.chip.ok{border-color:#2e9e6a;color:#2e9e6a}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:4px 10px;cursor:pointer;font:inherit}
+.seg button[aria-pressed=true]{background:var(--sel);color:#fff}
+main{display:grid;grid-template-columns:270px 1fr 360px;min-height:0}
+nav,aside{background:var(--panel);overflow:auto;min-height:0}
+nav{border-right:1px solid var(--line);padding:8px}
+aside{border-left:1px solid var(--line);padding:12px}
+#search{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;margin-bottom:6px}
+.tree ul{list-style:none;margin:0;padding-left:14px}.tree>ul{padding-left:0}
+.tree li>div{display:flex;gap:4px;align-items:center;padding:2px 4px;border-radius:4px;cursor:pointer}
+.tree li>div:hover{background:color-mix(in srgb,var(--sel) 10%,transparent)}
+.tree li>div.sel{background:color-mix(in srgb,var(--sel) 20%,transparent)}
+.tree .tw{width:12px;color:var(--mute);flex:none;text-align:center}
+.tree .lvl{font-size:10px;color:var(--mute);margin-left:auto}
+.hidden{display:none!important}
+#stage{position:relative;overflow:auto;min-height:0}
+#stage .q{position:sticky;left:0;top:0;padding:10px 14px;background:color-mix(in srgb,var(--bg) 92%,transparent);border-bottom:1px solid var(--line);z-index:2}
+#stage .q b{font-size:14px}
+svg text{fill:var(--ink);font:12px system-ui,sans-serif}
+.lane rect{fill:var(--panel);stroke:var(--line)}.lane text{fill:var(--mute);font-size:11px}
+.node rect,.node polygon{stroke-width:1.5;fill:var(--panel)}
+.node{cursor:pointer}.node.sel rect,.node.sel polygon{stroke-width:3;filter:drop-shadow(0 0 3px var(--sel))}
+.node .k{font-size:9.5px;fill:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.edge path{fill:none;stroke-width:1.6}.edge{cursor:pointer}.edge .hit{stroke:transparent;stroke-width:12}
+.edge text{font-size:10.5px;fill:var(--mute);paint-order:stroke;stroke:var(--bg);stroke-width:4px}
+.edge.sel path.v{stroke-width:3.2}
+.e-request path.v{stroke:#2f6fdb}.e-response path.v{stroke:#2f6fdb;stroke-dasharray:6 4}
+.e-call path.v,.e-trigger path.v,.e-control path.v{stroke:#59606b}.e-data path.v{stroke:var(--data)}
+.e-async path.v{stroke:var(--async);stroke-dasharray:2 4}.e-error path.v{stroke:var(--err)}
+.e-persistence path.v{stroke:var(--persistence)}.e-decision path.v{stroke:var(--decision)}
+.e-deduced text{font-style:italic}
+.ghost rect{fill:none;stroke:var(--prop);stroke-dasharray:5 4;stroke-width:1.5}.ghost text{fill:var(--prop);font-size:11px}
+.dirty-pos rect,.dirty-pos polygon{stroke-dasharray:3 2}
+h2{font-size:15px;margin:0 0 4px}h3{font-size:11px;margin:14px 0 4px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.ref{display:flex;gap:6px;align-items:baseline;margin:3px 0;word-break:break-all}.ref a{color:var(--sel);text-decoration:none}
+.ref .chip{flex:none}
+.io div{margin:2px 0}
+.prop{border:1.5px dashed var(--prop);border-radius:8px;padding:8px;margin:8px 0}
+.prop.applicata{border-style:solid;border-color:#2e9e6a}
+.prop b{color:var(--prop)}.prop.applicata b{color:#2e9e6a}
+textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:var(--ink);font:inherit}
+button.act{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;margin:4px 4px 0 0}
+button.act:hover{border-color:var(--sel)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0 0;font-size:11px;color:var(--mute)}
+.legend span::before{content:"";display:inline-block;width:18px;height:0;border-top:2px solid currentColor;vertical-align:middle;margin-right:4px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+#maint ul{padding-left:18px;margin:4px 0}
+.toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Atlante della logica</h1>
+  <span id="rev" class="chip"></span>
+  <span id="cov" class="chip"></span>
+  <div class="seg" role="group" aria-label="Modalità">
+    <button data-mode="naviga">Naviga</button><button data-mode="annota">Annota</button>
+  </div>
+  <div class="seg" role="group" aria-label="Vista">
+    <button data-view="flusso">Flusso</button><button data-view="manutenzione">Manutenzione</button>
+  </div>
+  <label class="chip"><input type="checkbox" id="showProps"> proposte</label>
+  <span style="margin-left:auto" class="chip" title="Spostare un blocco cambia solo la disposizione di questa vista nel tuo browser: non modifica il programma né il modello">trascinare = solo vista</span>
+</header>
+<main>
+  <nav><input id="search" type="search" placeholder="Cerca blocchi, funzioni, moduli…" aria-label="Cerca"><div class="tree" id="tree"></div></nav>
+  <section id="stage"></section>
+  <aside id="panel"></aside>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const A = /*__ATLAS_DATA__*/null;
+const M = A.model, F = A.facts, REV = A.revision;
+const KEY = 'slogmetaraw-atlas/ui';
+// editor state, separate from the model: survives rebuilds because every element has a stable id
+const S = Object.assign({open:{prog:true}, search:'', scroll:0, sel:null, beh:M.behaviours[0].id, mode:'naviga',
+  view:'flusso', props:true, notes:{}, pos:{}}, load());
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
+function save(){try{localStorage.setItem(KEY, JSON.stringify(S))}catch(e){}}
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1600)}
+
+// --- index of every selectable element -------------------------------------------------------------------
+const IDX = {};
+IDX.prog = {type:'programma', el:M.program};
+for (const s of M.subsystems) IDX[s.id] = {type:'sottosistema', el:s};
+for (const b of M.behaviours){
+  IDX[b.id] = {type:'comportamento', el:b};
+  for (const n of b.nodes) IDX[b.id+'/'+n.id] = {type:'blocco', el:n, beh:b};
+  for (const e of b.edges) IDX[b.id+'/'+e.id] = {type:'collegamento', el:e, beh:b};
+  for (const p of b.proposals||[]) IDX[b.id+'/'+p.id] = {type:'proposta', el:p, beh:b};
+}
+for (const id in F.modules) IDX['mod:'+id] = {type:'modulo', el:{id, label:id.split('/').pop(), ...F.modules[id]}};
+
+// --- header -----------------------------------------------------------------------------------------------
+function header(){
+  const r = $('#rev');
+  r.textContent = 'rev ' + (REV.short||'?') + ' · v' + REV.version + (REV.dirty.length ? ' · modifiche locali ' + REV.dirty.length : '');
+  r.className = 'chip' + (REV.dirty.length ? ' warn' : '');
+  r.title = 'Revisione da cui è stato estratto il modello' + (REV.dirty.length ? '\nFile modificati non committati:\n' + REV.dirty.join('\n') : '');
+  const c = A.coverage, n = c.problems.length, st = c.stale.length;
+  const cv = $('#cov');
+  cv.textContent = n ? n + ' riferimenti rotti' : st ? st + ' da rivedere' : 'riferimenti ok';
+  cv.className = 'chip ' + (n ? 'bad' : st ? 'warn' : 'ok');
+  cv.style.cursor = 'pointer'; cv.onclick = () => setView('manutenzione');
+  document.querySelectorAll('[data-mode]').forEach(b => {b.setAttribute('aria-pressed', S.mode===b.dataset.mode); b.onclick=()=>{S.mode=b.dataset.mode;save();header()}});
+  document.querySelectorAll('[data-view]').forEach(b => {b.setAttribute('aria-pressed', S.view===b.dataset.view); b.onclick=()=>setView(b.dataset.view)});
+  $('#showProps').checked = S.props; $('#showProps').onchange = e => {S.props=e.target.checked;save();stage()};
+}
+function setView(v){S.view=v;save();header();stage()}
+
+// --- navigation tree: programma → sottosistema → comportamento → blocco → funzione ---------------------
+function tree(){
+  const q = S.search.trim().toLowerCase();
+  const li = (id, label, lvl, kids) => {
+    const has = kids && kids.length, open = q ? true : !!S.open[id];
+    return `<li data-id="${esc(id)}"><div class="${S.sel===id?'sel':''}" data-id="${esc(id)}"><span class="tw" data-tw="${esc(id)}">${has?(open?'▾':'▸'):''}</span><span>${esc(label)}</span><span class="lvl">${lvl}</span></div>${has?`<ul class="${open?'':'hidden'}">${kids.join('')}</ul>`:''}</li>`;
+  };
+  const match = (...t) => !q || t.join(' ').toLowerCase().includes(q);
+  const fnItems = n => (n.refs||[]).filter(r=>r.code).map(r => match(r.code, n.label) ? li('fn:'+r.code, r.code.split('::')[1], 'funzione') : '').filter(Boolean);
+  const subs = M.subsystems.map(s => {
+    const behs = M.behaviours.filter(b => b.subsystem===s.id).map(b => {
+      const nodes = b.nodes.map(n => {const f = fnItems(n); return (match(n.label, n.text) || f.length) ? li(b.id+'/'+n.id, n.label, n.kind, f) : ''}).filter(Boolean);
+      return (match(b.label, b.question) || nodes.length) ? li(b.id, b.label, 'comportamento', nodes) : '';
+    }).filter(Boolean);
+    const mods = (s.modules||[]).filter(m => match(m)).map(m => li('mod:'+m, m.split('/').pop(), 'modulo'));
+    return (match(s.label) || behs.length || mods.length) ? li(s.id, s.label, 'sottosistema', [...behs, ...mods]) : '';
+  }).filter(Boolean);
+  $('#tree').innerHTML = '<ul>' + li('prog', M.program.label, 'programma', subs) + '</ul>';
+}
+$('#tree').addEventListener('click', e => {
+  const tw = e.target.closest('[data-tw]');
+  const row = e.target.closest('div[data-id]'); if (!row) return;
+  const id = row.dataset.id;
+  if (tw && tw.textContent){ S.open[id] = !S.open[id]; save(); tree(); return; }
+  select(id, true);
+});
+$('#search').value = S.search;
+$('#search').addEventListener('input', e => {S.search = e.target.value; save(); tree()});
+$('nav').addEventListener('scroll', e => {S.scroll = e.target.scrollTop; save()}, {passive:true});
+
+// keep the selected element visible in the tree: open its ancestors (never closes what the user opened)
+function reveal(id){
+  const it = IDX[id]; S.open.prog = true;
+  const b = it && (it.beh || (it.type==='comportamento' ? it.el : null));
+  if (b){ S.open[b.subsystem] = true; if (it.beh) S.open[b.id] = true; }
+}
+function select(id, fromTree){
+  if (id.startsWith('fn:')) { S.sel = id; }
+  else if (IDX[id]) {
+    S.sel = id;
+    const it = IDX[id];
+    if (it.type==='comportamento') S.beh = id;
+    if (it.beh) S.beh = it.beh.id;
+    if (fromTree && it.type==='comportamento') S.open[id] = true;
+  }
+  reveal(S.sel);
+  if (S.mode==='annota') S.noteFocus = true;
+  save(); tree(); stage(); panel();
+}
+
+// --- diagram ------------------------------------------------------------------------------------------------
+const CW = 168, RH = 104, NW = 138, NH = 54, LX = 120, TOP = 10;
+function posOf(b, n){
+  const own = (S.pos[b.id]||{})[n.id], p = own || b.view.pos[n.id];   // [column, lane index]
+  return {x: LX + p[0]*CW + 12, y: TOP + p[1]*RH + (RH-NH)/2, moved: !!own};
+}
+function stage(){
+  const st = $('#stage');
+  if (S.view==='manutenzione'){ st.innerHTML = maint(); return; }
+  const b = M.behaviours.find(x => x.id===S.beh) || M.behaviours[0];
+  const cols = Math.max(...Object.values(b.view.pos).map(p => p[0])) + 1;
+  const W = LX + cols*CW + 40, H = TOP + b.view.lanes.length*RH + 70;
+  const P = {}; for (const n of b.nodes) P[n.id] = posOf(b, n);
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${['#59606b','#2f6fdb','#0f8a6a','#0e7490','#c0392b','#c25b12','#b07a00'].map((c,i)=>`<marker id="m${i}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')}</defs>`;
+  b.view.lanes.forEach((l, i) => svg += `<g class="lane"><rect x="4" y="${TOP+i*RH}" width="${W-8}" height="${RH-4}" rx="6"/><text x="12" y="${TOP+i*RH+18}">${esc(M.lanes[l]||l)}</text></g>`);
+  const mk = {request:1,response:1,call:0,trigger:0,control:0,data:2,async:3,error:4,persistence:5,decision:6};
+  for (const e of b.edges){
+    const a = P[e.from], z = P[e.to]; if (!a||!z) continue;
+    const back = b.edges.some(o => o.from===e.to && o.to===e.from);
+    const off = back ? (e.kind==='response' || e.kind==='error' ? 8 : -8) : 0;
+    let x1 = a.x+NW/2, y1 = a.y+NH/2+off, x2 = z.x+NW/2, y2 = z.y+NH/2+off;
+    // leave/enter on the box edge
+    const dx = x2-x1, dy = y2-y1;
+    if (Math.abs(dx)*NH > Math.abs(dy)*NW){ x1 += Math.sign(dx)*NW/2; x2 -= Math.sign(dx)*NW/2; }
+    else { y1 += Math.sign(dy)*NH/2; y2 -= Math.sign(dy)*NH/2; }
+    const d = `M${x1},${y1} C${x1+(x2-x1)*.5},${y1} ${x1+(x2-x1)*.5},${y2} ${x2},${y2}`;
+    const id = b.id+'/'+e.id, ded = e.evidence==='dedotto';
+    svg += `<g class="edge e-${e.kind} ${ded?'e-deduced':''} ${S.sel===id?'sel':''}" data-id="${esc(id)}"><path class="hit" d="${d}"/><path class="v" d="${d}" marker-end="url(#m${mk[e.kind]??0})"/><text x="${(x1+x2)/2}" y="${(y1+y2)/2 - 4 + (off>0?14:0)}" text-anchor="middle">${esc(trim(e.label, 34))}</text></g>`;
+  }
+  const shape = {decision:'diamond', event:'pill', end:'pill'};
+  for (const n of b.nodes){
+    const p = P[n.id], id = b.id+'/'+n.id, col = `var(--${n.kind})`;
+    const sh = shape[n.kind]==='diamond'
+      ? `<polygon points="${p.x+NW/2},${p.y-6} ${p.x+NW+6},${p.y+NH/2} ${p.x+NW/2},${p.y+NH+6} ${p.x-6},${p.y+NH/2}" stroke="${col}"/>`
+      : `<rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="${shape[n.kind]==='pill'?NH/2:6}" stroke="${col}"/>`;
+    const lines = wrap(n.label, 20).slice(0, 2);
+    const note = S.notes[id] ? '✎ ' : '';
+    svg += `<g class="node ${S.sel===id?'sel':''} ${p.moved?'dirty-pos':''}" data-id="${esc(id)}" data-n="${esc(n.id)}">${sh}<text class="k" x="${p.x+NW/2}" y="${p.y+12}" text-anchor="middle">${note}${esc(n.kind)}</text>${lines.map((l,i)=>`<text x="${p.x+NW/2}" y="${p.y+28+i*14}" text-anchor="middle">${esc(l)}</text>`).join('')}</g>`;
+  }
+  if (S.props) for (const pr of (b.proposals||[]).filter(p => p.status!=='applicata')){
+    const tgt = b.nodes.find(n => (n.refs||[]).some(r => (pr.refs||[]).some(q => q.code && q.code===r.code)));
+    if (!tgt) continue;
+    const p = P[tgt.id], id = b.id+'/'+pr.id;
+    svg += `<g class="ghost node" data-id="${esc(id)}"><rect x="${p.x-6}" y="${p.y+NH+10}" width="${NW+12}" height="26" rx="5"/><text x="${p.x+NW/2}" y="${p.y+NH+27}" text-anchor="middle">${esc(pr.id)} proposta: ${esc(trim(pr.label, 18))}</text></g>`;
+  }
+  svg += '</svg>';
+  const legend = '<div class="legend">' + [['request','richiesta','#2f6fdb'],['response','risposta (tratteggio)','#2f6fdb'],['call','chiamata/controllo','#59606b'],['data','dati','#0f8a6a'],['async','asincrono','#0e7490'],['persistence','persistenza','#c25b12'],['decision','decisione','#b07a00'],['error','errore/fallback','#c0392b']].map(([k,t,c])=>`<span style="color:${c}">${t}</span>`).join('') + '<span style="color:var(--mute)">corsivo = chiamata non trovata nel codice</span></div>';
+  st.innerHTML = `<div class="q"><b>${esc(b.question)}</b> <span class="chip">${esc(b.basis)}</span><div style="color:var(--mute);margin-top:2px">${esc(b.text)}</div>${legend}</div>${svg}`;
+  const sc = (S.stageScroll||{})[b.id] || [0, 0];   // each behaviour keeps its own scroll
+  st.scrollLeft = sc[0]; st.scrollTop = sc[1];
+}
+function trim(s, n){ s = String(s); return s.length > n ? s.slice(0, n-1) + '…' : s }
+function wrap(s, n){ const w = String(s).split(' '), out = ['']; for (const x of w){ if ((out[out.length-1]+' '+x).trim().length > n) out.push(x); else out[out.length-1] = (out[out.length-1]+' '+x).trim(); } if (out.length>2) out[1] = trim(out.slice(1).join(' '), n); return out }
+
+$('#stage').addEventListener('scroll', e => {
+  if (S.view!=='flusso') return;
+  (S.stageScroll = S.stageScroll||{})[S.beh] = [e.target.scrollLeft, e.target.scrollTop]; save();
+}, {passive:true});
+// clicks and view-only dragging
+let drag = null;
+$('#stage').addEventListener('pointerdown', e => {
+  const g = e.target.closest('.node[data-n]'); if (!g) return;
+  drag = {g, n:g.dataset.n, x:e.clientX, y:e.clientY, moved:false};
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  if (Math.abs(dx)+Math.abs(dy) > 6){ drag.moved = true; drag.g.setAttribute('transform', `translate(${dx},${dy})`); }
+});
+window.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (!d.moved) return;
+  const b = M.behaviours.find(x => x.id===S.beh), base = (S.pos[b.id]||{})[d.n] || b.view.pos[d.n];
+  const col = Math.max(0, Math.round(base[0] + (e.clientX-d.x)/CW)), lane = Math.min(b.view.lanes.length-1, Math.max(0, Math.round(base[1] + (e.clientY-d.y)/RH)));
+  (S.pos[b.id] = S.pos[b.id]||{})[d.n] = [col, lane];
+  save(); stage(); toast('Disposizione cambiata solo in questa vista');
+  suppressClick = true;
+});
+let suppressClick = false;
+$('#stage').addEventListener('click', e => {
+  if (suppressClick){ suppressClick = false; return; }
+  const g = e.target.closest('[data-id]'); if (g) select(g.dataset.id);
+});
+
+// --- selection panel ----------------------------------------------------------------------------------------
+function gh(file, line, end){
+  if (!REV.commit) return '';
+  return `${A.repo_url}/blob/${REV.commit}/${file}` + (line ? `#L${line}` + (end ? `-L${end}` : '') : '');
+}
+const STATUS_CLASS = {estratto:'ok', superato:'ok', presente:'', 'non revisionato':'warn', modificato:'warn', mancante:'bad', fallito:'bad', errore:'bad', saltato:'warn'};
+function refHtml(r){
+  const what = r.code ? r.code : r.binding ? r.binding : r.test ? r.test : r.file;
+  const kind = r.code ? 'codice' : r.binding ? 'evento UI' : r.test ? 'test' : 'file';
+  const url = r.file ? gh(r.file, r.line, r.end) : '';
+  const where = r.line ? `${r.file}:${r.line}${r.end?'–'+r.end:''}` : (r.file||'');
+  return `<div class="ref"><span class="chip ${STATUS_CLASS[r.status]||''}" title="stato del riferimento">${esc(r.status)}</span><span><span class="chip">${kind}</span> <span class="mono">${esc(what.split('::').pop())}</span><br>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(where)}</a>`:esc(where)}</span></div>`;
+}
+function panel(){
+  const id = S.sel, p = $('#panel');
+  if (!id){ p.innerHTML = '<p style="color:var(--mute)">Seleziona un elemento nel diagramma o nell’albero.</p>' + basisHelp(); return; }
+  if (id.startsWith('fn:')) return fnPanel(id.slice(3));
+  const it = IDX[id]; if (!it){ p.innerHTML = '<p>Elemento non più presente nel modello: ' + esc(id) + '</p>'; return; }
+  const el = it.el;
+  let h = `<div class="chip">${it.type}</div><h2>${esc(el.label||el.id)}</h2><div class="mono" style="color:var(--mute)">${esc(id)}</div>`;
+  if (el.basis) h += `<p><span class="chip" title="Base dell'informazione">${esc(el.basis)}</span></p>`;
+  if (el.text || el.question) h += `<p>${esc(el.question ? el.question + ' — ' : '')}${esc(el.text||'')}</p>`;
+  if (it.type==='collegamento'){
+    const b = it.beh, a = b.nodes.find(n=>n.id===el.from), z = b.nodes.find(n=>n.id===el.to);
+    h += `<h3>Direzione e significato</h3><p><b>${esc(a.label)}</b> → <b>${esc(z.label)}</b><br><span class="chip">${esc(el.kind)}</span> ${esc(el.label)}</p>`;
+    if (el.evidence) h += `<p><span class="chip ${el.evidence==='estratto'?'ok':'warn'}">${el.evidence==='estratto'?'chiamata trovata nel codice':'chiamata non trovata nel codice: dedotta'}</span></p>`;
+  }
+  if (it.type==='proposta') h += propHtml(el);
+  if (it.type==='modulo'){
+    h += `<h3>Import estratti</h3>` + (el.imports.length ? el.imports.map(m=>`<div class="mono">${esc(m)}</div>`).join('') : '<div style="color:var(--mute)">nessuno nel pacchetto</div>');
+    const fns = Object.values(F.functions).filter(f => f.file===el.id);
+    h += `<h3>Funzioni estratte (${fns.length})</h3>` + fns.slice(0, 60).map(f=>`<div class="ref"><a class="mono" href="#" data-fn="${esc(f.id)}">${esc(f.name)}</a> <span style="color:var(--mute)">:${f.line}</span></div>`).join('');
+  }
+  if (it.type==='sottosistema'){
+    h += `<h3>Moduli</h3>` + ((el.modules||[]).map(m=>`<div class="ref"><a class="mono" href="#" data-sel="mod:${esc(m)}">${esc(m)}</a></div>`).join('') || '<div style="color:var(--mute)">nessun modulo Python (codice C++ non estratto)</div>');
+    const bs = M.behaviours.filter(b=>b.subsystem===el.id);
+    h += `<h3>Comportamenti modellati</h3>` + (bs.length ? bs.map(b=>`<div><a href="#" data-sel="${esc(b.id)}">${esc(b.question)}</a></div>`).join('') : '<div style="color:var(--mute)">nessuno ancora: copertura mancante</div>');
+  }
+  if (it.type==='blocco' || it.type==='collegamento'){
+    const b = it.beh;
+    if (it.type==='blocco'){
+      const ins = b.edges.filter(e=>e.to===el.id), outs = b.edges.filter(e=>e.from===el.id), lab = x => b.nodes.find(n=>n.id===x).label;
+      h += `<h3>Ingressi</h3><div class="io">${ins.map(e=>`<div><a href="#" data-sel="${esc(b.id+'/'+e.id)}">${esc(lab(e.from))}</a> → <span class="chip">${e.kind}</span> ${esc(e.label)}</div>`).join('')||'<div style="color:var(--mute)">avvio del percorso</div>'}</div>`;
+      h += `<h3>Uscite</h3><div class="io">${outs.map(e=>`<div><span class="chip">${e.kind}</span> ${esc(e.label)} → <a href="#" data-sel="${esc(b.id+'/'+e.id)}">${esc(lab(e.to))}</a></div>`).join('')||'<div style="color:var(--mute)">fine del percorso</div>'}</div>`;
+    }
+    const props = (b.proposals||[]).filter(pr => (pr.refs||[]).some(q => q.code && (el.refs||[]).some(r => r.code===q.code)));
+    if (props.length) h += `<h3>Proposte collegate</h3>` + props.map(propHtml).join('');
+  }
+  if (it.type==='comportamento' && (el.proposals||[]).length) h += `<h3>Proposte</h3>` + el.proposals.map(propHtml).join('');
+  if ((el.refs||[]).length) h += `<h3>Fonti</h3>` + el.refs.map(refHtml).join('');
+  const codes = (el.refs||[]).filter(r=>r.code && F.functions[r.code]);
+  if (codes.length){
+    h += `<h3>Chiamate estratte</h3>`;
+    for (const r of codes){
+      const f = F.functions[r.code], callers = Object.values(F.functions).filter(g => g.calls.includes(f.id));
+      h += `<div class="mono"><b>${esc(f.name)}</b></div><div style="color:var(--mute)">chiama: ${f.calls.map(c=>`<a href="#" data-fn="${esc(c)}">${esc(c.split('::')[1])}</a>`).join(', ')||'—'}<br>chiamata da: ${callers.map(c=>`<a href="#" data-fn="${esc(c.id)}">${esc(c.name)}</a>`).join(', ')||'— (solo eventi o thread)'}</div>`;
+    }
+  }
+  h += notesHtml(id);
+  p.innerHTML = h;
+  wirePanel(id);
+}
+function fnPanel(fid){
+  const f = F.functions[fid], p = $('#panel');
+  if (!f){ p.innerHTML = `<p>Funzione non presente nell’estrazione: ${esc(fid)}</p>`; return; }
+  const callers = Object.values(F.functions).filter(g => g.calls.includes(f.id));
+  const users = [];
+  for (const b of M.behaviours) for (const n of b.nodes) if ((n.refs||[]).some(r=>r.code===fid)) users.push([b, n]);
+  let h = `<div class="chip">funzione · struttura estratta</div><h2 class="mono">${esc(f.name)}</h2>`;
+  h += refHtml({code:fid, file:f.file, line:f.line, end:f.end, status:'estratto'});
+  if (f.doc) h += `<p style="color:var(--mute)">${esc(f.doc)}</p>`;
+  h += `<h3>Chiama</h3>${f.calls.map(c=>`<div><a class="mono" href="#" data-fn="${esc(c)}">${esc(c)}</a></div>`).join('')||'—'}`;
+  h += `<h3>Chiamata da</h3>${callers.map(c=>`<div><a class="mono" href="#" data-fn="${esc(c.id)}">${esc(c.id)}</a></div>`).join('')||'— (solo eventi o thread)'}`;
+  h += `<h3>Nei comportamenti</h3>${users.map(([b,n])=>`<div><a href="#" data-sel="${esc(b.id+'/'+n.id)}">${esc(b.label)} › ${esc(n.label)}</a></div>`).join('')||'<div style="color:var(--mute)">non ancora modellata</div>'}`;
+  h += `<p class="mono" style="color:var(--mute)">impronta ${esc(f.fingerprint)}</p>`;
+  h += notesHtml('fn:'+fid);
+  p.innerHTML = h; wirePanel('fn:'+fid);
+}
+function propHtml(pr){
+  return `<div class="prop ${esc(pr.status)}"><b>${esc(pr.id)} · ${esc(pr.status)}</b> — ${esc(pr.label)}<div><i>Problema</i>: ${esc(pr.problem)}</div><div><i>Modifica</i>: ${esc(pr.change)}</div><div><i>Impatto</i>: ${esc(pr.impact)}</div><div><i>Verifica</i>: ${esc(pr.verification)}</div></div>`;
+}
+function notesHtml(id){
+  return `<h3>Discussione</h3><textarea id="note" placeholder="Nota o domanda su questo elemento (resta nel tuo browser)">${esc(S.notes[id]||'')}</textarea><button class="act" id="ctx">Copia contesto per l’agente</button>`;
+}
+function basisHelp(){
+  return `<h3>Come leggere le fonti</h3><ul style="padding-left:18px;color:var(--mute)"><li><b>struttura estratta</b>: letta dal codice dallo strumento (funzioni, righe, chiamate, eventi UI).</li><li><b>dedotto</b>: spiegazione scritta a mano leggendo il codice; i riferimenti sono controllati automaticamente, il testo no.</li><li><b>intenzione</b>: scopo dichiarato.</li><li><b>verificato</b>: coperto da un test citato.</li><li>Chip <i>non revisionato</i>/<i>modificato</i>: il codice citato non ha un’impronta registrata o è cambiato dopo la revisione del modello.</li></ul>`;
+}
+function wirePanel(id){
+  const p = $('#panel');
+  p.querySelectorAll('[data-sel]').forEach(a => a.onclick = e => {e.preventDefault(); select(a.dataset.sel)});
+  p.querySelectorAll('[data-fn]').forEach(a => a.onclick = e => {e.preventDefault(); select('fn:'+a.dataset.fn)});
+  const ta = $('#note');
+  ta.oninput = () => {S.notes[id] = ta.value; if (!ta.value) delete S.notes[id]; save()};
+  if (S.noteFocus){ ta.focus(); S.noteFocus = false; save(); }
+  $('#ctx').onclick = async () => {
+    const txt = context(id);
+    try { await navigator.clipboard.writeText(txt); toast('Contesto copiato: incollalo nella conversazione'); }
+    catch(e){ ta.value = txt; ta.select(); toast('Copia non permessa: testo nel riquadro'); }
+  };
+}
+function context(id){
+  const it = IDX[id], fn = id.startsWith('fn:') ? F.functions[id.slice(3)] : null;
+  const L = ['[Atlante S-Log MetaRaw] elemento selezionato', 'id: ' + id, 'revisione: ' + (REV.commit||'?') + (REV.dirty.length ? ' (+ modifiche locali)' : '')];
+  if (fn) L.push('livello: funzione', 'codice: ' + fn.file + ':' + fn.line + '-' + fn.end, 'chiama: ' + fn.calls.join(', '));
+  if (it){
+    const el = it.el; L.push('livello: ' + it.type, 'titolo: ' + (el.label||''), 'base: ' + (el.basis||''));
+    if (it.beh) L.push('comportamento: ' + it.beh.id + ' — ' + it.beh.question);
+    if (el.text) L.push('spiegazione: ' + el.text);
+    if (it.type==='collegamento') L.push('direzione: ' + el.from + ' → ' + el.to + ' [' + el.kind + '] ' + el.label + (el.evidence ? ' (' + el.evidence + ')' : ''));
+    if (it.type==='blocco'){ const b = it.beh; L.push('ingressi: ' + b.edges.filter(e=>e.to===el.id).map(e=>e.from+' ['+e.kind+'] '+e.label).join('; ')); L.push('uscite: ' + b.edges.filter(e=>e.from===el.id).map(e=>e.to+' ['+e.kind+'] '+e.label).join('; ')); }
+    for (const r of el.refs||[]) L.push('fonte: ' + (r.code||r.binding||r.test||r.file) + (r.line ? ' @ ' + r.file + ':' + r.line : '') + ' [' + r.status + ']');
+  }
+  if (S.notes[id]) L.push('', 'nota/domanda: ' + S.notes[id]);
+  L.push('', 'Distinguere modifiche alla vista (disposizione) da modifiche al programma; una modifica al programma va proposta, applicata con test e il modello riestratto (tools/atlas/atlas.py).');
+  return L.join('\n');
+}
+
+// --- maintenance view (seed of the fourth configurator) ------------------------------------------------------
+function maint(){
+  const c = A.coverage, g = c.graphify;
+  const li = a => a.length ? '<ul>' + a.map(x=>`<li>${esc(x)}</li>`).join('') + '</ul>' : '<p style="color:var(--mute)">nessuno</p>';
+  return `<div id="maint" style="padding:14px 18px;max-width:860px"><h2>Manutenzione e copertura</h2>
+  <p>Revisione <span class="mono">${esc(REV.commit||'?')}</span> (${esc(REV.branch||'')}) · versione ${esc(REV.version)} · schema ${esc(A.schema)}${REV.dirty.length?` · <b>${REV.dirty.length} file con modifiche locali</b> inclusi nell’estrazione`:''}</p>
+  <h3>Riferimenti rotti</h3>${li(c.problems)}
+  <h3>Da rivedere (codice cambiato dopo la revisione del modello)</h3>${li(c.stale)}
+  <h3>Codice citato senza impronta revisionata</h3>${li(c.unreviewed||[])}
+  <h3>Moduli non assegnati a un sottosistema</h3>${li(c.modules_unassigned)}
+  <h3>Graphify (docs/GRAPHIFY.md, mappa manuale)</h3><p>Stato: <b>${esc(g.status)}</b> · documentata ${esc(g.documented_version)} · corrente ${esc(g.current_version)}</p>${g.modules_missing&&g.modules_missing.length?'<p>Moduli non citati:</p>'+li(g.modules_missing):''}
+  <h3>Estratto automaticamente</h3>${li(c.extracted)}
+  <h3>Non estratto (manuale o assente)</h3>${li(c.not_extracted)}
+  <h3>Test citati</h3><p>${c.tests_run?'Eseguiti durante la generazione: esito nei chip dei riferimenti.':'Non eseguiti in questa generazione: i chip dicono solo che il test esiste. Rigenera con --run-tests.'}</p>
+  <h3>Comportamenti modellati</h3>${li(M.behaviours.map(b=>b.question + ' (' + b.nodes.length + ' blocchi, ' + b.edges.length + ' collegamenti)'))}
+  <h3>Disposizioni spostate in questa vista</h3><p>${Object.keys(S.pos).length?`<button class="act" id="copyPos">Copia disposizione per il modello</button> <button class="act" id="resetPos">Ripristina</button>`:'nessuna'}</p></div>`;
+}
+document.addEventListener('click', async e => {
+  if (e.target.id==='copyPos'){ const txt = JSON.stringify(S.pos, null, 1); try{await navigator.clipboard.writeText(txt); toast('Copiata')}catch(_){toast('Copia non permessa')} }
+  if (e.target.id==='resetPos'){ S.pos = {}; save(); stage(); }
+});
+
+reveal(S.sel || S.beh); header(); tree(); stage(); panel();
+requestAnimationFrame(() => { $('nav').scrollTop = S.scroll||0; });
+</script>
+</body>
+</html>

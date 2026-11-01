@@ -228,6 +228,55 @@ class UIRegression(unittest.TestCase):
         process.wait.assert_called_once()
         self.manager.timer.Stop.assert_called()
 
+    def test_details_sections_stay_as_the_user_left_them(self):
+        """Opening or closing a Details section survives a new selection and a new read.
+
+        Scenario of the atlas behaviour beh:ui.details.sections (tools/atlas/model.json)."""
+        def clip(uid, name):
+            c = mock.Mock()
+            c.GetUniqueId.return_value = uid
+            c.GetName.return_value = name
+            c.GetClipProperty.return_value = '/' + name
+            return c
+
+        self.pool.GetRootFolder.return_value.GetClipList.return_value = [clip('a', 'A.MP4'), clip('b', 'B.MP4')]
+        result = {'meta': {}, 'display': {}, 'warnings': [],
+                  'sections': [('CAMERA', [('Modello', 'FX3')]), ('TAG NON MAPPATI', [('x', '1')])]}
+        process = mock.Mock()
+        process.poll.return_value = None
+
+        def read_all(window, items):
+            window.On.Read.Clicked(None)
+            deadline = time.monotonic() + 2
+            while not items['Read'].Enabled and time.monotonic() < deadline:
+                self.dispatcher.On.Timeout({'who': 'ProgressTimer'})
+                time.sleep(0.001)
+            self.assertEqual(items['Clips'].TopLevelItemCount(), 2)
+
+        def opened(items):
+            return {row.Text[0]: row.Expanded for row in items['Details'].rows}
+
+        def interact():
+            window = self.dispatcher.window
+            items = window.GetItems()
+            read_all(window, items)
+            window.On.Clips.ItemClicked({'item': items['Clips'].TopLevelItem(0)})
+            self.assertEqual(opened(items), {'CAMERA': True, 'TAG NON MAPPATI': False})   # defaults
+            items['Details'].rows[0].Expanded = False     # the user closes CAMERA
+            items['Details'].rows[1].Expanded = True      # and opens the unmapped tags
+            window.On.Clips.ItemClicked({'item': items['Clips'].TopLevelItem(1)})
+            self.assertEqual(opened(items), {'CAMERA': False, 'TAG NON MAPPATI': True})
+            read_all(window, items)
+            self.assertEqual(items['Details'].TopLevelItemCount(), 0)
+            window.On.Clips.ItemClicked({'item': items['Clips'].TopLevelItem(0)})
+            self.assertEqual(opened(items), {'CAMERA': False, 'TAG NON MAPPATI': True})
+
+        self.dispatcher.run = interact
+        with mock.patch.object(ui, '_spawn_reader', return_value=process):
+            with mock.patch.object(ui, '_read_result', return_value={'ok': True, 'result': result}):
+                with mock.patch.object(ui.plugin_cache, 'write_cache'):
+                    self.launch()
+
     def test_copy_to_clips_pairs_in_order_and_needs_the_tick(self):
         def clip(uid, name, path):
             c = mock.Mock()

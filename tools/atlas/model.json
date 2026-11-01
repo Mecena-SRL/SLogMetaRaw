@@ -1,0 +1,896 @@
+{
+ "schema": "slogmetaraw-atlas/1",
+ "program": {
+  "id": "prog",
+  "label": "S-Log MetaRaw",
+  "text": "Legge i metadata di ripresa delle clip Sony XAVC (MP4/MXF) e li porta in DaVinci Resolve: finestra di script per Media Pool e due nodi OFX (Develop, Detail).",
+  "basis": "intenzione"
+ },
+ "lanes": {
+  "utente": "Utente / effetti",
+  "ui": "Thread UI della finestra",
+  "stato": "Stato in memoria",
+  "resolve": "API di Resolve",
+  "lettore": "Thread lettore",
+  "helper": "Processo lettore",
+  "disco": "Disco"
+ },
+ "subsystems": [
+  {
+   "id": "sub.script",
+   "label": "Finestra dello script",
+   "text": "Finestra aperta da Workspace › Scripts dentro Resolve: legge, mostra e scrive i metadata.",
+   "basis": "intenzione",
+   "modules": [
+    "slogmetaraw/ui.py",
+    "slogmetaraw/i18n.py",
+    "slogmetaraw/osx_utils.py",
+    "resolve_script/SLogMetaRaw.py"
+   ],
+   "behaviours": [
+    "beh:ui.read",
+    "beh:ui.details.sections"
+   ]
+  },
+  {
+   "id": "sub.read",
+   "label": "Lettura metadata Sony",
+   "text": "Parser MP4/MXF/NRT e RTMD; normalizzazione dei risultati; modalità a riga di comando.",
+   "basis": "intenzione",
+   "modules": [
+    "slogmetaraw/__init__.py",
+    "slogmetaraw/__main__.py",
+    "slogmetaraw/extract.py",
+    "slogmetaraw/mp4.py",
+    "slogmetaraw/mxf.py",
+    "slogmetaraw/nrt.py",
+    "slogmetaraw/rtmd.py",
+    "slogmetaraw/codec.py",
+    "slogmetaraw/camera.py",
+    "slogmetaraw/datalevel.py"
+   ],
+   "behaviours": []
+  },
+  {
+   "id": "sub.write",
+   "label": "Scrittura in Resolve",
+   "text": "Metadata, keyword, Input Color Space e Data Level sulle clip del Media Pool.",
+   "basis": "intenzione",
+   "modules": [
+    "slogmetaraw/resolve_io.py",
+    "slogmetaraw/connect.py"
+   ],
+   "behaviours": []
+  },
+  {
+   "id": "sub.bridge",
+   "label": "Ponte col plugin OFX",
+   "text": "Schede JSON su disco e processo figlio Python avviato dal plugin.",
+   "basis": "intenzione",
+   "modules": [
+    "slogmetaraw/plugin_cache.py",
+    "slogmetaraw/paths.py"
+   ],
+   "refs": [
+    {
+     "file": "ofx/SLogMetaRaw/src/common/ClipCache.cpp"
+    },
+    {
+     "file": "ofx/SLogMetaRaw/src/common/Child.cpp"
+    }
+   ],
+   "behaviours": []
+  },
+  {
+   "id": "sub.develop",
+   "label": "Plugin OFX · Develop",
+   "text": "Nodo principale: sviluppo del segnale secondo i metadata della clip. Codice C++ non estratto.",
+   "basis": "intenzione",
+   "modules": [],
+   "refs": [
+    {
+     "file": "ofx/SLogMetaRaw/src/develop/DevelopEffect.cpp"
+    },
+    {
+     "file": "ofx/SLogMetaRaw/math/Develop.h"
+    }
+   ],
+   "behaviours": []
+  },
+  {
+   "id": "sub.detail",
+   "label": "Plugin OFX · Detail",
+   "text": "Secondo nodo: dettaglio locale e texture sui pixel. Codice C++ non estratto.",
+   "basis": "intenzione",
+   "modules": [],
+   "refs": [
+    {
+     "file": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp"
+    }
+   ],
+   "behaviours": []
+  },
+  {
+   "id": "sub.update",
+   "label": "Aggiornamenti",
+   "text": "Controllo delle release su GitHub, dalla finestra e dal plugin.",
+   "basis": "intenzione",
+   "modules": [
+    "slogmetaraw/update.py"
+   ],
+   "refs": [
+    {
+     "file": "ofx/SLogMetaRaw/src/common/Update.cpp"
+    }
+   ],
+   "behaviours": []
+  }
+ ],
+ "behaviours": [
+  {
+   "id": "beh:ui.read",
+   "label": "Leggi metadata",
+   "question": "Cosa succede quando premo «Leggi metadata»?",
+   "subsystem": "sub.script",
+   "basis": "dedotto",
+   "text": "La finestra raccoglie le clip dal Media Pool, le fa analizzare da un processo figlio con un limite di tempo per clip e mostra le righe man mano. Le clip di un volume che non risponde vengono saltate; ogni risultato valido diventa anche una scheda su disco per il plugin.",
+   "refs": [
+    {
+     "test": "tests/test_ui.py::UIRegression.test_dispatcher_timeout_finishes_read_and_writes_on_ui_thread"
+    },
+    {
+     "test": "tests/test_ui.py::UIRegression.test_window_opens_without_optional_timer"
+    },
+    {
+     "test": "tests/test_ui.py::UIRegression.test_reader_launch_error_restores_controls"
+    },
+    {
+     "test": "tests/test_ui.py::ReaderRuntime.test_partial_helper_output_obeys_clip_deadline"
+    }
+   ],
+   "nodes": [
+    {
+     "id": "read.click",
+     "kind": "event",
+     "label": "Clic su «1 · Leggi metadata»",
+     "text": "Avvio del comportamento: il pulsante Read della finestra. Il binding è estratto dal codice.",
+     "basis": "struttura estratta",
+     "refs": [
+      {
+       "binding": "binding:Read.Clicked"
+      }
+     ]
+    },
+    {
+     "id": "read.prepare",
+     "kind": "function",
+     "label": "Prepara la lettura",
+     "text": "Svuota tabella clip e Dettagli (prima ricorda quali sezioni dei Dettagli erano aperte), azzera risultati, contatori e coda.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_read"
+      },
+      {
+       "code": "slogmetaraw/ui.py::main._remember_detail_sections"
+      }
+     ]
+    },
+    {
+     "id": "read.gather",
+     "kind": "function",
+     "label": "Raccoglie le clip",
+     "text": "Prende il progetto corrente al momento del clic e, secondo «Origine», tutto il Media Pool o le clip selezionate. Tiene solo le clip con un percorso su una riga (il lettore riceve un percorso per riga).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.gather"
+      }
+     ]
+    },
+    {
+     "id": "read.pool",
+     "kind": "external",
+     "label": "Media Pool di Resolve",
+     "text": "API di scripting di Resolve: GetRootFolder/GetClipList o GetSelectedClips, poi il percorso del file di ogni clip.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/resolve_io.py::iter_media_pool_clips"
+      },
+      {
+       "code": "slogmetaraw/resolve_io.py::clip_path"
+      }
+     ]
+    },
+    {
+     "id": "read.none",
+     "kind": "decision",
+     "label": "Nessuna clip MP4/MXF?",
+     "text": "Se l'elenco è vuoto il percorso finisce subito con un messaggio di stato.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_read"
+      }
+     ]
+    },
+    {
+     "id": "read.empty",
+     "kind": "end",
+     "label": "Messaggio «Nessuna clip…»",
+     "text": "Effetto osservabile: riga di stato, nessuna lettura.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_read"
+      }
+     ]
+    },
+    {
+     "id": "read.start",
+     "kind": "async",
+     "label": "Avvia thread lettore e timer",
+     "text": "Con il Timer di Resolve: un thread esegue read_worker e il timer (100 ms) aggiorna la finestra. Fallback: senza Timer la lettura è sincrona nel thread della UI.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_read"
+      }
+     ]
+    },
+    {
+     "id": "read.loop",
+     "kind": "function",
+     "label": "Per ogni clip",
+     "text": "Il thread lettore scorre le clip; si ferma se la finestra viene chiusa (reader_cancelled).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.read_worker"
+      },
+      {
+       "code": "slogmetaraw/ui.py::_volume_of"
+      },
+      {
+       "code": "slogmetaraw/ui.py::_mount_points"
+      }
+     ]
+    },
+    {
+     "id": "read.dead",
+     "kind": "decision",
+     "label": "Volume già senza risposta?",
+     "text": "Se un clip precedente dello stesso volume è andato in timeout, le altre clip di quel volume vengono saltate senza attendere.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.read_worker"
+      }
+     ]
+    },
+    {
+     "id": "read.helper",
+     "kind": "process",
+     "label": "Processo lettore (--helper)",
+     "text": "Un solo processo Python figlio, persistente: riceve un percorso per riga su stdin e risponde con una riga JSON su stdout. Sta in un processo separato per poterlo uccidere se un volume si blocca.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/__main__.py::_helper"
+      },
+      {
+       "code": "slogmetaraw/ui.py::_spawn_reader"
+      }
+     ]
+    },
+    {
+     "id": "read.parse",
+     "kind": "function",
+     "label": "Analisi MP4/MXF",
+     "text": "Lettura dei metadata Sony dal file (sottosistema Lettura metadata).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/extract.py::read_clip"
+      }
+     ]
+    },
+    {
+     "id": "read.wait",
+     "kind": "decision",
+     "label": "Risposta entro il limite?",
+     "text": "Attende la riga JSON: 10 s per la prima clip di un volume (un disco in standby si risveglia), 6 s per le successive. Una riga non JSON viene ignorata.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::_read_result"
+      },
+      {
+       "code": "slogmetaraw/ui.py::_reader_lines"
+      }
+     ]
+    },
+    {
+     "id": "read.cache",
+     "kind": "persistence",
+     "label": "Scheda per il plugin",
+     "text": "Su risposta ok scrive la scheda JSON nella cartella cache letta dal nodo OFX Develop. Un errore di disco non ferma la lettura: compare nel riepilogo.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/plugin_cache.py::write_cache"
+      }
+     ]
+    },
+    {
+     "id": "read.rows",
+     "kind": "data",
+     "label": "Coda delle righe",
+     "text": "state['done']: una riga per clip (valori o motivo: saltata, lenta, errore). Scritta dal thread lettore, letta dal thread UI.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.read_worker"
+      }
+     ]
+    },
+    {
+     "id": "read.drain",
+     "kind": "function",
+     "label": "Mostra le righe",
+     "text": "A ogni tick del timer aggiunge alla tabella le righe nuove e aggiorna la percentuale.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._drain_read"
+      },
+      {
+       "code": "slogmetaraw/ui.py::main.on_timer"
+      }
+     ]
+    },
+    {
+     "id": "read.finish",
+     "kind": "function",
+     "label": "Riepilogo",
+     "text": "Ferma il timer, riabilita i pulsanti, scrive il riepilogo (lette, saltate, lente, errori, volumi senza risposta) e suona.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._finalize_read"
+      }
+     ]
+    },
+    {
+     "id": "read.effect",
+     "kind": "end",
+     "label": "Tabella clip e stato",
+     "text": "Effetto osservabile: righe in tabella, riepilogo, schede su disco per il plugin.",
+     "basis": "dedotto",
+     "refs": []
+    }
+   ],
+   "edges": [
+    {
+     "id": "r1",
+     "from": "read.click",
+     "to": "read.prepare",
+     "kind": "trigger",
+     "label": "Clicked → guard(on_read)"
+    },
+    {
+     "id": "r2",
+     "from": "read.prepare",
+     "to": "read.gather",
+     "kind": "call",
+     "label": "chiama"
+    },
+    {
+     "id": "r3",
+     "from": "read.gather",
+     "to": "read.pool",
+     "kind": "request",
+     "label": "chiede le clip"
+    },
+    {
+     "id": "r4",
+     "from": "read.pool",
+     "to": "read.gather",
+     "kind": "response",
+     "label": "MediaPoolItem + percorso"
+    },
+    {
+     "id": "r5",
+     "from": "read.gather",
+     "to": "read.none",
+     "kind": "data",
+     "label": "[{uid, nome, percorso}]"
+    },
+    {
+     "id": "r6",
+     "from": "read.none",
+     "to": "read.empty",
+     "kind": "decision",
+     "label": "sì"
+    },
+    {
+     "id": "r7",
+     "from": "read.none",
+     "to": "read.start",
+     "kind": "decision",
+     "label": "no"
+    },
+    {
+     "id": "r8",
+     "from": "read.start",
+     "to": "read.loop",
+     "kind": "async",
+     "label": "Thread(target=read_worker)",
+     "text": "Il thread lettore lavora mentre la finestra resta reattiva."
+    },
+    {
+     "id": "r9",
+     "from": "read.loop",
+     "to": "read.dead",
+     "kind": "control",
+     "label": "volume della clip"
+    },
+    {
+     "id": "r10",
+     "from": "read.dead",
+     "to": "read.rows",
+     "kind": "decision",
+     "label": "sì: «saltata: il volume non risponde»"
+    },
+    {
+     "id": "r11",
+     "from": "read.dead",
+     "to": "read.helper",
+     "kind": "request",
+     "label": "no: percorso su stdin",
+     "text": "Il processo viene avviato al primo uso o dopo un timeout."
+    },
+    {
+     "id": "r12",
+     "from": "read.helper",
+     "to": "read.parse",
+     "kind": "call",
+     "label": "read_clip(percorso)"
+    },
+    {
+     "id": "r13",
+     "from": "read.parse",
+     "to": "read.helper",
+     "kind": "response",
+     "label": "risultato (meta, sezioni, avvisi) o eccezione"
+    },
+    {
+     "id": "r14",
+     "from": "read.helper",
+     "to": "read.wait",
+     "kind": "response",
+     "label": "riga JSON {ok, result | kind, error}"
+    },
+    {
+     "id": "r15",
+     "from": "read.wait",
+     "to": "read.cache",
+     "kind": "persistence",
+     "label": "ok: scrive la scheda"
+    },
+    {
+     "id": "r16",
+     "from": "read.wait",
+     "to": "read.rows",
+     "kind": "decision",
+     "label": "ok · dataless · errore · timeout → riga"
+    },
+    {
+     "id": "r17",
+     "from": "read.wait",
+     "to": "read.dead",
+     "kind": "error",
+     "label": "timeout: volume segnato, processo chiuso",
+     "text": "Timeout: il processo lettore viene terminato e il volume segnato; se invece il processo è morto è un errore della clip, non un volume lento.",
+     "refs": [
+      {
+       "test": "tests/test_ui.py::UIRegression.test_reader_that_dies_is_an_error_not_a_slow_volume"
+      }
+     ]
+    },
+    {
+     "id": "r18",
+     "from": "read.rows",
+     "to": "read.drain",
+     "kind": "async",
+     "label": "il timer drena la coda (100 ms)"
+    },
+    {
+     "id": "r19",
+     "from": "read.drain",
+     "to": "read.finish",
+     "kind": "control",
+     "label": "lettura finita"
+    },
+    {
+     "id": "r20",
+     "from": "read.finish",
+     "to": "read.effect",
+     "kind": "data",
+     "label": "righe, riepilogo, suono"
+    }
+   ],
+   "view": {
+    "lanes": [
+     "utente",
+     "ui",
+     "resolve",
+     "lettore",
+     "helper",
+     "disco"
+    ],
+    "pos": {
+     "read.click": [
+      0,
+      0
+     ],
+     "read.prepare": [
+      1,
+      1
+     ],
+     "read.gather": [
+      2,
+      1
+     ],
+     "read.pool": [
+      2,
+      2
+     ],
+     "read.none": [
+      3,
+      1
+     ],
+     "read.empty": [
+      3,
+      0
+     ],
+     "read.start": [
+      4,
+      1
+     ],
+     "read.loop": [
+      5,
+      3
+     ],
+     "read.dead": [
+      6,
+      3
+     ],
+     "read.helper": [
+      7,
+      4
+     ],
+     "read.parse": [
+      8,
+      4
+     ],
+     "read.wait": [
+      8,
+      3
+     ],
+     "read.cache": [
+      9,
+      5
+     ],
+     "read.rows": [
+      9,
+      3
+     ],
+     "read.drain": [
+      10,
+      1
+     ],
+     "read.finish": [
+      11,
+      1
+     ],
+     "read.effect": [
+      11,
+      0
+     ]
+    }
+   },
+   "proposals": []
+  },
+  {
+   "id": "beh:ui.details.sections",
+   "label": "Seleziona una clip → Dettagli",
+   "question": "Cosa succede quando seleziono una clip nella tabella?",
+   "subsystem": "sub.script",
+   "basis": "verificato",
+   "text": "La finestra ricostruisce l'albero Dettagli con i dati già letti della clip. Le sezioni restano aperte o chiuse come l'utente le aveva lasciate, anche dopo un'altra selezione o una nuova lettura.",
+   "refs": [
+    {
+     "test": "tests/test_ui.py::UIRegression.test_details_sections_stay_as_the_user_left_them"
+    }
+   ],
+   "nodes": [
+    {
+     "id": "det.click",
+     "kind": "event",
+     "label": "Clic o cambio riga nella tabella clip",
+     "text": "Due eventi della tabella Clips portano allo stesso gestore.",
+     "basis": "struttura estratta",
+     "refs": [
+      {
+       "binding": "binding:Clips.ItemClicked"
+      },
+      {
+       "binding": "binding:Clips.CurrentItemChanged"
+      }
+     ]
+    },
+    {
+     "id": "det.select",
+     "kind": "function",
+     "label": "Trova la clip",
+     "text": "Legge l'id della clip dalla colonna nascosta «id» della riga.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_select"
+      }
+     ]
+    },
+    {
+     "id": "det.show",
+     "kind": "function",
+     "label": "Ricostruisce i Dettagli",
+     "text": "Svuota l'albero Dettagli e lo riempie con le sezioni del risultato della clip, più la sezione AVVISI se ci sono avvisi.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.show_details"
+      }
+     ]
+    },
+    {
+     "id": "det.remember",
+     "kind": "function",
+     "label": "Ricorda sezioni aperte/chiuse",
+     "text": "Prima di svuotare legge Expanded delle sezioni della clip mostrata e lo salva per titolo. Viene chiamata anche da «Leggi metadata».",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._remember_detail_sections"
+      }
+     ]
+    },
+    {
+     "id": "det.open",
+     "kind": "data",
+     "label": "Sezioni ricordate",
+     "text": "state['detail_open']: titolo sezione → aperta/chiusa. Vive finché la finestra è aperta; non è salvato su disco.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._remember_detail_sections"
+      }
+     ]
+    },
+    {
+     "id": "det.results",
+     "kind": "data",
+     "label": "Risultati letti",
+     "text": "state['results']: uid → risultato di «Leggi metadata».",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.read_worker"
+      }
+     ]
+    },
+    {
+     "id": "det.decide",
+     "kind": "decision",
+     "label": "Sezione già vista?",
+     "text": "Sì: usa lo stato ricordato. No: default (chiuse «TAG NON MAPPATI» e «STABILIZZAZIONE», aperte le altre e AVVISI).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._section_open"
+      }
+     ]
+    },
+    {
+     "id": "det.tree",
+     "kind": "end",
+     "label": "Albero Dettagli",
+     "text": "Effetto osservabile: sezioni e campi della clip, aperte come le aveva lasciate l'utente.",
+     "basis": "verificato",
+     "refs": [
+      {
+       "test": "tests/test_ui.py::UIRegression.test_details_sections_stay_as_the_user_left_them"
+      }
+     ]
+    }
+   ],
+   "edges": [
+    {
+     "id": "d1",
+     "from": "det.click",
+     "to": "det.select",
+     "kind": "trigger",
+     "label": "CurrentItemChanged / ItemClicked → guard(on_select)"
+    },
+    {
+     "id": "d2",
+     "from": "det.select",
+     "to": "det.show",
+     "kind": "call",
+     "label": "uid della clip"
+    },
+    {
+     "id": "d3",
+     "from": "det.show",
+     "to": "det.remember",
+     "kind": "call",
+     "label": "prima di svuotare"
+    },
+    {
+     "id": "d4",
+     "from": "det.remember",
+     "to": "det.open",
+     "kind": "data",
+     "label": "scrive Expanded per titolo"
+    },
+    {
+     "id": "d5",
+     "from": "det.show",
+     "to": "det.results",
+     "kind": "request",
+     "label": "uid"
+    },
+    {
+     "id": "d6",
+     "from": "det.results",
+     "to": "det.show",
+     "kind": "response",
+     "label": "sezioni [(titolo, righe)], avvisi"
+    },
+    {
+     "id": "d7",
+     "from": "det.show",
+     "to": "det.decide",
+     "kind": "control",
+     "label": "per ogni sezione"
+    },
+    {
+     "id": "d8",
+     "from": "det.open",
+     "to": "det.decide",
+     "kind": "data",
+     "label": "stato ricordato"
+    },
+    {
+     "id": "d9",
+     "from": "det.decide",
+     "to": "det.tree",
+     "kind": "data",
+     "label": "sezione con Expanded"
+    }
+   ],
+   "view": {
+    "lanes": [
+     "utente",
+     "ui",
+     "stato"
+    ],
+    "pos": {
+     "det.click": [
+      0,
+      0
+     ],
+     "det.select": [
+      1,
+      1
+     ],
+     "det.show": [
+      2,
+      1
+     ],
+     "det.remember": [
+      3,
+      1
+     ],
+     "det.open": [
+      4,
+      2
+     ],
+     "det.results": [
+      2,
+      2
+     ],
+     "det.decide": [
+      5,
+      1
+     ],
+     "det.tree": [
+      6,
+      0
+     ]
+    }
+   },
+   "proposals": [
+    {
+     "id": "P-001",
+     "status": "applicata",
+     "label": "Conservare l'apertura delle sezioni dei Dettagli",
+     "problem": "Ogni selezione e ogni nuova lettura ricostruivano i Dettagli con le sezioni di default: l'utente perdeva le sezioni che aveva aperto o chiuso.",
+     "change": "Prima di svuotare l'albero si salva Expanded per titolo; ricostruendo, una sezione già vista usa lo stato salvato, una nuova il default di prima.",
+     "impact": "Solo la finestra dello script (ui.py). Nessun dato su disco, nessun effetto sul plugin. Stato perso alla chiusura della finestra.",
+     "verification": "Test che fallisce sul codice precedente e passa con la modifica. Non provato dentro Resolve: la lettura di Expanded dagli elementi dell'albero è supposta come la sua scrittura.",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main._remember_detail_sections"
+      },
+      {
+       "code": "slogmetaraw/ui.py::main._section_open"
+      },
+      {
+       "test": "tests/test_ui.py::UIRegression.test_details_sections_stay_as_the_user_left_them"
+      }
+     ]
+    },
+    {
+     "id": "P-002",
+     "status": "proposta",
+     "label": "Riselezionare la stessa clip dopo una nuova lettura",
+     "problem": "«Leggi metadata» svuota la tabella: la clip selezionata si perde e i Dettagli restano vuoti fino a un nuovo clic.",
+     "change": "Ricordare l'uid selezionato in on_read e, quando _drain_read aggiunge quella riga, renderla corrente e mostrarne i Dettagli.",
+     "impact": "on_read, _drain_read. Rischio: serve un modo verificato per impostare la riga corrente del Tree di Resolve (non usato oggi nel codice).",
+     "verification": "Da fare: test con il finto UIManager e prova manuale in Resolve.",
+     "refs": [
+      {
+       "code": "slogmetaraw/ui.py::main.on_read"
+      },
+      {
+       "code": "slogmetaraw/ui.py::main._drain_read"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "fingerprints": {
+  "beh:ui.read": {
+   "slogmetaraw/__main__.py::_helper": "be4948598901",
+   "slogmetaraw/extract.py::read_clip": "5b0fa524f133",
+   "slogmetaraw/plugin_cache.py::write_cache": "4d0ecc333510",
+   "slogmetaraw/resolve_io.py::clip_path": "194973a11e5a",
+   "slogmetaraw/resolve_io.py::iter_media_pool_clips": "3a32ee6fb47d",
+   "slogmetaraw/ui.py::_mount_points": "bc2d07e19ce0",
+   "slogmetaraw/ui.py::_read_result": "612c6f4fd474",
+   "slogmetaraw/ui.py::_reader_lines": "b2bea30df528",
+   "slogmetaraw/ui.py::_spawn_reader": "6ae6e02b99ff",
+   "slogmetaraw/ui.py::_volume_of": "0ab327b414cc",
+   "slogmetaraw/ui.py::main._drain_read": "f99f09038b34",
+   "slogmetaraw/ui.py::main._finalize_read": "df0c41174ce6",
+   "slogmetaraw/ui.py::main._remember_detail_sections": "21923eba93af",
+   "slogmetaraw/ui.py::main.gather": "86af6587f0a2",
+   "slogmetaraw/ui.py::main.on_read": "1d0cd4cb6e32",
+   "slogmetaraw/ui.py::main.on_timer": "3ca2273d1b64",
+   "slogmetaraw/ui.py::main.read_worker": "60955ca3be46"
+  },
+  "beh:ui.details.sections": {
+   "slogmetaraw/ui.py::main._drain_read": "f99f09038b34",
+   "slogmetaraw/ui.py::main._remember_detail_sections": "21923eba93af",
+   "slogmetaraw/ui.py::main._section_open": "3ca6b9ec1086",
+   "slogmetaraw/ui.py::main.on_read": "1d0cd4cb6e32",
+   "slogmetaraw/ui.py::main.on_select": "cc8688f47998",
+   "slogmetaraw/ui.py::main.read_worker": "60955ca3be46",
+   "slogmetaraw/ui.py::main.show_details": "44eb62d2468c"
+  }
+ }
+}
