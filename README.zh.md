@@ -38,7 +38,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-2.3.4.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-2.4.0.dmg` 并打开。
 2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -99,7 +99,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v2.3.4`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.3.4 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v2.4.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.4.0 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值 |
 | **White Balance** · **Color Temp** · **Tint** | As shot 或预设。从摄影机记录的白点出发，在线性光中进行 Bradford 色适应 |
@@ -135,11 +135,22 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 分组 | 控件 |
 |---|---|
+| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Standard、Cinematografico、Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
 | **Gamma dinamica**（动态范围） | Local Contrast、Local Highlights、Local Shadows；*增益*和*基础层*视图。Local Highlights 压缩大面积的明亮区域，同时保留甚至加强细节纹理：天空变深，云层保持细节。主节点的 Highlights 则像胶片一样柔化高光纹理 |
 | **Presenza**（质感） | Texture、Clarity、Dehaze |
 | **Zone locali**（局部分区） | 主节点的分区，作用于区域 |
-| **Avanzate**（高级） | 细节保留、半径、边缘与噪声阈值、Clarity 中心、Local Highlights 的 **Bianco**、节点输入 |
+| **Avanzate**（高级） | 细节保留、半径、边缘与噪声阈值、Clarity 中心、Local Highlights 的 **Bianco** |
 | **Velo**（雾霭） | Dehaze 去除的雾霭的亮度和颜色：由你设定，从不逐帧估计 |
+
+**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。已保存的节点不变：Standard 和 *Dal Bianco (manuale)* 是默认值。
+
+- **Destinazione (ODT)** 告诉节点其后是哪种变换，从而知道白（X 区）和黑（0 区）落在哪里。它从不转换图像。*Dal Bianco (manuale)* 使用 Avanzate › Bianco；其他选项固定它：Rec.709 CST 灰之上 +2.5／之下 −4.5 档，Rec.709 DRT（ACES、AgX、DaVinci）+4.5/−6，HDR PQ 1000 nit +6.5/−7，*Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9。
+- **Standard**：下方各组（局部影调、质感、局部分区），与以前相同。
+- **Cinematografico**，用于特写：在检视器中选 *Viso luce*（亮面）和 *Viso ombra*（暗面），按 **Misura rapporto**，再以档为单位设置**目标光比**（1 = 1:2，2 = 1:4，3 = 1:8）。亮面不动，暗面移动。*Durezza passaggio*（过渡软硬）、*Spegni sfondo*（压暗暗面以下部分，最多 4 档）、*Luce sul soggetto*（提亮受光面，光比不变）。主体：人脸（亮度，小区域）或风景。达不到目标时，信息行显示可达到的光比。
+- **Zonale**（安塞尔·亚当斯分区曝光法）：选一个有细节的 *Ombra*（暗部）和 *Luce*（亮部），按 **Misura zone**，用 *Ombra sulla zona* 放置暗部（曝光，默认 III），用 *Luci sulla zona* 放置亮部（显影 N+/N−，默认 VIII）。V 区 = 18% 灰；0 区和 X 区 = 目标的黑和白。信息行显示测得 → 达到的分区、N 和输出范围。
+- **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）在任何模式下显示节点之后每个区域落在哪一区。一次只能开一个视图。
+
+尚未在 Resolve 中验证：按模式显示控件、检视器中的点、Misura，以及 Metal 上的分区视图。
 
 - 把它放在 S-Log MetaRaw **之后**、CST、LUT 或 DRT 之前。它把接收到的画面解码为线性光，再按相同编码写回，因此必须放在任何转换之前：请让主节点的 Color Space 和 Gamma 保持为 Timeline。
 - 它是**空间**处理的，因此 Generate LUT 会排除它及其所在节点的其余调整。请把它放在单独的节点中。
@@ -152,7 +163,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.3.4`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.4.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
