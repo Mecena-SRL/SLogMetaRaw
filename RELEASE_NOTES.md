@@ -10,6 +10,10 @@
 - Detail, modalità **Cinematografico** per i primi piani: misura il rapporto luce/ombra sul viso in due punti e lo
   porta al rapporto scelto (1:2, 1:4, 1:8…) tenendo ferma la luce; durezza del passaggio, Spegni sfondo, Luce sul
   soggetto; soggetto viso o paesaggio con icone. Da provare in Resolve.
+- Detail, modalità **Zonale** (Ansel Adams): misuri un'ombra e una luce, collochi l'ombra su una zona (esposizione) e
+  la luce sulla sua (sviluppo N+/N−). Zona V = grigio, zona 0 = nero e zona X = bianco della Destinazione: con un
+  Rec.709 CST sono 7 stop, con la nuova Destinazione «Scena · DaVinci WG/Intermediate» 18.
+- Detail, **Vista: zone** a colori e in grigi: la zona di ogni area dopo il nodo, sulla scala dell'uscita.
 - I nodi salvati restano identici: Standard e «Dal Bianco (manuale)» sono i default.
 
 ### Script

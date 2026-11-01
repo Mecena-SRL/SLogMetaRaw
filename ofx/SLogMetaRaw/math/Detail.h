@@ -51,8 +51,10 @@ struct DetailParams {
     int hazeOn;
     float hazeOmega, hazeMix, hazeLevel;
     float hazeA[3], hazeInvA[3];
-    int view;          // 0 picture, 1 gain, 2 base
+    int view;          // 0 picture, 1 gain, 2 base, 3 zones in colour, 4 zones in grey
     float toRef[9];    // input RGB -> Rec.2020, for the norm
+    float zoneWhite;   // the destination's white in stops over grey: zone X (views 3, 4)
+    float zoneBlack;   // its black in stops under grey: zone 0
 };
 
 SM_FN float dt_luma(SMf3 x, SM_CREF(DetailParams) p) {
@@ -178,6 +180,26 @@ SM_FN SMf3 dt_view_gain(float G, float L) {
     int band = a < 0.25f ? 0 : (a < 0.5f ? 1 : (a < 1.0f ? 2 : 3));
     if (G < 0.0f) return smf3(SM_DT_BLUE[band * 3], SM_DT_BLUE[band * 3 + 1], SM_DT_BLUE[band * 3 + 2]);
     return smf3(SM_DT_ORANGE[band * 3], SM_DT_ORANGE[band * 3 + 1], SM_DT_ORANGE[band * 3 + 2]);
+}
+
+// The zone (0..X) of a log2 luminance out of the node: zone V is grey, zone 0 the destination's black, zone X its
+// white; five zones share the stops on each side. So the scale follows the output: about 7 stops for Rec.709.
+SM_FN float dt_zone_of(float Lout, float white, float black) {
+    return Lout <= 0.0f ? 5.0f + 5.0f * Lout / black : 5.0f + 5.0f * Lout / white;
+}
+
+// viewZones: the zones of the picture out, as flat colours or as an eleven-step grey scale (display values).
+SM_CONST float SM_DT_ZONE_RGB[33] = { 0.25f, 0.00f, 0.35f,  0.10f, 0.10f, 0.55f,  0.10f, 0.35f, 0.85f,
+                                      0.00f, 0.60f, 0.70f,  0.25f, 0.65f, 0.30f,  0.50f, 0.50f, 0.50f,
+                                      0.95f, 0.65f, 0.55f,  0.95f, 0.85f, 0.25f,  1.00f, 0.60f, 0.10f,
+                                      0.95f, 0.20f, 0.10f,  1.00f, 1.00f, 1.00f };
+SM_FN SMf3 dt_view_zones(float Lout, float white, float black, int grey) {
+    int z = (int)sm_clamp(dt_zone_of(Lout, white, black) + 0.5f, 0.0f, 10.0f);   // >= 0: the cast is the floor
+    if (grey) {
+        float g = 0.1f * (float)z;
+        return smf3(g, g, g);
+    }
+    return smf3(SM_DT_ZONE_RGB[z * 3], SM_DT_ZONE_RGB[z * 3 + 1], SM_DT_ZONE_RGB[z * 3 + 2]);
 }
 
 // The picture out, linear in the input gamut: the gain, and where Local Highlights pulls down, the path to white.

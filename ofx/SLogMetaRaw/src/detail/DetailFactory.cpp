@@ -67,15 +67,16 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     GroupParamDescriptor* mode = defineGroup(d, page, "modeGroup", "Sviluppo e spazio colore", true);
     defineChoice(d, page, "devMode", "Modalità", kDetailModeNames, kDetailModeCount, 0,
                  "Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato "
-                 "sull'immagine", mode);
+                 "sull'immagine. Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone", mode);
     defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
                  "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
     defineChoice(d, page, "destination", "Destinazione (ODT)", kDetailDestNames, kDetailDestCount, 0,
-                 "La trasformazione dopo il nodo: decide dove deve arrivare il massimo registrato. Dal Bianco usa "
-                 "Avanzate › Bianco; le altre lo fissano (CST 2,5 stop, DRT 4,5, PQ 1000 nit 6,5). Il nodo non "
-                 "converte: lavora sempre nella codifica d'ingresso", mode);
+                 "La trasformazione dopo il nodo: decide dove arrivano il bianco (zona X) e il nero (zona 0). Dal "
+                 "Bianco usa Avanzate › Bianco; le altre lo fissano: CST 2,5 stop sopra il grigio e 4,5 sotto (7 stop "
+                 "in tutto), DRT 4,5 / 6, PQ 1000 nit 6,5 / 7, Scena DaVinci WG 9 / 9. Il nodo non converte: lavora "
+                 "sempre nella codifica d'ingresso", mode);
 
     GroupParamDescriptor* cinema = defineGroup(d, page, "cinemaGroup", "Cinematografico", true);
     if (cinema) cinema->setIsSecret(true);
@@ -115,12 +116,41 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     if (auto* p = defineInfo(d, page, cinema, "ratioInfo", "Rapporto", "Scegli i due punti e premi Misura rapporto"))
         p->setIsSecret(true);
 
+    GroupParamDescriptor* adams = defineGroup(d, page, "adamsGroup", "Zonale", true);
+    if (adams) adams->setIsSecret(true);
+    definePoint(d, page, adams, "adamsShadowPos", "Ombra", 0.3, 0.3,
+                "Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)");
+    definePoint(d, page, adams, "adamsHighPos", "Luce", 0.7, 0.7, "Una luce in cui vuoi ancora dettaglio");
+    if (auto* p = defineButton(d, page, "adamsMeasure", "Misura zone",
+                               "Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con "
+                               "sviluppo normale (N 0)", adams))
+        p->setIsSecret(true);
+    DoubleParamDescriptor* places[] = {
+        defineSlider(d, page, "adamsShadowPlace", "Ombra sulla zona", 3, 0, 10, 0, 10, 0.1,
+                     "La zona su cui collocare l'ombra misurata (esposizione): III = ombra con dettaglio", adams),
+        defineSlider(d, page, "adamsHighPlace", "Luci sulla zona", 8, 0, 10, 0, 10, 0.1,
+                     "La zona su cui portare la luce misurata (sviluppo): sopra quella misurata N+, sotto N-. VIII = "
+                     "luce con dettaglio", adams) };
+    for (DoubleParamDescriptor* p : places)
+        if (p) {
+            p->setDigits(1);
+            p->setIsSecret(true);
+        }
+    if (auto* p = defineInfo(d, page, adams, "adamsInfo", "Zone", "Scegli i due punti e premi Misura zone"))
+        p->setIsSecret(true);
+
     GroupParamDescriptor* range = defineGroup(d, page, "rangeGroup", "Gamma dinamica", true);
     defineToggle(d, page, "viewGain", "Vista: guadagno", "view_gain.png",
                  "Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. "
                  "Bande a 0,25 / 0,5 / 1 / 2 stop", range);
     defineToggle(d, page, "viewBase", "Vista: base", "view_base.png",
                  "Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio", range);
+    defineToggle(d, page, "viewZonesColor", "Vista: zone", "view_zones.png",
+                 "Mostra la zona (0-X) in cui cade ogni area dopo il nodo, a colori: viola 0, blu I-II, verde-azzurro "
+                 "III-IV, grigio V, rosa VI, giallo VII, arancio VIII, rosso IX, bianco X. Zona 0 = nero e zona X = "
+                 "bianco della Destinazione", range);
+    defineToggle(d, page, "viewZonesGrey", "Vista: zone in grigi", "view_zones_grey.png",
+                 "Le stesse zone come scala di undici grigi, dal nero (0) al bianco (X)", range);
     trim(d, page, range, "localContrast", "Local Contrast", -100, 50,
          "Contrasto delle grandi aree attorno al grigio, a dettaglio intatto. Il Contrast del nodo principale e "
          "globale; qui il dettaglio fine resta com'e");
@@ -176,6 +206,8 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineHiddenDouble(d, page, "ratioLight", 0.0);      // L of the norm at the two points, set by Misura
     defineHiddenDouble(d, page, "ratioShadow", 0.0);
     defineHiddenDouble(d, page, "ratioMeasured", 0.0);   // their ratio in stops (Y for a face, the norm for a landscape)
+    defineHiddenDouble(d, page, "adamsShadowL", 0.0);    // Zonale: L of the norm at the shadow and the highlight
+    defineHiddenDouble(d, page, "adamsHighL", 0.0);
 }
 
 ImageEffect* DetailFactory::createInstance(OfxImageEffectHandle p_Handle, ContextEnum)

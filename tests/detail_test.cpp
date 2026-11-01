@@ -27,7 +27,9 @@ static void set(SMDetailControls& c, const std::string& name, double v)
         { "hazeLevel", &c.hazeLevel }, { "hazeWarmth", &c.hazeWarmth }, { "localWhite", &c.localWhite },
         { "ratioLight", &c.ratioLight }, { "ratioShadow", &c.ratioShadow }, { "ratioMeasured", &c.ratioMeasured },
         { "ratioTarget", &c.ratioTarget }, { "ratioHardness", &c.ratioHardness },
-        { "ratioBackground", &c.ratioBackground }, { "ratioSubjectLift", &c.ratioSubjectLift } };
+        { "ratioBackground", &c.ratioBackground }, { "ratioSubjectLift", &c.ratioSubjectLift },
+        { "adamsShadowL", &c.adamsShadowL }, { "adamsHighL", &c.adamsHighL },
+        { "adamsShadowPlace", &c.adamsShadowPlace }, { "adamsHighPlace", &c.adamsHighPlace } };
     for (int z = 0; z < 4; ++z) {
         f[std::string("localZone") + zones[z] + "Exp"] = &c.zoneExp[z];
         f[std::string("localZone") + zones[z] + "Range"] = &c.zoneRange[z];
@@ -35,6 +37,7 @@ static void set(SMDetailControls& c, const std::string& name, double v)
     }
     if (name == "viewGain") c.viewGain = v != 0.0;
     else if (name == "viewBase") c.viewBase = v != 0.0;
+    else if (name == "viewZones") c.viewZones = (int)v;
     else if (name == "devMode") c.devMode = (int)v;
     else if (name == "destination") c.destination = (int)v;
     else if (name == "subject") c.subject = (int)v;

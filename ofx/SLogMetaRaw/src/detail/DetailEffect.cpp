@@ -33,12 +33,19 @@ static const struct { const char* name; double SMDetailControls::*field; } kDeta
     { "ratioLight", &SMDetailControls::ratioLight }, { "ratioShadow", &SMDetailControls::ratioShadow },
     { "ratioMeasured", &SMDetailControls::ratioMeasured }, { "ratioTarget", &SMDetailControls::ratioTarget },
     { "ratioHardness", &SMDetailControls::ratioHardness }, { "ratioBackground", &SMDetailControls::ratioBackground },
-    { "ratioSubjectLift", &SMDetailControls::ratioSubjectLift } };
+    { "ratioSubjectLift", &SMDetailControls::ratioSubjectLift },
+    { "adamsShadowL", &SMDetailControls::adamsShadowL }, { "adamsHighL", &SMDetailControls::adamsHighL },
+    { "adamsShadowPlace", &SMDetailControls::adamsShadowPlace }, { "adamsHighPlace", &SMDetailControls::adamsHighPlace } };
 // shown only in Cinematografico
 static const char* const kCinemaParams[] = { "cinemaGroup", "subjectFace", "subjectLandscape", "ratioLightPos",
                                              "ratioShadowPos", "ratioMeasure", "ratioTarget", "ratioHardness",
                                              "ratioBackground", "ratioSubjectLift", "ratioInfo" };
-// what Cinematografico replaces: greyed out there
+// shown only in Zonale
+static const char* const kAdamsParams[] = { "adamsGroup", "adamsShadowPos", "adamsHighPos", "adamsMeasure",
+                                            "adamsShadowPlace", "adamsHighPlace", "adamsInfo" };
+// the views: one at a time
+static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", "viewZonesGrey" };
+// what Cinematografico and Zonale replace: greyed out there
 static const char* const kStandardOnly[] = { "localContrast", "localHighlights", "localShadows" };
 static const int kIntensityCount = sizeof(kIntensities) / sizeof(kIntensities[0]);
 
@@ -69,6 +76,8 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
             if (paramExists(kDetailSliders[i].name)) m_Sliders[i] = fetchDoubleParam(kDetailSliders[i].name);
         if (paramExists("viewGain")) m_ViewGain = fetchBooleanParam("viewGain");
         if (paramExists("viewBase")) m_ViewBase = fetchBooleanParam("viewBase");
+        if (paramExists("viewZonesColor")) m_ViewZonesColor = fetchBooleanParam("viewZonesColor");
+        if (paramExists("viewZonesGrey")) m_ViewZonesGrey = fetchBooleanParam("viewZonesGrey");
         if (paramExists("devMode")) m_DevMode = fetchChoiceParam("devMode");
         if (paramExists("destination")) m_Destination = fetchChoiceParam("destination");
         if (paramExists("subjectFace")) m_SubjectFace = fetchBooleanParam("subjectFace");
@@ -157,7 +166,8 @@ bool DetailEffect::neutralAt(double p_Time) const
         if (z.exp[i] != 0.0) return false;
     const SMDetailControls c = readControls(p_Time);
     if (c.devMode == SM_DT_MODE_CINEMA && c.ratioLight - c.ratioShadow > SM_DT_RATIO_MIN_GAP) return false;
-    return !(m_ViewGain && m_ViewGain->getValueAtTime(p_Time)) && !(m_ViewBase && m_ViewBase->getValueAtTime(p_Time));
+    if (c.devMode == SM_DT_MODE_ZONAL && c.adamsHighL - c.adamsShadowL > SM_DT_RATIO_MIN_GAP) return false;
+    return !c.viewGain && !c.viewBase && !c.viewZones;
 }
 
 void DetailEffect::resetAll()
@@ -170,7 +180,8 @@ void DetailEffect::resetAll()
     resetZoneParams(*this, "localZone");
     const struct { const char* name; double v; } cinema[] = { { "ratioBackground", 0.0 }, { "ratioSubjectLift", 0.0 },
                                                              { "ratioLight", 0.0 }, { "ratioShadow", 0.0 },
-                                                             { "ratioMeasured", 0.0 }, { "ratioTarget", 1.0 } };
+                                                             { "ratioMeasured", 0.0 }, { "ratioTarget", 1.0 },
+                                                             { "adamsShadowL", 0.0 }, { "adamsHighL", 0.0 } };
     for (const auto& c : cinema)
         if (paramExists(c.name)) {
             OFX::DoubleParam* p = fetchDoubleParam(c.name);
@@ -178,6 +189,7 @@ void DetailEffect::resetAll()
             p->setValue(c.v);
         }
     refreshRatioInfo();
+    refreshZoneInfo();
 }
 
 void DetailEffect::updateMode()
@@ -185,19 +197,76 @@ void DetailEffect::updateMode()
     if (!m_DevMode) return;
     int mode = 0;
     m_DevMode->getValue(mode);
-    const bool cinema = mode == SM_DT_MODE_CINEMA;
+    const bool cinema = mode == SM_DT_MODE_CINEMA, zonal = mode == SM_DT_MODE_ZONAL;
     for (const char* name : kCinemaParams)
         if (paramExists(name)) getParam(name)->setIsSecret(!cinema);
+    for (const char* name : kAdamsParams)
+        if (paramExists(name)) getParam(name)->setIsSecret(!zonal);
     for (const char* name : kStandardOnly)
-        if (paramExists(name)) getParam(name)->setEnabled(!cinema);
+        if (paramExists(name)) getParam(name)->setEnabled(mode == SM_DT_MODE_STANDARD);
     if (paramExists("modeInfo")) {
         OFX::StringParam* info = fetchStringParam("modeInfo");
         std::string cur;
         info->getValue(cur);
-        const std::string text = kDetailModeInfo[cinema ? 1 : 0];
+        const std::string text = kDetailModeInfo[mode >= 0 && mode < kDetailModeCount ? mode : 0];
         if (cur != text) info->setValue(text);
     }
     if (cinema) refreshRatioInfo();
+    if (zonal) refreshZoneInfo();
+}
+
+static std::string zoneText(double z)
+{
+    static const char* const roman[] = { "0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
+    const int i = (int)lround(sm_clampd(z, 0, 10));
+    char buf[48];
+    if (z < -0.05 || z > 10.05) snprintf(buf, sizeof(buf), "zona %s (%.1f, fuori scala)", roman[i], z);
+    else snprintf(buf, sizeof(buf), "zona %s (%.1f)", roman[i], z);
+    return buf;
+}
+
+void DetailEffect::refreshZoneInfo()
+{
+    if (!paramExists("adamsInfo")) return;
+    const SMDetailControls c = readControls(0.0);
+    const double white = dt_destination_white(&c), black = dt_destination_black(&c);
+    char out[96];
+    snprintf(out, sizeof(out), "uscita %.1f stop (nero -%.1f, bianco +%.1f)", white + black, black, white);
+    std::string text;
+    if (!(c.adamsHighL - c.adamsShadowL > SM_DT_RATIO_MIN_GAP)) {
+        text = std::string("Scegli i due punti e premi Misura zone · ") + out;
+    } else {
+        const double ms = dt_L_zone(c.adamsShadowL, white, black), mh = dt_L_zone(c.adamsHighL, white, black);
+        double zs = 0.0, zh = 0.0;
+        dt_zonal_reached(&c, &zs, &zh);
+        const double want = fmax(c.adamsHighPlace, c.adamsShadowPlace + SM_DT_ADAMS_MIN_SPREAD);
+        char n[32];
+        snprintf(n, sizeof(n), "N%+.1f", (want - c.adamsShadowPlace) - (mh - ms));
+        text = "Ombra " + zoneText(ms) + " → " + zoneText(zs) + " · Luci " + zoneText(mh) + " → " + zoneText(zh) + " · "
+               + n + " · " + out;
+        if (fabs(zh - want) > 0.05) text += " · luci: oltre il limite della curva";
+    }
+    OFX::StringParam* info = fetchStringParam("adamsInfo");
+    std::string cur;
+    info->getValue(cur);
+    if (cur != text) info->setValue(text);
+}
+
+// Misura zone: the darker point is the shadow, the brighter the highlight (norm, as the curve). The shadow keeps its
+// zone; the highlight is placed where it lands with normal development (N 0), so measuring alone only exposes.
+void DetailEffect::measureZones(double p_Time)
+{
+    const char* const names[2] = { "adamsShadowPos", "adamsHighPos" };
+    double Ln[2], Ly[2];
+    if (!readPoints(p_Time, names, Ln, Ly)) return;
+    const double Ls = std::min(Ln[0], Ln[1]), Lh = std::max(Ln[0], Ln[1]);
+    fetchDoubleParam("adamsShadowL")->setValue(Ls);
+    fetchDoubleParam("adamsHighL")->setValue(Lh);
+    const SMDetailControls c = readControls(p_Time);
+    const double white = dt_destination_white(&c), black = dt_destination_black(&c);
+    const double Lso = dt_zone_L(c.adamsShadowPlace, white, black);
+    fetchDoubleParam("adamsHighPlace")->setValue(sm_clampd(dt_L_zone(Lso + (Lh - Ls), white, black), 0, 10));
+    refreshZoneInfo();
 }
 
 static std::string ratioText(double stops)
@@ -228,25 +297,22 @@ void DetailEffect::refreshRatioInfo()
     if (cur != text) info->setValue(text);
 }
 
-// Misura: the mean linear colour around each point (1 % of the height), from the node's input at this time.
-// A face is read as luminance Y (Rec.2020), a landscape as the norm the node works on; the edges of the
-// curve always use the norm. Writes the hidden values and, unless asked to keep it, the target.
-void DetailEffect::measureRatio(double p_Time, bool p_KeepTarget)
+// The mean linear colour around each point (1 % of the height), from the node's input at this time: L of the norm
+// the node works on, and of the luminance Y (Rec.2020).
+bool DetailEffect::readPoints(double p_Time, const char* const names[2], double Ln[2], double Ly[2])
 {
     int space = 8, gamma = 9;
-    if (resolveInput(space, gamma) == InputOrigin::Unknown) return;
+    if (resolveInput(space, gamma) == InputOrigin::Unknown) return false;
     std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(p_Time));
     if (!src || src->getPixelDepth() != OFX::eBitDepthFloat || src->getPixelComponents() != OFX::ePixelComponentRGBA)
-        return;
+        return false;
     const OfxRectI b = src->getBounds();
     const int W = b.x2 - b.x1, H = b.y2 - b.y1;
-    if (W <= 0 || H <= 0) return;
+    if (W <= 0 || H <= 0) return false;
     const SMDetailControls rest = sm_detail_defaults();
     DetailParams q;
     dt_prepare(&q, W, H, H, 1.0, space, gamma, &rest, SM_DT_GRID_BASE);
     const OfxRectD rod = m_SrcClip->getRegionOfDefinition(p_Time);
-    const char* const names[2] = { "ratioLightPos", "ratioShadowPos" };
-    double Ln[2] = { 0.0, 0.0 }, Ly[2] = { 0.0, 0.0 };
     for (int k = 0; k < 2; ++k) {
         double x = 0.5, y = 0.5;
         fetchDouble2DParam(names[k])->getValueAtTime(p_Time, x, y);
@@ -268,7 +334,7 @@ void DetailEffect::measureRatio(double p_Time, bool p_KeepTarget)
                 acc[0] += v.x; acc[1] += v.y; acc[2] += v.z;
                 ++n;
             }
-        if (n == 0) return;
+        if (n == 0) return false;
         double rgb[3];
         for (int c = 0; c < 3; ++c) {
             const float* m = q.toRef + c * 3;
@@ -278,7 +344,16 @@ void DetailEffect::measureRatio(double p_Time, bool p_KeepTarget)
         const double Y = 0.2627 * rgb[0] + 0.6780 * rgb[1] + 0.0593 * rgb[2];
         Ly[k] = log2(std::max(Y, (double)SM_T5_EPS) / SM_T5_GREY);
     }
+    return true;
+}
+
+void DetailEffect::measureRatio(double p_Time, bool p_KeepTarget)
+{
+    const char* const names[2] = { "ratioLightPos", "ratioShadowPos" };
+    double Ln[2], Ly[2];
+    if (!readPoints(p_Time, names, Ln, Ly)) return;
     if (Ln[0] < Ln[1]) { std::swap(Ln[0], Ln[1]); std::swap(Ly[0], Ly[1]); }   // points given the other way round
+    // a face is read as luminance Y, a landscape as the norm; the edges of the curve always use the norm
     const bool face = !(m_SubjectLandscape && m_SubjectLandscape->getValue());
     const double measured = std::max(face ? Ly[0] - Ly[1] : Ln[0] - Ln[1], 0.0);
     fetchDoubleParam("ratioLight")->setValue(Ln[0]);
@@ -325,11 +400,18 @@ void DetailEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const st
             const SMDetailControls c = readControls(p_Args.time);
             if (c.ratioLight - c.ratioShadow > SM_DT_RATIO_MIN_GAP) measureRatio(p_Args.time, true);
         }
-    } else if (p_ParamName == "destination" || p_ParamName.compare(0, 5, "ratio") == 0) refreshRatioInfo();
-    else if (p_ParamName == "viewGain" && fetchBooleanParam("viewGain")->getValue())
-        fetchBooleanParam("viewBase")->setValue(false);
-    else if (p_ParamName == "viewBase" && fetchBooleanParam("viewBase")->getValue())
-        fetchBooleanParam("viewGain")->setValue(false);
+    } else if (p_ParamName.compare(0, 5, "ratio") == 0) refreshRatioInfo();
+    else if (p_ParamName.compare(0, 5, "adams") == 0) refreshZoneInfo();
+    else if (p_ParamName == "destination" || p_ParamName == "localWhite") {
+        refreshRatioInfo();
+        refreshZoneInfo();
+    }
+    else if (p_ParamName == "adamsMeasure") measureZones(p_Args.time);
+    else if (p_ParamName.compare(0, 4, "view") == 0 && paramExists(p_ParamName) && fetchBooleanParam(p_ParamName)->getValue()) {
+        for (const char* other : kViews)   // one view at a time
+            if (p_ParamName != other && paramExists(other) && fetchBooleanParam(other)->getValue())
+                fetchBooleanParam(other)->setValue(false);
+    }
     m_Badge.refresh(false);
 }
 
@@ -424,6 +506,8 @@ SMDetailControls DetailEffect::readControls(double t) const
     }
     c.viewGain = m_ViewGain && m_ViewGain->getValueAtTime(t) ? 1 : 0;
     c.viewBase = m_ViewBase && m_ViewBase->getValueAtTime(t) ? 1 : 0;
+    c.viewZones = m_ViewZonesColor && m_ViewZonesColor->getValueAtTime(t) ? 1
+                  : (m_ViewZonesGrey && m_ViewZonesGrey->getValueAtTime(t) ? 2 : 0);
     if (m_DevMode) m_DevMode->getValueAtTime(t, c.devMode);
     if (m_Destination) m_Destination->getValueAtTime(t, c.destination);
     c.subject = m_SubjectLandscape && m_SubjectLandscape->getValueAtTime(t) ? 1 : 0;

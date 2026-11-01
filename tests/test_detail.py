@@ -60,7 +60,12 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
          {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -3.0, 'ratioMeasured': 4.0, 'ratioTarget': 5.0,
           'ratioBackground': 40, 'ratioSubjectLift': 30, 'texture': 30, 'localHighlights': -80},
          {'devMode': 1, 'subject': 1, 'ratioLight': 0.5, 'ratioShadow': -2.0, 'ratioMeasured': 2.5,
-          'ratioTarget': 1.5, 'ratioHardness': 0, 'localContrast': 40}]
+          'ratioTarget': 1.5, 'ratioHardness': 0, 'localContrast': 40},
+         {'devMode': 2, 'adamsShadowL': -4.5, 'adamsHighL': 2.0, 'adamsShadowPlace': 3, 'adamsHighPlace': 9,
+          'texture': 30, 'localShadows': 60},
+         {'devMode': 2, 'adamsShadowL': -3.0, 'adamsHighL': 4.0, 'adamsShadowPlace': 2.5, 'adamsHighPlace': 7,
+          'destination': 4, 'viewZones': 1},
+         {'viewZones': 2, 'destination': 1, 'localShadows': 50}, {'viewZones': 1, 'localHighlights': -60}]
 
 
 class Model(unittest.TestCase):
@@ -203,6 +208,52 @@ class Model(unittest.TestCase):
         self.assertGreater(got, 0.5 + 0.1)
         self.assertLess(got, 2.5)
 
+    def test_zonale_places_the_shadow_and_develops_the_highlight(self):
+        """Zone V is grey: the shadow lands on its zone, the highlight on its own, pixel by pixel on flat fields."""
+        Ls, Lh = self.flat_g(-1.3, {})[0], self.flat_g(4.1, {})[0]
+        for zs, zh in ((3, 8), (3, 7), (2, 9.5), (4, 9)):
+            ctrl = {'devMode': 2, 'adamsShadowL': Ls, 'adamsHighL': Lh, 'adamsShadowPlace': zs, 'adamsHighPlace': zh}
+            (l1, g1), (l2, g2) = self.flat_g(-1.3, ctrl), self.flat_g(4.1, ctrl)
+            self.assertAlmostEqual(D.zone_of(l1 + g1, 2.5, 4.5), zs, places=6, msg=ctrl)
+            self.assertAlmostEqual(D.zone_of(l2 + g2, 2.5, 4.5), zh, places=6, msg=ctrl)
+
+    def test_zones_follow_the_destination(self):
+        """Rec.709 with a CST: zone 0 to X span 7 stops; the scene (DaVinci WG, no ODT yet) 18; zone V is grey."""
+        for dest, span in ((1, 7.0), (4, 18.0)):
+            v = D.controls_clamped({'destination': dest})
+            w, b = D.destination_white(v), D.destination_black(v)
+            self.assertAlmostEqual(D.zone_L(10, w, b) - D.zone_L(0, w, b), span)
+            self.assertEqual(D.zone_L(5, w, b), 0.0)
+            for z in (0.5, 3.2, 5.0, 7.7, 9.9):
+                self.assertAlmostEqual(D.zone_of(D.zone_L(z, w, b), w, b), z)
+
+    def test_zonale_on_the_scene_destination_moves_less(self):
+        """Zone VIII is 3 stops over grey with a Rec.709 CST only when the white is 5 stops: here the CST puts it at
+        1.5, the scene at 5.4."""
+        v = D.controls_clamped({'destination': 1})
+        self.assertAlmostEqual(D.zone_L(8, D.destination_white(v), D.destination_black(v)), 1.5)
+        v = D.controls_clamped({'destination': 4})
+        self.assertAlmostEqual(D.zone_L(8, D.destination_white(v), D.destination_black(v)), 5.4)
+
+    def test_view_zones_paints_eleven_bands(self):
+        img = [[dm.encode1(0.18 * 2 ** (-6 + 0.016 * i), GAMMA)] * 3 for i in range(32 * 18)]
+        for grey in (1, 2):
+            out, _ = model(img, {'viewZones': grey, 'destination': 1}, 32, 18)
+            self.assertEqual(len({tuple(px) for px in out}), 11)
+
+    def test_zonale_keeps_the_order_of_the_tones(self):
+        ctrl = {'devMode': 2, 'adamsShadowL': -2.0, 'adamsHighL': 2.0, 'adamsShadowPlace': 2, 'adamsHighPlace': 10}
+        p = D.prepare(64, 64, ctrl)
+        out = [L + T.t5_curve(L, p['curve'])[0] for L in [-10 + 0.01 * i for i in range(2200)]]
+        self.assertGreater(min(b - a for a, b in zip(out, out[1:])), 0.0)
+
+    def test_zonale_an_unreachable_contraction_says_where_it_stops(self):
+        v = D.controls_clamped({'devMode': 2, 'adamsShadowL': -1.0, 'adamsHighL': 5.0, 'adamsShadowPlace': 4,
+                                'adamsHighPlace': 5})
+        zs, zh = D.zonal_reached(v)
+        self.assertAlmostEqual(zs, 4.0, places=6)
+        self.assertGreater(zh, 5.5)
+
     def test_cinematografico_background_only_goes_down(self):
         ctrl = {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -1.0, 'ratioMeasured': 2.0, 'ratioTarget': 2.0}
         prev = None
@@ -250,7 +301,7 @@ class Panel(unittest.TestCase):
         """Every Cinematografico value the model reads is bound by the effect (kDetailSliders) or read as a choice."""
         src = open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'src', 'detail', 'DetailEffect.cpp'), encoding='utf-8').read()
         for name in D.DETAIL_CONTROLS:
-            if name.startswith('ratio'):
+            if name.startswith(('ratio', 'adams')):
                 self.assertIn('{ "%s", &SMDetailControls::%s }' % (name, name), src)
         for name in ('m_DevMode->getValueAtTime', 'm_Destination->getValueAtTime', 'm_SubjectLandscape->getValueAtTime'):
             self.assertIn(name, src)
