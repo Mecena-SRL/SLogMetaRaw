@@ -1,6 +1,10 @@
 # Changelog
 
-## In sviluppo
+## S-Log MetaRaw 2.4.0
+
+Nuove modalità del nodo Detail (Cinematografico e Zonale), Ingresso e Destinazione, vista zone. Contiene anche la
+2.3.4, mai pubblicata da sola. I nodi salvati restano identici. Da verificare in Resolve: comparsa dei controlli per
+modalità, punti nel viewer, Misura e vista zone su Metal.
 
 ### Plugin
 

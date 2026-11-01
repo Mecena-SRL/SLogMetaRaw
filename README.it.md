@@ -45,7 +45,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-2.3.4.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-2.4.0.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa S-Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -129,7 +129,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v2.3.4`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v2.3.4 → 2.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v2.4.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v2.4.0 → 2.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Decode Using** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **White Balance** · **Color Temp** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -185,11 +185,22 @@ dettaglio fine. È la parte di Highlights e Shadows di Lightroom che un nodo pun
 
 | Gruppo | Controlli |
 |---|---|
+| **Sviluppo e spazio colore** | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (l'ingresso del nodo, spostato qui da Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** | Local Contrast, Local Highlights, Local Shadows; viste *guadagno* e *base*. Local Highlights comprime le grandi aree luminose e tiene, anzi rinforza, la texture fine: il cielo si scurisce e le nuvole restano dettagliate. L'Highlights del nodo principale invece ammorbidisce la texture delle alte luci, come la pellicola |
 | **Presenza** | Texture, Clarity, Dehaze |
 | **Zone locali** | le zone del nodo principale, applicate alle aree |
-| **Avanzate** | preservazione del dettaglio, raggio, soglie bordi e rumore, centro di Clarity, **Bianco** di Local Highlights, ingresso del nodo |
+| **Avanzate** | preservazione del dettaglio, raggio, soglie bordi e rumore, centro di Clarity, **Bianco** di Local Highlights |
 | **Velo** | livello e colore del velo che Dehaze toglie: li decidi tu, non vengono mai stimati fotogramma per fotogramma |
+
+**Modalità e destinazione (2.4.0).** Il gruppo in cima sceglie come lavora il nodo. I nodi salvati non cambiano: Standard e *Dal Bianco (manuale)* sono i default.
+
+- **Destinazione (ODT)** dice al nodo quale trasformazione viene dopo, così sa dove arrivano il bianco (zona X) e il nero (zona 0). Non converte mai l'immagine. *Dal Bianco (manuale)* usa Avanzate › Bianco; le altre lo fissano: Rec.709 CST +2,5/−4,5 stop attorno al grigio, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
+- **Standard**: i gruppi qui sotto (toni locali, presenza, zone locali), come prima.
+- **Cinematografico**, per i primi piani: scegli *Viso luce* e *Viso ombra* nel viewer, premi **Misura rapporto**, poi imposta il **rapporto obiettivo** in stop (1 = 1:2, 2 = 1:4, 3 = 1:8). La luce resta ferma, l'ombra si sposta. *Durezza passaggio* (passaggio morbido o netto), *Spegni sfondo* (porta verso il nero ciò che è sotto l'ombra, fino a 4 stop), *Luce sul soggetto* (alza il lato illuminato, rapporto invariato). Soggetto: viso (luminanza, aree piccole) o paesaggio. Se il rapporto non si raggiunge, la riga informativa mostra quello raggiungibile.
+- **Zonale** (sistema zonale di Ansel Adams): scegli un'*Ombra* e una *Luce* con dettaglio, premi **Misura zone**, colloca l'ombra con *Ombra sulla zona* (esposizione, default III) e la luce con *Luci sulla zona* (sviluppo N+/N−, default VIII). Zona V = grigio 18%; zona 0 e X = nero e bianco della Destinazione. La riga informativa mostra zone misurate → raggiunte, N e la gamma d'uscita.
+- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano, in ogni modalità, in che zona cade ogni area dopo il nodo. Una vista alla volta.
+
+Non ancora verificati in Resolve: comparsa dei controlli per modalità, punti nel viewer, Misura e vista zone su Metal.
 
 - Mettilo **subito dopo** S-Log MetaRaw, prima di CST, LUT o DRT. Decodifica in luce lineare quello che riceve e lo riscrive
   nella stessa codifica, quindi va prima di ogni conversione: lascia Color Space e Gamma del nodo principale su Timeline.
@@ -209,7 +220,7 @@ ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di 
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/2.3.4`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/2.4.0`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

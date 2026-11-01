@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **2.3.3** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **2.4.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O S-Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -46,7 +46,7 @@ Os arquivos originais **nunca são modificados**: sem transcodificação, sem re
 
 ## 2. Instalação
 
-1. Baixe `SLogMetaRaw-2.3.3.dmg` em [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e abra-o.
+1. Baixe `SLogMetaRaw-2.4.0.dmg` em [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e abra-o.
 
    ![The DMG window](images/01-dmg.png)
 
@@ -145,7 +145,7 @@ O nó é **pontual**: cada pixel depende só de si mesmo. Nunca cria halos, e o 
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | Mostra `v2.3.3`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v2.3.3 → 2.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
+| **Versão** (no topo) | Mostra `v2.4.0`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v2.4.0 → 2.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
 | **Camera** · **Rileggi metadata** (reler) | A câmera que foi lida. *Rileggi* relê o clipe, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool. Responde em cerca de 2 s. |
 | **Decode Using** | *Clip* permite mudar os controles; *Camera metadata* os trava nos valores de gravação (o nó fica transparente). |
 | **White Balance** | As shot, ou presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Mover um controle desliza para *Custom*. |
@@ -271,11 +271,22 @@ Trabalha **por áreas**, sobre uma base que respeita as bordas: move grandes ár
 
 | Grupo | Controles |
 |---|---|
+| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (a entrada do nó, movida para cá de Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (faixa dinâmica) | Local Contrast, Local Highlights, Local Shadows; vistas de verificação *gain* e *base*. |
 | **Presenza** (presença) | **Texture** (detalhe fino; não sobe o grão abaixo do limiar de ruído), **Clarity** (contraste local de média escala), **Dehaze**. |
 | **Zone locali** (zonas locais) | As zonas do nó principal, aplicadas a áreas em vez de pixels. |
-| **Avanzate** (avançado) | Preservação do detalhe, raio, limiar de bordas (*Soglia bordi*), limiar de ruído, centro do Clarity, **Bianco** do Local Highlights, entrada do nó. |
+| **Avanzate** (avançado) | Preservação do detalhe, raio, limiar de bordas (*Soglia bordi*), limiar de ruído, centro do Clarity, **Bianco** do Local Highlights. |
 | **Velo** (véu) | Nível e cor do véu que o Dehaze remove. Você define; nunca são estimados quadro a quadro → sem flicker. |
+
+**Modos e destino (2.4.0).** O grupo do topo escolhe como o nó trabalha. Os nós salvos não mudam: Standard e *Dal Bianco (manuale)* são os padrões.
+
+- **Destinazione (ODT)** diz ao nó qual transformação vem depois, para saber onde ficam o branco (zona X) e o preto (zona 0). Nunca converte a imagem. *Dal Bianco (manuale)* usa Avanzate › Bianco; as outras o fixam: Rec.709 CST +2,5/−4,5 stops em torno do cinza, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
+- **Standard**: os grupos abaixo (tons locais, presença, zonas locais), como antes.
+- **Cinematografico**, para closes: escolha *Viso luce* e *Viso ombra* no visor, clique em **Misura rapporto** e defina a **razão alvo** em stops (1 = 1:2, 2 = 1:4, 3 = 1:8). A luz fica parada e a sombra se move. *Durezza passaggio* (transição suave ou dura), *Spegni sfondo* (escurece o que está abaixo da sombra, até 4 stops), *Luce sul soggetto* (sobe o lado iluminado, razão igual). Assunto: rosto (luminância, áreas pequenas) ou paisagem. Se a razão não puder ser alcançada, a linha de informação mostra a alcançável.
+- **Zonale** (sistema de zonas de Ansel Adams): escolha uma *Ombra* e uma *Luce* com detalhe, clique em **Misura zone**, coloque a sombra com *Ombra sulla zona* (exposição, padrão III) e a luz com *Luci sulla zona* (revelação N+/N−, padrão VIII). Zona V = cinza 18%; zonas 0 e X = preto e branco do destino. A linha de informação mostra zonas medidas → alcançadas, N e a faixa de saída.
+- **Vista: zone** (11 cores) e **Vista: zone in grigi** (11 cinzas) mostram, em qualquer modo, em que zona cai cada área após o nó. Uma vista por vez.
+
+Ainda não verificado no Resolve: exibição dos controles por modo, pontos no visor, Misura e vista de zonas no Metal.
 
 **Azzera dettaglio** reinicia o nó.
 
@@ -359,7 +370,7 @@ Deixe Color Space/Gamma em **Timeline** no nó principal. Ative o *Definir tamb�
 
 ## 12. Atualizações e privacidade
 
-- Os **nós** perguntam ao GitHub pela última release no máximo uma vez por dia, em segundo plano. A requisição leva só a versão (`User-Agent: SLogMetaRaw/2.3.3`).
+- Os **nós** perguntam ao GitHub pela última release no máximo uma vez por dia, em segundo plano. A requisição leva só a versão (`User-Agent: SLogMetaRaw/2.4.0`).
 - O **script** só consulta quando você clica na versão dele.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
 
