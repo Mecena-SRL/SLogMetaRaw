@@ -45,18 +45,31 @@ DETAIL_CONTROLS = {
     'hazeWarmth': (-100.0, 100.0, 0.0), 'localWhite': (1.0, 10.0, 2.5),
     'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0),
     # development mode and destination (the transform after the node)
-    'devMode': (0.0, 1.0, 0.0), 'destination': (0.0, 3.0, 0.0), 'subject': (0.0, 1.0, 0.0),
+    'viewZones': (0.0, 2.0, 0.0),
+    'devMode': (0.0, 2.0, 0.0), 'destination': (0.0, 4.0, 0.0), 'subject': (0.0, 1.0, 0.0),
     # Cinematografico: the two points read on the picture (L of the norm) and their ratio in stops
     'ratioLight': (-16.0, 16.0, 0.0), 'ratioShadow': (-16.0, 16.0, 0.0), 'ratioMeasured': (0.0, 16.0, 0.0),
     'ratioTarget': (0.0, 5.0, 1.0), 'ratioHardness': (0.0, 100.0, 50.0), 'ratioBackground': (0.0, 100.0, 0.0),
-    'ratioSubjectLift': (0.0, 100.0, 0.0)}
+    'ratioSubjectLift': (0.0, 100.0, 0.0),
+    # Zonale: the shadow and the highlight read on the picture (L of the norm), the zones they are placed on
+    'adamsShadowL': (-16.0, 16.0, 0.0), 'adamsHighL': (-16.0, 16.0, 0.0),
+    'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0)}
 for _z, _r, _f in zip(T.ZONES, T.ZONE_RANGE, T.ZONE_FALLOFF):
     DETAIL_CONTROLS['localZone%sExp' % _z] = (-6.0, 6.0, 0.0)
     DETAIL_CONTROLS['localZone%sRange' % _z] = (-10.0, 10.0, _r)
     DETAIL_CONTROLS['localZone%sFalloff' % _z] = (0.5, 6.0, _f)
 
-MODE_STANDARD, MODE_CINEMA = 0, 1
-DEST_WHITE = (None, 2.5, 4.5, 6.5)   # Bianco of the destination: manual (localWhite), Rec.709 CST, Rec.709 DRT, PQ 1000
+MODE_STANDARD, MODE_CINEMA, MODE_ZONAL = 0, 1, 2
+ADAMS_MIN_SPREAD = 0.25           # the highlight stays at least this many zones above the shadow
+ADAMS_SHIFT_EDGE = 32.0           # the exposure slot: so far above every L that it moves all of them alike
+ADAMS_SHIFT_MAX = 6.0
+# Destinations: manual (localWhite), Rec.709 CST, Rec.709 DRT, PQ 1000, scene (DaVinci WG/Intermediate, no ODT yet).
+# White and black in stops from grey, zone X and zone 0: Rec.709 CST 2.5 + 4.5 = 7 stops.
+DEST_WHITE = (None, 2.5, 4.5, 6.5, 9.0)
+DEST_BLACK = (4.5, 4.5, 6.0, 7.0, 9.0)
+ZONE_RGB = ((0.25, 0.00, 0.35), (0.10, 0.10, 0.55), (0.10, 0.35, 0.85), (0.00, 0.60, 0.70), (0.25, 0.65, 0.30),
+            (0.50, 0.50, 0.50), (0.95, 0.65, 0.55), (0.95, 0.85, 0.25), (1.00, 0.60, 0.10), (0.95, 0.20, 0.10),
+            (1.00, 1.00, 1.00))
 SUBJECT_RADIUS = (0.75, 2.0)        # Cinematografico: base radius x this, Viso / Paesaggio
 RATIO_MIN_GAP = 0.05                # below this the two points are not a light and a shadow
 RATIO_E_MAX = 6.0
@@ -110,6 +123,30 @@ def destination_white(v):
     return v['localWhite'] if d == 0 else DEST_WHITE[d]
 
 
+def destination_black(v):
+    return DEST_BLACK[int(round(v['destination']))]
+
+
+def zone_of(L, white, black):
+    """dt_zone_of: zone V grey, zone 0 the destination's black, zone X its white, five zones on each side."""
+    return 5.0 + 5.0 * L / black if L <= 0.0 else 5.0 + 5.0 * L / white
+
+
+def zone_L(z, white, black):
+    return (z - 5.0) * black / 5.0 if z <= 5.0 else (z - 5.0) * white / 5.0
+
+
+def view_zones_colour(Lout, white, black, grey):
+    z = int(min(max(f32(zone_of(f32(Lout), f32(white), f32(black))) + 0.5, 0.0), 10.0))
+    return [0.1 * z] * 3 if grey else list(ZONE_RGB[z])
+
+
+def f32(x):
+    """The plugin computes the zone in float32: the band edges follow it."""
+    import struct
+    return struct.unpack('f', struct.pack('f', x))[0]
+
+
 def cinema_nominal(v):
     """Cinematografico: slots of the zone curve that bring the shadow side of the subject to the target ratio.
 
@@ -154,6 +191,57 @@ def cinema_nominal(v):
     return nominal
 
 
+def zonal_nominal(v):
+    """Zonale: the shadow lands on its zone (exposure), the highlight on its own (development, N+/N-).
+
+    Slot 1 (up) starts at the shadow and expands or contracts what is above it; its E is solved so that the
+    highlight ends (place_high - place_shadow) zones above the shadow. Slot 6 (down), with its edge far above
+    every L, moves the whole picture alike so the shadow sits on its zone. Returns the 7 nominal slots."""
+    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
+    Ls, Lh = v['adamsShadowL'], v['adamsHighL']
+    gap = Lh - Ls
+    if gap <= RATIO_MIN_GAP:
+        return nominal
+    zs = v['adamsShadowPlace']
+    zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
+    white, black = destination_white(v), destination_black(v)
+    Lso, Lho = zone_L(zs, white, black), zone_L(zh, white, black)
+    f = max(0.25, 0.5 * gap)
+    want = Lho - Lso
+
+    def spread(E):
+        n = list(nominal)
+        n[1] = (E, Ls, f, T.SM_T5_SMAX_ZONE)
+        c = T.zone_policy(0.0, 0.0, n)
+        return gap + T.t5_curve(Lh, c)[0] - T.t5_curve(Ls, c)[0]
+    lo, hi = -RATIO_E_MAX, RATIO_E_MAX
+    if spread(lo) >= want:
+        E = lo
+    elif spread(hi) <= want:
+        E = hi
+    else:
+        for _ in range(RATIO_STEPS):
+            mid = 0.5 * (lo + hi)
+            if spread(mid) < want:
+                lo = mid
+            else:
+                hi = mid
+        E = 0.5 * (lo + hi)
+    nominal[1] = (E, Ls, f, T.SM_T5_SMAX_ZONE)
+    dev = T.t5_curve(Ls, T.zone_policy(0.0, 0.0, nominal))[0]
+    shift = min(max(Lso - (Ls + dev), -ADAMS_SHIFT_MAX), ADAMS_SHIFT_MAX)
+    if shift != 0.0:
+        nominal[6] = (shift, ADAMS_SHIFT_EDGE, 0.5, T.SM_T5_SMAX_ZONE)
+    return nominal
+
+
+def zonal_reached(v):
+    """The zones the shadow and the highlight land on."""
+    c = T.zone_policy(0.0, 0.0, zonal_nominal(v))
+    white, black = destination_white(v), destination_black(v)
+    return tuple(zone_of(L + T.t5_curve(L, c)[0], white, black) for L in (v['adamsShadowL'], v['adamsHighL']))
+
+
 def cinema_reached(v):
     """The ratio in stops the slots give between the two points (= target unless it is out of reach)."""
     c = T.zone_policy(0.0, 0.0, cinema_nominal(v))
@@ -175,10 +263,13 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     st = 2 ** nt
     sigma_t = math.sqrt(max(sigma2 * sigma2 - tent_variance(st), 0.25)) / st
 
-    cinema = int(round(v['devMode'])) == MODE_CINEMA
+    mode = int(round(v['devMode']))
+    cinema = mode == MODE_CINEMA
     radius = v['detailRadius'] * (SUBJECT_RADIUS[int(round(v['subject']))] if cinema else 1.0)
     if cinema:
         curve = T.zone_policy(0.0, 0.0, cinema_nominal(v))
+    elif mode == MODE_ZONAL:
+        curve = T.zone_policy(0.0, 0.0, zonal_nominal(v))
     else:
         nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
         nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
@@ -200,12 +291,13 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         'hazeOn': int(haze_v != 0.0), 'hazeOmega': 0.006 * haze_v if haze_v > 0 else 0.0,
         'hazeMix': 0.5 * (haze_v / 100.0) ** 2 if haze_v < 0 else 0.0,
         'hazeA': A, 'hazeInvA': [1.0 / a for a in A], 'hazeLevel': v['hazeLevel'],
-        'view': 1 if v['viewGain'] else (2 if v['viewBase'] else 0),
+        'view': 1 if v['viewGain'] else (2 if v['viewBase'] else (2 + int(round(v['viewZones'])) if v['viewZones'] else 0)),
+        'zoneWhite': destination_white(v), 'zoneBlack': destination_black(v),
         'space': space,
     }
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
-    hv = 0.0 if cinema else v['localHighlights']
+    hv = v['localHighlights'] if mode == MODE_STANDARD else 0.0
     white = destination_white(v)
     a = abs(hv) / 100.0
     a *= 1.5 - 0.5 * a
@@ -517,6 +609,9 @@ def render(img, W, H, p, gamma):
         elif p['view'] == 2:
             v = T.SM_T5_GREY * 2.0 ** B
             out.append([dm.encode1(v, gamma)] * 3)
+        elif p['view'] >= 3:
+            out.append(emit_display(view_zones_colour(L[i] + G, p['zoneWhite'], p['zoneBlack'], p['view'] == 4),
+                                    space, gamma))
         elif G == 0.0 and not p['hazeOn']:
             out.append(list(img[i]))
         else:

@@ -1010,7 +1010,7 @@
      "id": "dc.mode",
      "kind": "decision",
      "label": "Quale modalità?",
-     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto; Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello).",
+     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto. Zonale: sistema di Ansel Adams. Nelle ultime due Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1090,6 +1090,72 @@
       },
       {
        "test": "tests/test_detail.py::Model.test_cinematografico_background_only_goes_down"
+      }
+     ]
+    },
+    {
+     "id": "dc.zonal",
+     "kind": "function",
+     "label": "Zonale (Ansel Adams)",
+     "text": "Uno slot parte dall'ombra misurata e espande o contrae ciò che sta sopra (sviluppo N±), con E risolto perché la luce arrivi sulla sua zona; un secondo slot, con il bordo sopra ogni valore, sposta tutto allo stesso modo perché l'ombra arrivi sulla sua (esposizione). Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18).",
+     "basis": "verificato",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_nominal"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones"
+      },
+      {
+       "param": "param:detail.adamsShadowPlace"
+      },
+      {
+       "param": "param:detail.adamsHighPlace"
+      },
+      {
+       "param": "param:detail.adamsMeasure"
+      },
+      {
+       "param": "param:detail.adamsInfo"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_zonale_places_the_shadow_and_develops_the_highlight"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_zones_follow_the_destination"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_zonale_keeps_the_order_of_the_tones"
+      }
+     ]
+    },
+    {
+     "id": "dc.zoneview",
+     "kind": "end",
+     "label": "Vista: zone",
+     "text": "Al posto dell'immagine, la zona 0–X in cui cade ogni area dopo il nodo: undici colori o undici grigi. Stessa scala dell'uscita della Zonale. Funziona in ogni modalità.",
+     "basis": "verificato",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of"
+      },
+      {
+       "param": "param:detail.viewZonesColor"
+      },
+      {
+       "param": "param:detail.viewZonesGrey"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_view_zones_paints_eleven_bands"
+      },
+      {
+       "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
       }
      ]
     },
@@ -1217,7 +1283,7 @@
      "id": "dc.out",
      "kind": "end",
      "label": "Uscita = stessa codifica",
-     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709, o PQ) va fatta dopo, in un altro nodo. Destinazione (ODT) la dichiara: fissa il bianco a 2,5 stop (CST), 4,5 (DRT) o 6,5 (PQ 1000); Dal Bianco usa Avanzate › Bianco.",
+     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709, o PQ) va fatta dopo, in un altro nodo. Destinazione (ODT) la dichiara: bianco e nero in stop dal grigio, CST +2,5/−4,5 (7 stop), DRT +4,5/−6, PQ 1000 +6,5/−7, Scena DWG +9/−9; Dal Bianco usa Avanzate › Bianco. Le stesse misure danno le zone 0 e X.",
      "basis": "verificato",
      "refs": [
       {
@@ -1366,6 +1432,27 @@
      "to": "dc.presence",
      "kind": "data",
      "label": "base spostata"
+    },
+    {
+     "id": "c21",
+     "from": "dc.mode",
+     "to": "dc.zonal",
+     "kind": "decision",
+     "label": "Zonale"
+    },
+    {
+     "id": "c22",
+     "from": "dc.zonal",
+     "to": "dc.presence",
+     "kind": "data",
+     "label": "base spostata"
+    },
+    {
+     "id": "c23",
+     "from": "dc.gain",
+     "to": "dc.zoneview",
+     "kind": "data",
+     "label": "L + guadagno → zona"
     }
    ],
    "view": {
@@ -1447,6 +1534,14 @@
      "dc.measure": [
       7,
       3
+     ],
+     "dc.zonal": [
+      8,
+      3
+     ],
+     "dc.zoneview": [
+      12,
+      3
      ]
     }
    },
@@ -1454,9 +1549,9 @@
     {
      "id": "P-003",
      "status": "in corso",
-     "label": "Modalità di sviluppo: Standard e Cinematografico fatte; Zonale, Stampa, Recupero HDR→SDR da fare",
+     "label": "Modalità di sviluppo: Standard, Cinematografico e Zonale fatte; Stampa e Recupero HDR→SDR da fare",
      "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
-     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Restano Zonale, Stampa, Recupero.",
+     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Restano Zonale, Stampa, Recupero. Zonale con vista zone a colori e in grigi, scala sull'uscita (Destinazione, opzione Scena DWG).",
      "impact": "Pannello Detail (nuovi parametri, nomi permanenti; nodeInput spostato, nome invariato), math/DetailHost.h (solo host: kernel CPU/Metal invariati), golden params_detail.txt. Default Standard e Dal Bianco: grade salvati invariati.",
      "verification": "Modello Python e parità CPU per Cinematografico e Destinazione (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura (lettura immagine fuori dal render).",
      "refs": [
@@ -1509,16 +1604,21 @@
    "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel": "f33417c4ec86",
    "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones": "821cb5ab6d82",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of": "b95c0e637405",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal": "e063939095fb",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached": "7094c71738f1",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "ab2d92710af7",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "c071641cd2d3",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio": "67805019a2be",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "1742df6578a9",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "1a075e48a9de",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "6384adb7f8b5",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_nominal": "af96f787cd47",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L": "25f44e13f0ff",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio": "3c4b898b7fbf",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones": "ee7e34ac713c",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "500190bb2f50",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "c1abf1e6a54d",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "51dffe564cad",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"

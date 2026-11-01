@@ -25,9 +25,11 @@ al bianco, e non resta niente da recuperare.
 | Progetto color managed (timeline DWG) | Timeline | Automatico (lo spazio lo dice Resolve) | la fa il progetto |
 | **Da evitare** | Rec.709 | — | Automatico non sa della conversione e decodifica il Rec.709 come S-Log3 (o come la timeline): il risultato è sbagliato, e le luci sono comunque già tagliate |
 
-- **Destinazione (ODT)** dichiara la trasformazione che viene dopo (il nodo non la fa): Rec.709 con CST senza tone
-  mapping (bianco a 2,5 stop), Rec.709 con DRT ACES/AgX/DaVinci (4,5), HDR PQ 1000 nit (6,5). Con «Dal Bianco
-  (manuale)», il default, vale Avanzate › Bianco come prima: con un tone mapping dopo portalo a 4-5 stop.
+- **Destinazione (ODT)** dichiara la trasformazione che viene dopo (il nodo non la fa), con bianco e nero in stop dal
+  grigio: Rec.709 con CST senza tone mapping +2,5 / −4,5 (7 stop in tutto), Rec.709 con DRT ACES/AgX/DaVinci
+  +4,5 / −6, HDR PQ 1000 nit +6,5 / −7, Scena DaVinci WG/Intermediate (ODT più avanti) +9 / −9. Con «Dal Bianco
+  (manuale)», il default, vale Avanzate › Bianco come prima (nero −4,5): con un tone mapping dopo portalo a 4-5 stop.
+  Bianco e nero sono anche la zona X e la zona 0 della Zonale e della vista zone.
 - Il Rec.709 del nodo principale è un CST senza tone mapping: va bene per un risultato veloce, non
   come base per il Detail né per un grade spinto.
 - È **spaziale**: guarda i pixel vicini. Per questo Generate LUT lo esclude, e con lui tutte
@@ -42,14 +44,15 @@ al bianco, e non resta niente da recuperare.
 
 | Gruppo | Controllo | Cosa fa |
 |---|---|---|
-| Sviluppo e spazio colore | **Modalità** | Standard (i controlli qui sotto) o Cinematografico (rapporto di luce sul soggetto, vedi sotto); una riga dice cosa fa |
+| Sviluppo e spazio colore | **Modalità** | Standard (i controlli qui sotto), Cinematografico (rapporto di luce sul soggetto) o Zonale (Ansel Adams), vedi sotto; una riga dice cosa fa |
 | | **Ingresso (IDT)** | la codifica che entra nel nodo (prima in Avanzate, stesso nome salvato) |
-| | **Destinazione (ODT)** | dove arriva il bianco: Dal Bianco (manuale), Rec.709 CST, Rec.709 DRT, PQ 1000 |
+| | **Destinazione (ODT)** | bianco e nero dell'uscita: Dal Bianco (manuale), Rec.709 CST, Rec.709 DRT, PQ 1000, Scena DWG |
 | Gamma dinamica | **Local Contrast** (−100…+50) | contrasto delle grandi aree attorno al grigio, a dettaglio intatto |
 | | **Local Highlights** | in negativo comprime le grandi aree luminose con la stessa spalla del nodo principale, ma tiene la texture e la rinforza dove la base è compressa: il cielo si scurisce, le nuvole restano definite. A −100 il massimo registrato arriva sul Bianco di Avanzate. In positivo più stacco per aree |
 | | **Local Shadows** | apre (+) o chiude (−) le ombre per aree, 100 = 2 stop |
 | | Vista: guadagno | quanto il nodo alza (arancio) o abbassa (blu) ogni zona; grigio = invariato |
 | | Vista: base | la base edge-aware su cui lavorano i toni locali, senza dettaglio |
+| | Vista: zone, Vista: zone in grigi | la zona 0–X di ogni area dopo il nodo, in undici colori o undici grigi, sulla scala della Destinazione |
 | Presenza | **Texture** | dettaglio fine (pelle, tessuti, foglie); in negativo leviga; la grana sotto la soglia rumore non sale |
 | | **Clarity** | contrasto locale a media scala, pesato sui mezzitoni |
 | | **Dehaze** | toglie (+) o aggiunge (−) velo; il velo è quello che dichiari in Avanzate › Velo |
@@ -83,6 +86,22 @@ Il rapporto è ottenuto con gli stessi slot della curva a zone: uno parte dalla 
 l'intensità risolta perché l'ombra arrivi esattamente sull'obiettivo (verificato su campi uniformi, nel modello e
 nel plugin). Schiarire l'ombra comprime i toni: oltre la pendenza minima della curva non si va, e la riga Rapporto
 mostra il valore raggiungibile. Avvisa anche se la luce supera il bianco della Destinazione.
+
+### Modalità Zonale
+
+Il sistema zonale di Ansel Adams: esponi per le ombre, sviluppa per le luci. Zona V è il grigio 18 %, zona 0 il nero e
+zona X il bianco della Destinazione, con cinque zone per lato: le zone dipendono dall'uscita. Con un Rec.709 CST
+(7 stop) sopra il grigio una zona vale mezzo stop, sotto 0,9; con la Scena DWG (18 stop) quasi due.
+
+| Controllo | Cosa fa |
+|---|---|
+| Ombra, Luce | i due punti sull'immagine: un'ombra e una luce in cui vuoi ancora dettaglio |
+| Misura zone | legge i due punti; l'ombra resta sulla zona scelta, la luce va dove cade con sviluppo normale (N 0) |
+| Ombra sulla zona (III) | esposizione: tutta l'immagine si sposta perché l'ombra arrivi lì |
+| Luci sulla zona (VIII) | sviluppo: ciò che sta sopra l'ombra si espande (N+) o si contrae (N−) perché la luce arrivi lì |
+
+La riga Zone mostra le zone misurate e quelle ottenute, lo sviluppo N± e l'estensione dell'uscita. Contrarre oltre la
+pendenza minima della curva non si può: la riga lo dice. Verificato su campi uniformi, nel modello e nel plugin.
 
 Da provare in Resolve: comandi che compaiono e spariscono al cambio di modalità, i punti sul viewer, la lettura
 dell'immagine quando premi Misura.

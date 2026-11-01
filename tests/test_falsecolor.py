@@ -206,7 +206,7 @@ class PluginWiring(unittest.TestCase):
     def test_the_icons_are_shipped_and_referenced(self):
         icons = set(re.findall(r'"((?:fc|view)_\w+\.png)"', self.src))
         self.assertEqual(icons, {'fc_exposure.png', 'fc_temperature.png', 'fc_tint.png', 'fc_zones.png',
-                                 'view_gain.png', 'view_base.png'})
+                                 'view_gain.png', 'view_base.png', 'view_zones.png', 'view_zones_grey.png'})
         with open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'Makefile'), encoding='utf-8') as fh:
             makefile = fh.read()
         for icon in icons:

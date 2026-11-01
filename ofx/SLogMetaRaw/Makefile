@@ -23,7 +23,7 @@ LDFLAGS = -bundle -fvisibility=hidden $(ARCH_FLAGS) -framework Metal -framework 
 BUNDLE = SLogMetaRaw.ofx.bundle
 BUILD = build
 RESOURCES = com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png fc_exposure.png fc_temperature.png fc_tint.png \
-            fc_zones.png view_gain.png view_base.png subject_face.png subject_landscape.png
+            fc_zones.png view_gain.png view_base.png subject_face.png subject_landscape.png view_zones.png view_zones_grey.png
 SUPPORT_SRCS = ofxsCore ofxsImageEffect ofxsInteract ofxsLog ofxsMultiThread ofxsParams ofxsProperty ofxsPropertyValidation
 CPP_SRCS = $(wildcard src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
 MM_SRCS = $(wildcard metal/*.mm)

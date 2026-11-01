@@ -106,6 +106,7 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
 2. Modalità di sviluppo del Detail (P-003 nell'Atlante, in corso). Fatto (01/11/2026): menu Modalità, Ingresso
    (IDT), Destinazione (ODT), modalità Cinematografico (rapporto di luce misurato sul viso); modello, parità CPU e
    golden aggiornati, kernel CPU/Metal invariati. Da provare in Resolve: `setIsSecret` dal vivo, punti Double2D sul
-   viewer, `fetchImage` durante Misura. Da fare: Zonale, Stampa, Recupero HDR→SDR.
+   viewer, `fetchImage` durante Misura. Fatto anche: Zonale e vista zone (kernel CPU e Metal: `view` 3/4,
+   `zoneWhite`/`zoneBlack` in `DetailParams`), Destinazione Scena DWG. Da fare: Stampa, Recupero HDR→SDR.
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

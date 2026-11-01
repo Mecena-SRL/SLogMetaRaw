@@ -2,10 +2,10 @@ param:Controls|OfxParamTypePage||||||||||||||||
 param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllare gli aggiornamenti|||
 param:detailInfo|OfxParamTypeString|Detail|Spaziale · escluso da Generate LUT|||0|||||||0||||
 param:modeGroup|OfxParamTypeGroup|Sviluppo e spazio colore|||||||||||||||1
-param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato sull'immagine|Standard,Cinematografico||
+param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato sull'immagine. Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone|Standard,Cinematografico,Zonale||
 param:modeInfo|OfxParamTypeString|Cosa fa|Toni locali, presenza e zone: Gamma dinamica, Presenza, Zone locali|modeGroup||0|||||||0||||
 param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|modeGroup|||||||||0|Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
-param:destination|OfxParamTypeChoice|Destinazione (ODT)|0|modeGroup|||||||||0|La trasformazione dopo il nodo: decide dove deve arrivare il massimo registrato. Dal Bianco usa Avanzate › Bianco; le altre lo fissano (CST 2,5 stop, DRT 4,5, PQ 1000 nit 6,5). Il nodo non converte: lavora sempre nella codifica d'ingresso|Dal Bianco (manuale),Rec.709 · CST senza tone mapping,Rec.709 · DRT (ACES, AgX, DaVinci),HDR PQ 1000 nit||
+param:destination|OfxParamTypeChoice|Destinazione (ODT)|0|modeGroup|||||||||0|La trasformazione dopo il nodo: decide dove arrivano il bianco (zona X) e il nero (zona 0). Dal Bianco usa Avanzate › Bianco; le altre lo fissano: CST 2,5 stop sopra il grigio e 4,5 sotto (7 stop in tutto), DRT 4,5 / 6, PQ 1000 nit 6,5 / 7, Scena DaVinci WG 9 / 9. Il nodo non converte: lavora sempre nella codifica d'ingresso|Dal Bianco (manuale),Rec.709 · CST senza tone mapping,Rec.709 · DRT (ACES, AgX, DaVinci),HDR PQ 1000 nit,Scena · DaVinci WG/Intermediate (ODT dopo)||
 param:cinemaGroup|OfxParamTypeGroup|Cinematografico|||1||||||||||||1
 param:subjectFace|OfxParamTypeBoolean|Soggetto: viso|1|cinemaGroup|1||||||||0|Incarnato: misura la luminanza (Y), aree piccole, tiene la pelle||subject_face.png|
 param:subjectLandscape|OfxParamTypeBoolean|Soggetto: paesaggio|0|cinemaGroup|1||||||||0|Sfondo o paesaggio: misura la norma del colore, aree grandi||subject_landscape.png|
@@ -17,9 +17,18 @@ param:ratioHardness|OfxParamTypeDouble|Durezza passaggio|50|cinemaGroup|1||0|100
 param:ratioBackground|OfxParamTypeDouble|Spegni sfondo|0|cinemaGroup|1||0|100|0|100|1|2||Porta verso il nero cio che e sotto l'ombra del soggetto: il fondo del chiaroscuro. 100 = 4 stop|||
 param:ratioSubjectLift|OfxParamTypeDouble|Luce sul soggetto|0|cinemaGroup|1||0|100|0|100|1|2||Alza il lato illuminato e cio che e sopra, rapporto invariato. 100 = 1 stop|||
 param:ratioInfo|OfxParamTypeString|Rapporto|Scegli i due punti e premi Misura rapporto|cinemaGroup|1|0|||||||0||||
+param:adamsGroup|OfxParamTypeGroup|Zonale|||1||||||||||||1
+param:adamsShadowPos|OfxParamTypeDouble2D|Ombra|0.3,0.3|adamsGroup|1||||||||0|Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)|||
+param:adamsHighPos|OfxParamTypeDouble2D|Luce|0.7,0.7|adamsGroup|1||||||||0|Una luce in cui vuoi ancora dettaglio|||
+param:adamsMeasure|OfxParamTypePushButton|Misura zone||adamsGroup|1|||||||||Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con sviluppo normale (N 0)|||
+param:adamsShadowPlace|OfxParamTypeDouble|Ombra sulla zona|3|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui collocare l'ombra misurata (esposizione): III = ombra con dettaglio|||
+param:adamsHighPlace|OfxParamTypeDouble|Luci sulla zona|8|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui portare la luce misurata (sviluppo): sopra quella misurata N+, sotto N-. VIII = luce con dettaglio|||
+param:adamsInfo|OfxParamTypeString|Zone|Scegli i due punti e premi Misura zone|adamsGroup|1|0|||||||0||||
 param:rangeGroup|OfxParamTypeGroup|Gamma dinamica|||||||||||||||1
 param:viewGain|OfxParamTypeBoolean|Vista: guadagno|0|rangeGroup|||||||||0|Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. Bande a 0,25 / 0,5 / 1 / 2 stop||view_gain.png|
 param:viewBase|OfxParamTypeBoolean|Vista: base|0|rangeGroup|||||||||0|Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio||view_base.png|
+param:viewZonesColor|OfxParamTypeBoolean|Vista: zone|0|rangeGroup|||||||||0|Mostra la zona (0-X) in cui cade ogni area dopo il nodo, a colori: viola 0, blu I-II, verde-azzurro III-IV, grigio V, rosa VI, giallo VII, arancio VIII, rosso IX, bianco X. Zona 0 = nero e zona X = bianco della Destinazione||view_zones.png|
+param:viewZonesGrey|OfxParamTypeBoolean|Vista: zone in grigi|0|rangeGroup|||||||||0|Le stesse zone come scala di undici grigi, dal nero (0) al bianco (X)||view_zones_grey.png|
 param:localContrast|OfxParamTypeDouble|Local Contrast|0|rangeGroup|||-100|50|-100|50|0.1|2||Contrasto delle grandi aree attorno al grigio, a dettaglio intatto. Il Contrast del nodo principale e globale; qui il dettaglio fine resta com'e|||
 param:localHighlights|OfxParamTypeDouble|Local Highlights|0|rangeGroup|||-100|100|-100|100|0.1|2||Negativo: comprime le grandi aree luminose e tiene, anzi rinforza, la texture (a -100 il massimo registrato arriva sul Bianco di Avanzate); le luci piu compresse vanno verso il bianco. Positivo: piu stacco per aree. Grigio e toni sotto restano fermi|||
 param:localShadows|OfxParamTypeDouble|Local Shadows|0|rangeGroup|||-100|100|-100|100|0.1|2||Apre (positivo) o chiude le ombre per aree, a dettaglio intatto. 100 = 2 stop|||
@@ -59,3 +68,5 @@ param:settingsVersion|OfxParamTypeInteger||0||1||||||||0||||
 param:ratioLight|OfxParamTypeDouble||0||1||||||||0||||
 param:ratioShadow|OfxParamTypeDouble||0||1||||||||0||||
 param:ratioMeasured|OfxParamTypeDouble||0||1||||||||0||||
+param:adamsShadowL|OfxParamTypeDouble||0||1||||||||0||||
+param:adamsHighL|OfxParamTypeDouble||0||1||||||||0||||

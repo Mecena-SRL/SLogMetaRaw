@@ -13,6 +13,8 @@ editor reads as "contrast":
     fc_zones.png        four bands           the tone zones, in their false-colour tints
     view_gain.png       blue | grey | orange what the Detail node lowers, leaves, raises
     view_base.png       smooth dark -> light the edge-aware base, without its detail
+    view_zones.png      eleven bands         the zones 0..X of the Detail's zone view, in its colours
+    view_zones_grey.png eleven greys         the same as a grey scale
     subject_face.png    a face lit from one side   Cinematografico: the subject is a face (skin)
     subject_landscape.png  a mountain under a sky  Cinematografico: the subject is a landscape
 
@@ -33,6 +35,11 @@ ICONS = {
     'fc_tint':        [(0.24, 0.81, 0.29), (0.88, 0.29, 0.82)],
     'fc_zones':       [(0.42, 0.20, 0.72), (0.18, 0.45, 0.95), (0.98, 0.78, 0.20), (0.98, 0.98, 0.95)],
     'view_gain':      [(0.17, 0.45, 1.00), (0.55, 0.55, 0.57), (1.00, 0.54, 0.12)],
+    # math/Detail.h SM_DT_ZONE_RGB
+    'view_zones':     [(0.25, 0.00, 0.35), (0.10, 0.10, 0.55), (0.10, 0.35, 0.85), (0.00, 0.60, 0.70),
+                       (0.25, 0.65, 0.30), (0.50, 0.50, 0.50), (0.95, 0.65, 0.55), (0.95, 0.85, 0.25),
+                       (1.00, 0.60, 0.10), (0.95, 0.20, 0.10), (1.00, 1.00, 1.00)],
+    'view_zones_grey': [(0.1 * z,) * 3 for z in range(11)],
 }
 SMOOTH = {'view_base': ((0.08, 0.08, 0.09), (0.94, 0.94, 0.94))}
 

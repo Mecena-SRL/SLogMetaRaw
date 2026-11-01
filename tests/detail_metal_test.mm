@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     id<MTLBuffer> out = [device newBufferWithLength:img.size() * 4 options:MTLResourceStorageModeShared];
     Parallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < 11; ++k) {
+    for (int k = 0; k < 14; ++k) {
         SMDetailControls c = sm_detail_defaults();
         switch (k) {
         case 0: c.localHighlights = -100; c.localShadows = 80; break;
@@ -54,6 +54,11 @@ int main(int argc, char** argv)
         case 8: c.viewBase = 1; c.detailRadius = 8; c.edgeThreshold = 0.25; break;
         case 9: c.localHighlights = 60; c.localContrast = 30; break;
         case 10: c.localHighlights = -100; c.localWhite = 4.5; c.texture = 40; break;
+        case 11: c.viewZones = 1; c.destination = 1; c.localShadows = 50; break;
+        case 12: c.viewZones = 2; c.destination = 4; c.devMode = SM_DT_MODE_ZONAL; c.adamsShadowL = -3;
+                 c.adamsHighL = 2; c.adamsHighPlace = 9; break;
+        case 13: c.devMode = SM_DT_MODE_CINEMA; c.ratioLight = 1; c.ratioShadow = -2; c.ratioMeasured = 3;
+                 c.ratioTarget = 4; c.ratioBackground = 50; break;
         }
         DetailParams p;
         dt_prepare(&p, W, H, timing ? H : 1080.0, 1.0, 8, 9, &c, timing ? SM_DT_GRID_BASE : 45);
