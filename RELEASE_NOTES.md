@@ -2,6 +2,16 @@
 
 ## In sviluppo
 
+### Plugin
+
+- Detail, nuovo gruppo in cima «Sviluppo e spazio colore»: **Modalità** (Standard, Cinematografico) con una riga che
+  spiega cosa fa, **Ingresso (IDT)** (prima Avanzate › Ingresso nodo, valore salvato invariato) e **Destinazione
+  (ODT)**, che fissa dove arriva il bianco (Rec.709 CST 2,5 stop, Rec.709 DRT 4,5, PQ 1000 6,5) senza convertire.
+- Detail, modalità **Cinematografico** per i primi piani: misura il rapporto luce/ombra sul viso in due punti e lo
+  porta al rapporto scelto (1:2, 1:4, 1:8…) tenendo ferma la luce; durezza del passaggio, Spegni sfondo, Luce sul
+  soggetto; soggetto viso o paesaggio con icone. Da provare in Resolve.
+- I nodi salvati restano identici: Standard e «Dal Bianco (manuale)» sono i default.
+
 ### Script
 
 - Dettagli della clip: le sezioni aperte o chiuse restano come le hai lasciate quando selezioni un'altra clip o

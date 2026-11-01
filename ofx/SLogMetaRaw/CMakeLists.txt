@@ -142,7 +142,8 @@ else()
 endif()
 set(BUNDLE_DIR "${CMAKE_BINARY_DIR}/SLogMetaRaw.ofx.bundle")
 set(RESOURCES com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png fc_exposure.png fc_temperature.png
-              fc_tint.png fc_zones.png view_gain.png view_base.png)
+              fc_tint.png fc_zones.png view_gain.png view_base.png
+              subject_face.png subject_landscape.png)
 set(_res_copy)
 foreach(r ${RESOURCES})
   list(APPEND _res_copy COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${r}"

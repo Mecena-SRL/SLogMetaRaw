@@ -12,10 +12,19 @@ struct SMDetailControls {
     double preserveDetail, detailRadius, edgeThreshold, noiseThreshold, clarityCenter, hazeLevel, hazeWarmth;
     double localWhite;
     int viewGain, viewBase;
+    int devMode, destination, subject;            // SM_DT_MODE_*, SM_DT_DEST_WHITE, 0 viso / 1 paesaggio
+    double ratioLight, ratioShadow, ratioMeasured; // Cinematografico: L of the two points read, their ratio in stops
+    double ratioTarget, ratioHardness, ratioBackground, ratioSubjectLift;
 };
 
 static const int SM_DT_GRID_BASE = 540;   // working height: H / s in [0.707, 1.414) * 540
 static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a stop under grey: the detail is kept there
+static const int SM_DT_MODE_STANDARD = 0, SM_DT_MODE_CINEMA = 1;
+static const double SM_DT_DEST_WHITE[4] = { 0.0, 2.5, 4.5, 6.5 };  // manual (localWhite), Rec.709 CST, DRT, PQ 1000
+static const double SM_DT_SUBJECT_RADIUS[2] = { 0.75, 2.0 };       // Cinematografico: base radius x, Viso / Paesaggio
+static const double SM_DT_RATIO_MIN_GAP = 0.05;
+static const double SM_DT_RATIO_E_MAX = 6.0;
+static const int SM_DT_RATIO_STEPS = 60;
 
 static inline SMDetailControls sm_detail_defaults(void) {
     SMDetailControls c = SMDetailControls();
@@ -27,7 +36,84 @@ static inline SMDetailControls sm_detail_defaults(void) {
     c.noiseThreshold = 0.04;
     c.hazeLevel = 2.0;
     c.localWhite = 2.5;
+    c.ratioTarget = 1.0;
+    c.ratioHardness = 50.0;
     return c;
+}
+
+// The zone slot of sm_t5_zone in double (tests/model/tone.py t5_zone), for the host-side solve.
+static inline double dt_zone_d(double t, double edge, double dir, double k, double fill) {
+    const double d = (t - edge) * dir;
+    if (d <= 0.0) return 0.0;
+    double psi;
+    if (d < fill) { const double u = d / fill; psi = fill * (u * u * u - 0.5 * u * u * u * u); }
+    else psi = d - 0.5 * fill;
+    const double x = k * psi, w = 1.0 / 6.0;   // SM_T5_W
+    if (x <= 1.0 - w) return x;
+    if (x >= 1.0 + w) return 1.0;
+    const double v = (x - (1.0 - w)) / (2.0 * w);
+    return x - 2.0 * w * (v * v * v - 0.5 * v * v * v * v);
+}
+
+// T(t) - t of the slots alone (no Contrast, no shoulder), placed as sm_zone_policy places them, in double.
+static inline double dt_slots_d(double t, const double nominal[SM_T5_SLOTS][4]) {
+    double d = 0.0;
+    for (int i = 0; i < SM_T5_SLOTS; ++i) {
+        const double E = nominal[i][0];
+        if (E == 0.0) continue;
+        const double dir = i < SM_T5_UP ? 1.0 : -1.0;
+        const double fm = fmax(nominal[i][2], (double)SM_T5_F_MIN);
+        const double lim = dir * E < 0.0 ? 1.0 - SM_T5_SMIN : nominal[i][3] - 1.0;
+        const double k = fmin((double)SM_T5_RMAX / fm, lim / fabs(E));
+        d += E * dt_zone_d(t + d, nominal[i][1], dir, k, 0.25 * fm);
+    }
+    return d;
+}
+
+// Cinematografico (tests/model/detail.py cinema_nominal): slot 4 starts at the light and its E is solved so the
+// shadow lands on the target ratio while the light stays; slot 1 lifts the subject, slot 6 lowers the background.
+static inline void dt_cinema_nominal(const SMDetailControls* v, double nominal[SM_T5_SLOTS][4]) {
+    for (int i = 0; i < SM_T5_SLOTS; ++i) {
+        nominal[i][0] = 0.0; nominal[i][1] = 0.0; nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR;
+    }
+    const double Ll = v->ratioLight, Ls = v->ratioShadow, gap = Ll - Ls;
+    if (!(gap > SM_DT_RATIO_MIN_GAP)) return;
+    const double lift = v->ratioSubjectLift / 100.0;
+    if (lift > 0.0) { nominal[1][0] = lift; nominal[1][1] = Ll - 0.5; nominal[1][2] = 1.0; nominal[1][3] = SM_T5_SMAX_CR; }
+    const double push = fmax(v->ratioTarget - v->ratioMeasured, 0.0), bg = v->ratioBackground / 100.0;
+    if (bg > 0.0) {
+        nominal[6][0] = -4.0 * bg; nominal[6][1] = Ls - push - 0.25; nominal[6][2] = 1.5; nominal[6][3] = SM_T5_SMAX_ZONE;
+    }
+    const double f = fmax(0.25, gap * (1.0 - 0.0075 * v->ratioHardness)), want = v->ratioMeasured - v->ratioTarget;
+    nominal[4][1] = Ll; nominal[4][2] = f; nominal[4][3] = SM_T5_SMAX_ZONE;
+    double lo = -SM_DT_RATIO_E_MAX, hi = SM_DT_RATIO_E_MAX, E;
+    nominal[4][0] = lo;
+    const double sLo = dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal);
+    nominal[4][0] = hi;
+    const double sHi = dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal);
+    if (sLo >= want) E = lo;
+    else if (sHi <= want) E = hi;
+    else {
+        for (int it = 0; it < SM_DT_RATIO_STEPS; ++it) {
+            const double mid = 0.5 * (lo + hi);
+            nominal[4][0] = mid;
+            if (dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal) < want) lo = mid; else hi = mid;
+        }
+        E = 0.5 * (lo + hi);
+    }
+    nominal[4][0] = E;
+}
+
+// The ratio in stops the slots give between the two points (= target unless it is out of reach).
+static inline double dt_cinema_reached(const SMDetailControls* v) {
+    double nominal[SM_T5_SLOTS][4];
+    dt_cinema_nominal(v, nominal);
+    return v->ratioMeasured + dt_slots_d(v->ratioLight, nominal) - dt_slots_d(v->ratioShadow, nominal);
+}
+
+// The level the recorded top lands on: the node's own Bianco, or the destination's.
+static inline double dt_destination_white(const SMDetailControls* v) {
+    return v->destination >= 1 && v->destination <= 3 ? SM_DT_DEST_WHITE[v->destination] : v->localWhite;
 }
 
 // n with 2 H^2 >= base^2 4^n, integers only: the grid does not jump between proxy and full size.
@@ -90,6 +176,19 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.hazeLevel = sm_clampd(v.hazeLevel, -2, 6);
     v.hazeWarmth = sm_clampd(v.hazeWarmth, -100, 100);
     v.localWhite = sm_clampd(v.localWhite, 1, 10);
+    v.devMode = v.devMode == SM_DT_MODE_CINEMA ? SM_DT_MODE_CINEMA : SM_DT_MODE_STANDARD;
+    v.destination = v.destination < 0 ? 0 : (v.destination > 3 ? 3 : v.destination);
+    v.subject = v.subject ? 1 : 0;
+    v.ratioLight = sm_clampd(v.ratioLight, -16, 16);
+    v.ratioShadow = sm_clampd(v.ratioShadow, -16, 16);
+    v.ratioMeasured = sm_clampd(v.ratioMeasured, 0, 16);
+    v.ratioTarget = sm_clampd(v.ratioTarget, 0, 5);
+    v.ratioHardness = sm_clampd(v.ratioHardness, 0, 100);
+    v.ratioBackground = sm_clampd(v.ratioBackground, 0, 100);
+    v.ratioSubjectLift = sm_clampd(v.ratioSubjectLift, 0, 100);
+    const bool cinema = v.devMode == SM_DT_MODE_CINEMA;
+    if (cinema) v.localHighlights = 0.0;   // the mode sets the tones itself
+    const double radius = v.detailRadius * (cinema ? SM_DT_SUBJECT_RADIUS[v.subject] : 1.0);
 
     *p = DetailParams();
     p->W = W;
@@ -109,7 +208,7 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->ht = (H + p->st - 1) / p->st;
     const double tentVar = p->st >= 2 ? (2.0 * p->st * p->st + 1.0) / 12.0 : 0.0;
     const double sigmaT = sqrt(fmax(sigma2 * sigma2 - tentVar, 0.25)) / p->st;
-    const double radii[5] = { v.detailRadius / 100.0 * gh, 0.005 * gh, 0.025 * gh, 0.005 * gh, 0.02 * gh };
+    const double radii[5] = { radius / 100.0 * gh, 0.005 * gh, 0.025 * gh, 0.005 * gh, 0.02 * gh };
     float* const rx[5] = { &p->rBx, &p->r2x, &p->r3x, &p->rpx, &p->rtx };
     float* const ry[5] = { &p->rBy, &p->r2y, &p->r3y, &p->rpy, &p->rty };
     for (int i = 0; i < 5; ++i) { *rx[i] = (float)(radii[i] / par); *ry[i] = (float)radii[i]; }
@@ -120,14 +219,19 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->nT = dt_gauss_half(sigmaT, p->gT, SM_DT_GT);
 
     double nominal[SM_T5_SLOTS][4] = {};
-    for (int i = 0; i < SM_T5_SLOTS; ++i) { nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR; }
-    const double sh[4] = { 0.02 * v.localShadows, 0.0, 1.5, SM_T5_SMAX_CR };
-    for (int k = 0; k < 4; ++k) nominal[5][k] = sh[k];
-    for (int z = 0; z < 4; ++z) {
-        double* s = nominal[SM_T5_ZONE_SLOT[z]];
-        s[0] = v.zoneExp[z]; s[1] = v.zoneRange[z]; s[2] = v.zoneFalloff[z]; s[3] = SM_T5_SMAX_ZONE;
+    if (cinema) {
+        dt_cinema_nominal(&v, nominal);
+        sm_zone_policy(0.0, 0.0, nominal, &p->curve);
+    } else {
+        for (int i = 0; i < SM_T5_SLOTS; ++i) { nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR; }
+        const double sh[4] = { 0.02 * v.localShadows, 0.0, 1.5, SM_T5_SMAX_CR };
+        for (int k = 0; k < 4; ++k) nominal[5][k] = sh[k];
+        for (int z = 0; z < 4; ++z) {
+            double* s = nominal[SM_T5_ZONE_SLOT[z]];
+            s[0] = v.zoneExp[z]; s[1] = v.zoneRange[z]; s[2] = v.zoneFalloff[z]; s[3] = SM_T5_SMAX_ZONE;
+        }
+        sm_zone_policy(exp2(v.localContrast / 100.0) - 1.0, v.zonePivot, nominal, &p->curve);
     }
-    sm_zone_policy(exp2(v.localContrast / 100.0) - 1.0, v.zonePivot, nominal, &p->curve);
     int slots = 0;
     for (int i = 0; i < SM_T5_SLOTS; ++i) slots |= p->curve.zoneE[i] != 0.0f;
     p->toneOn = (p->curve.conC != 0.0f || slots) ? 1 : 0;
@@ -137,12 +241,13 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     if (v.localHighlights > 0.0) {
         p->hlE = (float)(amount * SM_T5_HL_CPLUS);
     } else if (v.localHighlights < 0.0) {
-        const double top = SM_T5_HL_TOP, land = fmin(v.localWhite, top - SM_T5_HL_MINPULL);
+        const double white = dt_destination_white(&v);
+        const double top = SM_T5_HL_TOP, land = fmin(white, top - SM_T5_HL_MINPULL);
         const double D = sm_shoulder_dd(top - SM_DT_HL_START);
         const double k = D > 0.0 ? fmin(fmax(top - land, 0.0) / D, 1.0 - SM_T5_HL_SMIN) : 0.0;
         p->hlE = (float)(-amount * k);
         p->hlAmount = (float)amount;
-        p->hlWhiteLin = (float)(SM_T5_GREY * exp2(fmax(v.localWhite, top - k * D)));
+        p->hlWhiteLin = (float)(SM_T5_GREY * exp2(fmax(white, top - k * D)));
     }
     p->hlTop = (float)SM_T5_HL_TOP;
     p->hlStart = (float)SM_DT_HL_START;

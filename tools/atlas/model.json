@@ -873,7 +873,7 @@
    "question": "Come lavora il Detail sull'immagine, e in che spazio colore?",
    "subsystem": "sub.detail",
    "basis": "dedotto",
-   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata, da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. Non fa la conversione per lo schermo.",
+   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata in Ingresso (IDT), da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. La modalità (Standard o Cinematografico) decide come si muovono le aree; Destinazione (ODT) dice dove arriva il bianco ma il nodo non converte.",
    "refs": [
     {
      "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
@@ -899,7 +899,7 @@
      "id": "dc.choose",
      "kind": "decision",
      "label": "Quale codifica entra?",
-     "text": "In ordine: 1) Avanzate › Ingresso nodo, se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di S-Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
+     "text": "In ordine: 1) Sviluppo e spazio colore › Ingresso (IDT), se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di S-Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1007,10 +1007,97 @@
      ]
     },
     {
+     "id": "dc.mode",
+     "kind": "decision",
+     "label": "Quale modalità?",
+     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto; Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "param": "param:detail.devMode"
+      },
+      {
+       "param": "param:detail.modeInfo"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_cinematografico_without_a_measure_and_standard_mode_controls_are_inert"
+      }
+     ]
+    },
+    {
+     "id": "dc.measure",
+     "kind": "event",
+     "label": "Misura rapporto",
+     "text": "L'utente mette i punti Viso luce e Viso ombra e preme Misura: il nodo legge la media dell'immagine d'ingresso attorno a ciascun punto (1% dell'altezza). Viso: luminanza Y; Paesaggio: la norma. Salva L dei due punti e il rapporto, e imposta l'obiettivo uguale al misurato. Non ancora provato in Resolve (lettura dell'immagine fuori dal render).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio"
+      },
+      {
+       "param": "param:detail.ratioLightPos"
+      },
+      {
+       "param": "param:detail.ratioShadowPos"
+      },
+      {
+       "param": "param:detail.ratioMeasure"
+      },
+      {
+       "param": "param:detail.subjectFace"
+      },
+      {
+       "param": "param:detail.subjectLandscape"
+      },
+      {
+       "param": "param:detail.ratioInfo"
+      }
+     ]
+    },
+    {
+     "id": "dc.cinema",
+     "kind": "function",
+     "label": "Rapporto di luce (Cinematografico)",
+     "text": "Usa gli stessi slot della curva a zone: uno parte dalla luce e sposta ciò che sta sotto, con E risolto (bisezione) perché l'ombra arrivi sul rapporto obiettivo mentre la luce resta ferma. Durezza = larghezza del passaggio; Spegni sfondo abbassa sotto l'ombra; Luce sul soggetto alza la luce a rapporto invariato. Alzare l'ombra oltre la pendenza minima non è possibile: il pannello mostra il rapporto raggiungibile. Raggio ×0,75 (viso) o ×2 (paesaggio).",
+     "basis": "verificato",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached"
+      },
+      {
+       "param": "param:detail.ratioTarget"
+      },
+      {
+       "param": "param:detail.ratioHardness"
+      },
+      {
+       "param": "param:detail.ratioBackground"
+      },
+      {
+       "param": "param:detail.ratioSubjectLift"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_cinematografico_lands_the_shadow_on_the_target_ratio_and_keeps_the_light"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_cinematografico_an_unreachable_ratio_stops_where_the_slope_limit_is"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_cinematografico_background_only_goes_down"
+      }
+     ]
+    },
+    {
      "id": "dc.tones",
      "kind": "function",
-     "label": "Toni locali e zone",
-     "text": "Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato.",
+     "label": "Toni locali e zone (Standard)",
+     "text": "In Standard: Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. In Cinematografico non agiscono.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1031,7 +1118,7 @@
      "id": "dc.hl",
      "kind": "function",
      "label": "Local Highlights",
-     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul Bianco.",
+     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul bianco della Destinazione (Dal Bianco: Avanzate › Bianco). Solo in Standard.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1039,6 +1126,15 @@
       },
       {
        "param": "param:detail.localWhite"
+      },
+      {
+       "param": "param:detail.destination"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_destination_white_moves_the_highlight_landing"
       }
      ]
     },
@@ -1121,7 +1217,7 @@
      "id": "dc.out",
      "kind": "end",
      "label": "Uscita = stessa codifica",
-     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709) va fatta dopo, in un altro nodo. Il Bianco (Avanzate) va tarato su quella conversione: 2,5 stop per un CST senza tone mapping, 4–5 con un DRT.",
+     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709, o PQ) va fatta dopo, in un altro nodo. Destinazione (ODT) la dichiara: fissa il bianco a 2,5 stop (CST), 4,5 (DRT) o 6,5 (PQ 1000); Dal Bianco usa Avanzate › Bianco.",
      "basis": "verificato",
      "refs": [
       {
@@ -1190,7 +1286,7 @@
     {
      "id": "c9",
      "from": "dc.base",
-     "to": "dc.tones",
+     "to": "dc.mode",
      "kind": "data",
      "label": "base B, dettaglio L−B"
     },
@@ -1242,6 +1338,34 @@
      "to": "dc.out",
      "kind": "data",
      "label": "stessa codifica dell'ingresso"
+    },
+    {
+     "id": "c17",
+     "from": "dc.mode",
+     "to": "dc.tones",
+     "kind": "decision",
+     "label": "Standard"
+    },
+    {
+     "id": "c18",
+     "from": "dc.mode",
+     "to": "dc.cinema",
+     "kind": "decision",
+     "label": "Cinematografico"
+    },
+    {
+     "id": "c19",
+     "from": "dc.measure",
+     "to": "dc.cinema",
+     "kind": "control",
+     "label": "L luce, L ombra, rapporto misurato"
+    },
+    {
+     "id": "c20",
+     "from": "dc.cinema",
+     "to": "dc.presence",
+     "kind": "data",
+     "label": "base spostata"
     }
    ],
    "view": {
@@ -1285,50 +1409,65 @@
       2
      ],
      "dc.tones": [
-      6,
-      2
-     ],
-     "dc.hl": [
       7,
       2
      ],
-     "dc.presence": [
+     "dc.hl": [
       8,
       2
      ],
-     "dc.haze": [
+     "dc.presence": [
       9,
       2
      ],
-     "dc.gain": [
+     "dc.haze": [
       10,
       2
      ],
-     "dc.encode": [
+     "dc.gain": [
       11,
       2
      ],
-     "dc.out": [
+     "dc.encode": [
       12,
+      2
+     ],
+     "dc.out": [
+      13,
       0
+     ],
+     "dc.mode": [
+      6,
+      2
+     ],
+     "dc.cinema": [
+      8,
+      1
+     ],
+     "dc.measure": [
+      7,
+      3
      ]
     }
    },
    "proposals": [
     {
      "id": "P-003",
-     "status": "proposta",
-     "label": "Modalità di sviluppo (Standard, Zonale, Stampa, Recupero HDR→SDR)",
+     "status": "in corso",
+     "label": "Modalità di sviluppo: Standard e Cinematografico fatte; Zonale, Stampa, Recupero HDR→SDR da fare",
      "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
-     "change": "Menu «Sviluppo» in cima con descrizione breve e comandi per modalità; selettore «Destinazione» (ODT) che tara le zone. Proposta da discutere prima del codice.",
-     "impact": "Pannello Detail (nuovi parametri, nomi permanenti), math/Detail.h, Metal, golden params_detail.txt. Default Standard: grade salvati invariati.",
-     "verification": "Da definire: modello Python per ogni modalità, parità CPU/Metal, prova in Resolve della visibilità dinamica dei comandi.",
+     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Restano Zonale, Stampa, Recupero.",
+     "impact": "Pannello Detail (nuovi parametri, nomi permanenti; nodeInput spostato, nome invariato), math/DetailHost.h (solo host: kernel CPU/Metal invariati), golden params_detail.txt. Default Standard e Dal Bianco: grade salvati invariati.",
+     "verification": "Modello Python e parità CPU per Cinematografico e Destinazione (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura (lettura immagine fuori dal render).",
      "refs": [
       {
        "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
       },
       {
        "param": "param:detail.nodeInput"
+      },
+      {
+       "param": "param:detail.devMode"
       }
      ]
     }
@@ -1370,11 +1509,16 @@
    "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel": "f33417c4ec86",
    "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "d1ebf18fad71",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "154dbfe19a4a",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "69c3219b98fb",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal": "e063939095fb",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached": "7094c71738f1",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "ab2d92710af7",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "c071641cd2d3",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio": "67805019a2be",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "1742df6578a9",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "c1abf1e6a54d",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"

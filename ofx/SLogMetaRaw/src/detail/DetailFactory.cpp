@@ -31,6 +31,31 @@ static DoubleParamDescriptor* trim(ImageEffectDescriptor& d, PageParamDescriptor
     return p;
 }
 
+// A point on the picture, normalised to the frame (0,0 bottom left): where Misura reads light or shadow.
+static void definePoint(ImageEffectDescriptor& d, PageParamDescriptor* page, GroupParamDescriptor* group,
+                        const char* name, const char* label, double x, double y, const char* hint)
+{
+    if (!claimName(name)) return;
+    Double2DParamDescriptor* p = d.defineDouble2DParam(name);
+    p->setLabels(label, label, label);
+    p->setHint(hint);
+    p->setDoubleType(eDoubleTypeXYAbsolute);
+    p->setDefaultCoordinateSystem(eCoordinatesNormalised);
+    p->setDefault(x, y);
+    p->setAnimates(false);
+    p->setIsSecret(true);   // shown in Cinematografico
+    p->setParent(*group);
+    page->addChild(*p);
+}
+
+static void defineHiddenDouble(ImageEffectDescriptor& d, PageParamDescriptor* page, const char* name, double def)
+{
+    if (!claimName(name)) return;
+    DoubleParamDescriptor* p = d.defineDoubleParam(name);
+    p->setDefault(def);
+    hideParam(p, page);
+}
+
 void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
 {
     resetParamNames();
@@ -38,6 +63,57 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     PageParamDescriptor* page = d.definePageParam("Controls");
     defineVersionButton(d, page);
     defineInfo(d, page, nullptr, "detailInfo", "Detail", "Spaziale · escluso da Generate LUT");
+
+    GroupParamDescriptor* mode = defineGroup(d, page, "modeGroup", "Sviluppo e spazio colore", true);
+    defineChoice(d, page, "devMode", "Modalità", kDetailModeNames, kDetailModeCount, 0,
+                 "Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato "
+                 "sull'immagine", mode);
+    defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
+    defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
+                 "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
+                 "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
+    defineChoice(d, page, "destination", "Destinazione (ODT)", kDetailDestNames, kDetailDestCount, 0,
+                 "La trasformazione dopo il nodo: decide dove deve arrivare il massimo registrato. Dal Bianco usa "
+                 "Avanzate › Bianco; le altre lo fissano (CST 2,5 stop, DRT 4,5, PQ 1000 nit 6,5). Il nodo non "
+                 "converte: lavora sempre nella codifica d'ingresso", mode);
+
+    GroupParamDescriptor* cinema = defineGroup(d, page, "cinemaGroup", "Cinematografico", true);
+    if (cinema) cinema->setIsSecret(true);
+    if (auto* p = defineToggle(d, page, "subjectFace", "Soggetto: viso", "subject_face.png",
+                               "Incarnato: misura la luminanza (Y), aree piccole, tiene la pelle", cinema)) {
+        p->setDefault(true);
+        p->setIsSecret(true);
+    }
+    if (auto* p = defineToggle(d, page, "subjectLandscape", "Soggetto: paesaggio", "subject_landscape.png",
+                               "Sfondo o paesaggio: misura la norma del colore, aree grandi", cinema))
+        p->setIsSecret(true);
+    definePoint(d, page, cinema, "ratioLightPos", "Viso luce", 0.4, 0.55,
+                "Punto sul lato illuminato del soggetto (frazione del fotogramma, 0,0 in basso a sinistra)");
+    definePoint(d, page, cinema, "ratioShadowPos", "Viso ombra", 0.6, 0.55,
+                "Punto sul lato in ombra del soggetto");
+    if (auto* p = defineButton(d, page, "ratioMeasure", "Misura rapporto",
+                               "Legge luce e ombra nei due punti (media su un'area dell'1% dell'altezza) e imposta "
+                               "il rapporto obiettivo uguale al misurato", cinema))
+        p->setIsSecret(true);
+    DoubleParamDescriptor* sliders[] = {
+        defineSlider(d, page, "ratioTarget", "Rapporto obiettivo (stop)", 1, 0, 5, 0, 5, 0.05,
+                     "1 stop = 1:2, 2 = 1:4, 3 = 1:8. La luce resta ferma, l'ombra si sposta. Misura lo imposta da solo",
+                     cinema),
+        defineSlider(d, page, "ratioHardness", "Durezza passaggio", 50, 0, 100, 0, 100, 1,
+                     "Quanto e netto il passaggio dalla luce all'ombra: 0 morbido (luce diffusa), 100 netto (taglio di "
+                     "luce)", cinema),
+        defineSlider(d, page, "ratioBackground", "Spegni sfondo", 0, 0, 100, 0, 100, 1,
+                     "Porta verso il nero cio che e sotto l'ombra del soggetto: il fondo del chiaroscuro. 100 = 4 stop",
+                     cinema),
+        defineSlider(d, page, "ratioSubjectLift", "Luce sul soggetto", 0, 0, 100, 0, 100, 1,
+                     "Alza il lato illuminato e cio che e sopra, rapporto invariato. 100 = 1 stop", cinema) };
+    for (DoubleParamDescriptor* p : sliders)
+        if (p) {
+            p->setDigits(2);
+            p->setIsSecret(true);
+        }
+    if (auto* p = defineInfo(d, page, cinema, "ratioInfo", "Rapporto", "Scegli i due punti e premi Misura rapporto"))
+        p->setIsSecret(true);
 
     GroupParamDescriptor* range = defineGroup(d, page, "rangeGroup", "Gamma dinamica", true);
     defineToggle(d, page, "viewGain", "Vista: guadagno", "view_gain.png",
@@ -84,11 +160,8 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     if (auto* p = defineSlider(d, page, "localWhite", "Bianco (stop)", 2.5, 1, 10, 1, 8, 0.05,
                                "Dove Local Highlights -100 porta il massimo registrato, in stop sopra il grigio 18%. "
                                "2,5 = bianco Rec.709 con un CST senza tone mapping; con un DRT (ACES, AgX, DaVinci) "
-                               "alza a 4-5", adv))
+                               "alza a 4-5. Vale con Destinazione: Dal Bianco", adv))
         p->setDigits(2);
-    defineChoice(d, page, "nodeInput", "Ingresso nodo", kNodeInputNames, kNodeInputCount, 0,
-                 "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
-                 "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", adv);
 
     GroupParamDescriptor* haze = defineGroup(d, page, "hazeGroup", "Velo", false);
     defineSlider(d, page, "hazeLevel", "Livello velo (EV)", 2, -2, 6, -2, 6, 0.05,
@@ -100,6 +173,9 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineHiddenInt(d, page, "camSpace", -1);
     defineHiddenInt(d, page, "camGamma", -1);
     defineHiddenInt(d, page, "settingsVersion", 0);
+    defineHiddenDouble(d, page, "ratioLight", 0.0);      // L of the norm at the two points, set by Misura
+    defineHiddenDouble(d, page, "ratioShadow", 0.0);
+    defineHiddenDouble(d, page, "ratioMeasured", 0.0);   // their ratio in stops (Y for a face, the norm for a landscape)
 }
 
 ImageEffect* DetailFactory::createInstance(OfxImageEffectHandle p_Handle, ContextEnum)

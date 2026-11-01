@@ -55,7 +55,12 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
          {'localHighlights': -80, 'viewGain': 1}, {'viewBase': 1, 'detailRadius': 8, 'edgeThreshold': 0.25},
          {'texture': 50, 'clarity': 50, 'localShadows': 50, 'dehaze': 30},
          {'localHighlights': 60, 'localContrast': 30}, {'localHighlights': -100, 'localWhite': 4.5, 'texture': 40},
-         {'localHighlights': -50, 'noiseThreshold': 0}]
+         {'localHighlights': -50, 'noiseThreshold': 0},
+         {'localHighlights': -100, 'destination': 2, 'localWhite': 1.5},
+         {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -3.0, 'ratioMeasured': 4.0, 'ratioTarget': 5.0,
+          'ratioBackground': 40, 'ratioSubjectLift': 30, 'texture': 30, 'localHighlights': -80},
+         {'devMode': 1, 'subject': 1, 'ratioLight': 0.5, 'ratioShadow': -2.0, 'ratioMeasured': 2.5,
+          'ratioTarget': 1.5, 'ratioHardness': 0, 'localContrast': 40}]
 
 
 class Model(unittest.TestCase):
@@ -175,11 +180,80 @@ class Model(unittest.TestCase):
         self.assertTrue(all(math.isfinite(c) for i, px in enumerate(out) if i not in (5 * 48 + 7, 9 * 48 + 30)
                             for c in px))
 
+    def flat_g(self, ev, ctrl):
+        img = [[dm.encode1(0.18 * 2 ** ev, GAMMA)] * 3] * (32 * 18)
+        _, planes = D.render(img, 32, 18, D.prepare(32, 18, ctrl, space=SPACE, base=BASE, href=HREF), GAMMA)
+        return planes['L'][200], planes['G'][200]
+
+    def test_cinematografico_lands_the_shadow_on_the_target_ratio_and_keeps_the_light(self):
+        Ll, Ls = self.flat_g(1.0, {})[0], self.flat_g(-1.5, {})[0]   # L as the node reads it
+        for target, hard, bg, lift in ((4.0, 50, 0, 0), (1.5, 50, 0, 0), (4.5, 100, 60, 40), (3.0, 0, 30, 0)):
+            ctrl = {'devMode': 1, 'ratioLight': Ll, 'ratioShadow': Ls, 'ratioMeasured': Ll - Ls,
+                    'ratioTarget': target, 'ratioHardness': hard, 'ratioBackground': bg, 'ratioSubjectLift': lift}
+            (l1, g1), (l2, g2) = self.flat_g(Ll, ctrl), self.flat_g(Ls, ctrl)
+            self.assertAlmostEqual((l1 + g1) - (l2 + g2), target, places=6, msg=ctrl)
+            if not lift:
+                self.assertAlmostEqual(g1, 0.0, places=9, msg='la luce si e mossa: %s' % ctrl)
+
+    def test_cinematografico_an_unreachable_ratio_stops_where_the_slope_limit_is(self):
+        """Lifting the shadow is a compression: past the flattest slope (SM_T5_SMIN) it stops, and says so."""
+        v = D.controls_clamped({'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -1.5, 'ratioMeasured': 2.5,
+                                'ratioTarget': 0.5})
+        got = D.cinema_reached(v)
+        self.assertGreater(got, 0.5 + 0.1)
+        self.assertLess(got, 2.5)
+
+    def test_cinematografico_background_only_goes_down(self):
+        ctrl = {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -1.0, 'ratioMeasured': 2.0, 'ratioTarget': 2.0}
+        prev = None
+        for bg in (0, 25, 50, 100):
+            g = self.flat_g(-4.0, dict(ctrl, ratioBackground=bg))[1]
+            if prev is not None:
+                self.assertLess(g, prev)
+            prev = g
+
+    def test_cinematografico_without_a_measure_and_standard_mode_controls_are_inert(self):
+        img = scene(32, 18)
+        rest, _ = model(img, {}, 32, 18)
+        out, _ = model(img, {'devMode': 1, 'localShadows': 80, 'localContrast': 40, 'localHighlights': -100,
+                             'localZoneLightExp': 2}, 32, 18)
+        self.assertEqual(out, rest)
+
+    def test_destination_white_moves_the_highlight_landing(self):
+        top = D.prepare(64, 64, {'localHighlights': -100, 'destination': 1, 'localWhite': 8})
+        same = D.prepare(64, 64, {'localHighlights': -100, 'localWhite': 2.5})
+        self.assertEqual((top['hlE'], top['hlWhiteLin']), (same['hlE'], same['hlWhiteLin']))
+        pq = D.prepare(64, 64, {'localHighlights': -100, 'destination': 3})
+        self.assertGreater(pq['hlE'], same['hlE'])
+
     def test_dehaze_leaves_everything_above_the_veil_alone(self):
         img = [[dm.encode1(0.18 * 2 ** ev, GAMMA)] * 3 for ev in [3.0 + 0.01 * i for i in range(32 * 18)]]
         out, _ = model(img, {'dehaze': 100, 'hazeLevel': 2.0}, 32, 18)
         worst = max(abs(ev_of(a) - ev_of(b)) for a, b in zip(img, out))
         self.assertLess(worst, 1e-6)
+
+
+class Panel(unittest.TestCase):
+    """The Cinematografico panel: the subject icons ship with the bundle, the mode names stay in step."""
+
+    def test_the_subject_icons_are_shipped_and_referenced(self):
+        src = open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'src', 'detail', 'DetailFactory.cpp'), encoding='utf-8').read()
+        lists = [open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', f), encoding='utf-8').read()
+                 for f in ('Makefile', 'CMakeLists.txt')]
+        for icon in ('subject_face.png', 'subject_landscape.png'):
+            self.assertIn('"%s"' % icon, src)
+            self.assertTrue(os.path.exists(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', icon)), icon)
+            for text in lists:
+                self.assertIn(icon, text)
+
+    def test_the_hidden_values_reach_the_controls(self):
+        """Every Cinematografico value the model reads is bound by the effect (kDetailSliders) or read as a choice."""
+        src = open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'src', 'detail', 'DetailEffect.cpp'), encoding='utf-8').read()
+        for name in D.DETAIL_CONTROLS:
+            if name.startswith('ratio'):
+                self.assertIn('{ "%s", &SMDetailControls::%s }' % (name, name), src)
+        for name in ('m_DevMode->getValueAtTime', 'm_Destination->getValueAtTime', 'm_SubjectLandscape->getValueAtTime'):
+            self.assertIn(name, src)
 
 
 class CpuParity(unittest.TestCase):

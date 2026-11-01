@@ -43,11 +43,24 @@ DETAIL_CONTROLS = {
     'preserveDetail': (0.0, 100.0, 100.0), 'detailRadius': (1.0, 8.0, 4.0), 'edgeThreshold': (0.25, 1.0, 0.5),
     'noiseThreshold': (0.0, 0.15, 0.04), 'clarityCenter': (-3.0, 3.0, 0.0), 'hazeLevel': (-2.0, 6.0, 2.0),
     'hazeWarmth': (-100.0, 100.0, 0.0), 'localWhite': (1.0, 10.0, 2.5),
-    'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0)}
+    'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0),
+    # development mode and destination (the transform after the node)
+    'devMode': (0.0, 1.0, 0.0), 'destination': (0.0, 3.0, 0.0), 'subject': (0.0, 1.0, 0.0),
+    # Cinematografico: the two points read on the picture (L of the norm) and their ratio in stops
+    'ratioLight': (-16.0, 16.0, 0.0), 'ratioShadow': (-16.0, 16.0, 0.0), 'ratioMeasured': (0.0, 16.0, 0.0),
+    'ratioTarget': (0.0, 5.0, 1.0), 'ratioHardness': (0.0, 100.0, 50.0), 'ratioBackground': (0.0, 100.0, 0.0),
+    'ratioSubjectLift': (0.0, 100.0, 0.0)}
 for _z, _r, _f in zip(T.ZONES, T.ZONE_RANGE, T.ZONE_FALLOFF):
     DETAIL_CONTROLS['localZone%sExp' % _z] = (-6.0, 6.0, 0.0)
     DETAIL_CONTROLS['localZone%sRange' % _z] = (-10.0, 10.0, _r)
     DETAIL_CONTROLS['localZone%sFalloff' % _z] = (0.5, 6.0, _f)
+
+MODE_STANDARD, MODE_CINEMA = 0, 1
+DEST_WHITE = (None, 2.5, 4.5, 6.5)   # Bianco of the destination: manual (localWhite), Rec.709 CST, Rec.709 DRT, PQ 1000
+SUBJECT_RADIUS = (0.75, 2.0)        # Cinematografico: base radius x this, Viso / Paesaggio
+RATIO_MIN_GAP = 0.05                # below this the two points are not a light and a shadow
+RATIO_E_MAX = 6.0
+RATIO_STEPS = 60
 
 
 # ---------------------------------------------------------------- host side
@@ -91,6 +104,62 @@ def controls_clamped(controls):
     return {n: min(max(float(controls.get(n, d)), lo), hi) for n, (lo, hi, d) in DETAIL_CONTROLS.items()}
 
 
+def destination_white(v):
+    """The level the recorded top lands on: the node's own Bianco, or the destination's."""
+    d = int(round(v['destination']))
+    return v['localWhite'] if d == 0 else DEST_WHITE[d]
+
+
+def cinema_nominal(v):
+    """Cinematografico: slots of the zone curve that bring the shadow side of the subject to the target ratio.
+
+    Slot 4 (down) starts at the light and lowers or raises what is under it; its E is solved so that
+    G(shadow) - G(light) = measured - target, with the other slots in place: the light does not move
+    (the slot is 0 there), the shadow lands on the ratio. Slot 1 (up) brightens the subject, slot 6
+    (down) takes the background under the shadow down. Returns the 7 nominal slots."""
+    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
+    Ll, Ls = v['ratioLight'], v['ratioShadow']
+    gap = Ll - Ls
+    if gap <= RATIO_MIN_GAP:
+        return nominal
+    lift = v['ratioSubjectLift'] / 100.0
+    if lift > 0.0:
+        nominal[1] = (lift, Ll - 0.5, 1.0, T.SM_T5_SMAX_CR)
+    push = max(v['ratioTarget'] - v['ratioMeasured'], 0.0)
+    bg = v['ratioBackground'] / 100.0
+    if bg > 0.0:
+        nominal[6] = (-4.0 * bg, Ls - push - 0.25, 1.5, T.SM_T5_SMAX_ZONE)
+    f = max(0.25, gap * (1.0 - 0.0075 * v['ratioHardness']))
+    want = v['ratioMeasured'] - v['ratioTarget']
+
+    def spread(E):
+        n = list(nominal)
+        n[4] = (E, Ll, f, T.SM_T5_SMAX_ZONE)
+        c = T.zone_policy(0.0, 0.0, n)
+        return T.t5_curve(Ls, c)[0] - T.t5_curve(Ll, c)[0]
+    lo, hi = -RATIO_E_MAX, RATIO_E_MAX
+    if spread(lo) >= want:
+        E = lo
+    elif spread(hi) <= want:
+        E = hi
+    else:
+        for _ in range(RATIO_STEPS):
+            mid = 0.5 * (lo + hi)
+            if spread(mid) < want:
+                lo = mid
+            else:
+                hi = mid
+        E = 0.5 * (lo + hi)
+    nominal[4] = (E, Ll, f, T.SM_T5_SMAX_ZONE)
+    return nominal
+
+
+def cinema_reached(v):
+    """The ratio in stops the slots give between the two points (= target unless it is out of reach)."""
+    c = T.zone_policy(0.0, 0.0, cinema_nominal(v))
+    return v['ratioMeasured'] + T.t5_curve(v['ratioLight'], c)[0] - T.t5_curve(v['ratioShadow'], c)[0]
+
+
 def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     """Everything the kernels read, from the frame size and the panel (= dt_prepare).
     href: the height the radii are relative to, H in the plugin; tests set it to make a small image
@@ -106,20 +175,24 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     st = 2 ** nt
     sigma_t = math.sqrt(max(sigma2 * sigma2 - tent_variance(st), 0.25)) / st
 
-    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
-    nominal = list(nominal)
-    nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
-    for z, slot in zip(T.ZONES, T.ZONE_SLOT):
-        nominal[slot] = (v['localZone%sExp' % z], v['localZone%sRange' % z], v['localZone%sFalloff' % z],
-                         T.SM_T5_SMAX_ZONE)
-    curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, v['localZonePivot'], nominal)
+    cinema = int(round(v['devMode'])) == MODE_CINEMA
+    radius = v['detailRadius'] * (SUBJECT_RADIUS[int(round(v['subject']))] if cinema else 1.0)
+    if cinema:
+        curve = T.zone_policy(0.0, 0.0, cinema_nominal(v))
+    else:
+        nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
+        nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
+        for z, slot in zip(T.ZONES, T.ZONE_SLOT):
+            nominal[slot] = (v['localZone%sExp' % z], v['localZone%sRange' % z], v['localZone%sFalloff' % z],
+                             T.SM_T5_SMAX_ZONE)
+        curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, v['localZonePivot'], nominal)
 
     haze_v = v['dehaze']
     veil = veil_colour(v['hazeWarmth'], space)
     A = [T.SM_T5_GREY * 2.0 ** v['hazeLevel'] * c for c in veil]
     p = {
         'W': W, 'H': H, 's': s, 'w': -(-W // s), 'h': -(-H // s), 'st': st, 'wt': -(-W // st), 'ht': -(-H // st),
-        'rB': v['detailRadius'] / 100.0 * gh, 'r2': 0.005 * gh, 'r3': 0.025 * gh, 'rp': 0.005 * gh, 'rt': 0.02 * gh,
+        'rB': radius / 100.0 * gh, 'r2': 0.005 * gh, 'r3': 0.025 * gh, 'rp': 0.005 * gh, 'rt': 0.02 * gh,
         'par': par, 'eps': (v['edgeThreshold'] / 2.0) ** 2, 'eps_t': 0.01,
         'gG': gauss_half(1.0, 4), 'g1': gauss_half(sigma1, 16), 'gT': gauss_half(sigma_t, 32),
         'curve': curve, 'lam': v['preserveDetail'] / 100.0, 'tau0': v['noiseThreshold'],
@@ -132,7 +205,8 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     }
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
-    hv = v['localHighlights']
+    hv = 0.0 if cinema else v['localHighlights']
+    white = destination_white(v)
     a = abs(hv) / 100.0
     a *= 1.5 - 0.5 * a
     p['hlE'], p['hlStart'] = 0.0, HL_START
@@ -143,12 +217,12 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     p['hlAmount'], p['hlWhiteLin'], p['hlTop'] = 0.0, 0.0, T.SM_T5_HL_TOP
     if hv < 0.0:
         top = T.SM_T5_HL_TOP
-        land = min(v['localWhite'], top - T.SM_T5_HL_MINPULL)
+        land = min(white, top - T.SM_T5_HL_MINPULL)
         D = T.t5_shoulder(top, {'hlE': 1.0, 'hlStart': HL_START})[0]
         k = min(max(top - land, 0.0) / D, 1.0 - T.SM_T5_HL_SMIN) if D > 0.0 else 0.0
         p['hlE'] = -a * k
         p['hlAmount'] = a
-        p['hlWhiteLin'] = T.SM_T5_GREY * 2.0 ** max(v['localWhite'], top - k * D)
+        p['hlWhiteLin'] = T.SM_T5_GREY * 2.0 ** max(white, top - k * D)
     return p
 
 
