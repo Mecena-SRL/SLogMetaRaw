@@ -147,25 +147,23 @@ The node is **pointwise**: each pixel depends only on itself. It never makes hal
 |---|---|
 | **Version** (top) | Shows `v2.4.0`. Once a day it asks GitHub for the latest release; if there is one it reads **🟢 v2.4.0 → 2.x.y** and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). It never installs anything itself. |
 | **Camera** · **Rileggi metadata** (re-read) | The camera that was read. *Rileggi* re-reads the clip, resets every control to the camera values and writes the clip's metadata into the Media Pool. Answers within ~2 s. |
-| **Decode Using** | *Clip* lets you change the controls; *Camera metadata* locks them to the as-shot values (node is transparent). |
-| **White Balance** | As shot, or presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Moving a slider switches it to *Custom*. |
-| **Color Temp** · **Tint** | Bradford chromatic adaptation in linear light, from the white the camera recorded. Higher Temp warms; positive Tint goes towards magenta. |
-| **Exposure** | In EI: double the EI = exactly +1 stop, in linear light, before any curve. |
-| **False color** | Temperature, tint and exposure views — see [§6](#6-false-colour). |
-| **Color Space** · **Gamma** | Output, like a Color Space Transform. *Timeline* does not convert — leave it there in a colour-managed project. To grade in DWG: *DaVinci WG · DaVinci Intermediate*. |
-| **Toni** (Tones) | Contrast, Highlights, Shadows, Whites, Bianco, Blacks, Vibrance, Saturation — see [§7](#7-tones-and-zones). |
-| **Zone** (Zones, closed) | Black, Shadow, Light, Specular zones; Contrast Pivot; Soft Clip. |
-| **Avanzate** (Advanced) | Node input, data-level correction, status, *Sblocca controlli senza metadata* (unlock without metadata). |
+| **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
+| **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
+| **Punto bianco** (white point) | Resolve's eyedropper: pick a point of the image that should be neutral and Temperatura and Tint set themselves, with the same maths as the render |
+| **Esposizione** (EI) | exposure index: double the EI = +1 stop |
+| **False color** | a box above Temperatura, one below Tint and one below Esposizione; see below |
+| **Spazio colore** (colour space) | three sub-groups. **Ingresso** (input): Spazio colore and Gamma entering the node, Rilevato (detected) and *Ripristina da camera*, Data level, Livello and *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* and the shooting references. **Uscita** (output): Spazio colore and Gamma (like a Color Space Transform; *Timeline* does not convert), LUT size and export |
+| **Toni** (tones) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* adds Contrast, Shadows, Whites, Blacks, Vibrance and the **Zone** (Black, Shadow, Light, Specular with Exp, Sat, Range and Falloff, Contrast Pivot, *Zone* false color); they appear by themselves when the node uses them |
 | **Dati di ripresa** (Shooting data) | Read only: lens, focal length, aperture, focus, shutter, EI, WB, fps, ND, camera LUT. |
 
 ![Avanzate and Dati di ripresa](images/14-avanzate-dati.png)
 
-**Avanzate in detail**
+**Spazio colore in detail**
 
-- **Ingresso nodo** (node input) — *Automatico* asks Resolve.
-- **Data level in ingresso** — fixes the code-value scale when Resolve decodes a clip on the wrong one. The script's *Correct the Data Level* fixes it project-wide.
-- **Stato** (status) — what the node detected; it also warns when a false colour view is on.
-- **Sblocca controlli senza metadata** — see [§11](#11-special-cases).
+- **Ingresso › Spazio colore / Gamma** (node input) — *Automatico* asks Resolve or reads the camera; *Ripristina da camera* brings both back to it. **Rilevato** shows what the node reads.
+- **Ingresso › Data level** — fixes the code-value scale when Resolve decodes a clip on the wrong one. **Livello** shows what was read, *Ripristina da clip* goes back to Automatico. The script's *Correct the Data Level* fixes it project-wide.
+- **Ingresso › Stato** — what the node detected; it also warns when a false colour view is on.
+- **Senza metadata › Sblocca controlli** — see [§11](#11-special-cases).
 
 > **Rec.709 output** in the node is a CST *without* tone mapping (highlights past Bianco clip) and shuts out the Detail node. Prefer an output CST at the end of the tree.
 
@@ -173,9 +171,9 @@ The node is **pointwise**: each pixel depends only on itself. It never makes hal
 
 ## 6. False colour
 
-One view per control, placed above the slider it serves. **The view replaces the image — turn it off before you render.** (An OpenFX plugin cannot draw an overlay on Resolve's viewer.)
+One view per control, placed next to the slider it serves (above Temperatura, below Tint and below Esposizione). **The view replaces the image — turn it off before you render.** (An OpenFX plugin cannot draw an overlay on Resolve's viewer.)
 
-Set *Decode Using* to **Clip** first: in *Camera metadata* the controls are locked.
+Set *Decodifica* to **Clip** first: in *Camera metadata* the controls are locked.
 
 ### Exposure
 
@@ -356,11 +354,11 @@ Leave Color Space/Gamma on **Timeline** in the main node. Enable the script's *A
 
 ## 11. Special cases
 
-**ProRes from an external recorder / unreadable clip.** The node stays neutral. Tick **Avanzate › Sblocca controlli senza metadata** and type the shooting EI, Kelvin and tint: the controls come alive and the node starts neutral.
+**ProRes from an external recorder / unreadable clip.** The node stays neutral. Tick **Spazio colore › Senza metadata › Sblocca controlli** and type the shooting EI, Kelvin and tint: the controls come alive and the node starts neutral.
 
 **Non-log profiles** (Cine, HLG, S-Cinetone): the nodes stay neutral and say so in *Stato*.
 
-**Wrong Data Level.** If blacks look lifted or crushed straight out of the camera, Resolve is decoding on the wrong code-value scale. Run the script with *Correct the Data Level* on (project-wide fix), or use *Avanzate › Data level in ingresso* on a single clip. Background (Italian): [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
+**Wrong Data Level.** If blacks look lifted or crushed straight out of the camera, Resolve is decoding on the wrong code-value scale. Run the script with *Correct the Data Level* on (project-wide fix), or use *Spazio colore › Ingresso › Data level* on a single clip. Background (Italian): [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 
 **Cameras without Kelvin** (e.g. a6300): Kelvin is estimated from the light preset and flagged.
 
@@ -407,7 +405,7 @@ Run with `--dry-run` to see what it would remove without touching anything. Meta
 Resolve is using its old plugin cache. Quit Resolve, delete `OFXPluginCacheV2.xml` (the installer normally does this), restart.
 
 **The node does nothing.**
-That is by design at the as-shot values. Check *Decode Using* is on **Clip**, and read *Avanzate › Stato*: it says if the profile isn't log or metadata is missing.
+That is by design at the as-shot values. Check *Decodifica* is on **Clip**, and read *Spazio colore › Ingresso › Stato*: it says if the profile isn't log or metadata is missing.
 
 **My render has false colour in it.**
 A view was left on. Turn off all false colour views before rendering.

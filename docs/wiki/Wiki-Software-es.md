@@ -147,25 +147,23 @@ El nodo es **puntual**: cada píxel depende solo de sí mismo. Nunca crea halos,
 |---|---|
 | **Versión** (arriba) | Muestra `v2.4.0`. Una vez al día pregunta a GitHub por la última release; si la hay, muestra **🟢 v2.4.0 → 2.x.y** y el clic abre la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo. |
 | **Camera** · **Rileggi metadata** (releer) | La cámara que se leyó. *Rileggi* vuelve a leer el clip, devuelve cada control a los valores de cámara y escribe los metadatos del clip en el Media Pool. Responde en unos 2 s como máximo. |
-| **Decode Using** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje (el nodo queda transparente). |
-| **White Balance** | As shot, o presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Mover un deslizador lo cambia a *Custom*. |
-| **Color Temp** · **Tint** | Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara. Más Temp calienta la imagen; Tint positivo va hacia el magenta. |
-| **Exposure** | En EI: el doble de EI equivale exactamente a +1 paso, en luz lineal, antes de cualquier curva. |
-| **False color** | Vistas de temperatura, tinte y exposición — ver [§6](#6-falso-color). |
-| **Color Space** · **Gamma** | La salida, como un Color Space Transform. *Timeline* no convierte: déjalo así en un proyecto con gestión de color. Para etalonar en DWG: *DaVinci WG · DaVinci Intermediate*. |
-| **Toni** (Tonos) | Contrast, Highlights, Shadows, Whites, Bianco, Blacks, Vibrance, Saturation — ver [§7](#7-tonos-y-zonas). |
-| **Zone** (Zonas, cerrado) | Zonas Black, Shadow, Light, Specular; Contrast Pivot; Soft Clip. |
-| **Avanzate** (Avanzado) | Entrada del nodo, corrección del data level, estado, *Sblocca controlli senza metadata* (desbloquear sin metadatos). |
+| **Ripresa** (rodaje) · **Decodifica** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
+| **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot o un preset. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
+| **Punto bianco** (punto blanco) | el cuentagotas de Resolve: elige en la imagen un punto que debe ser neutro y Temperatura y Tint se ajustan solos, con las mismas matemáticas del render |
+| **Esposizione** (EI) | índice de exposición: el doble de EI = +1 paso |
+| **False color** | una casilla sobre Temperatura, una bajo Tint y una bajo Esposizione; ver abajo |
+| **Spazio colore** (espacio de color) | tres subgrupos. **Ingresso** (entrada): Spazio colore y Gamma que entran al nodo, Rilevato (detectado) y *Ripristina da camera*, Data level, Livello y *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* y las referencias de rodaje. **Uscita** (salida): Spazio colore y Gamma (como un Color Space Transform; *Timeline* no convierte), tamaño y exportación de la LUT |
+| **Toni** (tonos) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* añade Contrast, Shadows, Whites, Blacks, Vibrance y las **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range y Falloff, Contrast Pivot, false color *Zone*); aparecen solos si el nodo los usa |
 | **Dati di ripresa** (datos de rodaje) | Solo lectura: objetivo, focal, diafragma, foco, obturador, EI, WB, fps, ND, LUT de cámara. |
 
 ![Avanzate y Dati di ripresa](images/14-avanzate-dati.png)
 
-**Avanzate en detalle**
+**Spazio colore en detalle**
 
-- **Ingresso nodo** (entrada del nodo) — *Automatico* se lo pregunta a Resolve.
-- **Data level in ingresso** — corrige la escala de code values cuando Resolve decodifica un clip en la equivocada. La opción *Corregir el Data Level* del script lo arregla para todo el proyecto.
-- **Stato** (estado) — lo que detectó el nodo; también avisa cuando hay una vista de falso color activada.
-- **Sblocca controlli senza metadata** — ver [§11](#11-casos-especiales).
+- **Ingresso › Spazio colore / Gamma** (entrada del nodo) — *Automatico* se lo pregunta a Resolve o lee la cámara; *Ripristina da camera* los devuelve ahí. **Rilevato** muestra lo que lee el nodo.
+- **Ingresso › Data level** — corrige la escala de code values cuando Resolve decodifica un clip en la equivocada. **Livello** muestra la leída, *Ripristina da clip* vuelve a Automatico. La opción *Corregir el Data Level* del script lo arregla para todo el proyecto.
+- **Ingresso › Stato** (estado) — lo que detectó el nodo; también avisa cuando hay una vista de falso color activada.
+- **Senza metadata › Sblocca controlli** — ver [§11](#11-casos-especiales).
 
 > La **salida Rec.709** del nodo es un CST *sin* tone mapping (las altas luces por encima de Bianco se cortan) y excluye el nodo Detail. Mejor un CST de salida al final del árbol de nodos.
 
@@ -173,9 +171,9 @@ El nodo es **puntual**: cada píxel depende solo de sí mismo. Nunca crea halos,
 
 ## 6. Falso color
 
-Una vista por cada control, colocada encima del deslizador al que sirve. **La vista sustituye la imagen: apágala antes de renderizar.** (Un plugin OpenFX no puede dibujar una superposición sobre el visor de Resolve.)
+Una vista por cada control, colocada junto al deslizador al que sirve (encima de Temperatura, debajo de Tint y de Esposizione). **La vista sustituye la imagen: apágala antes de renderizar.** (Un plugin OpenFX no puede dibujar una superposición sobre el visor de Resolve.)
 
-Pon primero *Decode Using* en **Clip**: en *Camera metadata* los controles están bloqueados.
+Pon primero *Decodifica* en **Clip**: en *Camera metadata* los controles están bloqueados.
 
 ### Exposición
 
@@ -356,11 +354,11 @@ Deja Color Space/Gamma en **Timeline** en el nodo principal. Activa *Establecer 
 
 ## 11. Casos especiales
 
-**ProRes de un grabador externo / clip ilegible.** El nodo se queda neutro. Marca **Avanzate › Sblocca controlli senza metadata** y escribe el EI, los Kelvin y el tinte de rodaje: los controles se activan y el nodo empieza neutro.
+**ProRes de un grabador externo / clip ilegible.** El nodo se queda neutro. Marca **Spazio colore › Senza metadata › Sblocca controlli** y escribe el EI, los Kelvin y el tinte de rodaje: los controles se activan y el nodo empieza neutro.
 
 **Perfiles que no son log** (Cine, HLG, S-Cinetone): los nodos se quedan neutros y lo dicen en *Stato*.
 
-**Data Level equivocado.** Si los negros se ven levantados o aplastados directamente de cámara, Resolve está decodificando en la escala de code values equivocada. Ejecuta el script con *Corregir el Data Level* activado (arreglo para todo el proyecto), o usa *Avanzate › Data level in ingresso* en un solo clip. Para profundizar (en italiano): [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
+**Data Level equivocado.** Si los negros se ven levantados o aplastados directamente de cámara, Resolve está decodificando en la escala de code values equivocada. Ejecuta el script con *Corregir el Data Level* activado (arreglo para todo el proyecto), o usa *Spazio colore › Ingresso › Data level* en un solo clip. Para profundizar (en italiano): [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 
 **Cámaras sin Kelvin** (por ejemplo la a6300): los Kelvin se estiman a partir del preset de luz y se señalan.
 
@@ -407,7 +405,7 @@ Ejecútalo con `--dry-run` para ver qué eliminaría sin tocar nada. Los metadat
 Resolve está usando su caché de plugins antigua. Cierra Resolve, borra `OFXPluginCacheV2.xml` (el instalador normalmente lo hace), reinicia.
 
 **El nodo no hace nada.**
-Es lo esperado con los valores de rodaje. Comprueba que *Decode Using* está en **Clip**, y lee *Avanzate › Stato*: dice si el perfil no es log o si faltan metadatos.
+Es lo esperado con los valores de rodaje. Comprueba que *Decodifica* está en **Clip**, y lee *Spazio colore › Ingresso › Stato*: dice si el perfil no es log o si faltan metadatos.
 
 **Mi render tiene falso color.**
 Se quedó una vista encendida. Apaga todas las vistas de falso color antes de renderizar.

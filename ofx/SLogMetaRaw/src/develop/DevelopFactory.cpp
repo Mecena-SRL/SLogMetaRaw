@@ -41,78 +41,103 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Rilegge i metadata della clip dal file, li scrive nel Media Pool di Resolve "
                  "e riporta i controlli ai valori di camera");
 
+    // Ripresa -> Spazio colore -> Toni -> Zone -> Dati di ripresa. Only the layout moved: names are permanent.
+    GroupParamDescriptor* shot = defineGroup(d, page, "shotGroup", "Ripresa", true);
     // same order as the native Camera Raw "Sony Video" panel
     static const char* decodeOpts[] = { "Camera metadata", "Clip" };
-    defineChoice(d, page, "decodeUsing", "Decode Using", decodeOpts, 2, 1,
-                 "Camera metadata: usa i valori di ripresa e blocca i controlli. Clip: puoi modificarli");
+    defineChoice(d, page, "decodeUsing", "Decodifica", decodeOpts, 2, 1,
+                 "Camera metadata: usa i valori di ripresa e blocca i controlli. Clip: puoi modificarli", shot);
     static const char* wbOpts[] = { "As shot", "Daylight", "Cloudy", "Shade", "Tungsten", "Fluorescent", "Flash", "Custom" };
-    defineChoice(d, page, "whiteBalance", "White Balance", wbOpts, 8, 0,
-                 "As shot riporta ai Kelvin di ripresa; muovendo gli slider diventa Custom");
-    defineToggle(d, page, "fcTemperature", "False color: temperatura", "fc_temperature.png",
+    defineChoice(d, page, "whiteBalance", "Bilanciamento", wbOpts, 8, 0,
+                 "As shot riporta ai Kelvin di ripresa; muovendo gli slider diventa Custom", shot);
+    defineToggle(d, page, "fcTemperature", "False color", "fc_temperature.png",
                  "Immagine in grigio, dominanti sull'asse della temperatura colorate: blu = fredda "
-                 "(alza Color Temp), arancio = calda (abbassala). Muovi finche il neutro resta grigio");
-    defineSlider(d, page, "colorTemp", "Color Temp", 5600, 2000, 15000, 2000, 15000, 10,
-                 "Temperatura in Kelvin: adattamento cromatico Bradford in luce lineare");
-    defineToggle(d, page, "fcTint", "False color: tint", "fc_tint.png",
+                 "(alza Temperatura), arancio = calda (abbassala). Muovi finche il neutro resta grigio", shot);
+    defineSlider(d, page, "colorTemp", "Temperatura", 5600, 2000, 15000, 2000, 15000, 10,
+                 "Temperatura in Kelvin: adattamento cromatico Bradford in luce lineare", shot);
+    defineColor(d, page, "whitePick", "Punto bianco",
+                "Col contagocce scegli un punto dell'immagine che deve essere bianco o grigio neutro: "
+                "Temperatura e Tint si regolano di conseguenza", shot);
+    defineSlider(d, page, "tint", "Tint", 0, -100, 100, -100, 100, 0.1, "Verde/magenta, perpendicolare al luogo di Planck", shot);
+    defineToggle(d, page, "fcTint", "False color", "fc_tint.png",
                  "Immagine in grigio, dominanti sull'asse della tinta colorate: verde (alza Tint), "
-                 "magenta (abbassalo). Muovi finche il neutro resta grigio");
-    defineSlider(d, page, "tint", "Tint", 0, -100, 100, -100, 100, 0.1, "Verde/magenta, perpendicolare al luogo di Planck");
-    defineToggle(d, page, "fcExposure", "False color: esposizione", "fc_exposure.png",
+                 "magenta (abbassalo). Muovi finche il neutro resta grigio", shot);
+    GroupParamDescriptor* expo = defineGroup(d, page, "exposureGroup", "Esposizione", true, shot);
+    defineSlider(d, page, "exposure", "EI", 800, 25, 409600, 50, 25600, 1,
+                 "Exposure Index: il doppio dell'EI di ripresa = +1 stop", expo);
+    defineToggle(d, page, "fcExposure", "False color", "fc_exposure.png",
                  "Mappa le fermate attorno al grigio 18%: verde = grigio medio, rosa = incarnato "
-                 "(una fermata sopra), giallo = vicino al clip, rosso = clip, blu e viola = nero");
-    defineSlider(d, page, "exposure", "Exposure", 800, 25, 409600, 50, 25600, 1,
-                 "Exposure Index: il doppio dell'EI di ripresa = +1 stop");
-    static const char* csOpts[] = { "Timeline", "DaVinci WG", "Rec.709", "Rec.2020", "P3 D65", "P3 D60", "P3 DCI",
-                                    "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1" };
-    defineChoice(d, page, "colorSpace", "Color Space", csOpts, 12, 0,
-                 "Gamut in uscita, come un Color Space Transform. Timeline non converte");
-    static const char* gmOpts[] = { "Timeline", "DaVinci Intermediate", "Linear", "Gamma 2.2", "Gamma 2.4", "Gamma 2.6",
-                                    "Rec.709", "sRGB", "SLog", "SLog2", "SLog3", "ACEScct" };
-    defineChoice(d, page, "gamma", "Gamma", gmOpts, 12, 0, "Curva in uscita. Timeline non converte");
+                 "(una fermata sopra), giallo = vicino al clip, rosso = clip, blu e viola = nero", expo);
 
-    static const char* lutOpts[] = { "17", "33", "65" };
-    defineChoice(d, page, "lutSize", "Dimensione LUT", lutOpts, kLutSizeCount, kLutDefaultSize,
-                 "Punti per lato della LUT 3D esportata: 33 va bene per quasi tutto, 65 e piu fedele ma pesa di piu");
-    defineButton(d, page, "exportLut", "Esporta LUT (.cube)",
-                 "Salva una LUT 3D .cube con White Balance, Exposure, Toni e conversione Color Space / Gamma di "
-                 "questo nodo. Ingresso: il segnale che entra nel nodo");
-
-    GroupParamDescriptor* tones = defineGroup(d, page, "tonesGroup", "Toni", true);
-    GroupParamDescriptor* zones = defineGroup(d, page, "zonesGroup", "Zone", false);
-    defineToneParams(d, page, tones, zones);
-
-    GroupParamDescriptor* adv = defineGroup(d, page, "advancedGroup", "Avanzate", false);
-    defineChoice(d, page, "nodeInput", "Ingresso nodo", kNodeInputNames, kNodeInputCount, 0,
-                 "Spazio colore che entra nel nodo. Automatico lo chiede a Resolve: cambialo solo se sbagliato", adv);
-    defineInfo(d, page, adv, "nodeInfo", "Rilevato");
+    GroupParamDescriptor* space = defineGroup(d, page, "colourGroup", "Spazio colore", true);
+    GroupParamDescriptor* input = defineGroup(d, page, "inputGroup", "Ingresso", false, space);
+    static const char* spaceOpts[1 + kSpaceCount];   // Automatico, then the tables of DevelopMath.h
+    static const char* gammaOpts[1 + kGammaCount];
+    spaceOpts[0] = gammaOpts[0] = "Automatico";
+    for (int i = 0; i < kSpaceCount; ++i) spaceOpts[i + 1] = kSpaceNames[i];
+    for (int i = 0; i < kGammaCount; ++i) gammaOpts[i + 1] = kGammaNames[i];
+    const char* inputHint = "Cosa entra nel nodo. Automatico lo chiede a Resolve o lo legge dalla camera: "
+                            "cambialo solo se e sbagliato";
+    defineChoice(d, page, "inputSpace", "Spazio colore", spaceOpts, 1 + kSpaceCount, 0, inputHint, input);
+    defineChoice(d, page, "inputGamma", "Gamma", gammaOpts, 1 + kGammaCount, 0, inputHint, input);
+    defineInfo(d, page, input, "nodeInfo", "Rilevato");
+    defineButton(d, page, "inputReset", "Ripristina da camera",
+                 "Riporta Spazio colore e Gamma in ingresso ad Automatico, i valori con cui ha girato la camera", input);
     static const char* levelOpts[] = { "Automatico", "Full (0-1023)", "Video (64-940)", "Nessuna correzione" };
-    defineChoice(d, page, "dataLevel", "Data level in ingresso", levelOpts, 4, 0,
+    defineChoice(d, page, "dataLevel", "Data level", levelOpts, 4, 0,
                  "Scala di code value su cui Resolve ha decodificato la clip. Automatico usa l'attributo "
                  "Data Level della clip: se e su Auto non correggo niente. Full o Video lo dichiari tu, "
-                 "utile su un ProRes esterno che nessun NLE segnala", adv);
-    defineInfo(d, page, adv, "levelInfo", "Data level");
-    defineCheck(d, page, "unlockNoMeta", "Sblocca controlli senza metadata", false,
+                 "utile su un ProRes esterno che nessun NLE segnala", input);
+    defineInfo(d, page, input, "levelInfo", "Livello");
+    defineButton(d, page, "levelReset", "Ripristina da clip", "Riporta Data level ad Automatico", input);
+    defineInfo(d, page, input, "status", "Stato");
+
+    GroupParamDescriptor* manual = defineGroup(d, page, "manualGroup", "Senza metadata", false, space);
+    defineCheck(d, page, "unlockNoMeta", "Sblocca controlli", false,
                 "Quando i metadata della clip mancano o non si leggono (registratori esterni, ProRes, clip lunghe): "
-                "attiva i controlli sui riferimenti di ripresa qui sotto", adv);
+                "attiva i controlli sui riferimenti di ripresa qui sotto", manual);
     // Named shot* since 1.0 (Resolve restores by name): the camera values, or the ones typed here.
     const char* refHint = "Riferimento di ripresa: cambia lo zero di Exposure e Color Temp, non l'immagine. "
                           "Con White Balance su Custom i valori restano";
     DoubleParamDescriptor* refs[] = {
-        defineSlider(d, page, "shotEI", "EI di ripresa", 800, 25, 409600, 100, 25600, 1, refHint, adv),
-        defineSlider(d, page, "shotTemp", "Kelvin di ripresa", 5600, 2000, 15000, 2000, 15000, 10, refHint, adv),
-        defineSlider(d, page, "shotTint", "Tint di ripresa", 0, -100, 100, -100, 100, 0.1, refHint, adv) };
+        defineSlider(d, page, "shotEI", "EI di ripresa", 800, 25, 409600, 100, 25600, 1, refHint, manual),
+        defineSlider(d, page, "shotTemp", "Kelvin di ripresa", 5600, 2000, 15000, 2000, 15000, 10, refHint, manual),
+        defineSlider(d, page, "shotTint", "Tint di ripresa", 0, -100, 100, -100, 100, 0.1, refHint, manual) };
     for (DoubleParamDescriptor* r : refs) {
         if (!r) continue;
         r->setAnimates(false);
         r->setIsSecret(true);   // shown when the box above is ticked
     }
-    defineInfo(d, page, adv, "status", "Stato");
+
+    GroupParamDescriptor* output = defineGroup(d, page, "outputGroup", "Uscita", true, space);
+    static const char* csOpts[] = { "Timeline", "DaVinci WG", "Rec.709", "Rec.2020", "P3 D65", "P3 D60", "P3 DCI",
+                                    "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1" };
+    defineChoice(d, page, "colorSpace", "Spazio colore", csOpts, 12, 0,
+                 "Gamut in uscita, come un Color Space Transform. Timeline non converte", output);
+    static const char* gmOpts[] = { "Timeline", "DaVinci Intermediate", "Linear", "Gamma 2.2", "Gamma 2.4", "Gamma 2.6",
+                                    "Rec.709", "sRGB", "SLog", "SLog2", "SLog3", "ACEScct" };
+    defineChoice(d, page, "gamma", "Gamma", gmOpts, 12, 0, "Curva in uscita. Timeline non converte", output);
+    static const char* lutOpts[] = { "17", "33", "65" };
+    defineChoice(d, page, "lutSize", "Dimensione LUT", lutOpts, kLutSizeCount, kLutDefaultSize,
+                 "Punti per lato della LUT 3D esportata: 33 va bene per quasi tutto, 65 e piu fedele ma pesa di piu", output);
+    defineButton(d, page, "exportLut", "Esporta LUT (.cube)",
+                 "Salva una LUT 3D .cube con White Balance, Exposure, Toni e conversione Color Space / Gamma di "
+                 "questo nodo. Ingresso: il segnale che entra nel nodo", output);
+
+    GroupParamDescriptor* tones = defineGroup(d, page, "tonesGroup", "Toni", true);
+    GroupParamDescriptor* zones = defineGroup(d, page, "zonesGroup", "Zone", false);
+    defineToneParams(d, page, tones, zones);
 
     GroupParamDescriptor* details = defineGroup(d, page, "detailsGroup", "Dati di ripresa", false);
     if (details) details->setHint("Valori letti dalla clip, in sola lettura");
     for (int i = 0; i < kDetailCount; ++i) defineInfo(d, page, details, kDetails[i].param, kDetails[i].label);
 
     if (claimName("boundPath")) hideParam(d.defineStringParam("boundPath"), page);
+    if (claimName("boundId")) hideParam(d.defineStringParam("boundId"), page);   // file name + size: survives a relink
+    // Before 2.5 one list held space and gamma together; kept by name, read once to fill the two choices
+    if (auto* legacy = defineChoice(d, page, "nodeInput", "Ingresso nodo", kNodeInputNames, kNodeInputCount, 0,
+                                    "Sostituito da Spazio colore e Gamma, in Ingresso"))
+        legacy->setIsSecret(true);
     defineHiddenInt(d, page, "camSpace", -1);
     defineHiddenInt(d, page, "camGamma", -1);
     defineHiddenInt(d, page, "levelRequired", -1);

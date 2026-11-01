@@ -145,25 +145,23 @@ Il nodo è **puntuale**: ogni pixel dipende solo da sé stesso. Non crea mai alo
 |---|---|
 | **Versione** (in cima) | Mostra `v2.4.0`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v2.4.0 → 2.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
 | **Camera** · **Rileggi metadata** | La camera che è stata letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool. Risponde in circa 2 s. |
-| **Decode Using** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa (il nodo è trasparente). |
-| **White Balance** | As shot, oppure preset (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash). Muovere un cursore lo porta su *Custom*. |
-| **Color Temp** · **Tint** | Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera. Temp più alta scalda; Tint positivo va verso il magenta. |
-| **Exposure** | In EI: EI doppio = esattamente +1 stop, in luce lineare, prima di qualsiasi curva. |
-| **False color** | Viste di temperatura, tinta ed esposizione — vedi [§6](#6-falso-colore). |
-| **Color Space** · **Gamma** | Uscita, come un Color Space Transform. *Timeline* non converte — lascialo lì in un progetto color-managed. Per gradare in DWG: *DaVinci WG · DaVinci Intermediate*. |
-| **Toni** | Contrast, Highlights, Shadows, Whites, Bianco, Blacks, Vibrance, Saturation — vedi [§7](#7-toni-e-zone). |
-| **Zone** (chiuso) | Zone Black, Shadow, Light, Specular; Contrast Pivot; Soft Clip. |
-| **Avanzate** | Ingresso del nodo, correzione del data level, stato, *Sblocca controlli senza metadata*. |
+| **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
+| **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
+| **Punto bianco** | il contagocce di Resolve: scegli sull'immagine un punto che deve essere neutro e Temperatura e Tint si regolano da soli, con la stessa matematica del render |
+| **Esposizione** (EI) | indice di esposizione: EI doppio = +1 stop |
+| **False color** | una casella sopra Temperatura, una sotto Tint, una sotto Esposizione; vedi sotto |
+| **Spazio colore** | tre sottogruppi. **Ingresso**: Spazio colore e Gamma in ingresso, Rilevato e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e i riferimenti di ripresa. **Uscita**: Spazio colore e Gamma (come un Color Space Transform; *Timeline* non converte), dimensione ed esportazione della LUT |
+| **Toni** | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* aggiunge Contrast, Shadows, Whites, Blacks, Vibrance e le **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); compaiono da soli se il nodo li usa |
 | **Dati di ripresa** | Sola lettura: obiettivo, focale, diaframma, fuoco, shutter, EI, WB, fps, ND, LUT di camera. |
 
 ![Avanzate e Dati di ripresa](images/14-avanzate-dati.png)
 
-**Avanzate nel dettaglio**
+**Spazio colore nel dettaglio**
 
-- **Ingresso nodo** — *Automatico* chiede a Resolve.
-- **Data level in ingresso** — corregge la scala di code value quando Resolve decodifica una clip su quella sbagliata. *Correggi il Data Level* dello script la sistema per tutto il progetto.
-- **Stato** — quello che il nodo ha rilevato; avvisa anche quando una vista falso colore è attiva.
-- **Sblocca controlli senza metadata** — vedi [§11](#11-casi-speciali).
+- **Ingresso › Spazio colore / Gamma** — *Automatico* chiede a Resolve o legge la camera; *Ripristina da camera* li riporta lì. **Rilevato** mostra cosa legge il nodo.
+- **Ingresso › Data level** — corregge la scala di code value quando Resolve decodifica una clip su quella sbagliata. **Livello** mostra quello letto, *Ripristina da clip* torna ad Automatico. *Correggi il Data Level* dello script la sistema per tutto il progetto.
+- **Ingresso › Stato** — quello che il nodo ha rilevato; avvisa anche quando una vista falso colore è attiva.
+- **Senza metadata › Sblocca controlli** — vedi [§11](#11-casi-speciali).
 
 > **L'uscita Rec.709** nel nodo è un CST *senza* tone mapping (le alte luci oltre Bianco si clippano) ed esclude il nodo Detail. Preferisci un CST di uscita in fondo all'albero dei nodi.
 
@@ -171,9 +169,9 @@ Il nodo è **puntuale**: ogni pixel dipende solo da sé stesso. Non crea mai alo
 
 ## 6. Falso colore
 
-Una vista per controllo, posizionata sopra il cursore che serve. **La vista sostituisce l'immagine — spegnila prima di renderizzare.** (Un plugin OpenFX non può disegnare un overlay sul viewer di Resolve.)
+Una vista per controllo, posizionata accanto al cursore che serve (sopra Temperatura, sotto Tint e sotto Esposizione). **La vista sostituisce l'immagine — spegnila prima di renderizzare.** (Un plugin OpenFX non può disegnare un overlay sul viewer di Resolve.)
 
-Prima imposta *Decode Using* su **Clip**: in *Camera metadata* i controlli sono bloccati.
+Prima imposta *Decodifica* su **Clip**: in *Camera metadata* i controlli sono bloccati.
 
 ### Esposizione
 
@@ -354,11 +352,11 @@ Lascia Color Space/Gamma su **Timeline** nel nodo principale. Attiva l'opzione d
 
 ## 11. Casi speciali
 
-**ProRes da un registratore esterno / clip illeggibile.** Il nodo resta neutro. Spunta **Avanzate › Sblocca controlli senza metadata** e scrivi EI, Kelvin e tinta di ripresa: i controlli si attivano e il nodo parte neutro.
+**ProRes da un registratore esterno / clip illeggibile.** Il nodo resta neutro. Spunta **Spazio colore › Senza metadata › Sblocca controlli** e scrivi EI, Kelvin e tinta di ripresa: i controlli si attivano e il nodo parte neutro.
 
 **Profili non log** (Cine, HLG, S-Cinetone): i nodi restano neutri e lo dicono in *Stato*.
 
-**Data Level sbagliato.** Se i neri appaiono alzati o schiacciati appena fuori dalla camera, Resolve sta decodificando sulla scala di code value sbagliata. Esegui lo script con *Correggi il Data Level* attivo (correzione per tutto il progetto), oppure usa *Avanzate › Data level in ingresso* su una singola clip. Approfondimento: [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
+**Data Level sbagliato.** Se i neri appaiono alzati o schiacciati appena fuori dalla camera, Resolve sta decodificando sulla scala di code value sbagliata. Esegui lo script con *Correggi il Data Level* attivo (correzione per tutto il progetto), oppure usa *Spazio colore › Ingresso › Data level* su una singola clip. Approfondimento: [docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 
 **Camere senza Kelvin** (ad es. a6300): il Kelvin è stimato dal preset di luce e segnalato.
 
@@ -405,7 +403,7 @@ Eseguilo con `--dry-run` per vedere cosa rimuoverebbe senza toccare nulla. I met
 Resolve sta usando la vecchia cache dei plugin. Chiudi Resolve, elimina `OFXPluginCacheV2.xml` (di solito lo fa già l'installer), riavvia.
 
 **Il nodo non fa nulla.**
-È normale ai valori di ripresa. Controlla che *Decode Using* sia su **Clip**, e leggi *Avanzate › Stato*: dice se il profilo non è log o se manca il metadato.
+È normale ai valori di ripresa. Controlla che *Decodifica* sia su **Clip**, e leggi *Spazio colore › Ingresso › Stato*: dice se il profilo non è log o se manca il metadato.
 
 **Il mio render ha il falso colore dentro.**
 È rimasta attiva una vista. Spegni tutte le viste falso colore prima di renderizzare.

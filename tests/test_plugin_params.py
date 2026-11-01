@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(ROOT, 'tests'))
 from plugin_build import body, source  # noqa: E402
 
 DEFINE = re.compile(r'define(?:String|Double|Choice|Int|Boolean|PushButton|Group)Param\("([^"]+)"\)')
-HELPER = re.compile(r'define(?:Info|Slider|Choice|Toggle|Check|Button|Group|HiddenDouble|HiddenInt)\(\s*d,\s*page,\s*'
+HELPER = re.compile(r'define(?:Info|Slider|Choice|Toggle|Check|Button|Group|Color|HiddenDouble|HiddenInt)\(\s*d,\s*page,\s*'
                     r'(?:\w+,\s*)?"([A-Za-z0-9_]+)"')
 DETAIL = re.compile(r'\{\s*"[a-z_]+",\s*"(info[A-Za-z0-9_]+)",\s*"')   # kDetails rows only
 ROW = re.compile(r'\{\s*"(\w+)",')                                      # a row of a named table
@@ -34,7 +34,7 @@ def table(src, name, end):
     return ROW.findall(src[src.index(name):src.index(end)])
 TONES = re.compile(r'\{\s*"(tone\w+)",\s*"')                             # kToneSliders rows
 LEGACY = re.compile(r'\{\s*"(\w+)",\s*"(?:H|S|C|Sat|Boost|Recovery)"\s*\}')
-FETCH = re.compile(r'fetch(?:String|Double|Choice|Int|Boolean|PushButton)Param\("([^"]+)"\)')
+FETCH = re.compile(r'fetch(?:String|Double|Choice|Int|Boolean|PushButton|RGB)Param\("([^"]+)"\)')
 
 
 class PluginParams(unittest.TestCase):
@@ -98,13 +98,13 @@ class PluginParams(unittest.TestCase):
         self.assertIn('"settingsVersion"', self.src)
         self.assertIn('fetchIntParam("settingsVersion")', self.src)
         self.assertIn('migrateSettings()', self.src)
-        self.assertEqual(int(re.search(r'kSettingsVersion = (\d+)', self.src).group(1)), 5)
+        self.assertEqual(int(re.search(r'kSettingsVersion = (\d+)', self.src).group(1)), 6)
 
-    def test_data_level_sits_in_the_advanced_group(self):
+    def test_data_level_sits_in_the_input_group(self):
         """defineChoice sets no parent by itself: without one the control would land at the top."""
-        self.assertRegex(self.src, r'defineChoice\([^;]*"dataLevel"[^;]*,\s*adv\);')
+        self.assertRegex(self.src, r'defineChoice\([^;]*"dataLevel"[^;]*,\s*input\);')
         self.assertIn('fetchChoiceParam("dataLevel")', self.src)
-        self.assertIn('defineInfo(d, page, adv, "levelInfo"', self.src)
+        self.assertIn('defineInfo(d, page, input, "levelInfo"', self.src)
 
     def test_a_1_0_grade_keeps_the_data_level_correction_off(self):
         """Only a node saved at settings v1 predates the correction: 0 is a new node."""
@@ -117,7 +117,7 @@ class PluginParams(unittest.TestCase):
 
     def test_the_tone_controls_use_resolves_own_scale(self):
         """Resolve's trims of this kind run -100..+100 with two decimals; the zones are in stops."""
-        tone_table = body(self.src, 'void defineToneParams(')
+        tone_table = body(self.src, 'static void defineTone(')
         self.assertIn('0, -100, 100, -100, 100, 0.1, t.hint, tones', tone_table)
         self.assertIn('setDigits(2)', tone_table)
         self.assertEqual(len(TONES.findall(self.src)), 7)

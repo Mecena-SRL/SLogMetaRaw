@@ -61,6 +61,103 @@ class OfxHost(unittest.TestCase):
             with open(golden, encoding='utf-8') as fh:
                 self.assertEqual(got, fh.read().splitlines(), golden)
 
+    def values(self, *args):
+        """name=value lines of a run of the mini host (a changed parameter shows its value after the actions)."""
+        return dict(line.split('=', 1) for line in self.host('--plugin', '0', '--no-reload', *args).splitlines()
+                    if '=' in line)
+
+    def test_a_grade_saved_by_2_4_0_still_loads(self):
+        """Resolve restores a node by parameter name and, for a choice, by index: every name of the released panel
+        must still exist with the same type, default and range, and its options may only grow at the end. Where
+        a parameter sits in the panel is free to change."""
+        released = {}
+        with open(os.path.join(ROOT, 'tests', 'golden', 'released', 'params_develop_2.4.0.txt'), encoding='utf-8') as fh:
+            for line in fh.read().splitlines():
+                f = line.split('|')
+                released[f[0]] = f
+        now = {}
+        for line in self.host('--plugin', '0', '--dump-params', '--no-reload').splitlines():
+            if line.startswith('param:'):
+                f = line.split('|')
+                now[f[0]] = f
+        gone = [n for n in set(released) - set(now) if released[n][1] != 'OfxParamTypeGroup']   # a group holds no value
+        self.assertEqual(sorted(gone), [], 'parametri della 2.4.0 spariti')
+        TYPE, DEFAULT, MIN, MAX, OPTIONS = 1, 3, 7, 8, 15
+        for name, old in released.items():
+            if name not in now:
+                continue
+            new_ = now[name]
+            self.assertEqual(new_[TYPE], old[TYPE], name)
+            self.assertEqual(new_[DEFAULT], old[DEFAULT], name)
+            self.assertEqual((new_[MIN], new_[MAX]), (old[MIN], old[MAX]), name)
+            self.assertTrue(new_[OPTIONS] == old[OPTIONS] or new_[OPTIONS].startswith(old[OPTIONS] + ','),
+                            '%s: le opzioni non possono cambiare ordine' % name)
+
+    def test_the_old_input_list_fills_the_two_choices(self):
+        """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""
+        values = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5')
+        self.assertEqual((values['inputSpace'], values['inputGamma']), ('8', '10'))   # S-Gamut3, SLog3, after Automatico
+        self.assertEqual(values['settingsVersion'], '6')
+        again = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5', '--set', 'inputSpace=2')
+        self.assertEqual(again['inputSpace'], '2', 'a choice already made is not overwritten')
+
+    def test_the_eyedropper_sets_temperature_and_tint(self):
+        """A warm-looking neutral lowers the Kelvin, a cool one raises it, and the balance becomes Custom."""
+        declared = ['--set', 'inputSpace=2', '--set', 'inputGamma=2']   # Rec.709, linear
+        warm = self.values(*declared, '--change', 'whitePick=0.6,0.5,0.4')
+        cool = self.values(*declared, '--change', 'whitePick=0.4,0.5,0.62')
+        self.assertLess(float(warm['colorTemp']), 5600)
+        self.assertGreater(float(cool['colorTemp']), 5600)
+        self.assertEqual(warm['whiteBalance'], '7')
+        grey = self.values(*declared, '--change', 'whitePick=0.18,0.18,0.18')
+        self.assertAlmostEqual(float(grey['colorTemp']), 5600, delta=50)   # already neutral: the as-shot values
+        self.assertAlmostEqual(float(grey['tint']), 0, delta=1)
+
+    def test_only_what_resolve_lacks_is_shown_until_the_node_uses_the_rest(self):
+        def hidden(values_args):
+            out = self.host('--plugin', '0', '--no-reload', *values_args)
+            return {l.split(':', 1)[1].split('=')[0] for l in out.splitlines() if l.startswith('secret:') and l.endswith('=1')}
+        plain = hidden([])
+        self.assertTrue({'toneContrast', 'toneShadows', 'toneWhites', 'toneBlacks', 'toneVibrance', 'zonesGroup',
+                         'zoneLightExp', 'softClipColor', 'fcZones'} <= plain, plain)
+        self.assertFalse({'toneHighlights', 'toneSaturation', 'softClipLevel', 'softClip', 'tonesMore', 'toneReset'} & plain)
+        used = hidden(['--set', 'toneContrast=20', '--set', 'zoneLightExp=1'])
+        self.assertFalse({'toneContrast', 'zonesGroup', 'zoneLightExp'} & used, 'a saved grade keeps its controls')
+        self.assertIn('toneShadows', used)
+        self.assertEqual({n for n in hidden(['--set', 'tonesMore=1']) if n.startswith(('tone', 'zone'))}, set())
+
+    def test_a_relinked_clip_keeps_its_grade(self):
+        """Same file name and size in another folder (relink, another computer): the sliders stay where the colourist
+        left them. A different clip takes the camera values again."""
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / 'user'
+            cache = home / SUPPORT_REL / 'cache'
+            cache.mkdir(parents=True)
+            moved = Path(directory) / 'nuova cartella' / 'C0001.MP4'
+            moved.parent.mkdir()
+            moved.write_bytes(b'0123456789')
+            value = 0xcbf29ce484222325
+            import unicodedata
+            for byte in unicodedata.normalize('NFC', os.path.realpath(moved)).encode('utf-8'):
+                value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff
+            (cache / ('%016x.json' % value)).write_text(json.dumps({
+                'version': 6, 'supported': 1, 'camera_name': 'Relink camera', 'shot_temp': 4300, 'shot_tint': 0,
+                'shot_ei': 1250}), encoding='utf-8')
+            env = dict(os.environ, HOME=str(home), SLOGMETARAW_TEST_NO_RESOLVE='1', SLOGMETARAW_NO_UPDATE_CHECK='1')
+
+            def run(identity):
+                out = subprocess.run([self.exe, BINARY, str(moved), '--plugin', '0', '--no-reload',
+                                      '--set', 'refSource=1', '--set', 'colorTemp=3333',
+                                      '--set', 'boundPath=/vecchio/percorso/C0001.MP4', '--set', 'boundId=' + identity],
+                                     capture_output=True, text=True, env=env, timeout=20).stdout
+                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)
+
+            same = run('C0001.MP4|10')
+            self.assertEqual(float(same['colorTemp']), 3333)
+            self.assertEqual(same['boundPath'], str(moved), 'the new place is remembered')
+            other = run('C0002.MP4|10')
+            self.assertEqual(float(other['colorTemp']), 4300)
+
     def test_the_lut_safe_node_comes_first_and_the_spatial_one_second(self):
         """Resolve identifies a plugin by bundle index too, and only a pointwise node may be baked into
         a LUT: a spatial one declaring otherwise would corrupt Generate LUT without a warning."""

@@ -54,6 +54,27 @@ class OfxMath(unittest.TestCase):
             out = subprocess.run(cmd + probe, capture_output=True, text=True, check=True).stdout
             self.assertEqual(float(out), 0.0, ' '.join(cmd))
 
+    def test_the_eyedropper_makes_the_picked_colour_neutral(self):
+        """Punto bianco: Temperatura e Tint risolti dal colore scelto, poi applicati dal render, rendono quel colore
+        grigio. Lo dice il render, non una formula riscritta nel test."""
+        samples = [(0.60, 0.50, 0.40), (0.40, 0.50, 0.62), (0.50, 0.52, 0.50), (0.55, 0.50, 0.45),
+                   (0.18, 0.18, 0.18), (0.45, 0.50, 0.58), (0.30, 0.22, 0.14)]
+        out = subprocess.run([self.exe, '--wb-pick'], input='\n'.join('5600 0 %g %g %g' % s for s in samples) + '\n',
+                             capture_output=True, text=True, check=True).stdout.splitlines()
+        self.assertEqual(len(out), len(samples))
+        for sample, line in zip(samples, out):
+            ok, k, tint, r, g, b = line.split()
+            self.assertEqual(ok, '1', sample)
+            self.assertTrue(2000 <= float(k) <= 15000 and -100 <= float(tint) <= 100, line)
+            r, g, b = float(r), float(g), float(b)
+            for channel in (r, b):
+                self.assertAlmostEqual(channel / g, 1.0, delta=0.01, msg='%s -> %s' % (sample, line))
+
+    def test_the_eyedropper_refuses_black_and_a_sample_that_is_not_a_white(self):
+        out = subprocess.run([self.exe, '--wb-pick'], input='5600 0 0 0 0\n5600 0 1 0.001 0.001\n',
+                             capture_output=True, text=True, check=True).stdout.splitlines()
+        self.assertEqual([line.split()[0] for line in out], ['0', '0'])
+
     def test_the_tone_policy_matches_the_model(self):
         """sm_set_tone (float32 fields computed in double) against model.tone.set_tone."""
         rnd = random.Random(11)

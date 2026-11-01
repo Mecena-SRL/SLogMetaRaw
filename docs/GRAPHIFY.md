@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 2.3.4. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 2.4.0. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -53,7 +53,10 @@ common/  (condiviso dai due nodi)
 
 - **Develop** (nodo principale): legge i metadata via `common/Child.h` → `python3 -m
   slogmetaraw --cache/--to-resolve`, li cachea (`ClipCache`), costruisce i parametri
-  (`BuildParams`, `ToneParams`) e sincronizza col pannello (`DevelopSync`).
+  (`BuildParams`, `ToneParams`) e sincronizza col pannello (`DevelopSync`: migrazione delle impostazioni,
+  identità della clip, ingresso del nodo `nodeEncoding`, contagocce `pickWhite`; `ToneParams`: visibilità dei
+  controlli di Toni e Zone). Pannello a gruppi annidati: Ripresa, Spazio colore (Ingresso, Senza metadata,
+  Uscita), Toni, Zone, Dati di ripresa.
 - **Detail** (secondo nodo): recupero locale/texture; non legge metadata clip, lavora sui pixel
   in ingresso (`DetailPasses`, GPU Metal + fallback CPU).
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
@@ -91,6 +94,7 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: 01/11/2026 — verificata la mappa contro main alla 2.3.4 (solo Detail Metal, nessun modulo
-nuovo o rimosso); aggiunto `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata
+_Ultimo aggiornamento: 01/11/2026 — verificata la mappa contro main alla 2.4.0 (nessun modulo nuovo o rimosso:
+cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
+`tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata
 dall'Atlante, vista Manutenzione._

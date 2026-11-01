@@ -30,36 +30,85 @@ const ToneSlider kToneSliders[7] = {
 
 static const char* const kSoftClip[] = { "softClip", "softClipLevel", "softClipColor" };
 
+// The panel shows what Resolve does not already have: the highlight shoulder (Highlights, Bianco, Soft Clip) and
+// Saturation. The rest stays hidden until it is in use or "Mostra tutti i controlli" is ticked.
+static bool isBasic(const char* name) { return !strcmp(name, "toneHighlights") || !strcmp(name, "toneSaturation"); }
+
+static void defineTone(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page, OFX::GroupParamDescriptor* tones,
+                       const ToneSlider& t)
+{
+    if (auto* p = defineSlider(d, page, t.name, t.label, 0, -100, 100, -100, 100, 0.1, t.hint, tones)) {
+        p->setDigits(2);
+        if (!isBasic(t.name)) p->setIsSecret(true);
+    }
+}
+
 void defineToneParams(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page, OFX::GroupParamDescriptor* tones,
                       OFX::GroupParamDescriptor* zones)
 {
-    for (const ToneSlider& t : kToneSliders) {
-        if (auto* p = defineSlider(d, page, t.name, t.label, 0, -100, 100, -100, 100, 0.1, t.hint, tones))
-            p->setDigits(2);
-        // Bianco, next to the sliders that land on it, keeps the name softClipLevel (Soft Clip's roof too),
-        // so grades saved with it still load it
-        if (!strcmp(t.name, "toneWhites"))
-            if (auto* p = defineSlider(d, page, "softClipLevel", "Bianco (stop)", 2.5, 1, 10, 1, 8, 0.05,
-                                       "Dove arriva il massimo registrato con Highlights -100 e dove Soft Clip mette il "
-                                       "tetto, in stop sopra il grigio 18%. 2,5 = bianco Rec.709 con un CST senza tone "
-                                       "mapping; con un DRT (ACES, AgX, DaVinci) alza a 4-5", tones))
-                p->setDigits(2);
-    }
+    defineTone(d, page, tones, kToneSliders[1]);   // Highlights
+    // Bianco (softClipLevel, Soft Clip's roof too) keeps its name, so grades saved with it still load it
+    if (auto* p = defineSlider(d, page, "softClipLevel", "Bianco (stop)", 2.5, 1, 10, 1, 8, 0.05,
+                               "Dove arriva il massimo registrato con Highlights -100 e dove Soft Clip mette il "
+                               "tetto, in stop sopra il grigio 18%. 2,5 = bianco Rec.709 con un CST senza tone "
+                               "mapping; con un DRT (ACES, AgX, DaVinci) alza a 4-5", tones))
+        p->setDigits(2);
+    defineCheck(d, page, "softClip", "Soft Clip", false,
+                "Ripiega le alte luci verso il Bianco, un tetto che non raggiungono mai: contenimento, "
+                "non recupero", tones);
+    defineTone(d, page, tones, kToneSliders[6]);   // Saturation
+    defineCheck(d, page, "tonesMore", "Mostra tutti i controlli", false,
+                "Contrast, Shadows, Whites, Blacks, Vibrance e le Zone. Si mostrano da soli se il nodo li usa", tones);
+    for (const ToneSlider& t : kToneSliders)
+        if (!isBasic(t.name)) defineTone(d, page, tones, t);
     defineButton(d, page, "toneReset", "Azzera toni", "Riporta a zero Contrast, Highlights, Shadows, Whites, Blacks, "
                  "Vibrance e Saturation. Esposizione, bilanciamento e Bianco non cambiano", tones);
 
-    defineToggle(d, page, "fcZones", "False color: zone", "fc_zones.png",
+    if (zones) zones->setIsSecret(true);
+    auto* view = defineToggle(d, page, "fcZones", "False color: zone", "fc_zones.png",
                  "Colora ogni pixel con la zona che lo muove, misurata sulla stessa grandezza delle zone. "
                  "Dove due zone si sovrappongono le tinte si mescolano", zones);
     defineZoneParams(d, page, zones, "zone", true);
-    defineCheck(d, page, "softClip", "Soft Clip", false,
-                "Ripiega le alte luci verso il Bianco (in Toni), un tetto che non raggiungono mai: contenimento, "
-                "non recupero", zones);
     if (auto* p = defineSlider(d, page, "softClipColor", "Soft Clip Color", 0, -100, 100, -100, 100, 0.1,
                                "Colore delle luci ripiegate sotto il Bianco: verso destra lo tiene, verso sinistra va "
                                "verso la pellicola, che schiarendo desatura", zones))
         p->setDigits(2);
-    defineButton(d, page, "zoneReset", "Azzera zone", "Riporta le zone e il Soft Clip ai valori iniziali", zones);
+    auto* reset = defineButton(d, page, "zoneReset", "Azzera zone", "Riporta le zone e il Soft Clip ai valori iniziali", zones);
+    if (view) view->setIsSecret(true);
+    if (reset) reset->setIsSecret(true);
+}
+
+// Visible when ticked, when the node already uses them (a saved grade keeps its look and its controls) or while
+// the zones view is on.
+static bool zonesTouched(const ToneParamSet& s)
+{
+    const ZoneValues z = s.zones.read(0.0);
+    if (z.pivot != 0.0 || (s.zones.pivot && s.zones.pivot->getNumKeys() > 0)) return true;
+    for (int i = 0; i < kZoneCount; ++i)
+        if (z.exp[i] != 0.0 || z.sat[i] != 0.0 || z.range[i] != kZones[i].range || z.falloff[i] != kZones[i].falloff)
+            return true;
+    return s.softClipColor && (s.softClipColor->getValue() != 0.0 || s.softClipColor->getNumKeys() > 0);
+}
+
+void refreshToneVisibility(OFX::ImageEffect& e, const ToneParamSet& s, bool showAll)
+{
+    auto touched = [](OFX::DoubleParam* p) { return p && (p->getValue() != 0.0 || p->getNumKeys() > 0); };
+    const bool zoneView = e.paramExists("fcZones") && e.fetchBooleanParam("fcZones")->getValue();
+    const bool zones = showAll || zoneView || zonesTouched(s);
+    for (int i = 0; i < 7; ++i) {
+        if (isBasic(kToneSliders[i].name) || !s.sliders[i]) continue;
+        s.sliders[i]->setIsSecret(!(showAll || touched(s.sliders[i])));
+    }
+    for (const std::string& name : toneParamNames()) {
+        if (name.compare(0, 4, "zone") != 0 && name != "softClipColor") continue;
+        if (e.paramExists(name)) e.fetchDoubleParam(name)->setIsSecret(!zones);
+    }
+    for (const char* name : { "zonesGroup", "fcZones", "zoneReset" }) {
+        if (!e.paramExists(name)) continue;
+        if (!strcmp(name, "zonesGroup")) e.fetchGroupParam(name)->setIsSecret(!zones);
+        else if (!strcmp(name, "fcZones")) e.fetchBooleanParam(name)->setIsSecret(!zones);
+        else e.fetchPushButtonParam(name)->setIsSecret(!zones);
+    }
 }
 
 void ToneParamSet::bind(OFX::ImageEffect& e)

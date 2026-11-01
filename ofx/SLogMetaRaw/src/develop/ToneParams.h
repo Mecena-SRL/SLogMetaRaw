@@ -31,6 +31,8 @@ struct ToneParamSet
     SMToneControls read(double time) const;   // missing parameters keep their defaults
 };
 std::vector<std::string> toneParamNames();   // every control of Toni and Zone
+// Hides the controls Resolve already has (and the Zone group) unless the node uses them or showAll is set.
+void refreshToneVisibility(OFX::ImageEffect& effect, const ToneParamSet& set, bool showAll);
 void resetTones(OFX::ImageEffect& effect);   // "Azzera toni"
 void resetZones(OFX::ImageEffect& effect);   // "Azzera zone"
 

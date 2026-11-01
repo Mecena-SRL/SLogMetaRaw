@@ -131,14 +131,13 @@ The node is pointwise: each pixel depends only on itself. It never makes halos, 
 |---|---|
 | **Version** (top) | `v2.4.0`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v2.4.0 → 2.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
 | **Camera** · **Rileggi metadata** | the camera that was read. *Rileggi* re-reads the clip, sets every control back to the camera values and writes the clip's metadata into the Media Pool |
-| **Decode Using** | *Clip* lets you change the controls; *Camera metadata* locks them to the as-shot values |
-| **White Balance** · **Color Temp** · **Tint** | As shot or presets. Bradford chromatic adaptation in linear light, from the white the camera recorded |
-| **Exposure** | exposure index: double the EI is +1 stop |
-| **False color** | temperature, tint and exposure; see below |
-| **Color Space** · **Gamma** | output, like a Color Space Transform; *Timeline* does not convert |
-| **Toni** (Tones) | Contrast, Highlights, Shadows, Whites, **Bianco** (white, in stops), Blacks, Vibrance, Saturation (−100…+100) |
-| **Zone** (Zones, closed) | Black, Shadow, Light and Specular zones with Exp (stops), Sat, Range and Falloff; Contrast Pivot; Soft Clip; *Zone* false colour |
-| **Avanzate** (Advanced) | node input, data-level correction, status, **Sblocca controlli senza metadata** (unlock without metadata) |
+| **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
+| **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
+| **Punto bianco** (white point) | Resolve's eyedropper: pick a point of the image that should be neutral and Temperatura and Tint set themselves, with the same maths as the render |
+| **Esposizione** (EI) | exposure index: double the EI = +1 stop |
+| **False color** | a box above Temperatura, one below Tint and one below Esposizione; see below |
+| **Spazio colore** (colour space) | three sub-groups. **Ingresso** (input): Spazio colore and Gamma entering the node, Rilevato (detected) and *Ripristina da camera*, Data level, Livello and *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* and the shooting references. **Uscita** (output): Spazio colore and Gamma (like a Color Space Transform; *Timeline* does not convert), LUT size and export |
+| **Toni** (tones) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* adds Contrast, Shadows, Whites, Blacks, Vibrance and the **Zone** (Black, Shadow, Light, Specular with Exp, Sat, Range and Falloff, Contrast Pivot, *Zone* false color); they appear by themselves when the node uses them |
 | **Dati di ripresa** (shooting data) | read only: lens, focal length, aperture, focus, shutter, EI, WB, fps, ND, camera LUT |
 
 **Highlights is a film shoulder.** Pulled down, it compresses the highlights with a slope that falls smoothly towards the
@@ -155,7 +154,7 @@ like an exposure, so texture is kept, and the compression sits in a declared tra
 solarise. The honest cost of a pointwise node: whatever it compresses, it compresses the texture too. That is why local
 recovery is a separate node. Formulas and recipes: [docs/TONE_MAPPING.md](docs/TONE_MAPPING.md).
 
-**False colour.** One view per control, above the slider it serves:
+**False colour.** One view per control, next to the slider it serves (above Temperatura, below Tint and below Esposizione):
 - **Exposure** uses ARRI-style bands on the stops around 18% grey. Green is middle grey, pink is one stop over (skin),
   yellow is near clip, red is clipped, and blue and purple are the bottom.
 - **Temperature** and **Tint** work as in CineMatch. The picture turns grey, casts show in orange/blue or green/magenta,
@@ -168,7 +167,7 @@ The view replaces the image. Turn it off before you render. [docs/FALSE_COLOR.md
 The script's *Correct the Data Level* option fixes it for the whole project. [docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
 
 **Without metadata.** A ProRes from an external recorder, or a clip that cannot be read, leaves the node neutral. Tick
-*Avanzate › Sblocca controlli senza metadata* and type the shooting EI, Kelvin and tint: the controls come alive, and
+*Spazio colore › Senza metadata › Sblocca controlli* and type the shooting EI, Kelvin and tint: the controls come alive, and
 the node starts neutral.
 
 **Speed.** Opening a project does not read any file. Opening the panel waits at most half a second; a slow disk

@@ -988,6 +988,60 @@ static inline int sm_fc_calibrate(DevelopParams* p, double k, double t) {
     return 1;
 }
 
+// The eyedropper: the (k, tint) whose white balance turns one sample into a neutral. xyz is the sample in the
+// node's linear working space. The sample is seen under an illuminant lt, and the white balance maps the as-shot
+// white ls onto lt, so lt = ls * (sample in Bradford LMS) / (D65 in LMS); (k, tint) is then found on CIE 1960 uv
+// by Newton from the Kelvin of the current slider. Returns 0 when the sample has no chromaticity (black, negative
+// cone response) or the search does not settle; k and tint come back inside the sliders' range.
+static inline int sm_wb_from_xyz(double shotK, double shotT, const double xyz[3], double* k, double* tint) {
+    const double d65[3] = { 0.95046, 1.0, 1.08906 };
+    double ws[3], ls[3], l65[3], s[3], lt[3], wt[3];
+    sm_white_xyz(shotK, shotT, ws);
+    sm_bradford(ws, ls, 0);
+    sm_bradford(d65, l65, 0);
+    sm_bradford(xyz, s, 0);
+    if (!(s[0] > 0.0 && s[1] > 0.0 && s[2] > 0.0)) return 0;
+    for (int i = 0; i < 3; ++i) lt[i] = ls[i] * s[i] / l65[i];
+    sm_bradford(lt, wt, 1);
+    const double den = wt[0] + 15.0 * wt[1] + 3.0 * wt[2];
+    if (!(den > 1e-9)) return 0;
+    const double tu = 4.0 * wt[0] / den, tv = 6.0 * wt[1] / den;
+    auto uv = [](double kk, double tt, double* u, double* v) {
+        double w[3];
+        sm_white_xyz(kk, tt, w);
+        const double d = w[0] + 15.0 * w[1] + 3.0 * w[2];
+        *u = 4.0 * w[0] / d;
+        *v = 6.0 * w[1] / d;
+    };
+    double kk = 5600.0, tt = 0.0, u, v;
+    uv(kk, tt, &u, &v);
+    double err = (u - tu) * (u - tu) + (v - tv) * (v - tv);
+    for (int it = 0; it < 80 && err > 1e-14; ++it) {
+        const double dk = kk * 0.01, dt = 1.0;
+        double uk, vk, ut, vt;
+        uv(kk + dk, tt, &uk, &vk);
+        uv(kk, tt + dt, &ut, &vt);
+        const double a = (uk - u) / dk, c = (vk - v) / dk, b = (ut - u) / dt, e = (vt - v) / dt;
+        const double det = a * e - b * c;
+        if (fabs(det) < 1e-18) return 0;
+        double sk = (e * (tu - u) - b * (tv - v)) / det, st = (-c * (tu - u) + a * (tv - v)) / det;
+        double scale = 1.0;
+        for (int half = 0; half < 20; ++half, scale *= 0.5) {   // keep the step only if it gets closer
+            const double nk = fmin(fmax(kk + sk * scale, SM_WB_KMIN), SM_WB_KMAX);
+            const double nt = fmin(fmax(tt + st * scale, -SM_WB_TINT_MAX), SM_WB_TINT_MAX);
+            double nu, nv;
+            uv(nk, nt, &nu, &nv);
+            const double ne = (nu - tu) * (nu - tu) + (nv - tv) * (nv - tv);
+            if (ne < err) { kk = nk; tt = nt; u = nu; v = nv; err = ne; break; }
+            if (half == 19) it = 80;
+        }
+    }
+    if (err > 1e-8) return 0;   // ~1e-4 in uv, a few tens of Kelvin: further than that is not a white
+    *k = fmin(fmax(kk, 2000.0), 15000.0);
+    *tint = fmin(fmax(tt, -100.0), 100.0);
+    return 1;
+}
+
 // Code-value remap for a clip decoded on the wrong scale (hostFull: 1 = Resolve decoded Full).
 static inline void sm_set_level_fix(DevelopParams* p, int space, int gamma, int hostFull) {
     p->levelFix = 1;

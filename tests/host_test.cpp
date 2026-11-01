@@ -179,7 +179,7 @@ struct Param
     std::string name, type;
     PropSet* props;
     std::string stringValue;
-    double doubleValue = 0.0, double2[2] = { 0.0, 0.0 };
+    double doubleValue = 0.0, double2[2] = { 0.0, 0.0 }, rgb[3] = { 0.0, 0.0, 0.0 };
     int intValue = 0;
 };
 
@@ -243,6 +243,8 @@ static void applyDefaults(ParamSet* s)
         } else if (p->type == kOfxParamTypeDouble2D) {
             propGetDouble(h, kOfxParamPropDefault, 0, &p->double2[0]);
             propGetDouble(h, kOfxParamPropDefault, 1, &p->double2[1]);
+        } else if (p->type == kOfxParamTypeRGB) {
+            for (int c = 0; c < 3; ++c) propGetDouble(h, kOfxParamPropDefault, c, &p->rgb[c]);
         } else if (isIntLike(p->type)) {
             propGetInt(h, kOfxParamPropDefault, 0, &p->intValue);
         }
@@ -260,6 +262,9 @@ static OfxStatus paramGetValue(OfxParamHandle handle, ...)
         *va_arg(ap, double*) = p->double2[0];
         *va_arg(ap, double*) = p->double2[1];
     }
+    else if (p->type == kOfxParamTypeRGB) {
+        for (int c = 0; c < 3; ++c) *va_arg(ap, double*) = p->rgb[c];
+    }
     else if (isIntLike(p->type)) *va_arg(ap, int*) = p->intValue;
     va_end(ap);
     return kOfxStatOK;
@@ -276,6 +281,9 @@ static OfxStatus paramGetValueAtTime(OfxParamHandle handle, OfxTime time, ...)
         *va_arg(ap, double*) = p->double2[0];
         *va_arg(ap, double*) = p->double2[1];
     }
+    else if (p->type == kOfxParamTypeRGB) {
+        for (int c = 0; c < 3; ++c) *va_arg(ap, double*) = p->rgb[c];
+    }
     else if (isIntLike(p->type)) *va_arg(ap, int*) = p->intValue;
     va_end(ap);
     return kOfxStatOK;
@@ -289,6 +297,7 @@ static OfxStatus paramSetValue(OfxParamHandle handle, ...)
     if (p->type == kOfxParamTypeString) { const char* v = va_arg(ap, const char*); p->stringValue = v ? v : ""; }
     else if (p->type == kOfxParamTypeDouble) p->doubleValue = va_arg(ap, double);
     else if (p->type == kOfxParamTypeDouble2D) { p->double2[0] = va_arg(ap, double); p->double2[1] = va_arg(ap, double); }
+    else if (p->type == kOfxParamTypeRGB) { for (int c = 0; c < 3; ++c) p->rgb[c] = va_arg(ap, double); }
     else if (isIntLike(p->type)) p->intValue = va_arg(ap, int);
     va_end(ap);
     return kOfxStatOK;
@@ -578,6 +587,7 @@ static int createInstance(OfxPlugin* plugin, const char* clipPath, int* failed)
         Param* p = it->second;
         if (p->type == kOfxParamTypeString) p->stringValue = g_sets[i].second;
         else if (p->type == kOfxParamTypeDouble) p->doubleValue = atof(g_sets[i].second.c_str());
+        else if (p->type == kOfxParamTypeRGB) sscanf(g_sets[i].second.c_str(), "%lf,%lf,%lf", &p->rgb[0], &p->rgb[1], &p->rgb[2]);
         else p->intValue = atoi(g_sets[i].second.c_str());
     }
 
@@ -602,6 +612,7 @@ static int createInstance(OfxPlugin* plugin, const char* clipPath, int* failed)
                 Param* p = it->second;
                 if (p->type == kOfxParamTypeString) p->stringValue = value;
                 else if (p->type == kOfxParamTypeDouble) p->doubleValue = atof(value.c_str());
+                else if (p->type == kOfxParamTypeRGB) sscanf(value.c_str(), "%lf,%lf,%lf", &p->rgb[0], &p->rgb[1], &p->rgb[2]);
                 else p->intValue = atoi(value.c_str());
             }
         }

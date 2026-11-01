@@ -194,6 +194,12 @@ bool fileExists(const std::string& path)
     return statPath(path, &st) == 0;
 }
 
+long long fileSize(const std::string& path)
+{
+    StatBuf st;
+    return statPath(path, &st) == 0 ? (long long)st.st_size : -1;
+}
+
 #ifdef _WIN32
 bool removeFile(const std::string& path) { return _wremove(widen(path).c_str()) == 0; }
 #else

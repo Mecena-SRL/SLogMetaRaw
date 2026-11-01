@@ -132,14 +132,13 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 |---|---|
 | **Versão** (no topo) | `v2.4.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v2.4.0 → 2.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
-| **Decode Using** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
-| **White Balance** · **Color Temp** · **Tint** | As shot ou presets. Adaptação cromática Bradford em luz linear, a partir do branco que a câmera registrou |
-| **Exposure** | índice de exposição: o dobro do EI = +1 stop |
-| **False color** | temperatura, tint e exposição; veja abaixo |
-| **Color Space** · **Gamma** | saída, como um Color Space Transform; *Timeline* não converte |
-| **Toni** (Tons) | Contrast, Highlights, Shadows, Whites, **Bianco** (branco, em stops), Blacks, Vibrance, Saturation (−100…+100) |
-| **Zone** (Zonas, fechado) | zonas Black, Shadow, Light e Specular com Exp (stops), Sat, Range e Falloff; Contrast Pivot; Soft Clip; falsa cor *Zone* |
-| **Avanzate** (Avançado) | entrada do nó, correção do data level, estado, **Sblocca controlli senza metadata** (desbloquear sem metadados) |
+| **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
+| **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
+| **Punto bianco** (ponto branco) | o conta-gotas do Resolve: escolha na imagem um ponto que deve ser neutro e Temperatura e Tint se ajustam sozinhos, com a mesma matemática do render |
+| **Esposizione** (EI) | índice de exposição: o dobro do EI = +1 stop |
+| **False color** | uma caixa acima de Temperatura, uma abaixo de Tint e uma abaixo de Esposizione; veja abaixo |
+| **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
+| **Toni** (tons) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* acrescenta Contrast, Shadows, Whites, Blacks, Vibrance e as **Zone** (Black, Shadow, Light, Specular com Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); aparecem sozinhos se o nó os usa |
 | **Dati di ripresa** (dados de gravação) | só leitura: objetiva, focal, abertura, foco, obturador, EI, WB, fps, ND, LUT da câmera |
 
 **Highlights é um ombro de película.** Em negativo comprime as altas luzes com uma inclinação que diminui de forma
@@ -156,7 +155,7 @@ move como numa exposição, então a textura se mantém, e a compressão fica nu
 combinação de controles pode solarizar. O custo de um nó pontual, dito claramente: o que ele comprime, comprime também na
 textura. Por isso a recuperação local é um nó separado. Fórmulas e receitas: [docs/TONE_MAPPING.md](docs/TONE_MAPPING.md).
 
-**Falsa cor.** Uma vista por controle, acima do controle deslizante a que serve:
+**Falsa cor.** Uma vista por controle, ao lado do controle deslizante a que serve (acima de Temperatura, abaixo de Tint e de Esposizione):
 - **Exposição** usa faixas em stops em torno do cinza 18%, no estilo ARRI. Verde é o cinza médio, rosa um stop acima (a
   pele), amarelo perto do clip, vermelho o clip, azul e violeta o fundo.
 - **Temperatura** e **Tint** funcionam como no CineMatch. A imagem fica cinza, as dominantes ganham laranja/azul ou
@@ -169,7 +168,7 @@ A vista substitui a imagem: desligue-a antes de renderizar. [docs/FALSE_COLOR.md
 opção *Corrigir o Data Level* do script resolve isso para o projeto inteiro. [docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
 
 **Sem metadados.** Um ProRes de gravador externo, ou um clipe que não pode ser lido, deixa o nó neutro. Marque
-*Avanzate › Sblocca controlli senza metadata* e digite o EI, os Kelvin e o tint de gravação: os controles se ativam e o
+*Spazio colore › Senza metadata › Sblocca controlli* e digite o EI, os Kelvin e o tint de gravação: os controles se ativam e o
 nó começa neutro.
 
 **Velocidade.** Abrir um projeto não lê nenhum arquivo. Abrir o painel espera no máximo meio segundo; um disco lento

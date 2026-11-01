@@ -190,15 +190,15 @@ class PluginWiring(unittest.TestCase):
         self.src = plugin_build.source()
 
     def test_each_toggle_sits_next_to_the_slider_it_serves(self):
-        """OpenFX has no way to put a control on the same row as another, so the only
-        thing that ties a toggle to its slider is being declared right before it."""
+        """OpenFX has no way to put a control on the same row as another, so the only thing that ties a toggle
+        to its slider is being declared next to it: above Temperatura, below Tint and below Esposizione."""
         panel = plugin_build.body(self.src, 'void DevelopFactory::describeInContext')
-        for toggle, slider in (('fcTemperature', 'colorTemp'), ('fcTint', 'tint'),
-                               ('fcExposure', 'exposure')):   # fcZones heads its own group
+        for toggle, slider, above in (('fcTemperature', 'colorTemp', True), ('fcTint', 'tint', False),
+                                      ('fcExposure', 'exposure', False)):   # fcZones heads its own group
             i = panel.index('defineToggle(d, page, "%s"' % toggle)
             j = panel.index('defineSlider(d, page, "%s"' % slider)
-            self.assertLess(i, j, '%s must be declared before %s' % (toggle, slider))
-            self.assertLess(j - i, 700, '%s drifted away from %s' % (toggle, slider))
+            self.assertEqual(i < j, above, '%s is on the wrong side of %s' % (toggle, slider))
+            self.assertLess(abs(j - i), 700, '%s drifted away from %s' % (toggle, slider))
 
     def test_only_one_view_can_be_on(self):
         self.assertIn('toggles[i]->setValue(false)', self.src)
