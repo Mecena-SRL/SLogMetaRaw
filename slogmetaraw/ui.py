@@ -331,6 +331,10 @@ def main(resolve, fusion, bmd, selftest=False):
         'update_newer': False,  # a newer release is available: the chip is green
         'update_url': '',
         'update_latest': '',
+        # Details sections the user opened or closed, by section title: they stay as left when
+        # another clip is selected or the clips are read again (atlas: beh:ui.details.sections)
+        'detail_open': {},
+        'detail_items': [],     # [(title, top-level item)] of the clip shown now
     }
     done_idx = [0]  # number of 'done' entries already shown
     reader_cancelled = threading.Event()
@@ -664,6 +668,7 @@ def main(resolve, fusion, bmd, selftest=False):
     def on_read(ev, sync=False):
         nonlocal reader_thread
         clips_tree.Clear()
+        _remember_detail_sections()
         details.Clear()
         state['clips'].clear()
         state['results'].clear()
@@ -836,7 +841,19 @@ def main(resolve, fusion, bmd, selftest=False):
 
     # --- details / export -----------------------------------------------------
 
+    def _remember_detail_sections():
+        for title, item in state['detail_items']:
+            try:
+                state['detail_open'][title] = bool(item.Expanded)
+            except Exception:   # the item may already be gone: keep what was known
+                pass
+        state['detail_items'] = []
+
+    def _section_open(title, default):
+        return state['detail_open'].get(title, default)
+
     def show_details(uid):
+        _remember_detail_sections()
         details.Clear()
         r = state['results'].get(uid)
         if not r:
@@ -853,7 +870,8 @@ def main(resolve, fusion, bmd, selftest=False):
                 child.Text[0] = str(t(label))
                 child.Text[1] = str(val)
                 parent.AddChild(child)
-            parent.Expanded = not title.startswith(('TAG NON', 'STABILIZZ'))
+            parent.Expanded = _section_open(title, not title.startswith(('TAG NON', 'STABILIZZ')))
+            state['detail_items'].append((title, parent))
         if r.get('warnings'):
             parent = details.NewItem()
             parent.Text[0] = t('AVVISI')
@@ -862,7 +880,8 @@ def main(resolve, fusion, bmd, selftest=False):
                 child = details.NewItem()
                 child.Text[0] = w
                 parent.AddChild(child)
-            parent.Expanded = True
+            parent.Expanded = _section_open('AVVISI', True)
+            state['detail_items'].append(('AVVISI', parent))
 
     def on_select(ev):
         item = ev.get('item') if isinstance(ev, dict) else None

@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 2.3.3. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 2.3.4. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -73,6 +73,9 @@ packaging/windows/  SLogMetaRaw.iss, build_package.ps1, install.ps1
 tools/               check_version.py, build_math.py (genera gen/DevelopMath.h da math/)
 ```
 
+`tools/atlas/` (Atlante della logica, strumento di sviluppo): estrae dal codice Python funzioni, chiamate,
+import, binding UI e test e li unisce al modello dei comportamenti; vedi `docs/dev/CONFIGURATORI.md`.
+
 Non fanno parte del grafo di runtime del plugin: producono gli installer e verificano l'ABI/la
 versione prima di una release. Non pubblicati ancora nelle release notes.
 
@@ -88,5 +91,6 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: 12/10/2026 — verificata la mappa contro main alla 2.3.3 (ToneParamSet in
-`develop/ToneParams`, puntatori dei parametri del Detail in cache): nessun modulo nuovo o rimosso._
+_Ultimo aggiornamento: 01/11/2026 — verificata la mappa contro main alla 2.3.4 (solo Detail Metal, nessun modulo
+nuovo o rimosso); aggiunto `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata
+dall'Atlante, vista Manutenzione._

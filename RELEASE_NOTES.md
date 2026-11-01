@@ -1,5 +1,17 @@
 # Changelog
 
+## In sviluppo
+
+### Script
+
+- Dettagli della clip: le sezioni aperte o chiuse restano come le hai lasciate quando selezioni un'altra clip o
+  rileggi i metadata (prima tornavano ogni volta ai valori iniziali).
+
+### Sviluppo
+
+- Atlante della logica (`tools/atlas/`), strumento di sviluppo non incluso nel programma: comportamenti della finestra
+  collegati al codice, con riferimenti controllati dai test. Istruzioni per gli agenti in `CLAUDE.md`.
+
 ## S-Log MetaRaw 2.3.4
 
 ### Plugin
