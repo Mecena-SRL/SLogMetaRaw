@@ -42,6 +42,7 @@ private:
     void exportLut(double p_Time);   // DevelopLut.cpp, asks where to save
     void onUnlockChanged();
     void onReferenceChanged(const std::string& p_Name);
+    void rescaleExposure(double p_Ratio);
     // BuildParams.cpp
     bool buildParams(double p_Time, DevelopParams& p_Params, std::string* p_NodeInfo = nullptr,
                      std::string* p_LevelInfo = nullptr);

@@ -158,6 +158,10 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         return;
     }
     const bool firstRead = m_RefSource->getValue() == 0;
+    // A node pasted or moved to another clip arrives with its Exposure and balance set against the old camera
+    const double oldShotEI = m_ShotEI->getValue(), oldEI = m_EI->getValue();
+    int oldWB = 0;
+    m_WBMode->getValue(oldWB);
     setIfDifferent(m_ShotTemp, meta.shotTemp);
     setIfDifferent(m_ShotTint, meta.shotTint);
     setIfDifferent(m_ShotEI, meta.shotEI);
@@ -176,10 +180,20 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         setIfDifferent(m_MetaValid, true);
         m_Detail += (meta.wbEstimated ? " · Kelvin stimato (la camera non lo registra)" : "") + note;
         if (!sameClip || p_Mode == MetaMode::Reload || firstRead) {
-            m_WBMode->setValue(0);
-            m_Temp->setValue(meta.shotTemp);
-            m_Tint->setValue(meta.shotTint);
-            m_EI->setValue(meta.shotEI);
+            if (!sameClip && !bound.empty() && !firstRead && p_Mode != MetaMode::Reload && oldShotEI > 0.0 && oldEI > 0.0) {
+                // copy and paste: the stops above or below the camera EI and a Custom balance travel with the node,
+                // As shot follows the new camera
+                if (oldWB == 0) {
+                    m_Temp->setValue(meta.shotTemp);
+                    m_Tint->setValue(meta.shotTint);
+                }
+                rescaleExposure(meta.shotEI / oldShotEI);
+            } else {
+                m_WBMode->setValue(0);
+                m_Temp->setValue(meta.shotTemp);
+                m_Tint->setValue(meta.shotTint);
+                m_EI->setValue(meta.shotEI);
+            }
         }
     }
     if (bound != path) setText(m_BoundPath, path);   // only after a successful read
@@ -256,6 +270,21 @@ void DevelopEffect::onUnlockChanged()
     refreshNodeInfo();
 }
 
+// Exposure times ratio, keys included, inside the slider's range.
+void DevelopEffect::rescaleExposure(double p_Ratio)
+{
+    auto clampEI = [](double v) { return v < 25.0 ? 25.0 : (v > 409600.0 ? 409600.0 : v); };
+    const unsigned keys = m_EI->getNumKeys();
+    if (keys == 0) {
+        m_EI->setValue(clampEI(m_EI->getValue() * p_Ratio));
+        return;
+    }
+    for (unsigned i = 0; i < keys; ++i) {
+        const double t = m_EI->getKeyTime((int)i);
+        m_EI->setValueAtTime(t, clampEI(m_EI->getValueAtTime(t) * p_Ratio));
+    }
+}
+
 // A reference changes the numbers, not the picture: Exposure follows the EI, keys included.
 void DevelopEffect::onReferenceChanged(const std::string& p_Name)
 {
@@ -264,16 +293,7 @@ void DevelopEffect::onReferenceChanged(const std::string& p_Name)
         const double ratio = m_RefEI > 0.0 ? now / m_RefEI : 1.0;
         m_RefEI = now;
         if (!manualReference() || ratio == 1.0) return;
-        auto clampEI = [](double v) { return v < 25.0 ? 25.0 : (v > 409600.0 ? 409600.0 : v); };
-        const unsigned keys = m_EI->getNumKeys();
-        if (keys == 0) {
-            m_EI->setValue(clampEI(m_EI->getValue() * ratio));
-        } else {
-            for (unsigned i = 0; i < keys; ++i) {
-                const double t = m_EI->getKeyTime((int)i);
-                m_EI->setValueAtTime(t, clampEI(m_EI->getValueAtTime(t) * ratio));
-            }
-        }
+        rescaleExposure(ratio);
     } else if (manualReference()) {
         int wb = 0;
         m_WBMode->getValue(wb);

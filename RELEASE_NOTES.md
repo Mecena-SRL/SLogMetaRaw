@@ -22,6 +22,9 @@ ancora il pannello vecchio.
   da due scelte: al primo caricamento il valore vecchio riempie Spazio colore e Gamma (versione delle impostazioni 6).
 - **Clip spostata o ricollegata**: se nome e dimensione del file coincidono, Exposure e White Balance restano dove li hai
   lasciati (prima tornavano ai valori di camera perché cambiava il percorso).
+- **Copia e incolla del nodo su un'altra clip**: Esposizione resta di quanti stop sopra o sotto l'EI della camera
+  (non l'EI assoluto, che sposterebbe l'immagine se la camera è diversa); il bilanciamento *As shot* segue la camera
+  nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
 ### Sviluppo
 

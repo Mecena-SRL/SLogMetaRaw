@@ -158,6 +158,22 @@ class OfxHost(unittest.TestCase):
             other = run('C0002.MP4|10')
             self.assertEqual(float(other['colorTemp']), 4300)
 
+            def pasted(*settings):
+                """A node copied from a clip shot at EI 800 (+1 stop: Exposure 1600) onto the clip of the record
+                (shot at EI 1250, 4300 K)."""
+                out = subprocess.run([self.exe, BINARY, str(moved), '--plugin', '0', '--no-reload',
+                                      '--set', 'refSource=1', '--set', 'shotEI=800', '--set', 'exposure=1600',
+                                      '--set', 'boundPath=/altra/clip/C0009.MP4', '--set', 'boundId=C0009.MP4|99'] +
+                                     list(settings), capture_output=True, text=True, env=env, timeout=20).stdout
+                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)
+
+            as_shot = pasted('--set', 'colorTemp=3333')
+            self.assertAlmostEqual(float(as_shot['exposure']), 2500, delta=1, msg='+1 stop above the new camera EI')
+            self.assertEqual(float(as_shot['colorTemp']), 4300, 'As shot follows the new camera')
+            custom = pasted('--set', 'whiteBalance=7', '--set', 'colorTemp=3333', '--set', 'tint=12')
+            self.assertEqual((float(custom['colorTemp']), float(custom['tint'])), (3333, 12), 'a Custom balance travels')
+            self.assertAlmostEqual(float(custom['exposure']), 2500, delta=1)
+
     def test_the_lut_safe_node_comes_first_and_the_spatial_one_second(self):
         """Resolve identifies a plugin by bundle index too, and only a pointwise node may be baked into
         a LUT: a spatial one declaring otherwise would corrupt Generate LUT without a warning."""
