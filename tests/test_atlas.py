@@ -65,6 +65,28 @@ class AtlasModel(unittest.TestCase):
         helper = self.facts['functions']['slogmetaraw/__main__.py::_helper']
         self.assertIn('slogmetaraw/extract.py::read_clip', helper['calls'])
 
+    def test_interface_is_read_from_its_sources(self):
+        ui = atlas.ui_extract.extract_ui()
+        widgets = {}
+
+        def walk(w):
+            widgets[w['id']] = w
+            for c in w['children']:
+                walk(c)
+        walk(ui['script']['root'])
+        self.assertEqual(widgets['ui:script.Read']['type'], 'Button')
+        self.assertEqual(widgets['ui:script.Read']['props']['Text'], {'t': '1 · Leggi metadata'})
+        for panel in ui['panels']:
+            with open(os.path.join(ROOT, panel['golden']), encoding='utf-8') as fh:
+                lines = [l for l in fh.read().splitlines() if l.startswith('param:')]
+            self.assertEqual(len(panel['params']), len(lines))
+            for q in panel['params']:   # every control can be traced to the C++ that defines it
+                self.assertIsNotNone(q['define'], q['id'])
+                self.assertTrue(os.path.exists(os.path.join(ROOT, q['define']['file'])), q['id'])
+        uses = {c['id']: len(c['uses']) for c in ui['components']}
+        self.assertGreater(uses['comp:ofx.defineSlider'], 0)
+        self.assertGreater(uses['comp:script.Button'], 0)
+
     def test_page_carries_no_local_paths(self):
         # the repository is public: the generated page must hold repository-relative paths only
         with tempfile.TemporaryDirectory() as out:

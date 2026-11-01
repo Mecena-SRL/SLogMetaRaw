@@ -22,6 +22,9 @@ import subprocess
 import sys
 import unittest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ui_extract  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HERE = os.path.join(ROOT, 'tools', 'atlas')
 MODEL = os.path.join(HERE, 'model.json')
@@ -180,6 +183,27 @@ def extract():
     return {'modules': modules, 'functions': functions, 'bindings': {b['id']: b for b in bindings}, 'tests': tests}
 
 
+# --- C++ (text search, no parser) ------------------------------------------------------------------------------
+
+def cpp_symbol(ref):
+    """'file::Name' or 'file::Class::name' -> line range and fingerprint of its definition, or None.
+
+    A definition is a line that starts at column 0, contains `name(` and does not end with ';'; its body runs to
+    the next line that is a lone `}` at column 0. Good enough for this codebase's style; not a C++ parser."""
+    rel, name = ref.split('::', 1)
+    path = os.path.join(ROOT, rel)
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding='utf-8') as fh:
+        lines = fh.read().splitlines()
+    pat = re.compile(r'^[A-Za-z_].*\b' + re.escape(name) + r'\s*\(')
+    for i, line in enumerate(lines):
+        if pat.search(line) and not line.rstrip().endswith(';'):
+            end = next((j for j in range(i, len(lines)) if lines[j].startswith('}')), i)
+            return {'file': rel, 'line': i + 1, 'end': end + 1, 'fingerprint': _fingerprint('\n'.join(lines[i:end + 1]))}
+    return None
+
+
 # --- revision -------------------------------------------------------------------------------------------------
 
 def _git(*args):
@@ -210,11 +234,12 @@ def _refs(element):
     return element.get('refs', [])
 
 
-def resolve(model, facts, test_results=None):
+def resolve(model, facts, test_results=None, ui=None):
     """Annotates every model element with the status of its references. Returns (atlas, problems, stale)."""
     problems, stale, unreviewed = [], [], set()
     fps = model.get('fingerprints', {})
     calls = {(f['id'], c) for f in facts['functions'].values() for c in f['calls']}
+    params = {q['id']: q for pn in (ui or {}).get('panels', []) for q in pn['params']}
     owner_of = {}
 
     def check(element, owner):
@@ -237,6 +262,29 @@ def resolve(model, facts, test_results=None):
                 else:
                     r['status'] = 'mancante'
                     problems.append('%s: funzione %s non trovata' % (element['id'], ref['code']))
+            elif 'cpp' in ref:
+                c = cpp_symbol(ref['cpp'])
+                if c:
+                    r.update(status='estratto', file=c['file'], line=c['line'], end=c['end'], how='ricerca testuale C++')
+                    known = fps.get(owner, {}).get(ref['cpp'])
+                    if known and known != c['fingerprint']:
+                        r['status'] = 'modificato'
+                        stale.append('%s: %s cambiato dopo la revisione del modello' % (owner, ref['cpp']))
+                    elif not known:
+                        r['status'] = 'non revisionato'
+                        unreviewed.add('%s: %s' % (owner, ref['cpp']))
+                else:
+                    r['status'] = 'mancante'
+                    problems.append('%s: funzione C++ %s non trovata' % (element['id'], ref['cpp']))
+            elif 'param' in ref:
+                q = params.get(ref['param'])
+                if q:
+                    r.update(status='verificato', label=q['label'] or q['name'])
+                    if q.get('define'):
+                        r.update(file=q['define']['file'], line=q['define']['line'])
+                elif ui is not None:
+                    r['status'] = 'mancante'
+                    problems.append('%s: parametro %s non trovato' % (element['id'], ref['param']))
             elif 'binding' in ref:
                 b = facts['bindings'].get(ref['binding'])
                 if b:
@@ -329,21 +377,36 @@ def build(run=False):
     test_ids = {r['test'] for b in model['behaviours'] for el in [b] + b['nodes'] + b['edges'] +
                 b.get('proposals', []) for r in el.get('refs', []) if 'test' in r}
     results = run_tests(test_ids) if run else None
-    problems, stale, uncovered, unreviewed = resolve(model, facts, results)
+    ui = ui_extract.extract_ui()
+    problems, stale, uncovered, unreviewed = resolve(model, facts, results, ui)
     rev = revision()
-    atlas = {'schema': SCHEMA, 'revision': rev, 'repo_url': REPO_URL, 'model': model,
+    for w in _walk(ui['script']['root']):   # script widgets that are wired to an event handler
+        w['bindings'] = sorted(b for b, v in facts['bindings'].items() if w['widget_id'] and v['widget'] == w['widget_id'])
+    atlas = {'schema': SCHEMA, 'revision': rev, 'repo_url': REPO_URL, 'model': model, 'ui': ui,
              'facts': {'functions': facts['functions'], 'bindings': facts['bindings'],
                        'modules': facts['modules'], 'tests': {k: v for k, v in facts['tests'].items()
                                                               if k in test_ids}},
              'coverage': {'problems': problems, 'stale': stale, 'unreviewed': unreviewed, 'modules_unassigned': uncovered,
                           'tests_run': bool(run), 'graphify': graphify_freshness(facts),
-                          'extracted': ['funzioni Python (nome, righe, impronta)', 'chiamate fra funzioni Python',
+                          'extracted': ['widget della finestra dello script (AST di ui.py)',
+                                        'parametri dei pannelli Develop e Detail (tests/golden, verificati dal '
+                                        'test host sul plugin compilato) e posizione nel C++ (ricerca testuale)',
+                                        'catalogo componenti: tipi UIManager e helper define* di ParamDefs.h',
+                                        'funzioni Python (nome, righe, impronta)', 'chiamate fra funzioni Python',
                                         'import fra moduli slogmetaraw', 'binding eventi UI (win.On.X.Y)',
                                         'elenco test unittest'],
-                          'not_extracted': ['codice C++ del plugin OFX (solo riferimenti a file, controllati)',
+                          'not_extracted': ['funzioni e chiamate C++ del plugin OFX (solo file e nomi dei parametri)',
+                                            'aspetto reale in Resolve: l\'anteprima è una rappresentazione, non uno '
+                                            'screenshot',
                                             'testi, eventi e decisioni dei comportamenti (modello manuale)',
                                             'disposizione grafica (vista, manuale)']}}
     return atlas, problems, stale
+
+
+def _walk(w):
+    yield w
+    for c in w['children']:
+        yield from _walk(c)
 
 
 def write(atlas):
@@ -368,9 +431,15 @@ def accept(owner):
     beh = next((b for b in model['behaviours'] + model['subsystems'] if b['id'] == owner), None)
     if beh is None:
         raise SystemExit('elemento %s non trovato nel modello' % owner)
-    codes = {r['code'] for el in [beh] + beh.get('nodes', []) + beh.get('edges', []) + beh.get('proposals', [])
-             for r in el.get('refs', []) if 'code' in r and r['code'] in facts['functions']}
-    model.setdefault('fingerprints', {})[owner] = {c: facts['functions'][c]['fingerprint'] for c in sorted(codes)}
+    els = [beh] + beh.get('nodes', []) + beh.get('edges', []) + beh.get('proposals', [])
+    codes = {r['code']: facts['functions'][r['code']]['fingerprint'] for el in els for r in el.get('refs', [])
+             if 'code' in r and r['code'] in facts['functions']}
+    for el in els:
+        for r in el.get('refs', []):
+            c = cpp_symbol(r['cpp']) if 'cpp' in r else None
+            if c:
+                codes[r['cpp']] = c['fingerprint']
+    model.setdefault('fingerprints', {})[owner] = dict(sorted(codes.items()))
     with open(MODEL, 'w', encoding='utf-8') as fh:
         json.dump(model, fh, ensure_ascii=False, indent=1)
         fh.write('\n')

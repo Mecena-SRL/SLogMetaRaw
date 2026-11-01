@@ -11,6 +11,8 @@
 
 - Atlante della logica (`tools/atlas/`), strumento di sviluppo non incluso nel programma: comportamenti della finestra
   collegati al codice, con riferimenti controllati dai test. Istruzioni per gli agenti in `CLAUDE.md`.
+- Atlante, vista Interfaccia: finestra dello script e pannelli Develop e Detail ricostruiti dalle fonti, catalogo
+  dei componenti, proposte di modifica esportabili; nuovo percorso «Detail: colore e passi».
 
 ## S-Log MetaRaw 2.3.4
 

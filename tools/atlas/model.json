@@ -13,7 +13,10 @@
   "resolve": "API di Resolve",
   "lettore": "Thread lettore",
   "helper": "Processo lettore",
-  "disco": "Disco"
+  "disco": "Disco",
+  "immagine": "Immagine (Resolve)",
+  "nodo": "Nodo Detail: impostazione",
+  "calcolo": "Calcolo per pixel (luce lineare)"
  },
  "subsystems": [
   {
@@ -100,7 +103,7 @@
   {
    "id": "sub.detail",
    "label": "Plugin OFX · Detail",
-   "text": "Secondo nodo: dettaglio locale e texture sui pixel. Codice C++ non estratto.",
+   "text": "Secondo nodo: recupero locale, texture, clarity, dehaze, in luce lineare. C++ cercato per testo, non analizzato.",
    "basis": "intenzione",
    "modules": [],
    "refs": [
@@ -108,7 +111,9 @@
      "file": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp"
     }
    ],
-   "behaviours": []
+   "behaviours": [
+    "beh:detail.colour"
+   ]
   },
   {
    "id": "sub.update",
@@ -861,6 +866,473 @@
      ]
     }
    ]
+  },
+  {
+   "id": "beh:detail.colour",
+   "label": "Detail: colore e passi",
+   "question": "Come lavora il Detail sull'immagine, e in che spazio colore?",
+   "subsystem": "sub.detail",
+   "basis": "dedotto",
+   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata, da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. Non fa la conversione per lo schermo.",
+   "refs": [
+    {
+     "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
+    },
+    {
+     "test": "tests/test_detail.py::Model.test_l1_at_rest_the_node_is_the_identity"
+    }
+   ],
+   "nodes": [
+    {
+     "id": "dc.in",
+     "kind": "data",
+     "label": "Immagine che entra nel nodo",
+     "text": "Il fotogramma intero, in float RGBA, nella codifica che arriva dal nodo precedente. Il Detail vuole un log di scena: con Rec.709 o Gamma 2.4 le alte luci sono già tagliate e non c'è niente da recuperare.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render"
+      }
+     ]
+    },
+    {
+     "id": "dc.choose",
+     "kind": "decision",
+     "label": "Quale codifica entra?",
+     "text": "In ordine: 1) Avanzate › Ingresso nodo, se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di S-Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput"
+      },
+      {
+       "param": "param:detail.nodeInput"
+      },
+      {
+       "param": "param:detail.camSpace"
+      },
+      {
+       "param": "param:detail.camGamma"
+      },
+      {
+       "param": "param:detail.boundPath"
+      }
+     ]
+    },
+    {
+     "id": "dc.neutral",
+     "kind": "end",
+     "label": "Nodo neutro",
+     "text": "Codifica sconosciuta: l'immagine esce identica (copia).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render"
+      }
+     ]
+    },
+    {
+     "id": "dc.info",
+     "kind": "end",
+     "label": "Riga «Ingresso: …»",
+     "text": "In cima al pannello: spazio e curva scelti e il perché (dichiarato, da Resolve, dalla clip, presunto). È l'unico punto dove l'app dice oggi in che spazio lavora.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo"
+      },
+      {
+       "param": "param:detail.detailInfo"
+      }
+     ]
+    },
+    {
+     "id": "dc.prepare",
+     "kind": "function",
+     "label": "Prepara i parametri",
+     "text": "Legge i controlli e calcola raggi e soglie relativi all'altezza del fotogramma: stesso look a piena risoluzione, in proxy e nel viewer.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare"
+      }
+     ]
+    },
+    {
+     "id": "dc.decode",
+     "kind": "function",
+     "label": "Decodifica in luce lineare",
+     "text": "La curva d'ingresso viene invertita: i valori diventano luce di scena lineare (grigio 18% = 0,18).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded"
+      }
+     ]
+    },
+    {
+     "id": "dc.luma",
+     "kind": "data",
+     "label": "L = log2(norma / 0,18)",
+     "text": "Una sola grandezza per pixel, in stop dal grigio: è su questa che lavorano tutti i passi. Il colore non entra nei calcoli dei toni.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_luma"
+      }
+     ]
+    },
+    {
+     "id": "dc.base",
+     "kind": "function",
+     "label": "Base per aree (edge-aware)",
+     "text": "Griglia ridotta (382–764 righe) e guided filter: la base segue i bordi forti e ignora la grana. Dettaglio = L − base.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent"
+      },
+      {
+       "param": "param:detail.detailRadius"
+      },
+      {
+       "param": "param:detail.edgeThreshold"
+      }
+     ]
+    },
+    {
+     "id": "dc.tones",
+     "kind": "function",
+     "label": "Toni locali e zone",
+     "text": "Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "param": "param:detail.localContrast"
+      },
+      {
+       "param": "param:detail.localShadows"
+      },
+      {
+       "param": "param:detail.localZonePivot"
+      },
+      {
+       "param": "param:detail.preserveDetail"
+      }
+     ]
+    },
+    {
+     "id": "dc.hl",
+     "kind": "function",
+     "label": "Local Highlights",
+     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul Bianco.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "param": "param:detail.localHighlights"
+      },
+      {
+       "param": "param:detail.localWhite"
+      }
+     ]
+    },
+    {
+     "id": "dc.presence",
+     "kind": "function",
+     "label": "Texture e Clarity",
+     "text": "Texture: dettaglio fine sopra la soglia rumore. Clarity: contrasto a media scala sui mezzitoni. Il dettaglio aggiunto è limitato a ±1,5 stop.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "param": "param:detail.texture"
+      },
+      {
+       "param": "param:detail.clarity"
+      },
+      {
+       "param": "param:detail.noiseThreshold"
+      },
+      {
+       "param": "param:detail.clarityCenter"
+      }
+     ]
+    },
+    {
+     "id": "dc.haze",
+     "kind": "function",
+     "label": "Dehaze",
+     "text": "Canale scuro rispetto al velo dichiarato (livello e colore), mai stimato per fotogramma; sopra il livello del velo non agisce.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "param": "param:detail.dehaze"
+      },
+      {
+       "param": "param:detail.hazeLevel"
+      },
+      {
+       "param": "param:detail.hazeWarmth"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel"
+      }
+     ]
+    },
+    {
+     "id": "dc.gain",
+     "kind": "function",
+     "label": "Guadagno per pixel",
+     "text": "Il risultato è un guadagno uguale su R, G e B: la tinta non cambia. Viste guadagno/base sostituiscono l'immagine per controllo.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_apply"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain"
+      },
+      {
+       "param": "param:detail.viewGain"
+      },
+      {
+       "param": "param:detail.viewBase"
+      }
+     ]
+    },
+    {
+     "id": "dc.encode",
+     "kind": "function",
+     "label": "Riscrive nella stessa codifica",
+     "text": "La luce lineare torna nella curva d'ingresso.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_emit"
+      }
+     ]
+    },
+    {
+     "id": "dc.out",
+     "kind": "end",
+     "label": "Uscita = stessa codifica",
+     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709) va fatta dopo, in un altro nodo. Il Bianco (Avanzate) va tarato su quella conversione: 2,5 stop per un CST senza tone mapping, 4–5 con un DRT.",
+     "basis": "verificato",
+     "refs": [
+      {
+       "test": "tests/test_detail.py::CpuParity.test_at_rest_the_output_is_the_input_bit_for_bit"
+      }
+     ]
+    }
+   ],
+   "edges": [
+    {
+     "id": "c1",
+     "from": "dc.in",
+     "to": "dc.choose",
+     "kind": "data",
+     "label": "pixel + spazio comunicato da Resolve (se c'è)"
+    },
+    {
+     "id": "c2",
+     "from": "dc.choose",
+     "to": "dc.neutral",
+     "kind": "decision",
+     "label": "sconosciuta"
+    },
+    {
+     "id": "c3",
+     "from": "dc.choose",
+     "to": "dc.info",
+     "kind": "data",
+     "label": "spazio scelto e motivo"
+    },
+    {
+     "id": "c4",
+     "from": "dc.choose",
+     "to": "dc.prepare",
+     "kind": "decision",
+     "label": "spazio + curva"
+    },
+    {
+     "id": "c5",
+     "from": "dc.prepare",
+     "to": "dc.decode",
+     "kind": "control",
+     "label": "curva d'ingresso"
+    },
+    {
+     "id": "c6",
+     "from": "dc.in",
+     "to": "dc.decode",
+     "kind": "data",
+     "label": "RGB codificato"
+    },
+    {
+     "id": "c7",
+     "from": "dc.decode",
+     "to": "dc.luma",
+     "kind": "data",
+     "label": "RGB lineare"
+    },
+    {
+     "id": "c8",
+     "from": "dc.luma",
+     "to": "dc.base",
+     "kind": "data",
+     "label": "L"
+    },
+    {
+     "id": "c9",
+     "from": "dc.base",
+     "to": "dc.tones",
+     "kind": "data",
+     "label": "base B, dettaglio L−B"
+    },
+    {
+     "id": "c10",
+     "from": "dc.tones",
+     "to": "dc.hl",
+     "kind": "data",
+     "label": "base spostata"
+    },
+    {
+     "id": "c11",
+     "from": "dc.hl",
+     "to": "dc.presence",
+     "kind": "data",
+     "label": "L locale"
+    },
+    {
+     "id": "c12",
+     "from": "dc.presence",
+     "to": "dc.haze",
+     "kind": "data",
+     "label": "L + dettaglio"
+    },
+    {
+     "id": "c13",
+     "from": "dc.haze",
+     "to": "dc.gain",
+     "kind": "data",
+     "label": "L finale → guadagno"
+    },
+    {
+     "id": "c14",
+     "from": "dc.decode",
+     "to": "dc.gain",
+     "kind": "data",
+     "label": "RGB lineare"
+    },
+    {
+     "id": "c15",
+     "from": "dc.gain",
+     "to": "dc.encode",
+     "kind": "data",
+     "label": "RGB lineare × guadagno"
+    },
+    {
+     "id": "c16",
+     "from": "dc.encode",
+     "to": "dc.out",
+     "kind": "data",
+     "label": "stessa codifica dell'ingresso"
+    }
+   ],
+   "view": {
+    "lanes": [
+     "immagine",
+     "nodo",
+     "calcolo",
+     "utente"
+    ],
+    "pos": {
+     "dc.in": [
+      0,
+      0
+     ],
+     "dc.choose": [
+      1,
+      1
+     ],
+     "dc.neutral": [
+      2,
+      0
+     ],
+     "dc.info": [
+      2,
+      3
+     ],
+     "dc.prepare": [
+      2,
+      1
+     ],
+     "dc.decode": [
+      3,
+      2
+     ],
+     "dc.luma": [
+      4,
+      2
+     ],
+     "dc.base": [
+      5,
+      2
+     ],
+     "dc.tones": [
+      6,
+      2
+     ],
+     "dc.hl": [
+      7,
+      2
+     ],
+     "dc.presence": [
+      8,
+      2
+     ],
+     "dc.haze": [
+      9,
+      2
+     ],
+     "dc.gain": [
+      10,
+      2
+     ],
+     "dc.encode": [
+      11,
+      2
+     ],
+     "dc.out": [
+      12,
+      0
+     ]
+    }
+   },
+   "proposals": [
+    {
+     "id": "P-003",
+     "status": "proposta",
+     "label": "Modalità di sviluppo (Standard, Zonale, Stampa, Recupero HDR→SDR)",
+     "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
+     "change": "Menu «Sviluppo» in cima con descrizione breve e comandi per modalità; selettore «Destinazione» (ODT) che tara le zone. Proposta da discutere prima del codice.",
+     "impact": "Pannello Detail (nuovi parametri, nomi permanenti), math/Detail.h, Metal, golden params_detail.txt. Default Standard: grade salvati invariati.",
+     "verification": "Da definire: modello Python per ogni modalità, parità CPU/Metal, prova in Resolve della visibilità dinamica dei comandi.",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
+      },
+      {
+       "param": "param:detail.nodeInput"
+      }
+     ]
+    }
+   ]
   }
  ],
  "fingerprints": {
@@ -891,6 +1363,21 @@
    "slogmetaraw/ui.py::main.on_select": "cc8688f47998",
    "slogmetaraw/ui.py::main.read_worker": "60955ca3be46",
    "slogmetaraw/ui.py::main.show_details": "44eb62d2468c"
+  },
+  "beh:detail.colour": {
+   "ofx/SLogMetaRaw/math/Detail.h::dt_apply": "01a83eae2d74",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_emit": "9cc3dc73ad63",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel": "f33417c4ec86",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "d1ebf18fad71",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "154dbfe19a4a",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "69c3219b98fb",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
+   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
+   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
+   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"
   }
  }
 }
