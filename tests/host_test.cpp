@@ -179,7 +179,7 @@ struct Param
     std::string name, type;
     PropSet* props;
     std::string stringValue;
-    double doubleValue = 0.0;
+    double doubleValue = 0.0, double2[2] = { 0.0, 0.0 };
     int intValue = 0;
 };
 
@@ -240,6 +240,9 @@ static void applyDefaults(ParamSet* s)
             p->stringValue = v ? v : "";
         } else if (p->type == kOfxParamTypeDouble) {
             propGetDouble(h, kOfxParamPropDefault, 0, &p->doubleValue);
+        } else if (p->type == kOfxParamTypeDouble2D) {
+            propGetDouble(h, kOfxParamPropDefault, 0, &p->double2[0]);
+            propGetDouble(h, kOfxParamPropDefault, 1, &p->double2[1]);
         } else if (isIntLike(p->type)) {
             propGetInt(h, kOfxParamPropDefault, 0, &p->intValue);
         }
@@ -253,6 +256,10 @@ static OfxStatus paramGetValue(OfxParamHandle handle, ...)
     va_start(ap, handle);
     if (p->type == kOfxParamTypeString) *va_arg(ap, char**) = const_cast<char*>(p->stringValue.c_str());
     else if (p->type == kOfxParamTypeDouble) *va_arg(ap, double*) = p->doubleValue;
+    else if (p->type == kOfxParamTypeDouble2D) {
+        *va_arg(ap, double*) = p->double2[0];
+        *va_arg(ap, double*) = p->double2[1];
+    }
     else if (isIntLike(p->type)) *va_arg(ap, int*) = p->intValue;
     va_end(ap);
     return kOfxStatOK;
@@ -265,6 +272,10 @@ static OfxStatus paramGetValueAtTime(OfxParamHandle handle, OfxTime time, ...)
     va_start(ap, time);   // nothing animates in this host: the time is ignored
     if (p->type == kOfxParamTypeString) *va_arg(ap, char**) = const_cast<char*>(p->stringValue.c_str());
     else if (p->type == kOfxParamTypeDouble) *va_arg(ap, double*) = p->doubleValue;
+    else if (p->type == kOfxParamTypeDouble2D) {
+        *va_arg(ap, double*) = p->double2[0];
+        *va_arg(ap, double*) = p->double2[1];
+    }
     else if (isIntLike(p->type)) *va_arg(ap, int*) = p->intValue;
     va_end(ap);
     return kOfxStatOK;
@@ -277,6 +288,7 @@ static OfxStatus paramSetValue(OfxParamHandle handle, ...)
     va_start(ap, handle);
     if (p->type == kOfxParamTypeString) { const char* v = va_arg(ap, const char*); p->stringValue = v ? v : ""; }
     else if (p->type == kOfxParamTypeDouble) p->doubleValue = va_arg(ap, double);
+    else if (p->type == kOfxParamTypeDouble2D) { p->double2[0] = va_arg(ap, double); p->double2[1] = va_arg(ap, double); }
     else if (isIntLike(p->type)) p->intValue = va_arg(ap, int);
     va_end(ap);
     return kOfxStatOK;
@@ -302,6 +314,7 @@ static OfxStatus paramSetValueAtTime(OfxParamHandle handle, OfxTime time, ...)
     va_list ap;
     va_start(ap, time);   // no animation: a keyed set is a plain set
     if (p->type == kOfxParamTypeDouble) p->doubleValue = va_arg(ap, double);
+    else if (p->type == kOfxParamTypeDouble2D) { p->double2[0] = va_arg(ap, double); p->double2[1] = va_arg(ap, double); }
     else if (isIntLike(p->type)) p->intValue = va_arg(ap, int);
     va_end(ap);
     return kOfxStatOK;

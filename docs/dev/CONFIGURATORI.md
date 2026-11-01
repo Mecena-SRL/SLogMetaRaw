@@ -96,12 +96,16 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
 - Testi, decisioni e collegamenti sono scritti a mano: i riferimenti sono controllati, il contenuto no.
 - C++ non estratto; i comportamenti del plugin non sono ancora modellati.
 - La lettura di `Expanded` dagli elementi del Tree di Resolve è supposta, non provata in Resolve.
+- Detail Cinematografico: visibilità dinamica dei comandi, punti sul viewer e Misura scritti secondo lo standard
+  OFX, non ancora provati in Resolve.
 - Le note restano nel browser di chi le scrive; per discuterle si copia il contesto nella conversazione.
 
 ## 7. Prossimi incrementi
 
 1. Fatto (01/11/2026): catalogo componenti e vista Interfaccia (script, Develop, Detail).
-2. Discussione delle modalità di sviluppo del Detail (P-003 nell'Atlante): Standard, Zonale, Stampa, Recupero
-   HDR→SDR, con selettore della destinazione (ODT).
+2. Modalità di sviluppo del Detail (P-003 nell'Atlante, in corso). Fatto (01/11/2026): menu Modalità, Ingresso
+   (IDT), Destinazione (ODT), modalità Cinematografico (rapporto di luce misurato sul viso); modello, parità CPU e
+   golden aggiornati, kernel CPU/Metal invariati. Da provare in Resolve: `setIsSecret` dal vivo, punti Double2D sul
+   viewer, `fetchImage` durante Misura. Da fare: Zonale, Stampa, Recupero HDR→SDR.
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

@@ -1,6 +1,22 @@
 param:Controls|OfxParamTypePage||||||||||||||||
 param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllare gli aggiornamenti|||
 param:detailInfo|OfxParamTypeString|Detail|Spaziale · escluso da Generate LUT|||0|||||||0||||
+param:modeGroup|OfxParamTypeGroup|Sviluppo e spazio colore|||||||||||||||1
+param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato sull'immagine|Standard,Cinematografico||
+param:modeInfo|OfxParamTypeString|Cosa fa|Toni locali, presenza e zone: Gamma dinamica, Presenza, Zone locali|modeGroup||0|||||||0||||
+param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|modeGroup|||||||||0|Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
+param:destination|OfxParamTypeChoice|Destinazione (ODT)|0|modeGroup|||||||||0|La trasformazione dopo il nodo: decide dove deve arrivare il massimo registrato. Dal Bianco usa Avanzate › Bianco; le altre lo fissano (CST 2,5 stop, DRT 4,5, PQ 1000 nit 6,5). Il nodo non converte: lavora sempre nella codifica d'ingresso|Dal Bianco (manuale),Rec.709 · CST senza tone mapping,Rec.709 · DRT (ACES, AgX, DaVinci),HDR PQ 1000 nit||
+param:cinemaGroup|OfxParamTypeGroup|Cinematografico|||1||||||||||||1
+param:subjectFace|OfxParamTypeBoolean|Soggetto: viso|1|cinemaGroup|1||||||||0|Incarnato: misura la luminanza (Y), aree piccole, tiene la pelle||subject_face.png|
+param:subjectLandscape|OfxParamTypeBoolean|Soggetto: paesaggio|0|cinemaGroup|1||||||||0|Sfondo o paesaggio: misura la norma del colore, aree grandi||subject_landscape.png|
+param:ratioLightPos|OfxParamTypeDouble2D|Viso luce|0.4,0.55|cinemaGroup|1||||||||0|Punto sul lato illuminato del soggetto (frazione del fotogramma, 0,0 in basso a sinistra)|||
+param:ratioShadowPos|OfxParamTypeDouble2D|Viso ombra|0.6,0.55|cinemaGroup|1||||||||0|Punto sul lato in ombra del soggetto|||
+param:ratioMeasure|OfxParamTypePushButton|Misura rapporto||cinemaGroup|1|||||||||Legge luce e ombra nei due punti (media su un'area dell'1% dell'altezza) e imposta il rapporto obiettivo uguale al misurato|||
+param:ratioTarget|OfxParamTypeDouble|Rapporto obiettivo (stop)|1|cinemaGroup|1||0|5|0|5|0.05|2||1 stop = 1:2, 2 = 1:4, 3 = 1:8. La luce resta ferma, l'ombra si sposta. Misura lo imposta da solo|||
+param:ratioHardness|OfxParamTypeDouble|Durezza passaggio|50|cinemaGroup|1||0|100|0|100|1|2||Quanto e netto il passaggio dalla luce all'ombra: 0 morbido (luce diffusa), 100 netto (taglio di luce)|||
+param:ratioBackground|OfxParamTypeDouble|Spegni sfondo|0|cinemaGroup|1||0|100|0|100|1|2||Porta verso il nero cio che e sotto l'ombra del soggetto: il fondo del chiaroscuro. 100 = 4 stop|||
+param:ratioSubjectLift|OfxParamTypeDouble|Luce sul soggetto|0|cinemaGroup|1||0|100|0|100|1|2||Alza il lato illuminato e cio che e sopra, rapporto invariato. 100 = 1 stop|||
+param:ratioInfo|OfxParamTypeString|Rapporto|Scegli i due punti e premi Misura rapporto|cinemaGroup|1|0|||||||0||||
 param:rangeGroup|OfxParamTypeGroup|Gamma dinamica|||||||||||||||1
 param:viewGain|OfxParamTypeBoolean|Vista: guadagno|0|rangeGroup|||||||||0|Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. Bande a 0,25 / 0,5 / 1 / 2 stop||view_gain.png|
 param:viewBase|OfxParamTypeBoolean|Vista: base|0|rangeGroup|||||||||0|Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio||view_base.png|
@@ -32,8 +48,7 @@ param:detailRadius|OfxParamTypeDouble|Raggio (% altezza)|4|detailAdvancedGroup||
 param:edgeThreshold|OfxParamTypeDouble|Soglia bordi (EV)|0.5|detailAdvancedGroup|||0.25|1|0.25|1|0.01|||Salto di luminanza che conta come bordo: piu bassa = meno aloni, meno recupero|||
 param:noiseThreshold|OfxParamTypeDouble|Soglia rumore (EV)|0.04|detailAdvancedGroup|||0|0.15|0|0.15|0.005|||Sotto questa ampiezza il dettaglio e trattato come rumore: Texture non lo alza. 0 = nessuna protezione|||
 param:clarityCenter|OfxParamTypeDouble|Clarity: centro (EV)|0|detailAdvancedGroup|||-3|3|-3|3|0.05|||Tono, in stop dal grigio 18%, dove Clarity lavora di piu|||
-param:localWhite|OfxParamTypeDouble|Bianco (stop)|2.5|detailAdvancedGroup|||1|10|1|8|0.05|2||Dove Local Highlights -100 porta il massimo registrato, in stop sopra il grigio 18%. 2,5 = bianco Rec.709 con un CST senza tone mapping; con un DRT (ACES, AgX, DaVinci) alza a 4-5|||
-param:nodeInput|OfxParamTypeChoice|Ingresso nodo|0|detailAdvancedGroup|||||||||0|Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
+param:localWhite|OfxParamTypeDouble|Bianco (stop)|2.5|detailAdvancedGroup|||1|10|1|8|0.05|2||Dove Local Highlights -100 porta il massimo registrato, in stop sopra il grigio 18%. 2,5 = bianco Rec.709 con un CST senza tone mapping; con un DRT (ACES, AgX, DaVinci) alza a 4-5. Vale con Destinazione: Dal Bianco|||
 param:hazeGroup|OfxParamTypeGroup|Velo|||||||||||||||0
 param:hazeLevel|OfxParamTypeDouble|Livello velo (EV)|2|hazeGroup|||-2|6|-2|6|0.05|||Luminanza del velo in stop dal grigio 18%: da li in su Dehaze non agisce|||
 param:hazeWarmth|OfxParamTypeDouble|Colore velo|0|hazeGroup|||-100|100|-100|100|0.1|||Negativo = velo freddo (cielo, distanza), positivo = caldo (fumo, polvere)|||
@@ -41,3 +56,6 @@ param:boundPath|OfxParamTypeString||||1||||||||0||||
 param:camSpace|OfxParamTypeInteger||-1||1||||||||0||||
 param:camGamma|OfxParamTypeInteger||-1||1||||||||0||||
 param:settingsVersion|OfxParamTypeInteger||0||1||||||||0||||
+param:ratioLight|OfxParamTypeDouble||0||1||||||||0||||
+param:ratioShadow|OfxParamTypeDouble||0||1||||||||0||||
+param:ratioMeasured|OfxParamTypeDouble||0||1||||||||0||||

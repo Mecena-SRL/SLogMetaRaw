@@ -14,19 +14,20 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  resto del grade  →  CST / LUT /
 **In e Out sono lo stesso spazio.** Il nodo decodifica in luce lineare quello che riceve e lo
 riscrive nella stessa codifica, cambiando solo un guadagno per pixel. Per questo vuole in
 ingresso una codifica **log di scena**: S-Gamut3.Cine/S-Log3, S-Gamut3/S-Log3, S-Gamut/S-Log2,
-DaVinci WG/Intermediate o ACES AP1/ACEScct (le scelte di Avanzate › Ingresso nodo). Rec.709,
+DaVinci WG/Intermediate o ACES AP1/ACEScct (le scelte di Sviluppo e spazio colore › Ingresso (IDT)). Rec.709,
 Gamma 2.4 o sRGB non sono fra queste: sono già immagini per il monitor, con le alte luci tagliate
 al bianco, e non resta niente da recuperare.
 
-| Configurazione | Nodo principale (Color Space · Gamma) | Detail (Ingresso nodo) | Uscita |
+| Configurazione | Nodo principale (Color Space · Gamma) | Detail (Ingresso (IDT)) | Uscita |
 |---|---|---|---|
 | **Consigliata**, timeline YRGB non gestita | DaVinci WG · DaVinci Intermediate | **DaVinci WG/Intermediate**, da dichiarare: in una timeline non gestita Automatico non la vede | grade in DWG, poi per ultimo un CST DaVinci WG/Intermediate → Rec.709 · Gamma 2.4 con tone mapping DaVinci |
 | Tutto in log | Timeline | Automatico (usa la codifica di camera della clip) | CST S-Gamut3.Cine/S-Log3 → Rec.709 o DWG |
 | Progetto color managed (timeline DWG) | Timeline | Automatico (lo spazio lo dice Resolve) | la fa il progetto |
 | **Da evitare** | Rec.709 | — | Automatico non sa della conversione e decodifica il Rec.709 come S-Log3 (o come la timeline): il risultato è sbagliato, e le luci sono comunque già tagliate |
 
-- Con un tone mapping dopo (CST con tone mapping, DRT ACES/AgX/DaVinci) porta il **Bianco** a
-  4-5 stop, nel nodo principale e nel Detail: 2,5 è il bianco Rec.709 di un CST senza tone mapping.
+- **Destinazione (ODT)** dichiara la trasformazione che viene dopo (il nodo non la fa): Rec.709 con CST senza tone
+  mapping (bianco a 2,5 stop), Rec.709 con DRT ACES/AgX/DaVinci (4,5), HDR PQ 1000 nit (6,5). Con «Dal Bianco
+  (manuale)», il default, vale Avanzate › Bianco come prima: con un tone mapping dopo portalo a 4-5 stop.
 - Il Rec.709 del nodo principale è un CST senza tone mapping: va bene per un risultato veloce, non
   come base per il Detail né per un grade spinto.
 - È **spaziale**: guarda i pixel vicini. Per questo Generate LUT lo esclude, e con lui tutte
@@ -41,6 +42,9 @@ al bianco, e non resta niente da recuperare.
 
 | Gruppo | Controllo | Cosa fa |
 |---|---|---|
+| Sviluppo e spazio colore | **Modalità** | Standard (i controlli qui sotto) o Cinematografico (rapporto di luce sul soggetto, vedi sotto); una riga dice cosa fa |
+| | **Ingresso (IDT)** | la codifica che entra nel nodo (prima in Avanzate, stesso nome salvato) |
+| | **Destinazione (ODT)** | dove arriva il bianco: Dal Bianco (manuale), Rec.709 CST, Rec.709 DRT, PQ 1000 |
 | Gamma dinamica | **Local Contrast** (−100…+50) | contrasto delle grandi aree attorno al grigio, a dettaglio intatto |
 | | **Local Highlights** | in negativo comprime le grandi aree luminose con la stessa spalla del nodo principale, ma tiene la texture e la rinforza dove la base è compressa: il cielo si scurisce, le nuvole restano definite. A −100 il massimo registrato arriva sul Bianco di Avanzate. In positivo più stacco per aree |
 | | **Local Shadows** | apre (+) o chiude (−) le ombre per aree, 100 = 2 stop |
@@ -56,8 +60,32 @@ al bianco, e non resta niente da recuperare.
 | | Soglia bordi (0,5 EV) | salto che conta come bordo, per la base e per Local Highlights: più bassa = meno aloni, meno recupero |
 | | Soglia rumore (0,04 EV) | sotto questa ampiezza il dettaglio è rumore: Texture non lo alza |
 | | Clarity: centro | il tono dove Clarity lavora di più |
-| | Bianco (2,5 stop) | dove Local Highlights −100 porta il massimo registrato; con un DRT dopo, 4–5 |
+| | Bianco (2,5 stop) | dove Local Highlights −100 porta il massimo registrato, con Destinazione «Dal Bianco»; con un DRT dopo, 4–5 |
 | Velo | Livello (EV), Colore | luminanza e colore del velo; mai stimati fotogramma per fotogramma |
+
+### Modalità Cinematografico
+
+Per i primi piani: il rapporto fra il lato illuminato e il lato in ombra del soggetto, come lo misura un direttore
+della fotografia (1:2 = 1 stop, 1:4 = 2, 1:8 = 3).
+
+| Controllo | Cosa fa |
+|---|---|
+| Soggetto: viso / paesaggio | viso misura la luminanza (Y) e usa aree più piccole (raggio ×0,75); paesaggio misura la norma del colore e aree più grandi (×2) |
+| Viso luce, Viso ombra | i due punti sull'immagine (frazione del fotogramma, 0,0 in basso a sinistra) |
+| Misura rapporto | legge la media attorno ai due punti (1 % dell'altezza) e imposta l'obiettivo uguale al misurato |
+| Rapporto obiettivo (stop) | dove portare l'ombra; la luce resta ferma |
+| Durezza passaggio | 0 passaggio morbido (luce diffusa), 100 netto (taglio di luce) |
+| Spegni sfondo | porta verso il nero ciò che sta sotto l'ombra del soggetto, fino a 4 stop: il fondo del chiaroscuro |
+| Luce sul soggetto | alza il lato illuminato fino a 1 stop, rapporto invariato |
+
+Local Contrast, Local Highlights, Local Shadows e le Zone locali qui non agiscono; Texture, Clarity, Dehaze sì.
+Il rapporto è ottenuto con gli stessi slot della curva a zone: uno parte dalla luce e sposta ciò che sta sotto, con
+l'intensità risolta perché l'ombra arrivi esattamente sull'obiettivo (verificato su campi uniformi, nel modello e
+nel plugin). Schiarire l'ombra comprime i toni: oltre la pendenza minima della curva non si va, e la riga Rapporto
+mostra il valore raggiungibile. Avvisa anche se la luce supera il bianco della Destinazione.
+
+Da provare in Resolve: comandi che compaiono e spariscono al cambio di modalità, i punti sul viewer, la lettura
+dell'immagine quando premi Misura.
 
 ## Come funziona
 
