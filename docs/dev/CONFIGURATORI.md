@@ -9,12 +9,12 @@ Prima sessione di allineamento: 01/11/2026.
 |---|---|---|---|
 | Mappa moduli (Graphify) | `docs/GRAPHIFY.md` | **funzionante, manuale** | Disegnata a mano. Freschezza (versione, moduli citati) controllata dall'Atlante. Nessuno strumento graphify/codegraph installato nel repo. |
 | Estrazione strutturale Python | `tools/atlas/atlas.py` | **funzionante** | AST: funzioni, righe, impronte, chiamate, import, binding UI `win.On.X.Y`, test. |
-| Estrazione C++ (plugin OFX) | — | **mancante** | Il plugin è citato solo a livello di file (esistenza controllata). |
-| Atlante dei comportamenti | `tools/atlas/` | **funzionante, primo incremento** | 2 comportamenti reali modellati; testo e collegamenti manuali, riferimenti estratti e controllati. |
+| Estrazione C++ (plugin OFX) | `tools/atlas/atlas.py` (`cpp_symbol`) | **parziale** | Ricerca testuale delle definizioni (righe, impronta), non un parser: niente grafo delle chiamate C++. |
+| Atlante dei comportamenti | `tools/atlas/` | **funzionante** | 3 comportamenti: Leggi metadata, Seleziona clip → Dettagli, Detail: colore e passi. Testo e collegamenti manuali, riferimenti estratti e controllati. |
 | Verifica dei comportamenti | `tests/` (unittest) | **funzionante** | L'Atlante cita i test e con `--run-tests` ne registra l'esito. |
 | Parametri plugin (golden) | `tests/golden/params_*.txt` | **funzionante** | Fonte verificata dei parametri OFX: base possibile per il catalogo dei controlli del plugin. |
-| Design System / catalogo componenti | — | **mancante** | La finestra usa i widget UIManager di Resolve (`ui.py`), il plugin i parametri OFX (`ParamDefs.cpp`). Nessun catalogo. |
-| Configuratore UI / navigazione | — | **mancante** | `tools/render_launcher.py`, `packaging/guide/*.html` sono materiali di prodotto, non configuratori. |
+| Design System / catalogo componenti | vista Interfaccia › Catalogo | **primo nucleo, estratto** | Helper `define*` di `ParamDefs.h` e tipi UIManager, con utilizzi. Mancano fondamenti grafici, varianti e regole d'uso scritte. |
+| Configuratore UI / navigazione | vista Interfaccia | **funzionante, primo incremento** | Anteprima di finestra script, pannello Develop e Detail dalle fonti; selezione, note, proposte di modifica (testo, tooltip, default) esportabili per l'agente. L'anteprima è una rappresentazione, non uno screenshot. Le proposte non modificano il codice da sole. |
 | Grafici dimostrativi | `tools/make_tone_chart.py`, `make_falsecolor_chart.py`, `docs/*.png` | **dimostrativo** | Immagini generate da `math/` per la documentazione utente; non collegate a un modello. |
 | Bibliotecario / contesto selettivo | — | **parziale** | Pulsante «Copia contesto per l'agente» nell'Atlante (elemento, livello, relazioni, fonti, nota). Nessun indice di decisioni/skill. |
 | JEV | — | non presente | Facoltativo. |
@@ -41,8 +41,12 @@ Identità stabili, uguali in tutti i configuratori futuri:
 - funzione `<file>::<nome qualificato>` (es. `slogmetaraw/ui.py::main.show_details`); evento UI
   `binding:<Widget>.<Evento>`; test `tests/<file>::<Classe>.<metodo>`; modulo `mod:<file>`.
 
+Altre identità: widget `ui:script.<ID>`; controllo OFX `param:<develop|detail>.<nome>` (nome permanente: Resolve
+salva i nodi per nome); componente `comp:ofx.<helper>` / `comp:script.<Tipo>`; funzione C++ `<file>::<nome>`.
+
 Catena prevista: regola → componente → schermata → azione → comportamento → modulo → implementazione → verifica.
-Oggi esistono: azione (`binding:`), comportamento, modulo, implementazione (`::`), verifica (test).
+Oggi esistono: componente (`comp:`), schermata/controllo (`ui:`, `param:`), azione (`binding:`), comportamento,
+modulo, implementazione (`::`), verifica (test, golden). Manca la regola (fondamenti del Design System).
 
 Elementi:
 - blocco: `kind` (event, function, decision, data, persistence, process, async, external, end), `label`, `text`,
@@ -51,7 +55,7 @@ Elementi:
   persistence, decision, control), `label` (significato). Scambi bidirezionali = due collegamenti (richiesta e
   risposta). I `call` sono confermati solo se la chiamata è nell'AST (`evidence: estratto|dedotto`);
 - `basis`: intenzione · struttura estratta · dedotto · osservato · verificato;
-- `refs`: `code` | `binding` | `test` | `file`; stato calcolato: estratto, mancante, non revisionato, modificato,
+- `refs`: `code` | `cpp` | `param` | `binding` | `test` | `file`; stato calcolato: estratto, mancante, non revisionato, modificato,
   presente, superato/fallito;
 - `fingerprints`: impronta (sha1 del sorgente normalizzato) del codice citato al momento della revisione. Codice
   cambiato → «modificato» (da rivedere), non un errore;
@@ -70,6 +74,10 @@ python3 tools/atlas/atlas.py --run-tests
   e significato; trascinare un blocco cambia solo la vista (bordo tratteggiato, «Ripristina» in Manutenzione).
 - Pannello: spiegazione, base, fonti con righe estratte e link al commit, ingressi/uscite, chiamate estratte,
   proposte, nota e «Copia contesto per l'agente».
+- Vista Interfaccia: albero e anteprima delle tre superfici e catalogo componenti; selezionando un controllo si
+  vedono proprietà, definizione nel codice, gestori, comportamenti dell'Atlante, componente; «Proposta di modifica»
+  mostra il valore proposto tratteggiato accanto allo stato attuale e «Copia proposte per l'agente» produce la
+  richiesta tracciabile (fonte, valore attuale → proposto, vincoli).
 - Modalità Naviga/Annota; vista Manutenzione: riferimenti rotti, codice da rivedere, moduli non assegnati,
   freschezza di Graphify, cosa è e non è estratto.
 - Stato dell'editor (rami aperti, ricerca, scroll dell'albero e di ogni diagramma, selezione, modalità, note,
@@ -92,9 +100,8 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
 
 ## 7. Prossimi incrementi
 
-1. Catalogo dei controlli del plugin dai parametri OFX (`ParamDefs.cpp` / `tests/golden`), primo nucleo del Design
-   System con identità `param:<nodo>.<nome>`.
-2. Mappa della finestra dello script (widget di `ui.py` estratti dall'AST) come primo configuratore UI, collegata ai
-   `binding:` già presenti.
+1. Fatto (01/11/2026): catalogo componenti e vista Interfaccia (script, Develop, Detail).
+2. Discussione delle modalità di sviluppo del Detail (P-003 nell'Atlante): Standard, Zonale, Stampa, Recupero
+   HDR→SDR, con selettore della destinazione (ODT).
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

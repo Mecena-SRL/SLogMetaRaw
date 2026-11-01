@@ -64,6 +64,47 @@ button.act:hover{border-color:var(--sel)}
 #maint ul{padding-left:18px;margin:4px 0}
 .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
+/* Interfaccia */
+.surface-head{padding:10px 14px;border-bottom:1px solid var(--line)}
+.preview{margin:16px;display:inline-block;min-width:520px}
+.rs{background:#28282c;color:#d6d6d6;border-radius:8px;border:1px solid #111;font:12px system-ui,sans-serif;padding:8px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.rs .title{color:#9a9aa0;font-size:11px;padding:2px 4px 8px;border-bottom:1px solid #3a3a40;margin-bottom:6px}
+.rs [data-id]{cursor:pointer;border-radius:3px;outline:1px solid transparent}
+.rs [data-id]:hover{outline-color:#5a8dee80}
+.rs .sel{outline:2px solid #5a8dee!important}
+.rs .drafted{outline:2px dashed var(--prop)!important}
+.rs .vg{display:flex;flex-direction:column;gap:4px;padding:2px}
+.rs .hg{display:flex;flex-direction:row;gap:4px;align-items:center;padding:2px}
+.rs .btn{background:#3b3b41;border:1px solid #4a4a52;border-radius:4px;padding:3px 9px;white-space:nowrap;color:#e6e6e6}
+.rs .lbl{padding:2px 4px;color:#cfcfd4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs .lbl.empty{color:#6c6c74;font-style:italic}
+.rs .cmb{background:#1e1e22;border:1px solid #4a4a52;border-radius:4px;padding:3px 8px;min-width:150px;color:#e6e6e6}
+.rs .chk{display:flex;gap:5px;align-items:center;white-space:nowrap}
+.rs .box{width:12px;height:12px;border:1px solid #777;border-radius:2px;background:#1e1e22;display:inline-block;flex:none}
+.rs .box.on{background:#5a8dee;border-color:#5a8dee}
+.rs .tree{background:#1e1e22;border:1px solid #3a3a40;border-radius:4px;min-height:90px;padding:6px;color:#6c6c74}
+.ofx{width:400px}
+.ofx .row{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;padding:3px 6px}
+.ofx .row .l{color:#bdbdc3;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ofx .val{display:flex;gap:6px;align-items:center}
+.ofx .num{background:#1e1e22;border:1px solid #3a3a40;border-radius:3px;padding:1px 5px;min-width:52px;text-align:right;color:#e6e6e6}
+.ofx .bar{flex:1;height:4px;background:#45454c;border-radius:2px;position:relative}
+.ofx .bar i{position:absolute;top:-4px;width:8px;height:12px;border-radius:2px;background:#cfcfd4;transform:translateX(-50%)}
+.ofx .grp{margin-top:6px;border-top:1px solid #3a3a40}
+.ofx .grp>.gh{display:flex;gap:6px;align-items:center;padding:5px 6px;color:#e6e6e6;font-weight:600}
+.ofx .grp>.gh .tw{color:#9a9aa0;width:12px}
+.ofx .wide{padding:3px 6px}.ofx .wide .btn{display:block;text-align:center}
+.ofx .info{color:#9a9aa0}
+.ofx .icon{font-size:10px;color:#9a9aa0;border:1px solid #4a4a52;border-radius:3px;padding:0 4px}
+.ofx .hiddenlist{color:#6c6c74;font-size:11px;padding:6px}
+.catalog{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.card{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--panel);cursor:pointer}
+.card.sel{border-color:var(--sel);box-shadow:0 0 0 2px color-mix(in srgb,var(--sel) 30%,transparent)}
+.card b{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:2px 8px;font-size:12px}.kv div:nth-child(odd){color:var(--mute)}
+.draft label{display:block;font-size:11px;color:var(--mute);margin-top:6px}
+.draft input,.draft textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg);color:var(--ink);font:inherit}
+.warnbox{border-left:3px solid #d9a400;padding:4px 8px;margin:8px 0;background:color-mix(in srgb,#d9a400 8%,transparent)}
 </style>
 </head>
 <body>
@@ -75,7 +116,7 @@ button.act:hover{border-color:var(--sel)}
     <button data-mode="naviga">Naviga</button><button data-mode="annota">Annota</button>
   </div>
   <div class="seg" role="group" aria-label="Vista">
-    <button data-view="flusso">Flusso</button><button data-view="manutenzione">Manutenzione</button>
+    <button data-view="flusso">Atlante</button><button data-view="interfaccia">Interfaccia</button><button data-view="manutenzione">Manutenzione</button>
   </div>
   <label class="chip"><input type="checkbox" id="showProps"> proposte</label>
   <span style="margin-left:auto" class="chip" title="Spostare un blocco cambia solo la disposizione di questa vista nel tuo browser: non modifica il programma né il modello">trascinare = solo vista</span>
@@ -92,7 +133,7 @@ const M = A.model, F = A.facts, REV = A.revision;
 const KEY = 'slogmetaraw-atlas/ui';
 // editor state, separate from the model: survives rebuilds because every element has a stable id
 const S = Object.assign({open:{prog:true}, search:'', scroll:0, sel:null, beh:M.behaviours[0].id, mode:'naviga',
-  view:'flusso', props:true, notes:{}, pos:{}}, load());
+  view:'flusso', props:true, notes:{}, pos:{}, surface:'ui:script', uiOpen:{}, drafts:{}}, load());
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
 function save(){try{localStorage.setItem(KEY, JSON.stringify(S))}catch(e){}}
 const $ = s => document.querySelector(s);
@@ -109,6 +150,14 @@ for (const b of M.behaviours){
   for (const e of b.edges) IDX[b.id+'/'+e.id] = {type:'collegamento', el:e, beh:b};
   for (const p of b.proposals||[]) IDX[b.id+'/'+p.id] = {type:'proposta', el:p, beh:b};
 }
+const U = A.ui;
+(function indexUI(){
+  const walk = w => { IDX[w.id] = {type:'widget', el:w, surface:'ui:script'}; w.children.forEach(walk); };
+  IDX['ui:script'] = {type:'superficie', el:U.script}; walk(U.script.root);
+  for (const pn of U.panels){ IDX[pn.id] = {type:'superficie', el:pn}; for (const q of pn.params) IDX[q.id] = {type:'parametro', el:q, surface:pn.id}; }
+  for (const c of U.components) IDX[c.id] = {type:'componente', el:c, surface:'catalog'};
+  IDX['catalog'] = {type:'superficie', el:{label:'Catalogo componenti', source:'Componenti condivisi estratti: helper define* del plugin e tipi di widget dello script, con i loro utilizzi.'}};
+})();
 for (const id in F.modules) IDX['mod:'+id] = {type:'modulo', el:{id, label:id.split('/').pop(), ...F.modules[id]}};
 
 // --- header -----------------------------------------------------------------------------------------------
@@ -126,10 +175,11 @@ function header(){
   document.querySelectorAll('[data-view]').forEach(b => {b.setAttribute('aria-pressed', S.view===b.dataset.view); b.onclick=()=>setView(b.dataset.view)});
   $('#showProps').checked = S.props; $('#showProps').onchange = e => {S.props=e.target.checked;save();stage()};
 }
-function setView(v){S.view=v;save();header();stage()}
+function setView(v){S.view=v;save();header();tree();stage();panel()}
 
 // --- navigation tree: programma → sottosistema → comportamento → blocco → funzione ---------------------
 function tree(){
+  if (S.view==='interfaccia') return uiTree();
   const q = S.search.trim().toLowerCase();
   const li = (id, label, lvl, kids) => {
     const has = kids && kids.length, open = q ? true : !!S.open[id];
@@ -161,6 +211,12 @@ $('nav').addEventListener('scroll', e => {S.scroll = e.target.scrollTop; save()}
 // keep the selected element visible in the tree: open its ancestors (never closes what the user opened)
 function reveal(id){
   const it = IDX[id]; S.open.prog = true;
+  if (it && it.surface){
+    S.open[it.surface] = true;
+    if (it.type==='widget'){ const path = []; const find = (w, acc) => { if (w.id===id){ path.push(...acc); return true; } return w.children.some(c => find(c, [...acc, w.id])); }; find(U.script.root, []); path.forEach(x => S.open[x] = true); }
+    if (it.type==='parametro'){ const pn = panelOf(it.surface); let q = it.el; while (q && q.parent){ const g = pn.params.find(x => x.name===q.parent); if (!g) break; S.open[g.id] = true; S.uiOpen[g.id] = true; q = g; } if (it.el.secret==='1') S.open[it.surface+'#hidden'] = true; }
+    if (it.type==='componente'){ S.open.catalog = true; S.open['fam:'+it.el.family] = true; }
+  }
   const b = it && (it.beh || (it.type==='comportamento' ? it.el : null));
   if (b){ S.open[b.subsystem] = true; if (it.beh) S.open[b.id] = true; }
 }
@@ -171,6 +227,8 @@ function select(id, fromTree){
     const it = IDX[id];
     if (it.type==='comportamento') S.beh = id;
     if (it.beh) S.beh = it.beh.id;
+    if (it.surface) S.surface = it.surface;
+    if (it.type==='superficie') S.surface = id;
     if (fromTree && it.type==='comportamento') S.open[id] = true;
   }
   reveal(S.sel);
@@ -187,6 +245,7 @@ function posOf(b, n){
 function stage(){
   const st = $('#stage');
   if (S.view==='manutenzione'){ st.innerHTML = maint(); return; }
+  if (S.view==='interfaccia'){ st.innerHTML = uiStage(); st.scrollTop = (S.uiScroll||{})[S.surface]||0; return; }
   const b = M.behaviours.find(x => x.id===S.beh) || M.behaviours[0];
   const cols = Math.max(...Object.values(b.view.pos).map(p => p[0])) + 1;
   const W = LX + cols*CW + 40, H = TOP + b.view.lanes.length*RH + 70;
@@ -218,7 +277,8 @@ function stage(){
     svg += `<g class="node ${S.sel===id?'sel':''} ${p.moved?'dirty-pos':''}" data-id="${esc(id)}" data-n="${esc(n.id)}">${sh}<text class="k" x="${p.x+NW/2}" y="${p.y+12}" text-anchor="middle">${note}${esc(n.kind)}</text>${lines.map((l,i)=>`<text x="${p.x+NW/2}" y="${p.y+28+i*14}" text-anchor="middle">${esc(l)}</text>`).join('')}</g>`;
   }
   if (S.props) for (const pr of (b.proposals||[]).filter(p => p.status!=='applicata')){
-    const tgt = b.nodes.find(n => (n.refs||[]).some(r => (pr.refs||[]).some(q => q.code && q.code===r.code)));
+    const key = r => r.code || r.cpp || r.param;
+    const tgt = b.nodes.find(n => (n.refs||[]).some(r => (pr.refs||[]).some(q => key(q) && key(q)===key(r))));
     if (!tgt) continue;
     const p = P[tgt.id], id = b.id+'/'+pr.id;
     svg += `<g class="ghost node" data-id="${esc(id)}"><rect x="${p.x-6}" y="${p.y+NH+10}" width="${NW+12}" height="26" rx="5"/><text x="${p.x+NW/2}" y="${p.y+NH+27}" text-anchor="middle">${esc(pr.id)} proposta: ${esc(trim(pr.label, 18))}</text></g>`;
@@ -233,6 +293,7 @@ function trim(s, n){ s = String(s); return s.length > n ? s.slice(0, n-1) + '…
 function wrap(s, n){ const w = String(s).split(' '), out = ['']; for (const x of w){ if ((out[out.length-1]+' '+x).trim().length > n) out.push(x); else out[out.length-1] = (out[out.length-1]+' '+x).trim(); } if (out.length>2) out[1] = trim(out.slice(1).join(' '), n); return out }
 
 $('#stage').addEventListener('scroll', e => {
+  if (S.view==='interfaccia'){ (S.uiScroll = S.uiScroll||{})[S.surface] = e.target.scrollTop; save(); return; }
   if (S.view!=='flusso') return;
   (S.stageScroll = S.stageScroll||{})[S.beh] = [e.target.scrollLeft, e.target.scrollTop]; save();
 }, {passive:true});
@@ -268,10 +329,11 @@ function gh(file, line, end){
   if (!REV.commit) return '';
   return `${A.repo_url}/blob/${REV.commit}/${file}` + (line ? `#L${line}` + (end ? `-L${end}` : '') : '');
 }
-const STATUS_CLASS = {estratto:'ok', superato:'ok', presente:'', 'non revisionato':'warn', modificato:'warn', mancante:'bad', fallito:'bad', errore:'bad', saltato:'warn'};
+const STATUS_CLASS = {estratto:'ok', verificato:'ok', superato:'ok', presente:'', 'non revisionato':'warn', modificato:'warn', mancante:'bad', fallito:'bad', errore:'bad', saltato:'warn'};
 function refHtml(r){
-  const what = r.code ? r.code : r.binding ? r.binding : r.test ? r.test : r.file;
-  const kind = r.code ? 'codice' : r.binding ? 'evento UI' : r.test ? 'test' : 'file';
+  if (r.param) return `<div class="ref"><span class="chip ${STATUS_CLASS[r.status]||''}">${esc(r.status)}</span><span><span class="chip">controllo</span> <a href="#" data-sel="${esc(r.param)}" data-goview="interfaccia">${esc(r.label||r.param)}</a> <span class="mono" style="color:var(--mute)">${esc(r.param)}</span></span></div>`;
+  const what = r.code || r.cpp || r.binding || r.test || r.file;
+  const kind = r.code ? 'codice' : r.cpp ? 'C++ (testo)' : r.binding ? 'evento UI' : r.test ? 'test' : 'file';
   const url = r.file ? gh(r.file, r.line, r.end) : '';
   const where = r.line ? `${r.file}:${r.line}${r.end?'–'+r.end:''}` : (r.file||'');
   return `<div class="ref"><span class="chip ${STATUS_CLASS[r.status]||''}" title="stato del riferimento">${esc(r.status)}</span><span><span class="chip">${kind}</span> <span class="mono">${esc(what.split('::').pop())}</span><br>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(where)}</a>`:esc(where)}</span></div>`;
@@ -280,7 +342,8 @@ function panel(){
   const id = S.sel, p = $('#panel');
   if (!id){ p.innerHTML = '<p style="color:var(--mute)">Seleziona un elemento nel diagramma o nell’albero.</p>' + basisHelp(); return; }
   if (id.startsWith('fn:')) return fnPanel(id.slice(3));
-  const it = IDX[id]; if (!it){ p.innerHTML = '<p>Elemento non più presente nel modello: ' + esc(id) + '</p>'; return; }
+  const it = IDX[id];
+  if (it && ['widget','parametro','superficie','componente'].includes(it.type)) return uiPanel(id, it); if (!it){ p.innerHTML = '<p>Elemento non più presente nel modello: ' + esc(id) + '</p>'; return; }
   const el = it.el;
   let h = `<div class="chip">${it.type}</div><h2>${esc(el.label||el.id)}</h2><div class="mono" style="color:var(--mute)">${esc(id)}</div>`;
   if (el.basis) h += `<p><span class="chip" title="Base dell'informazione">${esc(el.basis)}</span></p>`;
@@ -308,10 +371,13 @@ function panel(){
       h += `<h3>Ingressi</h3><div class="io">${ins.map(e=>`<div><a href="#" data-sel="${esc(b.id+'/'+e.id)}">${esc(lab(e.from))}</a> → <span class="chip">${e.kind}</span> ${esc(e.label)}</div>`).join('')||'<div style="color:var(--mute)">avvio del percorso</div>'}</div>`;
       h += `<h3>Uscite</h3><div class="io">${outs.map(e=>`<div><span class="chip">${e.kind}</span> ${esc(e.label)} → <a href="#" data-sel="${esc(b.id+'/'+e.id)}">${esc(lab(e.to))}</a></div>`).join('')||'<div style="color:var(--mute)">fine del percorso</div>'}</div>`;
     }
-    const props = (b.proposals||[]).filter(pr => (pr.refs||[]).some(q => q.code && (el.refs||[]).some(r => r.code===q.code)));
+    const k2 = r => r.code || r.cpp || r.param;
+    const props = (b.proposals||[]).filter(pr => (pr.refs||[]).some(q => k2(q) && (el.refs||[]).some(r => k2(r)===k2(q))));
     if (props.length) h += `<h3>Proposte collegate</h3>` + props.map(propHtml).join('');
   }
   if (it.type==='comportamento' && (el.proposals||[]).length) h += `<h3>Proposte</h3>` + el.proposals.map(propHtml).join('');
+  const wired = (el.refs||[]).filter(r=>r.binding).map(r => 'ui:script.' + r.binding.split(':')[1].split('.')[0]).filter(w => IDX[w]);
+  if (wired.length) h += `<h3>Elemento dell'interfaccia</h3>` + [...new Set(wired)].map(w=>`<div><a href="#" data-sel="${esc(w)}" data-goview="interfaccia">${esc(w)}</a></div>`).join('');
   if ((el.refs||[]).length) h += `<h3>Fonti</h3>` + el.refs.map(refHtml).join('');
   const codes = (el.refs||[]).filter(r=>r.code && F.functions[r.code]);
   if (codes.length){
@@ -352,7 +418,7 @@ function basisHelp(){
 }
 function wirePanel(id){
   const p = $('#panel');
-  p.querySelectorAll('[data-sel]').forEach(a => a.onclick = e => {e.preventDefault(); select(a.dataset.sel)});
+  p.querySelectorAll('[data-sel]').forEach(a => a.onclick = e => {e.preventDefault(); if (a.dataset.goview){ S.view = a.dataset.goview; header(); } select(a.dataset.sel)});
   p.querySelectorAll('[data-fn]').forEach(a => a.onclick = e => {e.preventDefault(); select('fn:'+a.dataset.fn)});
   const ta = $('#note');
   ta.oninput = () => {S.notes[id] = ta.value; if (!ta.value) delete S.notes[id]; save()};
@@ -373,10 +439,178 @@ function context(id){
     if (el.text) L.push('spiegazione: ' + el.text);
     if (it.type==='collegamento') L.push('direzione: ' + el.from + ' → ' + el.to + ' [' + el.kind + '] ' + el.label + (el.evidence ? ' (' + el.evidence + ')' : ''));
     if (it.type==='blocco'){ const b = it.beh; L.push('ingressi: ' + b.edges.filter(e=>e.to===el.id).map(e=>e.from+' ['+e.kind+'] '+e.label).join('; ')); L.push('uscite: ' + b.edges.filter(e=>e.from===el.id).map(e=>e.to+' ['+e.kind+'] '+e.label).join('; ')); }
-    for (const r of el.refs||[]) L.push('fonte: ' + (r.code||r.binding||r.test||r.file) + (r.line ? ' @ ' + r.file + ':' + r.line : '') + ' [' + r.status + ']');
+    for (const r of el.refs||[]) L.push('fonte: ' + (r.code||r.cpp||r.param||r.binding||r.test||r.file) + (r.line ? ' @ ' + r.file + ':' + r.line : '') + ' [' + r.status + ']');
   }
   if (S.notes[id]) L.push('', 'nota/domanda: ' + S.notes[id]);
   L.push('', 'Distinguere modifiche alla vista (disposizione) da modifiche al programma; una modifica al programma va proposta, applicata con test e il modello riestratto (tools/atlas/atlas.py).');
+  return L.join('\n');
+}
+
+// --- Interfaccia: script window and OFX panels, from their sources -----------------------------------------
+const SURFACES = [['ui:script','Finestra dello script'],['ui:develop','Pannello Develop'],['ui:detail','Pannello Detail'],['catalog','Catalogo componenti']];
+const tr = v => v == null ? '' : typeof v === 'string' ? v : v.t != null ? v.t : v.name ? '‹' + v.name + '›' : v.expr ? '‹' + v.expr + '›' : String(v);
+function draft(id, field, current){
+  const d = S.drafts[id];
+  return (S.props && d && d[field] != null && d[field] !== '') ? d[field] : current;
+}
+const isDrafted = id => S.drafts[id] && Object.values(S.drafts[id]).some(v => v !== '' && v != null);
+const panelOf = id => U.panels.find(p => p.id === id);
+const groupKids = (pn, g) => pn.params.filter(q => q.parent === g && q.secret !== '1');
+function uiTree(){
+  const q = S.search.trim().toLowerCase();
+  const match = (...t) => !q || t.join(' ').toLowerCase().includes(q);
+  const li = (id, label, lvl, kids) => {
+    const has = kids && kids.length, open = q ? true : !!S.open[id];
+    return `<li><div class="${S.sel===id?'sel':''}" data-id="${esc(id)}"><span class="tw" data-tw="${esc(id)}">${has?(open?'▾':'▸'):''}</span><span>${esc(label)}</span><span class="lvl">${lvl}</span></div>${has?`<ul class="${open?'':'hidden'}">${kids.join('')}</ul>`:''}</li>`;
+  };
+  const wl = w => { const kids = w.children.map(wl).filter(Boolean); const name = w.widget_id || w.type; const txt = tr(w.props.Text);
+    return (match(name, txt, w.type) || kids.length) ? li(w.id, txt ? `${name} · ${txt}` : name, w.type, kids) : ''; };
+  const pl = (pn, q2) => { const kids = q2.type.endsWith('Group') ? groupKids(pn, q2.name).map(k => pl(pn, k)).filter(Boolean) : [];
+    return (match(q2.name, q2.label, q2.hint) || kids.length) ? li(q2.id, q2.label || q2.name, q2.type.replace('OfxParamType','').toLowerCase(), kids) : ''; };
+  const items = [li('ui:script', 'Finestra dello script', 'superficie', [wl(U.script.root)].filter(Boolean))];
+  for (const pn of U.panels){
+    const top = pn.params.filter(x => !x.parent && x.secret !== '1' && x.type !== 'OfxParamTypePage').map(x => pl(pn, x)).filter(Boolean);
+    const hid = pn.params.filter(x => x.secret === '1' && match(x.name)).map(x => li(x.id, x.name, 'nascosto'));
+    if (hid.length) top.push(li(pn.id + '#hidden', 'Parametri nascosti (' + hid.length + ')', 'gruppo', hid));
+    items.push(li(pn.id, pn.label, 'superficie', top));
+  }
+  const fam = {};
+  for (const c of U.components) if (match(c.name, c.id)) (fam[c.family] = fam[c.family]||[]).push(li(c.id, c.name, c.uses.length + ' usi'));
+  items.push(li('catalog', 'Catalogo componenti', 'design system', Object.entries(fam).map(([f, k]) => li('fam:' + f, f, 'famiglia', k))));
+  $('#tree').innerHTML = '<ul>' + items.join('') + '</ul>';
+}
+function uiStage(){
+  const sid = S.surface, sel = S.sel;
+  const cls = id => (sel===id ? ' sel' : '') + (isDrafted(id) ? ' drafted' : '');
+  const head = (title, src) => `<div class="surface-head"><b>${esc(title)}</b> <span class="chip" title="Fonte della struttura">${esc(src)}</span> <span class="chip warn">anteprima: rappresentazione, non screenshot di Resolve</span>${Object.keys(S.drafts).length?` <span class="chip" style="color:var(--prop);border-color:var(--prop)">${Object.keys(S.drafts).length} proposte ${S.props?'visibili':'nascoste'}</span>`:''}</div>`;
+  if (sid === 'catalog' || sid.startsWith('comp:') || sid.startsWith('fam:')){
+    return head('Catalogo componenti', 'estratto: tipi UIManager + helper di ParamDefs.h') + `<div class="catalog">${U.components.map(c => `<div class="card${sel===c.id?' sel':''}" data-id="${esc(c.id)}"><b>${esc(c.name)}</b><div style="color:var(--mute)">${esc(c.family)} · ${c.uses.length} usi</div>${c.file?`<div class="mono" style="color:var(--mute)">${esc(c.file)}${c.line?':'+c.line:''}</div>`:''}</div>`).join('')}</div>`;
+  }
+  if (sid === 'ui:script'){
+    const r = w => {
+      const p = w.props, wt = p.Weight != null ? `flex:${p.Weight || '0 0 auto'};` : '';
+      const txt = draft(w.id, 'Text', tr(p.Text));
+      const tip = esc(draft(w.id, 'ToolTip', tr(p.ToolTip)));
+      switch (w.type){
+        case 'VGroup': case 'HGroup': return `<div class="${w.type==='VGroup'?'vg':'hg'}${cls(w.id)}" data-id="${esc(w.id)}" style="${wt}">${w.children.map(r).join('')}</div>`;
+        case 'Button': return `<span class="btn${cls(w.id)}" data-id="${esc(w.id)}" title="${tip}" style="${wt}">${esc(txt || w.widget_id)}</span>`;
+        case 'Label': return `<span class="lbl${txt?'':' empty'}${cls(w.id)}" data-id="${esc(w.id)}" title="${tip}" style="${wt}">${esc(txt || '‹' + w.widget_id + ': testo a runtime›')}</span>`;
+        case 'ComboBox': return `<span class="cmb${cls(w.id)}" data-id="${esc(w.id)}" title="${tip}" style="${wt}">‹${esc(w.widget_id)}› ▾</span>`;
+        case 'CheckBox': return `<span class="chk${cls(w.id)}" data-id="${esc(w.id)}" title="${tip}" style="${wt}"><i class="box${p.Checked?' on':''}"></i>${esc(txt)}</span>`;
+        case 'Tree': return `<div class="tree${cls(w.id)}" data-id="${esc(w.id)}" style="${wt}${p.MinimumSize?'min-height:'+p.MinimumSize[1]+'px;':''}">${esc(w.widget_id)} · albero, righe e colonne a runtime</div>`;
+        default: return `<span class="lbl${cls(w.id)}" data-id="${esc(w.id)}">${esc(w.type)}</span>`;
+      }
+    };
+    const title = tr(U.script.window.WindowTitle).replace('%s', '{versione}');
+    const g = U.script.window.Geometry;
+    return head('Finestra dello script', U.script.source) + `<div class="preview"><div class="rs" style="width:860px"><div class="title">${esc(title)}</div>${r(U.script.root)}</div><div style="color:var(--mute);font-size:11px;margin-top:6px">Dimensioni reali calcolate a runtime sulla finestra di Resolve (680–1000 × 400–620 px).</div></div>`;
+  }
+  const pn = panelOf(sid); if (!pn) return '';
+  const row = q => {
+    const t = q.type.replace('OfxParamType',''), id = q.id, label = draft(id, 'label', q.label), def = draft(id, 'default', q['default']);
+    const tip = esc(draft(id, 'hint', q.hint));
+    if (t === 'Group'){
+      const open = S.uiOpen[id] != null ? S.uiOpen[id] : q.groupOpen === '1';
+      return `<div class="grp"><div class="gh${cls(id)}" data-id="${esc(id)}"><span class="tw" data-gt="${esc(id)}">${open?'▾':'▸'}</span>${esc(label)}</div>${open?groupKids(pn, q.name).map(row).join(''):''}</div>`;
+    }
+    if (t === 'PushButton') return `<div class="wide"><span class="btn${cls(id)}" data-id="${esc(id)}" title="${tip}">${esc(label)}</span></div>`;
+    if (t === 'Boolean') return `<div class="row${cls(id)}" data-id="${esc(id)}" title="${tip}"><span class="l"></span><span class="val"><i class="box${def==='1'?' on':''}"></i>${esc(label)}${q.icon?` <span class="icon">${esc(q.icon)}</span>`:''}</span></div>`;
+    if (t === 'Choice') return `<div class="row${cls(id)}" data-id="${esc(id)}" title="${tip}"><span class="l">${esc(label)}</span><span class="val"><span class="cmb">${esc(q.options[+def] ?? def)} ▾</span></span></div>`;
+    if (t === 'Double' || t === 'Integer'){
+      const lo = +(q.displayMin || q.min || 0), hi = +(q.displayMax || q.max || 1), v = +def;
+      const pct = hi > lo ? Math.min(100, Math.max(0, (v - lo) / (hi - lo) * 100)) : 0;
+      return `<div class="row${cls(id)}" data-id="${esc(id)}" title="${tip}"><span class="l">${esc(label)}</span><span class="val"><span class="num">${esc(def)}</span><span class="bar"><i style="left:${pct}%"></i></span></span></div>`;
+    }
+    if (t === 'String') return `<div class="row${cls(id)}" data-id="${esc(id)}" title="${tip}"><span class="l">${esc(label)}</span><span class="val info">${esc(def)}</span></div>`;
+    return '';
+  };
+  const top = pn.params.filter(q => !q.parent && q.secret !== '1' && q.type !== 'OfxParamTypePage');
+  const hidden = pn.params.filter(q => q.secret === '1');
+  return head(pn.label, pn.source) + `<div class="preview"><div class="rs ofx"><div class="title">${esc(pn.label)} · Inspector › Settings</div>${top.map(row).join('')}<div class="hiddenlist">${hidden.length} parametri nascosti (stato salvato col nodo, non visibili): ${hidden.map(h=>`<span data-id="${esc(h.id)}" class="${cls(h.id)}">${esc(h.name)}</span>`).join(', ')}</div></div><div style="color:var(--mute);font-size:11px;margin-top:6px">Valori mostrati = default del plugin. Gruppi aperti/chiusi come il default del plugin finché non li cambi qui (solo vista).</div></div>`;
+}
+$('#stage').addEventListener('click', e => {
+  const gt = e.target.closest('[data-gt]');
+  if (gt && S.view==='interfaccia' && S.mode==='naviga'){
+    const q = IDX[gt.dataset.gt].el, cur = S.uiOpen[q.id] != null ? S.uiOpen[q.id] : q.groupOpen === '1';
+    S.uiOpen[q.id] = !cur; save(); stage(); e.stopPropagation();
+  }
+}, true);
+function link(file, line){ const u = gh(file, line); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener" class="mono">${esc(file)}${line?':'+line:''}</a>` : `<span class="mono">${esc(file)}:${line}</span>`; }
+function uiPanel(id, it){
+  const el = it.el, p = $('#panel');
+  let h = `<div class="chip">${it.type}</div> `;
+  if (it.type === 'widget'){
+    const pr = el.props;
+    h += `<span class="chip ok">struttura estratta</span><h2>${esc(el.widget_id || el.type)}</h2><div class="mono" style="color:var(--mute)">${esc(id)}</div>`;
+    h += `<div class="kv" style="margin-top:8px"><div>tipo</div><div>ui.${esc(el.type)}</div>${Object.entries(pr).filter(([k])=>k!=='ID').map(([k,v])=>`<div>${esc(k)}</div><div>${esc(Array.isArray(v)?JSON.stringify(v):typeof v==='object'?tr(v)+(v.t!=null?' (tradotto con t())':''):v)}</div>`).join('')}</div>`;
+    h += `<h3>Fonte</h3>${link(U.script.file, el.line)}`;
+    h += `<h3>Componente</h3><a href="#" data-sel="comp:script.${esc(el.type)}">comp:script.${esc(el.type)}</a>`;
+    const bs = el.bindings || [];
+    h += `<h3>Eventi collegati</h3>` + (bs.length ? bs.map(b => { const f = F.bindings[b]; const behs = M.behaviours.filter(x => [x, ...x.nodes].some(n => (n.refs||[]).some(r => r.binding===b)));
+      return `<div class="mono">${esc(b)} → ${f.handler?`<a href="#" data-fn="${esc(f.handler)}">${esc(f.handler.split('::')[1])}</a>`:esc(f.handler_name)}</div>${behs.map(x=>`<div>Atlante: <a href="#" data-sel="${esc(x.id)}" data-goview="flusso">${esc(x.question)}</a></div>`).join('')}`; }).join('') : '<div style="color:var(--mute)">nessuno (o letto solo dal codice)</div>');
+    h += draftHtml(id, [['Text', tr(pr.Text)], ['ToolTip', tr(pr.ToolTip)]]);
+  } else if (it.type === 'parametro'){
+    const t = el.type.replace('OfxParamType','');
+    h += `<span class="chip ok">struttura verificata</span><h2>${esc(el.label || el.name)}</h2><div class="mono" style="color:var(--mute)">${esc(id)}</div>`;
+    h += `<div class="warnbox">Il nome <span class="mono">${esc(el.name)}</span> è permanente: Resolve salva i nodi per nome, rinominarlo o toglierlo perde le correzioni salvate (ParamDefs.h).</div>`;
+    const rows = [['tipo', t], ['etichetta', el.label], ['default', t==='Choice' ? `${el['default']} (${el.options[+el['default']]})` : el['default']], ['gruppo', el.parent], ['intervallo', el.min||el.max ? `${el.min} … ${el.max}` : ''], ['cursore', el.displayMin||el.displayMax ? `${el.displayMin} … ${el.displayMax}` : ''], ['passo', el.increment], ['cifre', el.digits], ['animabile', el.animates], ['opzioni', el.options.join(' · ')], ['icona', el.icon], ['nascosto', el.secret === '1' ? 'sì' : ''], ['aperto', t==='Group' ? (el.groupOpen==='1'?'sì':'no') : '']].filter(r => r[1]);
+    h += `<div class="kv" style="margin-top:8px">${rows.map(([k,v])=>`<div>${k}</div><div>${esc(v)}</div>`).join('')}</div>`;
+    if (el.hint) h += `<h3>Suggerimento (tooltip)</h3><p>${esc(el.hint)}</p>`;
+    h += `<h3>Fonti</h3><div>definizione: ${el.define ? link(el.define.file, el.define.line) + ` <span class="chip">${esc(el.define.how)}</span>` : '<span class="chip bad">non trovata</span>'}</div>`;
+    h += el.handlers.length ? `<div>gestito in: ${el.handlers.map(x => link(x.file, x.line)).join(', ')}</div>` : '';
+    h += `<div>verificato in: ${link(panelOf(it.surface).golden, null)} <span class="chip">tests/test_ofx_host.py</span></div>`;
+    const cites = [];
+    for (const b of M.behaviours) for (const n of b.nodes) if ((n.refs||[]).some(r => r.param===id)) cites.push([b, n]);
+    h += `<h3>Nell'Atlante</h3>` + (cites.length ? cites.map(([b,n]) => `<div><a href="#" data-sel="${esc(b.id+'/'+n.id)}" data-goview="flusso">${esc(b.label)} › ${esc(n.label)}</a></div>`).join('') : '<div style="color:var(--mute)">non ancora in un comportamento</div>');
+    h += `<h3>Componente</h3><a href="#" data-sel="${esc(el.component)}">${esc(el.component)}</a> <span class="chip">dedotto dal tipo</span>`;
+    h += draftHtml(id, [['label', el.label], ['hint', el.hint], ['default', el['default']]]);
+  } else if (it.type === 'componente'){
+    h += `<span class="chip ok">estratto</span><h2 class="mono">${esc(el.name)}</h2><div class="mono" style="color:var(--mute)">${esc(id)}</div>`;
+    if (el.file) h += `<h3>Definizione</h3>${link(el.file, el.line)}`;
+    const vs = {};
+    for (const u of el.uses){ const x = IDX[u]; if (x && x.type==='parametro'){ const k = x.surface; vs[k] = (vs[k]||0) + 1; } }
+    h += `<h3>Utilizzi (${el.uses.length})</h3>` + (Object.keys(vs).length ? `<div style="color:var(--mute)">${Object.entries(vs).map(([k,n])=>`${esc(k)}: ${n}`).join(' · ')}</div>` : '') + el.uses.map(u => `<div><a class="mono" href="#" data-sel="${esc(u)}">${esc(u)}</a></div>`).join('');
+    h += `<p style="color:var(--mute)">Una modifica al componente vale per tutti gli utilizzi che ne ereditano le proprietà; un'eccezione locale va proposta sull'utilizzo, motivata.</p>`;
+  } else {
+    h += `<h2>${esc(el.label)}</h2><p>${esc(el.source||'')}</p>`;
+    if (el.params) h += `<p>${el.params.filter(q=>q.secret!=='1').length} controlli visibili, ${el.params.filter(q=>q.secret==='1').length} nascosti.</p>`;
+  }
+  h += proposalsSummary();
+  h += notesHtml(id);
+  p.innerHTML = h; wirePanel(id); wireDraft(id);
+}
+function draftHtml(id, fields){
+  const d = S.drafts[id] || {};
+  return `<h3>Proposta di modifica al programma</h3><div class="draft">${fields.map(([f, cur]) => `<label>${esc(f)} <span class="mono" style="color:var(--mute)">(ora: ${esc(trim(cur||'—', 60))})</span></label>${f==='hint'||f==='ToolTip'?`<textarea data-draft="${esc(f)}" rows="2">${esc(d[f]||'')}</textarea>`:`<input data-draft="${esc(f)}" value="${esc(d[f]||'')}">`}`).join('')}<label>altro (posizione, gruppo, comportamento…)</label><textarea data-draft="altro" rows="2">${esc(d.altro||'')}</textarea></div>`;
+}
+function proposalsSummary(){
+  const n = Object.keys(S.drafts).length;
+  return `<h3>Proposte aperte (${n})</h3>${n?Object.keys(S.drafts).map(k=>`<div><a href="#" data-sel="${esc(k)}" class="mono">${esc(k)}</a></div>`).join(''):'<div style="color:var(--mute)">nessuna</div>'}<button class="act" id="copyDrafts"${n?'':' disabled'}>Copia proposte per l’agente</button><button class="act" id="clearDrafts"${n?'':' disabled'}>Scarta tutte</button>`;
+}
+function wireDraft(id){
+  const p = $('#panel');
+  p.querySelectorAll('[data-draft]').forEach(inp => inp.oninput = () => {
+    const d = S.drafts[id] = S.drafts[id] || {}; d[inp.dataset.draft] = inp.value;
+    if (!Object.values(d).some(v => v)) delete S.drafts[id];
+    save(); stage();
+  });
+  const c = $('#copyDrafts'); if (c) c.onclick = async () => { const t = draftsText(); try { await navigator.clipboard.writeText(t); toast('Proposte copiate: incollale nella conversazione'); } catch(e){ $('#note').value = t; toast('Copia non permessa: testo nel riquadro nota'); } };
+  const x = $('#clearDrafts'); if (x) x.onclick = () => { S.drafts = {}; save(); stage(); panel(); };
+}
+function draftsText(){
+  const L = ['[Configuratore interfaccia S-Log MetaRaw] proposte di modifica', 'revisione: ' + (REV.commit||'?'), ''];
+  for (const [id, d] of Object.entries(S.drafts)){
+    const it = IDX[id]; if (!it) continue; const el = it.el;
+    L.push('- ' + id + ' (' + it.type + ', ' + (it.surface||'') + ')');
+    const src = it.type==='parametro' ? (el.define ? el.define.file + ':' + el.define.line : '?') : it.type==='widget' ? U.script.file + ':' + el.line : '';
+    if (src) L.push('  fonte: ' + src);
+    for (const [f, v] of Object.entries(d)) if (v){
+      const cur = it.type==='parametro' ? el[f] : tr(el.props && el.props[f]);
+      L.push(f==='altro' ? '  altro: ' + v : `  ${f}: «${cur ?? ''}» → «${v}»`);
+    }
+    if (S.notes[id]) L.push('  nota: ' + S.notes[id]);
+  }
+  L.push('', 'Vincoli: i nomi dei parametri OFX sono permanenti (Resolve salva i nodi per nome); un cambio al pannello aggiorna tests/golden/params_*.txt di proposito; i testi dello script passano da i18n (t()) e vanno tradotti; dopo la modifica rigenerare con tools/atlas/atlas.py e verificare.');
   return L.join('\n');
 }
 

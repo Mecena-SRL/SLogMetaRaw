@@ -11,8 +11,8 @@ I configuratori sono strumenti di sviluppo esterni all'app (finestre accanto a c
 integrati nell'interfaccia del programma salvo richiesta esplicita. Stato, fonti e schema: `docs/dev/CONFIGURATORI.md`.
 
 Quattro viste collegate da identità stabili:
-1. Design System (fondamenti, componenti, varianti, stati) — **mancante**.
-2. Interfaccia (schermate, composizione, navigazione) — **mancante**.
+1. Design System — catalogo componenti estratto (vista Interfaccia › Catalogo); fondamenti e regole d'uso mancanti.
+2. Interfaccia — vista Interfaccia dell'Atlante: finestra script, pannelli Develop e Detail dalle fonti.
 3. Atlante della logica — `tools/atlas/` (primo incremento, vedi sotto).
 4. Manutenzione (Graphify, indici, decisioni, skill) — `docs/GRAPHIFY.md` + vista Manutenzione dell'Atlante.
 
@@ -23,8 +23,9 @@ Regole:
 - Spostare un blocco nel diagramma cambia solo la vista; cambiare una responsabilità o un flusso è una proposta di
   modifica al programma: va registrata (`proposals` in `tools/atlas/model.json`), applicata con test, poi il modello
   va riestratto e revisionato.
-- Prima di creare un componente UI cercare una soluzione esistente; un componente nuovo va registrato nel catalogo
-  (quando esisterà) nella stessa modifica.
+- Prima di creare un componente UI cercare una soluzione esistente (catalogo: helper `define*` di `ParamDefs.h`,
+  widget UIManager); un helper nuovo in `ParamDefs.h` compare da solo nel catalogo, va documentato nella stessa modifica.
+- Controlli OFX: i nomi sono permanenti; un cambio al pannello aggiorna `tests/golden/params_*.txt` di proposito.
 - Verificare sul prodotto reale: diagrammi e mock non sostituiscono build, controlli e test.
 - JEV è facoltativo: non certifica correttezza né autorizza operazioni.
 
