@@ -1,5 +1,37 @@
 # Changelog
 
+## Non rilasciato
+
+Pannello del nodo S-Log MetaRaw (Develop) riorganizzato, Punto bianco con il contagocce, controlli ridotti a quelli che
+Resolve non ha, stato più robusto. **Da verificare in Resolve:** gruppi annidati, Punto bianco (spazio del colore
+campionato), controlli nascosti che riappaiono da soli, scritte più corte. Le schermate del wiki (`09`, `14`) mostrano
+ancora il pannello vecchio.
+
+### Plugin
+
+- **Ripresa** è un gruppo: Decodifica, Bilanciamento, Temperatura, Punto bianco, Tint, Esposizione (EI). La casella
+  *False color* sta sopra Temperatura e sotto Tint ed Esposizione, con la scritta corta.
+- **Punto bianco**: parametro colore con il contagocce di Resolve. Il colore scelto diventa neutro: Temperatura e Tint si
+  ricavano con la stessa matematica del render (testata: il render del colore scelto esce neutro).
+- **Spazio colore** sostituisce Avanzate, in tre sottogruppi: **Ingresso** (Spazio colore e Gamma separati, Rilevato,
+  *Ripristina da camera*; Data level, Livello, *Ripristina da clip*), **Senza metadata**, **Uscita** (Spazio colore,
+  Gamma, Dimensione LUT, Esporta LUT).
+- **Toni** mostra Highlights, Bianco, Soft Clip e Saturation. Contrast, Shadows, Whites, Blacks, Vibrance e le Zone
+  compaiono se il nodo le usa già o con *Mostra tutti i controlli*: nessun valore salvato cambia e l'immagine resta identica.
+- **I nodi salvati restano identici.** I nomi dei parametri non cambiano. «Ingresso nodo» (una lista unica) è sostituito
+  da due scelte: al primo caricamento il valore vecchio riempie Spazio colore e Gamma (versione delle impostazioni 6).
+- **Clip spostata o ricollegata**: se nome e dimensione del file coincidono, Exposure e White Balance restano dove li hai
+  lasciati (prima tornavano ai valori di camera perché cambiava il percorso).
+- **Copia e incolla del nodo su un'altra clip**: Esposizione resta di quanti stop sopra o sotto l'EI della camera
+  (non l'EI assoluto, che sposterebbe l'immagine se la camera è diversa); il bilanciamento *As shot* segue la camera
+  nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
+
+### Sviluppo
+
+- Test di compatibilità: i parametri della 2.4.0 (`tests/golden/released/`) devono esistere ancora con stesso tipo,
+  default, intervallo e opzioni solo in coda; test del Punto bianco sul render, di migrazione, dei controlli nascosti e
+  della clip ricollegata. L'host di prova capisce i parametri colore.
+
 ## S-Log MetaRaw 2.4.0
 
 Nuove modalità del nodo Detail (Cinematografico e Zonale), Ingresso e Destinazione, vista zone. Contiene anche la

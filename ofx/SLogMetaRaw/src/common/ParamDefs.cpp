@@ -118,14 +118,29 @@ PushButtonParamDescriptor* defineButton(ImageEffectDescriptor& d, PageParamDescr
 }
 
 GroupParamDescriptor* defineGroup(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name,
-                                  const std::string& label, bool open)
+                                  const std::string& label, bool open, GroupParamDescriptor* parent)
 {
     if (!claimName(name)) return nullptr;
     GroupParamDescriptor* g = d.defineGroupParam(name);
     g->setLabels(label, label, label);
     g->setOpen(open);
+    if (parent) g->setParent(*parent);
     page->addChild(*g);
     return g;
+}
+
+RGBParamDescriptor* defineColor(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name,
+                                const std::string& label, const char* hint, GroupParamDescriptor* group)
+{
+    if (!claimName(name)) return nullptr;
+    RGBParamDescriptor* p = d.defineRGBParam(name);
+    p->setLabels(label, label, label);
+    p->setDefault(0.5, 0.5, 0.5);
+    p->setAnimates(false);
+    if (hint) p->setHint(hint);
+    if (group) p->setParent(*group);
+    page->addChild(*p);
+    return p;
 }
 
 IntParamDescriptor* defineHiddenInt(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name, int def)

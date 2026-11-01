@@ -8,6 +8,7 @@
 #include "ofxColour.h"
 #include "ToneParams.h"
 #include "../common/ColourSpaces.h"
+#include "../common/Files.h"
 
 static void setText(OFX::StringParam* p, const std::string& v)
 {
@@ -37,17 +38,67 @@ void DevelopEffect::migrateSettings()
         return;
     }
     if (saved == 1) m_DataLevel->setValue(3);   // the data level correction starts off on a 1.0 grade
+    // 2.5 split "Ingresso nodo" in two: the pair it stood for becomes the declared space and gamma
+    int list = 0, inSpace = 0, inGamma = 0;
+    m_NodeInput->getValue(list);
+    m_InputSpace->getValue(inSpace);
+    m_InputGamma->getValue(inGamma);
+    if (list > 0 && list < kNodeInputCount && inSpace == 0 && inGamma == 0) {
+        m_InputSpace->setValue(kNodeInputPairs[list][0] + 1);
+        m_InputGamma->setValue(kNodeInputPairs[list][1] + 1);
+    }
     m_SettingsVersion->setValue(kSettingsVersion);
 }
 
-bool DevelopEffect::inputKnown() const
+bool DevelopEffect::nodeEncoding(int& p_Space, int& p_Gamma, bool* p_Declared) const
 {
-    int input = 0, space = 0, gamma = 0;
-    m_NodeInput->getValue(input);
-    if (input > 0) return true;
-    if (mapColourspace(m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false), space, gamma))
-        return true;
-    return validCode(m_CamSpace->getValue(), kSpaceCount) >= 0 && validCode(m_CamGamma->getValue(), kGammaCount) >= 0;
+    int inSpace = 0, inGamma = 0;
+    m_InputSpace->getValue(inSpace);
+    m_InputGamma->getValue(inGamma);
+    const int space = inSpace >= 1 && inSpace <= kSpaceCount ? inSpace - 1 : -1;   // 0, or a choice from a newer build: Automatico
+    const int gm = inGamma >= 1 && inGamma <= kGammaCount ? inGamma - 1 : -1;
+    if (p_Declared) *p_Declared = space >= 0 || gm >= 0;
+    int hostSpace = 0, hostGamma = 0;
+    bool known = mapColourspace(m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false),
+                                hostSpace, hostGamma);
+    if (!known) {   // no colour management info: nodes receive the camera encoding (DaVinci YRGB)
+        const int cs = validCode(m_CamSpace->getValue(), kSpaceCount);
+        const int cg = validCode(m_CamGamma->getValue(), kGammaCount);
+        if (cs >= 0 && cg >= 0) { hostSpace = cs; hostGamma = cg; known = true; }
+    }
+    p_Space = space >= 0 ? space : hostSpace;
+    p_Gamma = gm >= 0 ? gm : hostGamma;
+    return (space >= 0 || known) && (gm >= 0 || known);
+}
+
+// The file name and its size say it is the same clip after a relink or on another computer; a path alone does not.
+std::string DevelopEffect::clipIdentity(const std::string& p_Path) const
+{
+    const long long size = fileSize(p_Path);
+    return size < 0 ? "" : p_Path.substr(p_Path.find_last_of("/\\") + 1) + "|" + std::to_string(size);
+}
+
+// The eyedropper hands over a colour in the encoding that enters the node. The illuminant that makes it neutral
+// is what White Balance describes, so Temperature and Tint follow from the same maths as the render.
+void DevelopEffect::pickWhite()
+{
+    DevelopParams p;
+    buildParams(0.0, p);
+    double r = 0.5, g = 0.5, b = 0.5;
+    m_WhitePick->getValue(r, g, b);
+    SMf3 lin = smf3(sm_decode((float)r, p.nodeGamma), sm_decode((float)g, p.nodeGamma), sm_decode((float)b, p.nodeGamma));
+    lin = sm_fix_levels(lin, p);
+    const SMf3 xyz = sm_to_xyz(lin, p.nodeSpace);
+    const double sample[3] = { xyz.x, xyz.y, xyz.z };
+    double k = 0.0, tint = 0.0;
+    if (!sm_wb_from_xyz(m_ShotTemp->getValue(), m_ShotTint->getValue(), sample, &k, &tint)) {
+        setText(m_Status, "Punto bianco: il colore scelto non e un grigio o un bianco (troppo scuro o saturo)");
+        return;
+    }
+    m_WBMode->setValue(kWBCustom);
+    m_Temp->setValue(k);
+    m_Tint->setValue(tint);
+    refreshNodeInfo();
 }
 
 // The sliders take the camera values only for a new node, a node moved to another clip, or
@@ -65,9 +116,12 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         refreshNodeInfo();
         return;
     }
-    std::string bound;
+    std::string bound, boundId;
     m_BoundPath->getValue(bound);
-    const bool sameClip = (bound == path);
+    m_BoundId->getValue(boundId);
+    const std::string id = clipIdentity(path);
+    // a relinked clip (same file name and size, other folder or computer) keeps the grade: no reset to the camera
+    const bool sameClip = (bound == path) || (!id.empty() && id == boundId);
 
     ClipMeta meta;
     m_Outcome = acquireMeta(path, p_Mode, meta, m_Detail);
@@ -104,6 +158,10 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         return;
     }
     const bool firstRead = m_RefSource->getValue() == 0;
+    // A node pasted or moved to another clip arrives with its Exposure and balance set against the old camera
+    const double oldShotEI = m_ShotEI->getValue(), oldEI = m_EI->getValue();
+    int oldWB = 0;
+    m_WBMode->getValue(oldWB);
     setIfDifferent(m_ShotTemp, meta.shotTemp);
     setIfDifferent(m_ShotTint, meta.shotTint);
     setIfDifferent(m_ShotEI, meta.shotEI);
@@ -122,29 +180,40 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         setIfDifferent(m_MetaValid, true);
         m_Detail += (meta.wbEstimated ? " · Kelvin stimato (la camera non lo registra)" : "") + note;
         if (!sameClip || p_Mode == MetaMode::Reload || firstRead) {
-            m_WBMode->setValue(0);
-            m_Temp->setValue(meta.shotTemp);
-            m_Tint->setValue(meta.shotTint);
-            m_EI->setValue(meta.shotEI);
+            if (!sameClip && !bound.empty() && !firstRead && p_Mode != MetaMode::Reload && oldShotEI > 0.0 && oldEI > 0.0) {
+                // copy and paste: the stops above or below the camera EI and a Custom balance travel with the node,
+                // As shot follows the new camera
+                if (oldWB == 0) {
+                    m_Temp->setValue(meta.shotTemp);
+                    m_Tint->setValue(meta.shotTint);
+                }
+                rescaleExposure(meta.shotEI / oldShotEI);
+            } else {
+                m_WBMode->setValue(0);
+                m_Temp->setValue(meta.shotTemp);
+                m_Tint->setValue(meta.shotTint);
+                m_EI->setValue(meta.shotEI);
+            }
         }
     }
-    if (!sameClip) m_BoundPath->setValue(path);   // only after a successful read
+    if (bound != path) setText(m_BoundPath, path);   // only after a successful read
+    setText(m_BoundId, id);
     updateEnabledness();
     refreshNodeInfo();
 }
 
-// The Camera line is the one status always in sight; Stato (Avanzate) carries the detail.
+// The Camera line is the one status always in sight; Stato (Spazio colore › Ingresso) carries the detail.
 void DevelopEffect::composeStatus()
 {
     const bool unlock = m_Unlock->getValue(), manual = manualReference();
     std::string camera;
-    if (manual && !inputKnown()) camera = "Ingresso non noto · Avanzate › Ingresso nodo";
+    if (manual && !inputKnown()) camera = "Ingresso non noto · Spazio colore › Ingresso";
     else if (m_FoundWhileManual) camera = m_CameraName + " · Metadata trovati: Rileggi li adotta";
     else if (m_Outcome == MetaOutcome::Pending) camera = "Lettura metadata in corso…";
     else if (m_NotLog) camera = m_CameraName + " · profilo non log: nodo neutro";
     else if (m_Outcome != MetaOutcome::Found && manual) camera = "Metadata non trovati · sbloccato";
     else if (m_Outcome != MetaOutcome::Found) camera = unlock ? "Metadata non trovati"
-                                                              : "Metadata non trovati · Avanzate › Sblocca controlli senza metadata";
+                                                              : "Metadata non trovati · Spazio colore › Senza metadata › Sblocca controlli";
     else camera = m_CameraName;
     setText(m_Camera, camera);
 
@@ -175,9 +244,10 @@ void DevelopEffect::updateEnabledness()
     m_DecodeUsing->getValue(decode);
     const bool manual = manualReference();
     const bool on = (decode == 1) && (m_MetaValid->getValue() || (manual && inputKnown()));
-    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Temp, m_Tint, m_EI };
+    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Temp, m_Tint, m_EI, m_WhitePick };
     for (OFX::ValueParam* c : controls) c->setEnabled(on);
     for (const std::string& name : toneParamNames()) getParam(name)->setEnabled(on);
+    refreshToneVisibility(*this, m_Tones, m_TonesMore->getValue());
     OFX::DoubleParam* const refs[] = { m_ShotEI, m_ShotTemp, m_ShotTint };
     for (OFX::DoubleParam* r : refs) {
         r->setIsSecret(!m_Unlock->getValue());
@@ -200,6 +270,21 @@ void DevelopEffect::onUnlockChanged()
     refreshNodeInfo();
 }
 
+// Exposure times ratio, keys included, inside the slider's range.
+void DevelopEffect::rescaleExposure(double p_Ratio)
+{
+    auto clampEI = [](double v) { return v < 25.0 ? 25.0 : (v > 409600.0 ? 409600.0 : v); };
+    const unsigned keys = m_EI->getNumKeys();
+    if (keys == 0) {
+        m_EI->setValue(clampEI(m_EI->getValue() * p_Ratio));
+        return;
+    }
+    for (unsigned i = 0; i < keys; ++i) {
+        const double t = m_EI->getKeyTime((int)i);
+        m_EI->setValueAtTime(t, clampEI(m_EI->getValueAtTime(t) * p_Ratio));
+    }
+}
+
 // A reference changes the numbers, not the picture: Exposure follows the EI, keys included.
 void DevelopEffect::onReferenceChanged(const std::string& p_Name)
 {
@@ -208,16 +293,7 @@ void DevelopEffect::onReferenceChanged(const std::string& p_Name)
         const double ratio = m_RefEI > 0.0 ? now / m_RefEI : 1.0;
         m_RefEI = now;
         if (!manualReference() || ratio == 1.0) return;
-        auto clampEI = [](double v) { return v < 25.0 ? 25.0 : (v > 409600.0 ? 409600.0 : v); };
-        const unsigned keys = m_EI->getNumKeys();
-        if (keys == 0) {
-            m_EI->setValue(clampEI(m_EI->getValue() * ratio));
-        } else {
-            for (unsigned i = 0; i < keys; ++i) {
-                const double t = m_EI->getKeyTime((int)i);
-                m_EI->setValueAtTime(t, clampEI(m_EI->getValueAtTime(t) * ratio));
-            }
-        }
+        rescaleExposure(ratio);
     } else if (manualReference()) {
         int wb = 0;
         m_WBMode->getValue(wb);

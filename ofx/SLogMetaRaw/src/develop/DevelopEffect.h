@@ -9,7 +9,7 @@
 #include "../common/UpdateBadge.h"
 #include "ToneParams.h"
 
-const int kSettingsVersion = 5;   // bump when the meaning of a saved parameter changes
+const int kSettingsVersion = 6;   // bump when the meaning of a saved parameter changes
 const int kWBCustom = 7;
 extern const double kPresetKelvin[];   // index = White Balance choice
 
@@ -26,10 +26,15 @@ public:
 
 private:
     std::string sourcePath() const;
-    bool inputKnown() const;     // the node knows what encoding enters it
+    bool inputKnown() const { int s, g; return nodeEncoding(s, g); }   // the node knows what encoding enters it
+    // Space and gamma entering the node: what is declared in Ingresso, else what Resolve or the camera says.
+    // False when a part is neither declared nor known; declared tells whether Ingresso overrides anything.
+    bool nodeEncoding(int& p_Space, int& p_Gamma, bool* p_Declared = nullptr) const;
     bool manualReference() const { return m_Unlock->getValue() && !m_MetaValid->getValue(); }
     // DevelopSync.cpp
     void migrateSettings();
+    std::string clipIdentity(const std::string& p_Path) const;   // file name + size, to tell a relink from another clip
+    void pickWhite();            // the eyedropper: Temperature and Tint that make the picked colour neutral
     void syncMetadata(MetaMode p_Mode);
     void updateEnabledness();
     void refreshNodeInfo();
@@ -37,6 +42,7 @@ private:
     void exportLut(double p_Time);   // DevelopLut.cpp, asks where to save
     void onUnlockChanged();
     void onReferenceChanged(const std::string& p_Name);
+    void rescaleExposure(double p_Ratio);
     // BuildParams.cpp
     bool buildParams(double p_Time, DevelopParams& p_Params, std::string* p_NodeInfo = nullptr,
                      std::string* p_LevelInfo = nullptr);
@@ -68,12 +74,17 @@ private:
     OFX::BooleanParam* m_FcTemperature = nullptr;
     OFX::BooleanParam* m_FcTint = nullptr;
     OFX::BooleanParam* m_FcZones = nullptr;
-    OFX::ChoiceParam* m_NodeInput = nullptr;
+    OFX::ChoiceParam* m_NodeInput = nullptr;   // before 2.5: space and gamma in one list, read once by migrateSettings
+    OFX::ChoiceParam* m_InputSpace = nullptr;
+    OFX::ChoiceParam* m_InputGamma = nullptr;
+    OFX::RGBParam* m_WhitePick = nullptr;
+    OFX::BooleanParam* m_TonesMore = nullptr;
     OFX::StringParam* m_NodeInfo = nullptr;
     OFX::ChoiceParam* m_DataLevel = nullptr;
     OFX::StringParam* m_LevelInfo = nullptr;
     // hidden, saved with the grade
     OFX::StringParam* m_BoundPath = nullptr;
+    OFX::StringParam* m_BoundId = nullptr;
     OFX::DoubleParam* m_ShotTemp = nullptr;
     OFX::DoubleParam* m_ShotTint = nullptr;
     OFX::DoubleParam* m_ShotEI = nullptr;

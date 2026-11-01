@@ -29,7 +29,12 @@ OFX::PushButtonParamDescriptor* defineButton(OFX::ImageEffectDescriptor& d, OFX:
                                              const std::string& name, const std::string& label, const char* hint,
                                              OFX::GroupParamDescriptor* group = nullptr);
 OFX::GroupParamDescriptor* defineGroup(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page,
-                                       const std::string& name, const std::string& label, bool open);
+                                       const std::string& name, const std::string& label, bool open,
+                                       OFX::GroupParamDescriptor* parent = nullptr);   // parent: a sub-group
+// A colour swatch: Resolve draws its eyedropper next to it, so the value can be picked from the image.
+OFX::RGBParamDescriptor* defineColor(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page,
+                                     const std::string& name, const std::string& label, const char* hint,
+                                     OFX::GroupParamDescriptor* group = nullptr);
 
 template <typename T>
 void hideParam(T* p, OFX::PageParamDescriptor* page)

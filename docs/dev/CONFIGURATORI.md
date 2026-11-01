@@ -108,5 +108,14 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    golden aggiornati, kernel CPU/Metal invariati. Da provare in Resolve: `setIsSecret` dal vivo, punti Double2D sul
    viewer, `fetchImage` durante Misura. Fatto anche: Zonale e vista zone (kernel CPU e Metal: `view` 3/4,
    `zoneWhite`/`zoneBlack` in `DetailParams`), Destinazione Scena DWG. Da fare: Stampa, Recupero HDR→SDR.
+   Pannello Develop (01/11/2026, non rilasciato): riorganizzato con Ivan sulle simulazioni dell'Inspector. Decisioni:
+   gruppo Ripresa con false color sopra Temperatura e sotto Tint/Esposizione, **Punto bianco** come parametro colore
+   col contagocce di Resolve (la formula `sm_wb_from_xyz` è provata sul render), **Spazio colore** al posto di
+   Avanzate (Ingresso, Senza metadata, Uscita), Toni ridotti a ciò che Resolve non ha (gli altri compaiono se usati o
+   con «Mostra tutti i controlli»), Dati di ripresa invariati. Da provare in Resolve: sottogruppi annidati,
+   spazio del colore campionato dal contagocce, controlli nascosti che riappaiono, scritte corte, rombi keyframe.
+   Persistenza: `settingsVersion` 6, identità della clip (nome + dimensione) per il rilink, test di compatibilità con
+   `tests/golden/released/`. Aperto: icone sulle caselle non disegnate da Resolve (le tre `fc_*.png` restano assegnate),
+   screenshot del wiki da rifare, pannello Detail non ancora rivisto.
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

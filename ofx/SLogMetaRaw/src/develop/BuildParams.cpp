@@ -14,34 +14,25 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     p = DevelopParams();
 
     // colour space of the image entering the node
-    int nodeSpace = 0, nodeGamma = 0, input = 0;
-    m_NodeInput->getValue(input);
-    if (input < 0 || input >= kNodeInputCount) input = 0;
+    int nodeSpace = 0, nodeGamma = 0;
+    bool declared = false;
+    nodeEncoding(nodeSpace, nodeGamma, &declared);
     const std::string hostCs = m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false);
-    if (input > 0) {
-        nodeSpace = kNodeInputPairs[input][0];
-        nodeGamma = kNodeInputPairs[input][1];
-    } else if (!mapColourspace(hostCs, nodeSpace, nodeGamma)) {
-        // no colour management info: nodes receive the camera encoding (DaVinci YRGB)
-        const int cs = validCode(m_CamSpace->getValue(), kSpaceCount);
-        const int cg = validCode(m_CamGamma->getValue(), kGammaCount);
-        if (cs >= 0 && cg >= 0) { nodeSpace = cs; nodeGamma = cg; }
-    }
     if (p_NodeInfo) {
-        *p_NodeInfo = std::string("Ingresso nodo: ") + kSpaceNames[nodeSpace] + " / " + kGammaNames[nodeGamma]
+        *p_NodeInfo = std::string(kSpaceNames[nodeSpace]) + " / " + kGammaNames[nodeGamma]
                     + (hostCs.empty() ? "" : " (Resolve: " + hostCs + ")");
     }
     p.nodeSpace = nodeSpace;
     p.nodeGamma = nodeGamma;
 
     // Data level runs before the bypass: a wrong scale is a decode error of the file, worth fixing
-    // even with the develop off, and on clips without metadata once "Ingresso nodo" is declared.
+    // even with the develop off, and on clips without metadata once the input is declared.
     int levelChoice = 0;
     m_DataLevel->getValue(levelChoice);
     const int camSpaceCode = validCode(m_CamSpace->getValue(), kSpaceCount);
     const int camGammaCode = validCode(m_CamGamma->getValue(), kGammaCount);
-    const int domSpace = camSpaceCode >= 0 ? camSpaceCode : (input > 0 ? nodeSpace : -1);
-    const int domGamma = camGammaCode >= 0 ? camGammaCode : (input > 0 ? nodeGamma : -1);
+    const int domSpace = camSpaceCode >= 0 ? camSpaceCode : (declared ? nodeSpace : -1);
+    const int domGamma = camGammaCode >= 0 ? camGammaCode : (declared ? nodeGamma : -1);
     int want = validCode(m_LevelRequired->getValue(), 2);
     if (want < 0 && domGamma >= 7 && domGamma <= 9) want = 1;   // S-Log curves use unscaled code values
     int have = validCode(m_LevelHost->getValue(), 2);

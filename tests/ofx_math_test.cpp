@@ -69,6 +69,24 @@ int main(int argc, char** argv)
         printf("%.10g\n", a * b + c);
         return 0;
     }
+    if (argc == 2 && !strcmp(argv[1], "--wb-pick")) {
+        // "shotK shotTint r g b" (linear Rec.709): the eyedropper's answer, then the sample through the develop with it
+        double shotK, shotT, r, g, b;
+        while (scanf("%lf %lf %lf %lf %lf", &shotK, &shotT, &r, &g, &b) == 5) {
+            DevelopParams p = {};
+            p.nodeSpace = p.outSpace = 1;
+            p.nodeGamma = p.outGamma = 1;
+            p.expo = 1.0f;
+            const SMf3 xyz = sm_to_xyz(smf3((float)r, (float)g, (float)b), 1);
+            const double sample[3] = { xyz.x, xyz.y, xyz.z };
+            double k = 0.0, tint = 0.0;
+            const int ok = sm_wb_from_xyz(shotK, shotT, sample, &k, &tint);
+            sm_set_white_balance(&p, shotK, shotT, k, tint);
+            const SMf3 o = sm_develop(smf3((float)r, (float)g, (float)b), p);
+            printf("%d %.6g %.6g %.9g %.9g %.9g\n", ok, k, tint, o.x, o.y, o.z);
+        }
+        return 0;
+    }
     const bool dump = argc == 2 && !strcmp(argv[1], "--dump-tone");
     const bool curve = argc == 5 && !strcmp(argv[1], "--curve");
     std::string line;

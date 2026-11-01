@@ -37,10 +37,15 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         for (const std::string& name : toneParamNames()) (void)getParam(name);   // all present, or not ready
         m_Tones.bind(*this);
         m_NodeInput = fetchChoiceParam("nodeInput");
+        m_InputSpace = fetchChoiceParam("inputSpace");
+        m_InputGamma = fetchChoiceParam("inputGamma");
+        m_WhitePick = fetchRGBParam("whitePick");
+        m_TonesMore = fetchBooleanParam("tonesMore");
         m_NodeInfo = fetchStringParam("nodeInfo");
         m_DataLevel = fetchChoiceParam("dataLevel");
         m_LevelInfo = fetchStringParam("levelInfo");
         m_BoundPath = fetchStringParam("boundPath");
+        m_BoundId = fetchStringParam("boundId");
         m_ShotTemp = fetchDoubleParam("shotTemp");
         m_ShotTint = fetchDoubleParam("shotTint");
         m_ShotEI = fetchDoubleParam("shotEI");
@@ -112,9 +117,22 @@ void DevelopEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const s
         onUnlockChanged();
     } else if ((p_ParamName == "shotEI" || p_ParamName == "shotTemp" || p_ParamName == "shotTint") && user) {
         onReferenceChanged(p_ParamName);
+    } else if (p_ParamName == "whitePick" && user) {
+        pickWhite();
+    } else if (p_ParamName == "inputReset") {
+        m_InputSpace->setValue(0);
+        m_InputGamma->setValue(0);
+        updateEnabledness();
+        refreshNodeInfo();
+    } else if (p_ParamName == "levelReset") {
+        m_DataLevel->setValue(0);
+        updateEnabledness();
+        refreshNodeInfo();
+    } else if (p_ParamName == "tonesMore") {
+        updateEnabledness();
     } else if (p_ParamName == "decodeUsing") {
         updateEnabledness();
-    } else if (p_ParamName == "nodeInput" || p_ParamName == "dataLevel") {
+    } else if (p_ParamName == "inputSpace" || p_ParamName == "inputGamma" || p_ParamName == "dataLevel") {
         updateEnabledness();
         refreshNodeInfo();
     } else if (p_ParamName == "fcExposure" || p_ParamName == "fcTemperature" || p_ParamName == "fcTint"
@@ -129,9 +147,11 @@ void DevelopEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const s
     } else if (p_ParamName == "toneReset") {
         resetTones(*this);
         m_LegacyNote.clear();
+        updateEnabledness();
         refreshNodeInfo();
     } else if (p_ParamName == "zoneReset") {
         resetZones(*this);
+        updateEnabledness();
     } else if (user && !m_LegacyNote.empty() && p_ParamName.compare(0, 4, "tone") == 0) {
         clearLegacyTones(*this);   // the first edit of the new tones retires the 1.1 values and their note
         m_LegacyNote.clear();

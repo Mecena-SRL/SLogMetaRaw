@@ -131,14 +131,13 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 |---|---|
 | **Versione** (in cima) | `v2.4.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v2.4.0 → 2.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
-| **Decode Using** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
-| **White Balance** · **Color Temp** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
-| **Exposure** | indice di esposizione: EI doppio = +1 stop |
-| **False color** | temperatura, tinta ed esposizione; vedi sotto |
-| **Color Space** · **Gamma** | uscita, come un Color Space Transform; *Timeline* non converte |
-| **Toni** | Contrast, Highlights, Shadows, Whites, **Bianco** (stop), Blacks, Vibrance, Saturation (−100…+100) |
-| **Zone** (chiuso) | zone Black, Shadow, Light e Specular con Exp (stop), Sat, Range e Falloff; Contrast Pivot; Soft Clip; false color *Zone* |
-| **Avanzate** | ingresso del nodo, correzione del data level, stato, **Sblocca controlli senza metadata** |
+| **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
+| **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
+| **Punto bianco** | il contagocce di Resolve: scegli sull'immagine un punto che deve essere neutro e Temperatura e Tint si regolano da soli, con la stessa matematica del render |
+| **Esposizione** (EI) | indice di esposizione: EI doppio = +1 stop |
+| **False color** | una casella sopra Temperatura, una sotto Tint, una sotto Esposizione; vedi sotto |
+| **Spazio colore** | tre sottogruppi. **Ingresso**: Spazio colore e Gamma in ingresso, Rilevato e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e i riferimenti di ripresa. **Uscita**: Spazio colore e Gamma (come un Color Space Transform; *Timeline* non converte), dimensione ed esportazione della LUT |
+| **Toni** | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* aggiunge Contrast, Shadows, Whites, Blacks, Vibrance e le **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); compaiono da soli se il nodo li usa |
 | **Dati di ripresa** | sola lettura: obiettivo, focale, diaframma, fuoco, shutter, EI, WB, fps, ND, LUT di camera |
 
 **Highlights è una spalla filmica.** In negativo comprime le alte luci con una pendenza che cala in modo continuo verso
@@ -156,7 +155,7 @@ combinazione di cursori può solarizzare. Il costo di un nodo puntuale, detto ch
 anche nella texture. Per questo il recupero locale è un nodo a parte. Formule e ricette:
 [docs/TONE_MAPPING.md](docs/TONE_MAPPING.md).
 
-**False color.** Una vista per controllo, sopra il cursore che serve:
+**False color.** Una vista per controllo, accanto al cursore che serve (sopra Temperatura, sotto Tint e sotto Esposizione):
 - **Esposizione** usa bande in stop attorno al grigio 18%, nello stile ARRI. Verde è il grigio medio, rosa uno stop sopra
   (l'incarnato), giallo vicino al clip, rosso il clip, blu e viola il fondo.
 - **Temperatura** e **Tinta** funzionano come in CineMatch. L'immagine diventa grigia, le dominanti si colorano di
@@ -170,7 +169,7 @@ log. L'opzione *Correggi il Data Level* dello script la sistema per tutto il pro
 [docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
 
 **Senza metadata.** Un ProRes da registratore esterno, o una clip che non si legge, lascia il nodo neutro. Spunta
-*Avanzate › Sblocca controlli senza metadata* e scrivi EI, Kelvin e tinta di ripresa: i controlli si attivano e il nodo
+*Spazio colore › Senza metadata › Sblocca controlli* e scrivi EI, Kelvin e tinta di ripresa: i controlli si attivano e il nodo
 parte neutro.
 
 **Velocità.** Aprire un progetto non legge nessun file. Aprire il pannello aspetta al massimo mezzo secondo; un disco

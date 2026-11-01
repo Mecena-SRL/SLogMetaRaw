@@ -202,7 +202,7 @@ MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std
     }
     if (mode == MetaMode::Read && !r.failure.empty()
         && std::chrono::steady_clock::now() - r.failedAt < std::chrono::milliseconds(kRetryAfterMs)) {
-        status = "Metadata non disponibili: " + r.failure + " · Rileggi metadata o Avanzate › Sblocca controlli";
+        status = "Metadata non disponibili: " + r.failure + " · Rileggi metadata o Spazio colore › Senza metadata › Sblocca controlli";
         return MetaOutcome::Missing;
     }
 

@@ -147,25 +147,23 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 |---|---|
 | **版本**（顶部） | 显示 `v2.4.0`。每天最多向 GitHub 查询一次最新版本；如果有新版本，会显示 **🟢 v2.4.0 → 2.x.y**，点击会打开适合你系统的安装程序下载页面（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西。 |
 | **Camera** · **Rileggi metadata**（重新读取） | 读取到的摄影机。*Rileggi* 会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池。约 2 秒内响应。 |
-| **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值（节点变为透明）。 |
-| **White Balance** | As shot，或预设（Daylight、Cloudy、Shade、Tungsten、Fluorescent、Flash）。移动任意滑块会切换为 *Custom*。 |
-| **Color Temp** · **Tint** | 从摄影机记录的白点出发，在线性光中进行 Bradford 色适应。Temp 越高越暖；Tint 为正则偏向品红。 |
-| **Exposure** | 以 EI 为单位：EI 翻倍 = 正好 +1 档，在任何曲线之前、于线性光中计算。 |
-| **False color** | 色温、色调和曝光视图——见[第 6 节](#6-伪色)。 |
-| **Color Space** · **Gamma** | 输出，类似 Color Space Transform。*Timeline* 不做转换——在色彩管理项目中请保持该选项。要在 DWG 中调色：选择 *DaVinci WG · DaVinci Intermediate*。 |
-| **Toni**（影调） | Contrast、Highlights、Shadows、Whites、Bianco、Blacks、Vibrance、Saturation——见[第 7 节](#7-影调与分区)。 |
-| **Zone**（分区，默认收起） | Black、Shadow、Light、Specular 分区；Contrast Pivot；Soft Clip。 |
-| **Avanzate**（高级） | 节点输入、数据电平校正、状态、*Sblocca controlli senza metadata*（无元数据时解锁）。 |
+| **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
+| **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
+| **Punto bianco**（白点） | Resolve 的吸管：在图像上选一个应为中性的点，Temperatura 和 Tint 自动调整，与渲染使用相同的数学 |
+| **Esposizione**（EI） | 曝光指数：EI 加倍 = +1 档 |
+| **False color** | Temperatura 上方、Tint 下方和 Esposizione 下方各一个复选框；见下文 |
+| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Toni**（色调） | Highlights、**Bianco**（档）、Soft Clip、Saturation（−100…+100）。*Mostra tutti i controlli* 加入 Contrast、Shadows、Whites、Blacks、Vibrance 和 **Zone**（Black、Shadow、Light、Specular 的 Exp、Sat、Range 和 Falloff，Contrast Pivot，*Zone* false color）；节点使用它们时会自动出现 |
 | **Dati di ripresa**（拍摄数据） | 只读：镜头、焦距、光圈、对焦、快门、EI、白平衡、帧率、ND、机内 LUT。 |
 
 ![Avanzate 与 Dati di ripresa](images/14-avanzate-dati.png)
 
-**Avanzate 详解**
+**Spazio colore 详解**
 
-- **Ingresso nodo**（节点输入）——*Automatico*（自动）会询问 Resolve。
-- **Data level in ingresso**（输入数据电平）——当 Resolve 用错误的码值范围解码片段时，修正这一范围。脚本的*修正数据电平*选项会对整个项目进行修正。
-- **Stato**（状态）——节点检测到的情况；当有伪色视图开启时也会提示。
-- **Sblocca controlli senza metadata**——见[第 11 节](#11-特殊情况)。
+- **Ingresso › Spazio colore / Gamma**（节点输入）——*Automatico*（自动）会询问 Resolve 或读取相机；*Ripristina da camera* 让两者回到该状态。**Rilevato** 显示节点读到的内容。
+- **Ingresso › Data level**——当 Resolve 用错误的码值范围解码片段时，修正这一范围。**Livello** 显示读到的范围，*Ripristina da clip* 回到 Automatico。脚本的*修正数据电平*选项会对整个项目进行修正。
+- **Ingresso › Stato**（状态）——节点检测到的情况；当有伪色视图开启时也会提示。
+- **Senza metadata › Sblocca controlli**——见[第 11 节](#11-特殊情况)。
 
 > 节点中的 **Rec.709 输出**是一个*不带*色调映射的 CST（高光超过 Bianco 会直接被剪切），并且会关闭 Detail 节点。请优先把输出 CST 放在节点树的末尾。
 
@@ -173,9 +171,9 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 ## 6. 伪色
 
-每个控件一个视图，位于它所服务的滑块上方。**视图会替换画面——渲染前请关闭它。**（OpenFX 插件无法在 Resolve 的检视器上画叠加层。）
+每个控件一个视图，位于它所服务的滑块旁（Temperatura 上方、Tint 和 Esposizione 下方）。**视图会替换画面——渲染前请关闭它。**（OpenFX 插件无法在 Resolve 的检视器上画叠加层。）
 
-请先把 *Decode Using* 设为 **Clip**：在 *Camera metadata* 下控件是锁定的。
+请先把 *Decodifica* 设为 **Clip**：在 *Camera metadata* 下控件是锁定的。
 
 ### 曝光
 
@@ -356,11 +354,11 @@ S-Log MetaRaw          Color Space/Gamma: Timeline
 
 ## 11. 特殊情况
 
-**来自外部记录器的 ProRes / 无法读取的片段。** 节点保持中性。勾选 **Avanzate › Sblocca controlli senza metadata**，输入拍摄时的 EI、开尔文值和色调：控件随即启用，节点从中性状态开始。
+**来自外部记录器的 ProRes / 无法读取的片段。** 节点保持中性。勾选 **Spazio colore › Senza metadata › Sblocca controlli**，输入拍摄时的 EI、开尔文值和色调：控件随即启用，节点从中性状态开始。
 
 **非 log 配置**（Cine、HLG、S-Cinetone）：节点保持中性，并在 *Stato* 中给出提示。
 
-**Data Level 错误。** 如果黑位直出摄影机就显得被提升或压死，说明 Resolve 用错误的码值范围在解码。运行脚本并打开*修正数据电平*（项目范围内的修正），或对单个片段使用 *Avanzate › Data level in ingresso*。背景说明（意大利语）：[docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
+**Data Level 错误。** 如果黑位直出摄影机就显得被提升或压死，说明 Resolve 用错误的码值范围在解码。运行脚本并打开*修正数据电平*（项目范围内的修正），或对单个片段使用 *Spazio colore › Ingresso › Data level*。背景说明（意大利语）：[docs/DATA_LEVELS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md)
 
 **没有开尔文值的摄影机**（例如 a6300）：开尔文值会根据光源预设估算，并加以标注。
 
@@ -407,7 +405,7 @@ touch ~/Library/Application\ Support/SLogMetaRaw/no_update_check
 Resolve 正在使用旧的插件缓存。退出 Resolve，删除 `OFXPluginCacheV2.xml`（安装程序通常会自动完成），然后重启。
 
 **节点什么都没做。**
-在拍摄时的数值下，这是设计行为。检查 *Decode Using* 是否为 **Clip**，并查看 *Avanzate › Stato*：它会说明配置文件是否不是 log，或元数据是否缺失。
+在拍摄时的数值下，这是设计行为。检查 *Decodifica* 是否为 **Clip**，并查看 *Spazio colore › Ingresso › Stato*：它会说明配置文件是否不是 log，或元数据是否缺失。
 
 **我的渲染结果里出现了伪色。**
 有一个视图被遗留在打开状态。渲染前请关闭所有伪色视图。

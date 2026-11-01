@@ -101,21 +101,20 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 |---|---|
 | **版本**（顶部） | `v2.4.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.4.0 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
-| **Decode Using** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄值 |
-| **White Balance** · **Color Temp** · **Tint** | As shot 或预设。从摄影机记录的白点出发，在线性光中进行 Bradford 色适应 |
-| **Exposure** | 曝光指数：EI 翻倍 = +1 档 |
-| **False color** | 色温、色调和曝光；见下文 |
-| **Color Space** · **Gamma** | 输出，类似 Color Space Transform；*Timeline* 不做转换 |
-| **Toni**（影调） | Contrast、Highlights、Shadows、Whites、**Bianco**（白点，单位为档）、Blacks、Vibrance、Saturation（−100…+100） |
-| **Zone**（分区，默认收起） | Black、Shadow、Light、Specular 分区，各有 Exp（档）、Sat、Range、Falloff；Contrast Pivot；Soft Clip；*Zone* 伪色 |
-| **Avanzate**（高级） | 节点输入、数据电平校正、状态、**Sblocca controlli senza metadata**（无元数据时解锁） |
+| **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
+| **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
+| **Punto bianco**（白点） | Resolve 的吸管：在图像上选一个应为中性的点，Temperatura 和 Tint 自动调整，与渲染使用相同的数学 |
+| **Esposizione**（EI） | 曝光指数：EI 加倍 = +1 档 |
+| **False color** | Temperatura 上方、Tint 下方和 Esposizione 下方各一个复选框；见下文 |
+| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Toni**（色调） | Highlights、**Bianco**（档）、Soft Clip、Saturation（−100…+100）。*Mostra tutti i controlli* 加入 Contrast、Shadows、Whites、Blacks、Vibrance 和 **Zone**（Black、Shadow、Light、Specular 的 Exp、Sat、Range 和 Falloff，Contrast Pivot，*Zone* false color）；节点使用它们时会自动出现 |
 | **Dati di ripresa**（拍摄数据） | 只读：镜头、焦距、光圈、对焦、快门、EI、白平衡、帧率、ND、机内 LUT |
 
 **Highlights 是胶片式肩部。** 向负方向调节时，它以向上逐渐平缓的斜率压缩高光，就像胶片、ACES 2.0 和 AgX 一样。在 −100 时，摄影机记录到的最亮值（S-Log3 中约为中灰以上 +6 档）正好落在 **Bianco** 上：没有灰雾，也没有剪切。中灰及以下保持不动，+1 档的肤色最多移动 0.05 档。压缩最多的高光会平缓地趋向白色而不改变色相。向正方向调节时，高光更有力度，斜率有上限。**Bianco** 是这个最大值（以及 Soft Clip 顶部）所在的位置：2.5 档是不带色调映射的 CST 下的 Rec.709 白。如果节点之后有 DRT（ACES、AgX、DaVinci），请调到 4–5，否则高光会被压缩两次。
 
 **分区影调。** Shadows、Whites 和各分区是对一段影调范围、以档为单位的曝光调整：Shadows 作用于 −1 档以下，Whites 从 +3.5 档开始。Blacks 是一层线性薄雾，移动黑位而不移动中灰。在分区内部，画面像曝光一样整体移动，因此纹理得以保留；压缩只发生在声明的过渡带中。任何滑块组合都不会产生色调分离（solarise）。坦白说逐点节点的代价是：它压缩的部分，纹理也一起被压缩。正因如此，局部恢复放在单独的节点中。公式与用法：[docs/TONE_MAPPING.md](docs/TONE_MAPPING.md)。
 
-**伪色。** 每个控件一个视图，位于它所服务的滑块上方：
+**伪色。** 每个控件一个视图，位于它所服务的滑块旁（Temperatura 上方、Tint 和 Esposizione 下方）：
 - **曝光**：以 18% 灰为中心按档分带，采用 ARRI 风格。绿色是中灰，粉色高一档（肤色），黄色接近过曝，红色为过曝，蓝色和紫色为暗部底端。
 - **色温**和**色调**：与 CineMatch 相同。画面变为灰色，偏色显示为橙/蓝或绿/品红，接近中性的偏色最多放大 8 倍以便看清。移动滑块，直到应为中性的区域保持灰色。每个视图只响应自己的滑块。
 
@@ -123,7 +122,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 **数据电平。** 如果 Resolve 用错误的码值范围解码片段，节点会在 Log 曲线之前进行校正。脚本的*修正数据电平*选项可以为整个项目修正。[docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
 
-**没有元数据时。** 外部记录器录制的 ProRes 或无法读取的片段会让节点保持中性。勾选 *Avanzate › Sblocca controlli senza metadata* 并输入拍摄时的 EI、开尔文值和色调：控件随即启用，节点从中性状态开始。
+**没有元数据时。** 外部记录器录制的 ProRes 或无法读取的片段会让节点保持中性。勾选 *Spazio colore › Senza metadata › Sblocca controlli* 并输入拍摄时的 EI、开尔文值和色调：控件随即启用，节点从中性状态开始。
 
 **速度。** 打开项目时不会读取任何文件。打开面板最多等待半秒；慢速磁盘会在后台完成读取，上限 15 秒。*Rileggi* 最多约 2 秒内响应。
 

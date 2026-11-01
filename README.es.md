@@ -133,14 +133,13 @@ El nodo es puntual: cada píxel depende solo de sí mismo. Nunca crea halos y **
 |---|---|
 | **Versión** (arriba) | `v2.4.0`. Una vez al día pregunta a GitHub por la última release. Si la hay muestra **🟢 v2.4.0 → 2.x.y** y el clic abre en el navegador la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo |
 | **Camera** · **Rileggi metadata** | la cámara leída. *Rileggi* (releer) vuelve a leer el clip, devuelve cada control a los valores de cámara y escribe los metadatos del clip en el Media Pool |
-| **Decode Using** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
-| **White Balance** · **Color Temp** · **Tint** | As shot o presets. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
-| **Exposure** | índice de exposición: el doble de EI = +1 paso |
-| **False color** | temperatura, tinte y exposición; ver abajo |
-| **Color Space** · **Gamma** | salida, como un Color Space Transform; *Timeline* no convierte |
-| **Toni** (Tonos) | Contrast, Highlights, Shadows, Whites, **Bianco** (blanco, en pasos), Blacks, Vibrance, Saturation (−100…+100) |
-| **Zone** (Zonas, cerrado) | zonas Black, Shadow, Light y Specular con Exp (pasos), Sat, Range y Falloff; Contrast Pivot; Soft Clip; falso color *Zone* |
-| **Avanzate** (Avanzado) | entrada del nodo, corrección del data level, estado, **Sblocca controlli senza metadata** (desbloquear sin metadatos) |
+| **Ripresa** (rodaje) · **Decodifica** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
+| **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot o un preset. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
+| **Punto bianco** (punto blanco) | el cuentagotas de Resolve: elige en la imagen un punto que debe ser neutro y Temperatura y Tint se ajustan solos, con las mismas matemáticas del render |
+| **Esposizione** (EI) | índice de exposición: el doble de EI = +1 paso |
+| **False color** | una casilla sobre Temperatura, una bajo Tint y una bajo Esposizione; ver abajo |
+| **Spazio colore** (espacio de color) | tres subgrupos. **Ingresso** (entrada): Spazio colore y Gamma que entran al nodo, Rilevato (detectado) y *Ripristina da camera*, Data level, Livello y *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* y las referencias de rodaje. **Uscita** (salida): Spazio colore y Gamma (como un Color Space Transform; *Timeline* no convierte), tamaño y exportación de la LUT |
+| **Toni** (tonos) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* añade Contrast, Shadows, Whites, Blacks, Vibrance y las **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range y Falloff, Contrast Pivot, false color *Zone*); aparecen solos si el nodo los usa |
 | **Dati di ripresa** (datos de rodaje) | solo lectura: objetivo, focal, diafragma, foco, obturador, EI, WB, fps, ND, LUT de cámara |
 
 **Highlights es un hombro de película.** En negativo comprime las altas luces con una pendiente que baja de forma
@@ -158,7 +157,7 @@ declarada. Ninguna combinación de deslizadores puede solarizar. El coste de un 
 lo comprime también en la textura. Por eso la recuperación local es un nodo aparte. Fórmulas y recetas:
 [docs/TONE_MAPPING.md](docs/TONE_MAPPING.md).
 
-**Falso color.** Una vista por control, encima del deslizador al que sirve:
+**Falso color.** Una vista por control, junto al deslizador al que sirve (encima de Temperatura, debajo de Tint y de Esposizione):
 - **Exposición** usa bandas en pasos alrededor del gris 18%, al estilo ARRI. Verde es el gris medio, rosa un paso por
   encima (la piel), amarillo cerca del clip, rojo el clip, azul y violeta el fondo.
 - **Temperatura** y **Tinte** funcionan como en CineMatch. La imagen se vuelve gris, las dominantes se colorean de
@@ -172,7 +171,7 @@ curva log. La opción *Corregir el Data Level* del script lo arregla para todo e
 [docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
 
 **Sin metadatos.** Un ProRes de grabador externo, o un clip que no se puede leer, deja el nodo neutro. Marca
-*Avanzate › Sblocca controlli senza metadata* y escribe el EI, los Kelvin y el tinte de rodaje: los controles se activan
+*Spazio colore › Senza metadata › Sblocca controlli* y escribe el EI, los Kelvin y el tinte de rodaje: los controles se activan
 y el nodo empieza neutro.
 
 **Velocidad.** Abrir un proyecto no lee ningún archivo. Abrir el panel espera como mucho medio segundo; un disco lento
