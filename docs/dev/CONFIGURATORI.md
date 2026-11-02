@@ -108,7 +108,7 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    golden aggiornati, kernel CPU/Metal invariati. Da provare in Resolve: `setIsSecret` dal vivo, punti Double2D sul
    viewer, `fetchImage` durante Misura. Fatto anche: Zonale e vista zone (kernel CPU e Metal: `view` 3/4,
    `zoneWhite`/`zoneBlack` in `DetailParams`), Destinazione Scena DWG. Da fare: Stampa, Recupero HDR→SDR.
-   Pannello Develop (01/11/2026, non rilasciato): riorganizzato con Ivan sulle simulazioni dell'Inspector. Decisioni:
+   Pannello Develop (01/11/2026, non rilasciato): riorganizzato sulle simulazioni dell'Inspector. Decisioni:
    gruppo Ripresa con false color sopra Temperatura e sotto Tint/Esposizione, **Punto bianco** come parametro colore
    col contagocce di Resolve (la formula `sm_wb_from_xyz` è provata sul render), **Spazio colore** al posto di
    Avanzate (Ingresso, Senza metadata, Uscita), Toni ridotti a ciò che Resolve non ha (gli altri compaiono se usati o
@@ -117,7 +117,7 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    Persistenza: `settingsVersion` 6, identità della clip (nome + dimensione) per il rilink, test di compatibilità con
    `tests/golden/released/`. Aperto: icone sulle caselle non disegnate da Resolve (le tre `fc_*.png` restano assegnate),
    screenshot del wiki da rifare.
-   Detail, tre modalità volute da Ivan (02/11/2026): Zonale (Adams), Split grade (autonoma, con provino a strisce, matrice
+   Detail, tre modalità (02/11/2026): Zonale (Adams), Split grade (autonoma, con provino a strisce, matrice
    e confronto fra tre unioni delle due esposizioni) e Unito (Split grade + Auto zone + BTZS, una sola Misura). Standard e
    Cinematografico eliminati con codice, parametri e test, senza migrazione (settingsVersion 3: i nodi salvati diventano
    Zonale). Proposta e fonti: Claude Doc «Detail: Stampa split grade, BTZS e Auto zone». Da fare in PR successive: Split grade,
@@ -135,10 +135,10 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    [0,5, 2] (`SM_DT_UNITO_K_*`) poi curva di stampa (Curva o Due strati) sul resto: due stadi in `dt_gain` (`zd1`, `zd`).
    Il provino non vale in Unito. Ipotesi non verificate: percentili, limiti di sviluppo, gradi; il tono medio (key) non
    è usato. Metal non eseguito; `dt_auto_zone` provato solo nel modello Python.
-   Detail, Zonale in tre fasi (02/11/2026, non rilasciato): dopo la ricerca sul sistema zonale e la prova di Ivan
+   Detail, Zonale in tre fasi (02/11/2026, non rilasciato): dopo la ricerca sul sistema zonale e una prova sul prodotto
    (troppi artefatti), il lavoro è diviso come in camera oscura, un nodo per fase in serie: Sviluppo (curva puntuale,
    ruota attorno all'ombra, piede e spalla), Stampa (toni per aree + bordi bruciati), Presenza. Decisioni: tre nodi,
-   N± attorno all'ombra, sezione Guida in fondo al pannello (scopo, tre passi, poi), testo per fase. Presenza limitata alle zone II–VIII (sfumata) e Vista zone con legenda, tacche e tratteggio (decisi da Ivan il 02/11/2026; Metal non eseguito). Il ridisegno del pannello Detail (simulazione con Vista e Soggetto
+   N± attorno all'ombra, sezione Guida in fondo al pannello (scopo, tre passi, poi), testo per fase. Presenza limitata alle zone II–VIII (sfumata) e Vista zone con legenda, tacche e tratteggio (02/11/2026; Metal non eseguito). Il ridisegno del pannello Detail (simulazione con Vista e Soggetto
    come scelte) è in pausa. Aperto: diagnosi degli artefatti su fotogrammi reali; Cinematografico e Standard usano
    ancora la curva sulla base (per aree).
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.

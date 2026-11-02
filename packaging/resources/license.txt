@@ -1,4 +1,4 @@
-S-Log MetaRaw 1.0 - Ivan Mazzone + Claude (@Ivan_94m)
+S-Log MetaRaw - Copyright (C) 2026 Ivan Mazzone + Claude (@Ivan_94m)
 
 Questo programma e software libero: puoi usarlo, studiarlo, modificarlo e ridistribuirlo secondo i
 termini della GNU General Public License versione 3 o successive, pubblicata dalla Free Software

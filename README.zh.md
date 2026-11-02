@@ -22,7 +22,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 |---|---|---|
 | **脚本** | Workspace › Scripts › S-Log MetaRaw | 读取项目中所有片段的元数据并写入媒体池 |
 | **S-Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
-| **S-Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点：局部影调恢复、Texture、Clarity、Dehaze |
+| **S-Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
 
 不转码任何文件，也从不写入任何原始文件。
 
@@ -38,7 +38,7 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-2.4.0.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-3.0.0.dmg` 并打开。
 2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -99,7 +99,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v2.4.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v2.4.0 → 2.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v3.0.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.0.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
@@ -134,20 +134,24 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 分组 | 控件 |
 |---|---|
-| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
+| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Zonale、Split grade、Unito）、**Fase**（阶段）、**Ingresso (IDT)**、**Destinazione (ODT)** |
+| **Misura**（测量） | 检视器中的 *Ombra* 与 *Luce* 点、**Misura zone**、**Misura automatica**、*Ombra sulla zona*、*Luci sulla zona* |
+| **Split grade** | *Luci morbide*、*Ombre dure*、*Grado*、**Unione**（Curva 或 Due strati）、**Provino**（试样条） |
 | **Gamma dinamica**（动态范围） | Local Contrast、Local Highlights、Local Shadows；*增益*和*基础层*视图。Local Highlights 压缩大面积的明亮区域，同时保留甚至加强细节纹理：天空变深，云层保持细节。主节点的 Highlights 则像胶片一样柔化高光纹理 |
 | **Presenza**（质感） | Texture、Clarity、Dehaze |
 | **Avanzate**（高级） | 细节保留、半径、边缘与噪声阈值、Clarity 中心、Local Highlights 的 **Bianco** |
 | **Velo**（雾霭） | Dehaze 去除的雾霭的亮度和颜色：由你设定，从不逐帧估计 |
 
-**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。未发布：已移除 Standard 和 Cinematografico（目前只有 Zonale）；用它们保存的节点将以 Zonale 打开。
+**模式（3.0.0）。** 三种暗房方法，每种分三个**阶段**，每个阶段一个节点串联（也可全部放在一个节点）。面板底部的 **Guida** 为每个阶段给出目的、三个步骤和下一步（复制节点、粘贴到后面、切换 Fase）。2.4.0 中以 Standard 或 Cinematografico 保存的节点会以 Zonale 打开，外观会改变。
 
 - **Destinazione (ODT)** 告诉节点其后是哪种变换，从而知道白（X 区）和黑（0 区）落在哪里。它从不转换图像。*Dal Bianco (manuale)* 使用 Avanzate › Bianco；其他选项固定它：Rec.709 CST 灰之上 +2.5／之下 −4.5 档，Rec.709 DRT（ACES、AgX、DaVinci）+4.5/−6，HDR PQ 1000 nit +6.5/−7，*Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9。
-- **Zonale**（安塞尔·亚当斯分区曝光法）：选一个有细节的 *Ombra*（暗部）和 *Luce*（亮部），按 **Misura zone**，用 *Ombra sulla zona* 放置暗部（曝光，默认 III），用 *Luci sulla zona* 放置亮部（显影 N+/N−，默认 VIII）。V 区 = 18% 灰；0 区和 X 区 = 目标的黑和白。信息行显示测得 → 达到的分区、N 和输出范围。
-  分三个阶段，每个阶段一个串联节点（**Fase**）：*1 · Sviluppo*（显影：逐像素的全局曲线，无光晕：曝光与 N±），*2 · Stampa*（放大：按区域的 Local Shadows/Highlights/Contrast 与 **Brucia i bordi** 边缘加深），*3 · Presenza*（Texture、Clarity、Dehaze）。**Guida** 一行提示下一步：复制节点，粘贴在后面并更改 Fase。
-- **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）在任何模式下显示节点之后每个区域落在哪一区。一次只能开一个视图。
+- **Zonale**（安塞尔·亚当斯）：把 *Ombra* 和 *Luce* 放在要保留细节的位置，按 **Misura zone**，再设置 *Ombra sulla zona*（曝光，默认 III）和 *Luci sulla zona*（显影 N+/N−，默认 VIII）。阶段：*1 · Sviluppo*（逐像素曲线，无光晕）、*2 · Stampa*（按区域的 Local Shadows、Highlights、Contrast，**Brucia i bordi**）、*3 · Presenza*（Texture、Clarity、Dehaze，在 II–VIII 区全量作用）。
+- **Split grade**（双次曝光放印）：**Luci morbide**（软曝光，0 号）把亮部带到 VIII 区，**Ombre dure**（硬曝光，5 号）把暗部带到 III 区，单位为档；**Grado** 显示结果。**Unione**：*Curva*（单条曲线）或 *Due strati*（软、硬两层，如同相纸）。**Provino** 在图像上显示试样（条带、软 × 硬矩阵，或两种合成方式对比）：移动 *Provino: cella* 并按 **Usa la cella**。阶段：*Esposizioni*、*Locale*、*Presenza*。
+- **Unito**（Split grade + 自动分区 + BTZS）：把主体的亮度范围与相纸刻度（目标的 III–VIII 区）比较；显影（N±）使其接近，双次曝光放印完成其余部分。
+- **Misura automatica** 在任何模式下读取整帧，取第 2 和第 98 百分位作为暗部和亮部。
+- **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）显示节点之后每个区域落在哪一区，并附 0–X 图例。
 
-尚未在 Resolve 中验证：按模式显示控件、检视器中的点、Misura，以及 Metal 上的分区视图。
+尚未在 Resolve 中试用，Metal 未运行。号数公式、百分位和显影限制是本实现的假设，未经 BTZS 或真实照片验证。[docs/DETAIL.md](docs/DETAIL.md)
 
 - 把它放在 S-Log MetaRaw **之后**、CST、LUT 或 DRT 之前。它把接收到的画面解码为线性光，再按相同编码写回，因此必须放在任何转换之前：请让主节点的 Color Space 和 Gamma 保持为 Timeline。
 - 它是**空间**处理的，因此 Generate LUT 会排除它及其所在节点的其余调整。请把它放在单独的节点中。
@@ -160,7 +164,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/2.4.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/3.0.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 

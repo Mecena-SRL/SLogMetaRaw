@@ -22,7 +22,7 @@ S-Log MetaRaw legge questi dati e li usa. È fatto di tre parti:
 |---|---|---|
 | **Script** | Workspace › Scripts › S-Log MetaRaw | legge i metadata di tutte le clip del progetto e li scrive nel Media Pool |
 | Nodo **S-Log MetaRaw** | Color › OpenFX | sviluppa una clip partendo dai valori di ripresa: bilanciamento, esposizione, spazio colore, toni per zone, false color |
-| Nodo **S-Log MetaRaw Detail** | Color › OpenFX | il nodo creativo: recupero locale dei toni, Texture, Clarity, Dehaze |
+| Nodo **S-Log MetaRaw Detail** | Color › OpenFX | il nodo creativo, con le modalità della camera oscura (Zonale, Split grade, Unito): recupero locale dei toni, Texture, Clarity, Dehaze |
 
 Nessun file viene transcodificato, nessun originale viene mai scritto.
 
@@ -45,7 +45,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-2.4.0.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-3.0.0.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa S-Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -129,7 +129,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v2.4.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v2.4.0 → 2.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v3.0.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.0.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -184,20 +184,24 @@ dettaglio fine. È la parte di Highlights e Shadows di Lightroom che un nodo pun
 
 | Gruppo | Controlli |
 |---|---|
-| **Sviluppo e spazio colore** | **Modalità** (Zonale), **Ingresso (IDT)** (l'ingresso del nodo, spostato qui da Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
+| **Misura** | punti *Ombra* e *Luce* nel viewer, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
+| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** |
 | **Gamma dinamica** | Local Contrast, Local Highlights, Local Shadows; viste *guadagno* e *base*. Local Highlights comprime le grandi aree luminose e tiene, anzi rinforza, la texture fine: il cielo si scurisce e le nuvole restano dettagliate. L'Highlights del nodo principale invece ammorbidisce la texture delle alte luci, come la pellicola |
 | **Presenza** | Texture, Clarity, Dehaze |
 | **Avanzate** | preservazione del dettaglio, raggio, soglie bordi e rumore, centro di Clarity, **Bianco** di Local Highlights |
 | **Velo** | livello e colore del velo che Dehaze toglie: li decidi tu, non vengono mai stimati fotogramma per fotogramma |
 
-**Modalità e destinazione (2.4.0).** Il gruppo in cima sceglie come lavora il nodo. Non rilasciato: Standard e Cinematografico sono stati eliminati (per ora c'è solo Zonale); i nodi salvati con loro si aprono come Zonale.
+**Modalità (3.0.0).** Tre metodi della camera oscura, ognuno in tre **fasi**, un nodo per fase in serie (o tutte in un nodo). La **Guida** in fondo al pannello dà per ogni fase lo scopo, tre passi e cosa fare dopo (copia il nodo, incollalo dopo, cambia Fase). I nodi salvati con la 2.4.0 in Standard o Cinematografico si aprono come Zonale e cambiano aspetto.
 
 - **Destinazione (ODT)** dice al nodo quale trasformazione viene dopo, così sa dove arrivano il bianco (zona X) e il nero (zona 0). Non converte mai l'immagine. *Dal Bianco (manuale)* usa Avanzate › Bianco; le altre lo fissano: Rec.709 CST +2,5/−4,5 stop attorno al grigio, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (sistema zonale di Ansel Adams): scegli un'*Ombra* e una *Luce* con dettaglio, premi **Misura zone**, colloca l'ombra con *Ombra sulla zona* (esposizione, default III) e la luce con *Luci sulla zona* (sviluppo N+/N−, default VIII). Zona V = grigio 18%; zona 0 e X = nero e bianco della Destinazione. La riga informativa mostra zone misurate → raggiunte, N e la gamma d'uscita.
-  In tre fasi, un nodo ciascuna in serie (**Fase**): *1 · Sviluppo* (curva globale sul pixel, senza aloni: esposizione e N±), *2 · Stampa* (Local Shadows/Highlights/Contrast per aree e **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze). La riga **Guida** dice il passo dopo: copia il nodo, incollalo dopo e cambia Fase.
-- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano, in ogni modalità, in che zona cade ogni area dopo il nodo. Una vista alla volta.
+- **Zonale** (Ansel Adams): metti *Ombra* e *Luce* su dettagli da conservare, premi **Misura zone**, poi *Ombra sulla zona* (esposizione, default III) e *Luci sulla zona* (sviluppo N+/N−, default VIII). Fasi: *1 · Sviluppo* (curva sul singolo pixel, senza aloni), *2 · Stampa* (Local Shadows, Highlights, Contrast per aree, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, piene nelle zone II–VIII).
+- **Split grade** (stampa a due esposizioni): **Luci morbide** (esposizione morbida, grado 0) porta le luci sulla zona VIII e **Ombre dure** (dura, grado 5) le ombre sulla III, in stop; **Grado** legge il risultato. **Unione**: *Curva* (una curva sola) o *Due strati* (uno morbido e uno duro, come sulla carta). **Provino** mostra sull'immagine un provino (strisce, matrice morbida × dura, o le due unioni a confronto): sposta *Provino: cella* e premi **Usa la cella**. Fasi: *Esposizioni*, *Locale*, *Presenza*.
+- **Unito** (Split grade + zone automatiche + BTZS): l'estensione del soggetto si confronta con la scala della carta (zone III–VIII della Destinazione); lo sviluppo (N±) la avvicina, la stampa a due esposizioni fa il resto.
+- **Misura automatica**, in ogni modalità, legge tutto il fotogramma e prende il 2° e il 98° percentile come ombra e luce.
+- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano in che zona cade ogni area dopo il nodo, con la legenda 0–X.
 
-Non ancora verificati in Resolve: comparsa dei controlli per modalità, punti nel viewer, Misura e vista zone su Metal.
+Non ancora provato in Resolve e Metal non eseguito. La formula del grado, i percentili e i limiti dello sviluppo sono ipotesi di questa implementazione, non verificate col BTZS né su stampe vere. [docs/DETAIL.md](docs/DETAIL.md)
 
 - Mettilo **subito dopo** S-Log MetaRaw, prima di CST, LUT o DRT. Decodifica in luce lineare quello che riceve e lo riscrive
   nella stessa codifica, quindi va prima di ogni conversione: lascia Color Space e Gamma del nodo principale su Timeline.
@@ -217,7 +221,7 @@ ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di 
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/2.4.0`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/3.0.0`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

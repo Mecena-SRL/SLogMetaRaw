@@ -1,11 +1,14 @@
 # Changelog
 
-## Non rilasciato
+## S-Log MetaRaw 3.0.0
 
-Pannello del nodo S-Log MetaRaw (Develop) riorganizzato, Punto bianco con il contagocce, controlli ridotti a quelli che
-Resolve non ha, stato più robusto. **Da verificare in Resolve:** gruppi annidati, Punto bianco (spazio del colore
-campionato), controlli nascosti che riappaiono da soli, scritte più corte. Le schermate del wiki (`09`, `14`) mostrano
-ancora il pannello vecchio.
+Versione maggiore: il nodo Detail diventa un laboratorio con tre metodi della camera oscura (**Zonale**, **Split
+grade**, **Unito**), ognuno in tre fasi, e il pannello del nodo S-Log MetaRaw (Develop) è riorganizzato.
+**Incompatibilità:** le modalità Standard e Cinematografico del Detail non esistono più; i nodi Detail salvati con la
+2.4.0 si aprono come Zonale e cambiano aspetto. I nodi del Develop restano identici.
+**Non provato in Resolve, Metal non eseguito** (la parità CPU è verificata dai test). La formula del Grado, i percentili
+della Misura automatica e i limiti dello sviluppo sono ipotesi di questa implementazione, non verificate col BTZS né su
+stampe vere. Le schermate del wiki (`09`, `14`, `16`) mostrano ancora i pannelli vecchi.
 
 ### Plugin
 
@@ -26,8 +29,8 @@ ancora il pannello vecchio.
   (non l'EI assoluto, che sposterebbe l'immagine se la camera è diversa); il bilanciamento *As shot* segue la camera
   nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
-- **Detail, eliminate Standard e Cinematografico** (su decisione di Ivan, senza migrazione): il Detail ha ora la sola
-  modalità Zonale e Split grade, con Unito in arrivo. Spariscono il gruppo Cinematografico (rapporto di luce, soggetto
+- **Detail, eliminate Standard e Cinematografico** (senza migrazione): il Detail ha ora le
+  modalità Zonale, Split grade e Unito. Spariscono il gruppo Cinematografico (rapporto di luce, soggetto
   viso o paesaggio) e le Zone locali. I nodi salvati con Standard o Cinematografico si aprono come Zonale e cambiano
   aspetto; i valori dei comandi eliminati vengono ignorati.
 - **Detail, Split grade** (stampa a due esposizioni): seconda modalità, con le sue fasi (*1 · Esposizioni*,
@@ -51,7 +54,13 @@ ancora il pannello vecchio.
   - **Stampa**: Local Shadows, Highlights e Contrast per aree, più **Brucia i bordi** e Ampiezza bordi.
   - **Presenza**: Texture, Clarity, Dehaze. Texture e Clarity agiscono piene nelle zone II–VIII e sfumano a zero verso 0 e X, dove non c'è dettaglio da esaltare.
   - I nodi Zonale salvati con la 2.4.0 restano in un nodo solo ma **cambiano aspetto**: il vecchio motore (per aree)
-    non c'è più. Standard e Cinematografico non cambiano. Da provare in Resolve, compreso Metal.
+    non c'è più.
+
+### Documentazione
+
+- README (5 lingue), guida della wiki (5 lingue) e guida PDF dell'installer (italiano e inglese) aggiornati ai nuovi
+  pannelli di Develop e Detail. La guida PDF è il manuale breve dei tre strumenti: script, nodo S-Log MetaRaw, nodo Detail.
+- Licenza mostrata dall'installer: tolta la versione «1.0» rimasta ferma; link al repository attuale.
 
 ### Sviluppo
 
