@@ -184,18 +184,15 @@ dettaglio fine. È la parte di Highlights e Shadows di Lightroom che un nodo pun
 
 | Gruppo | Controlli |
 |---|---|
-| **Sviluppo e spazio colore** | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (l'ingresso del nodo, spostato qui da Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** | **Modalità** (Zonale), **Ingresso (IDT)** (l'ingresso del nodo, spostato qui da Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** | Local Contrast, Local Highlights, Local Shadows; viste *guadagno* e *base*. Local Highlights comprime le grandi aree luminose e tiene, anzi rinforza, la texture fine: il cielo si scurisce e le nuvole restano dettagliate. L'Highlights del nodo principale invece ammorbidisce la texture delle alte luci, come la pellicola |
 | **Presenza** | Texture, Clarity, Dehaze |
-| **Zone locali** | le zone del nodo principale, applicate alle aree |
 | **Avanzate** | preservazione del dettaglio, raggio, soglie bordi e rumore, centro di Clarity, **Bianco** di Local Highlights |
 | **Velo** | livello e colore del velo che Dehaze toglie: li decidi tu, non vengono mai stimati fotogramma per fotogramma |
 
-**Modalità e destinazione (2.4.0).** Il gruppo in cima sceglie come lavora il nodo. I nodi salvati non cambiano: Standard e *Dal Bianco (manuale)* sono i default.
+**Modalità e destinazione (2.4.0).** Il gruppo in cima sceglie come lavora il nodo. Non rilasciato: Standard e Cinematografico sono stati eliminati (per ora c'è solo Zonale); i nodi salvati con loro si aprono come Zonale.
 
 - **Destinazione (ODT)** dice al nodo quale trasformazione viene dopo, così sa dove arrivano il bianco (zona X) e il nero (zona 0). Non converte mai l'immagine. *Dal Bianco (manuale)* usa Avanzate › Bianco; le altre lo fissano: Rec.709 CST +2,5/−4,5 stop attorno al grigio, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: i gruppi qui sotto (toni locali, presenza, zone locali), come prima.
-- **Cinematografico**, per i primi piani: scegli *Viso luce* e *Viso ombra* nel viewer, premi **Misura rapporto**, poi imposta il **rapporto obiettivo** in stop (1 = 1:2, 2 = 1:4, 3 = 1:8). La luce resta ferma, l'ombra si sposta. *Durezza passaggio* (passaggio morbido o netto), *Spegni sfondo* (porta verso il nero ciò che è sotto l'ombra, fino a 4 stop), *Luce sul soggetto* (alza il lato illuminato, rapporto invariato). Soggetto: viso (luminanza, aree piccole) o paesaggio. Se il rapporto non si raggiunge, la riga informativa mostra quello raggiungibile.
 - **Zonale** (sistema zonale di Ansel Adams): scegli un'*Ombra* e una *Luce* con dettaglio, premi **Misura zone**, colloca l'ombra con *Ombra sulla zona* (esposizione, default III) e la luce con *Luci sulla zona* (sviluppo N+/N−, default VIII). Zona V = grigio 18%; zona 0 e X = nero e bianco della Destinazione. La riga informativa mostra zone misurate → raggiunte, N e la gamma d'uscita.
   In tre fasi, un nodo ciascuna in serie (**Fase**): *1 · Sviluppo* (curva globale sul pixel, senza aloni: esposizione e N±), *2 · Stampa* (Local Shadows/Highlights/Contrast per aree e **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze). La riga **Guida** dice il passo dopo: copia il nodo, incollalo dopo e cambia Fase.
 - **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano, in ogni modalità, in che zona cade ogni area dopo il nodo. Una vista alla volta.
@@ -210,7 +207,7 @@ Non ancora verificati in Resolve: comparsa dei controlli per modalità, punti ne
 - Su Metal un fotogramma UHD richiede circa 6–18 ms, misurati su Apple silicon. Il ripiego su CPU è molto più lento.
 
 **I suoi limiti, misurati.** Con Local Highlights −100 l'alone sul lato scuro di un bordo resta sotto il 3% del gradino.
-Con Local Shadows o le zone locali a ±100, su un bordo netto di uno stop l'alone arriva a circa il 12% del gradino, al 4–6%
+Con Local Shadows a ±100, su un bordo netto di uno stop l'alone arriva a circa il 12% del gradino, al 4–6%
 su gradini di 2–3 stop. Se lo vedi, abbassa *Soglia bordi*. Texture non alza la grana sotto la soglia rumore, ma vicino
 ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di un velo vero da togliere.
 [docs/DETAIL.md](docs/DETAIL.md)

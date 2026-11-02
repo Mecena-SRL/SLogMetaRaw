@@ -17,31 +17,21 @@
 
 static void set(SMDetailControls& c, const std::string& name, double v)
 {
-    static const char* const zones[] = { "Black", "Shadow", "Light", "Specular" };
     std::map<std::string, double*> f = {
         { "localContrast", &c.localContrast }, { "localHighlights", &c.localHighlights },
         { "localShadows", &c.localShadows }, { "texture", &c.texture }, { "clarity", &c.clarity },
-        { "dehaze", &c.dehaze }, { "localZonePivot", &c.zonePivot }, { "preserveDetail", &c.preserveDetail },
+        { "dehaze", &c.dehaze }, { "preserveDetail", &c.preserveDetail },
         { "detailRadius", &c.detailRadius }, { "edgeThreshold", &c.edgeThreshold },
         { "noiseThreshold", &c.noiseThreshold }, { "clarityCenter", &c.clarityCenter },
         { "hazeLevel", &c.hazeLevel }, { "hazeWarmth", &c.hazeWarmth }, { "localWhite", &c.localWhite },
-        { "ratioLight", &c.ratioLight }, { "ratioShadow", &c.ratioShadow }, { "ratioMeasured", &c.ratioMeasured },
-        { "ratioTarget", &c.ratioTarget }, { "ratioHardness", &c.ratioHardness },
-        { "ratioBackground", &c.ratioBackground }, { "ratioSubjectLift", &c.ratioSubjectLift },
         { "adamsShadowL", &c.adamsShadowL }, { "adamsHighL", &c.adamsHighL },
         { "adamsShadowPlace", &c.adamsShadowPlace }, { "adamsHighPlace", &c.adamsHighPlace },
         { "printEdgeBurn", &c.printEdgeBurn }, { "printEdgeSize", &c.printEdgeSize } };
-    for (int z = 0; z < 4; ++z) {
-        f[std::string("localZone") + zones[z] + "Exp"] = &c.zoneExp[z];
-        f[std::string("localZone") + zones[z] + "Range"] = &c.zoneRange[z];
-        f[std::string("localZone") + zones[z] + "Falloff"] = &c.zoneFalloff[z];
-    }
     if (name == "viewGain") c.viewGain = v != 0.0;
     else if (name == "viewBase") c.viewBase = v != 0.0;
     else if (name == "viewZones") c.viewZones = (int)v;
     else if (name == "devMode") c.devMode = (int)v;
     else if (name == "destination") c.destination = (int)v;
-    else if (name == "subject") c.subject = (int)v;
     else if (name == "zonalPhase") c.zonalPhase = (int)v;
     else if (f.count(name)) *f[name] = v;
     else { fprintf(stderr, "controllo sconosciuto %s\n", name.c_str()); exit(2); }

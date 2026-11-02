@@ -873,7 +873,7 @@
    "question": "Come lavora il Detail sull'immagine, e in che spazio colore?",
    "subsystem": "sub.detail",
    "basis": "dedotto",
-   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata in Ingresso (IDT), da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. La modalità (Standard o Cinematografico) decide come si muovono le aree; Destinazione (ODT) dice dove arriva il bianco ma il nodo non converte.",
+   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata in Ingresso (IDT), da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. La modalità (oggi Zonale, Ansel Adams) decide come si muovono le aree; Destinazione (ODT) dice dove arriva il bianco ma il nodo non converte.",
    "refs": [
     {
      "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
@@ -1010,7 +1010,7 @@
      "id": "dc.mode",
      "kind": "decision",
      "label": "Quale modalità?",
-     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto. Zonale: sistema di Ansel Adams, con Fase (1 Sviluppo, 2 Stampa, 3 Presenza, o un nodo) e una riga Guida. In Cinematografico Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello); in Zonale ogni fase mostra solo i suoi comandi e le Zone locali spariscono.",
+     "text": "Sviluppo e spazio colore › Modalità. Oggi solo Zonale (Ansel Adams), con Fase (1 Sviluppo, 2 Stampa, 3 Presenza, o un nodo) e la sezione Guida in fondo: ogni fase mostra solo i suoi comandi. Standard e Cinematografico sono stati eliminati su decisione di Ivan (nessuna migrazione: i nodi salvati diventano Zonale).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1021,75 +1021,30 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_cinematografico_without_a_measure_and_standard_mode_controls_are_inert"
       }
      ]
     },
     {
      "id": "dc.measure",
      "kind": "event",
-     "label": "Misura rapporto",
-     "text": "L'utente mette i punti Viso luce e Viso ombra e preme Misura: il nodo legge la media dell'immagine d'ingresso attorno a ciascun punto (1% dell'altezza). Viso: luminanza Y; Paesaggio: la norma. Salva L dei due punti e il rapporto, e imposta l'obiettivo uguale al misurato. Non ancora provato in Resolve (lettura dell'immagine fuori dal render).",
+     "label": "Misura zone",
+     "text": "L'utente mette i punti Ombra e Luce e preme Misura zone: il nodo legge la media dell'immagine d'ingresso attorno a ciascun punto (1% dell'altezza), nella norma del colore. Salva L dei due punti; l'ombra resta sulla sua zona e la luce va dove cade con sviluppo normale (N 0). Non ancora provato in Resolve (lettura dell'immagine fuori dal render).",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio"
+       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones"
       },
       {
-       "param": "param:detail.ratioLightPos"
+       "param": "param:detail.adamsShadowPos"
       },
       {
-       "param": "param:detail.ratioShadowPos"
+       "param": "param:detail.adamsHighPos"
       },
       {
-       "param": "param:detail.ratioMeasure"
+       "param": "param:detail.adamsMeasure"
       },
       {
-       "param": "param:detail.subjectFace"
-      },
-      {
-       "param": "param:detail.subjectLandscape"
-      },
-      {
-       "param": "param:detail.ratioInfo"
-      }
-     ]
-    },
-    {
-     "id": "dc.cinema",
-     "kind": "function",
-     "label": "Rapporto di luce (Cinematografico)",
-     "text": "Usa gli stessi slot della curva a zone: uno parte dalla luce e sposta ciò che sta sotto, con E risolto (bisezione) perché l'ombra arrivi sul rapporto obiettivo mentre la luce resta ferma. Durezza = larghezza del passaggio; Spegni sfondo abbassa sotto l'ombra; Luce sul soggetto alza la luce a rapporto invariato. Alzare l'ombra oltre la pendenza minima non è possibile: il pannello mostra il rapporto raggiungibile. Raggio ×0,75 (viso) o ×2 (paesaggio).",
-     "basis": "verificato",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached"
-      },
-      {
-       "param": "param:detail.ratioTarget"
-      },
-      {
-       "param": "param:detail.ratioHardness"
-      },
-      {
-       "param": "param:detail.ratioBackground"
-      },
-      {
-       "param": "param:detail.ratioSubjectLift"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_cinematografico_lands_the_shadow_on_the_target_ratio_and_keeps_the_light"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_cinematografico_an_unreachable_ratio_stops_where_the_slope_limit_is"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_cinematografico_background_only_goes_down"
+       "param": "param:detail.adamsInfo"
       }
      ]
     },
@@ -1157,7 +1112,7 @@
      "id": "dc.zoneview",
      "kind": "end",
      "label": "Vista: zone",
-     "text": "Al posto dell'immagine, la zona 0–X in cui cade ogni area dopo il nodo: undici colori o undici grigi. Stessa scala dell'uscita della Zonale. Funziona in ogni modalità.",
+     "text": "Al posto dell'immagine, la zona 0–X in cui cade ogni area dopo il nodo: undici colori o undici grigi. Stessa scala dell'uscita della Zonale. Funziona in ogni fase.",
      "basis": "verificato",
      "refs": [
       {
@@ -1183,8 +1138,8 @@
     {
      "id": "dc.tones",
      "kind": "function",
-     "label": "Toni locali e zone (Standard)",
-     "text": "In Standard: Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. In Zonale (fase Stampa o un nodo) agiscono i primi tre, senza Zone locali. In Cinematografico non agiscono.",
+     "label": "Toni locali (Stampa)",
+     "text": "Local Contrast e Local Shadows muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. Agiscono in Stampa (fase 2, o un nodo).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1192,9 +1147,6 @@
       },
       {
        "param": "param:detail.localShadows"
-      },
-      {
-       "param": "param:detail.localZonePivot"
       },
       {
        "param": "param:detail.preserveDetail"
@@ -1205,7 +1157,7 @@
      "id": "dc.hl",
      "kind": "function",
      "label": "Local Highlights",
-     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul bianco della Destinazione (Dal Bianco: Avanzate › Bianco). Solo in Standard.",
+     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul bianco della Destinazione (Dal Bianco: Avanzate › Bianco). In Stampa (fase 2, o un nodo).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1428,31 +1380,17 @@
     },
     {
      "id": "c17",
-     "from": "dc.mode",
+     "from": "dc.zonal",
      "to": "dc.tones",
      "kind": "decision",
-     "label": "Standard"
-    },
-    {
-     "id": "c18",
-     "from": "dc.mode",
-     "to": "dc.cinema",
-     "kind": "decision",
-     "label": "Cinematografico"
+     "label": "Stampa"
     },
     {
      "id": "c19",
      "from": "dc.measure",
-     "to": "dc.cinema",
+     "to": "dc.zonal",
      "kind": "control",
-     "label": "L luce, L ombra, rapporto misurato"
-    },
-    {
-     "id": "c20",
-     "from": "dc.cinema",
-     "to": "dc.presence",
-     "kind": "data",
-     "label": "base spostata"
+     "label": "L ombra, L luce"
     },
     {
      "id": "c21",
@@ -1548,10 +1486,6 @@
       6,
       2
      ],
-     "dc.cinema": [
-      8,
-      1
-     ],
      "dc.measure": [
       7,
       3
@@ -1570,11 +1504,11 @@
     {
      "id": "P-003",
      "status": "in corso",
-     "label": "Modalità di sviluppo: Standard, Cinematografico e Zonale in tre fasi fatte; Recupero HDR→SDR da fare",
+     "label": "Modalità di sviluppo: Zonale in tre fasi fatto; Split grade e Unito (Misura automatica, BTZS) da fare",
      "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
-     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Zonale con vista zone a colori e in grigi, scala sull'uscita (Destinazione, opzione Scena DWG); poi rifatta in tre fasi, tre nodi in serie: Sviluppo globale (curva sul pixel, niente aloni), Stampa (per aree e bordi bruciati), Presenza. Resta Recupero.",
-     "impact": "Pannello Detail (nuovi parametri, nomi permanenti; nodeInput spostato, nome invariato), math/DetailHost.h (solo host: kernel CPU/Metal invariati), golden params_detail.txt. Default Standard e Dal Bianco: grade salvati invariati. Zonale in fasi: kernel CPU e Metal (dt_zonal_gain, dt_edge_burn), settingsVersion 2; i nodi Zonale della 2.4.0 cambiano aspetto (motore nuovo).",
-     "verification": "Modello Python e parità CPU per Cinematografico e Destinazione (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura (lettura immagine fuori dal render).",
+     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco. Zonale con vista zone a colori e in grigi, scala sull'uscita, poi rifatta in tre fasi, tre nodi in serie: Sviluppo globale (curva sul pixel, niente aloni), Stampa (per aree e bordi bruciati), Presenza. Standard e Cinematografico eliminati (codice, parametri, test): restano le tre modalità volute, Zonale, Split grade e Unito.",
+     "impact": "Pannello Detail (nomi permanenti salvo i parametri eliminati: Cinematografico e Zone locali, elencati in DROPPED_AFTER_2_4_0 di tests/test_ofx_host.py), math/DetailHost.h, kernel CPU e Metal (dt_zonal_gain, dt_edge_burn, peso di Presenza per zona, legenda), golden params_detail.txt, settingsVersion 3: i nodi salvati in Standard o Cinematografico diventano Zonale e cambiano aspetto.",
+     "verification": "Modello Python e parità CPU (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura zone (lettura immagine fuori dal render), legenda; Metal non eseguito.",
      "refs": [
       {
        "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
@@ -1629,19 +1563,16 @@
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones": "db1f208e7d9a",
    "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_gain": "c7671d67cc90",
    "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of": "b95c0e637405",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal": "e063939095fb",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached": "7094c71738f1",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "1a075e48a9de",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "63b1591264be",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "5e892694316f",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "39bbd309c0ed",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "3e4a978dca95",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L": "25f44e13f0ff",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio": "3c4b898b7fbf",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones": "ee7e34ac713c",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "51952d6e8bd5",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "99ebf610e925",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "598247ea941e",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "caf00b351069",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"

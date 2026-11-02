@@ -117,6 +117,11 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    Persistenza: `settingsVersion` 6, identità della clip (nome + dimensione) per il rilink, test di compatibilità con
    `tests/golden/released/`. Aperto: icone sulle caselle non disegnate da Resolve (le tre `fc_*.png` restano assegnate),
    screenshot del wiki da rifare.
+   Detail, tre modalità volute da Ivan (02/11/2026): Zonale (Adams), Split grade (autonoma, con provino a strisce, matrice
+   e confronto fra tre unioni delle due esposizioni) e Unito (Split grade + Auto zone + BTZS, una sola Misura). Standard e
+   Cinematografico eliminati con codice, parametri e test, senza migrazione (settingsVersion 3: i nodi salvati diventano
+   Zonale). Proposta e fonti: Claude Doc «Detail: Stampa split grade, BTZS e Auto zone». Da fare in PR successive: Split grade,
+   Misura automatica e Unito, provino.
    Detail, Zonale in tre fasi (02/11/2026, non rilasciato): dopo la ricerca sul sistema zonale e la prova di Ivan
    (troppi artefatti), il lavoro è diviso come in camera oscura, un nodo per fase in serie: Sviluppo (curva puntuale,
    ruota attorno all'ombra, piede e spalla), Stampa (toni per aree + bordi bruciati), Presenza. Decisioni: tre nodi,

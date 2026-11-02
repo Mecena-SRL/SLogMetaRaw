@@ -6,18 +6,13 @@
 
 #include "../../gen/DevelopMath.h"
 #include "../common/UpdateBadge.h"
-#include "../common/ZoneParams.h"
 
-const int kDetailSettingsVersion = 2;   // 2: Zonale in phases; a new node starts at 1 · Sviluppo
-const int kDetailSliderCount = 27;
+const int kDetailSettingsVersion = 3;   // 3: Zonale is mode 0 (Standard and Cinematografico are gone)
+const int kDetailSliderCount = 20;
 
-const int kDetailModeCount = 3;
-static const char* const kDetailModeNames[kDetailModeCount] = { "Standard", "Cinematografico", "Zonale" };
+const int kDetailModeCount = 1;
+static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)" };
 static const char* const kDetailModeInfo[kDetailModeCount] = {
-    "Toni locali, presenza e zone: Gamma dinamica, Presenza, Zone locali",
-    "Rapporto di luce sul soggetto: scegli i punti luce e ombra, premi Misura, imposta il rapporto (1:2, 1:4, "
-    "1:8). La luce resta ferma, l'ombra si sposta; Spegni sfondo per il chiaroscuro. Local Contrast, Highlights, "
-    "Shadows e Zone locali qui non agiscono",
     "Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci "
     "con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della "
     "Destinazione" };
@@ -80,15 +75,12 @@ private:
     void refreshInfo();
     void resetAll();
     void updateMode();                                // what each mode and Zonale phase shows, guide lines
-    void measureRatio(double p_Time, bool p_KeepTarget);
-    void refreshRatioInfo();
     void measureZones(double p_Time);
     void refreshZoneInfo();
     bool readPoints(double p_Time, const char* const names[2], double Ln[2], double Ly[2]);
 
     bool m_Ready = false;
     UpdateBadge m_Badge;
-    ZoneParamSet m_Zones;
     OFX::Clip* m_DstClip = nullptr;
     OFX::Clip* m_SrcClip = nullptr;
     OFX::StringParam* m_Info = nullptr;
@@ -103,8 +95,6 @@ private:
     OFX::ChoiceParam* m_DevMode = nullptr;
     OFX::ChoiceParam* m_Destination = nullptr;
     OFX::ChoiceParam* m_ZonalPhase = nullptr;
-    OFX::BooleanParam* m_SubjectFace = nullptr;
-    OFX::BooleanParam* m_SubjectLandscape = nullptr;
     OFX::BooleanParam* m_ViewZonesColor = nullptr;
     OFX::BooleanParam* m_ViewZonesGrey = nullptr;
 };
