@@ -74,8 +74,6 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                                "senza aloni: esposizione e N+/N-), 2 Stampa (per aree e bordi), 3 Presenza (Texture, "
                                "Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase", mode))
         p->setIsSecret(true);   // shown in Zonale
-    if (auto* p = defineInfo(d, page, mode, "zonalGuide", "Guida", kZonalGuide[SM_DT_PHASE_DEVELOP]))
-        p->setIsSecret(true);
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
                  "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
@@ -217,6 +215,14 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Luminanza del velo in stop dal grigio 18%: da li in su Dehaze non agisce", haze);
     defineSlider(d, page, "hazeWarmth", "Colore velo", 0, -100, 100, -100, 100, 0.1,
                  "Negativo = velo freddo (cielo, distanza), positivo = caldo (fumo, polvere)", haze);
+
+    if (auto* g = defineGroup(d, page, "zonalGuideGroup", "Guida", true)) {   // shown in Zonale
+        g->setIsSecret(true);
+        for (int i = 0; i < kZonalGuideRows; ++i)
+            if (auto* p = defineInfo(d, page, g, kZonalGuideNames[i], kZonalGuideLabels[i],
+                                     kZonalGuide[SM_DT_PHASE_DEVELOP][i]))
+                p->setIsSecret(true);
+    }
 
     if (claimName("boundPath")) hideParam(d.defineStringParam("boundPath"), page);
     defineHiddenInt(d, page, "camSpace", -1);

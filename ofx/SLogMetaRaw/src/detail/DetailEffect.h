@@ -25,11 +25,32 @@ static const char* const kDetailModeInfo[kDetailModeCount] = {
 const int kZonalPhaseCount = 4;
 static const char* const kZonalPhaseNames[kZonalPhaseCount] = { "Un nodo (tutte le fasi)", "1 · Sviluppo",
                                                                 "2 · Stampa", "3 · Presenza" };
-static const char* const kZonalGuide[kZonalPhaseCount] = {
-    "Un nodo fa tutto. Meglio tre in serie: copia questo nodo, incollalo dopo, cambia Fase",
-    "1/3 · Ombra e Luce sul viewer, Misura zone, colloca ombra e luci. Poi copia il nodo, incollalo dopo: 2 · Stampa",
-    "2/3 · Per aree: Local Shadows schiarisce, Local Highlights brucia, Brucia i bordi. Poi incolla dopo: 3 · Presenza",
-    "3/3 · Texture, Clarity, Dehaze. Ultimo nodo prima del CST o DRT d'uscita" };
+// Guida, at the bottom of the panel: per phase the goal, three steps and what comes next
+const int kZonalGuideRows = 5;
+static const char* const kZonalGuideNames[kZonalGuideRows] = { "zonalGuide", "zonalGuideStep1", "zonalGuideStep2",
+                                                               "zonalGuideStep3", "zonalGuideNext" };
+static const char* const kZonalGuideLabels[kZonalGuideRows] = { "Fase", "1", "2", "3", "Poi" };
+static const char* const kZonalGuide[kZonalPhaseCount][kZonalGuideRows] = {
+    { "Un nodo fa tutto: comodo, ma tre nodi in serie lavorano meglio",
+      "Ombra e Luce sul viewer, poi Misura zone",
+      "Ombra sulla zona = esposizione, Luci sulla zona = sviluppo N+/N-",
+      "Rifinisci aree, bordi e presenza in questo stesso nodo",
+      "Per tre nodi: copia il nodo, incollalo dopo, cambia Fase" },
+    { "1/3 Sviluppo: esposizione e N+/N-, una curva su tutta l'immagine",
+      "Ombra su un'ombra con dettaglio (III), Luce su una luce con dettaglio (VIII)",
+      "Misura zone: l'ombra resta sulla sua zona, la luce va dove cade a N 0",
+      "Ombra sulla zona = esposizione, Luci sulla zona = sviluppo attorno all'ombra",
+      "Copia il nodo, incollalo dopo, Fase: 2 · Stampa" },
+    { "2/3 Stampa: schiarire e bruciare per aree, come all'ingranditore",
+      "Local Shadows schiarisce le ombre, Local Highlights brucia le luci",
+      "Local Contrast: contrasto per aree, come la gradazione della carta",
+      "Brucia i bordi e Ampiezza bordi scuriscono i margini del fotogramma",
+      "Copia il nodo, incollalo dopo, Fase: 3 · Presenza" },
+    { "3/3 Presenza: micro-contrasto, i toni restano sulle loro zone",
+      "Texture: dettaglio fine, solo sopra la soglia del rumore",
+      "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
+      "Dehaze: toglie il velo, sotto Livello velo",
+      "Ultimo nodo prima del CST o DRT d'uscita" } };
 const int kDetailDestCount = 5;   // SM_DT_DEST_COUNT
 static const char* const kDetailDestNames[kDetailDestCount] = {
     "Dal Bianco (manuale)", "Rec.709 · CST senza tone mapping", "Rec.709 · DRT (ACES, AgX, DaVinci)",

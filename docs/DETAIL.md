@@ -93,8 +93,8 @@ Il sistema zonale di Ansel Adams: esponi per le ombre, sviluppa per le luci, poi
 zona 0 il nero e zona X il bianco della Destinazione, con cinque zone per lato: le zone dipendono dall'uscita. Con un
 Rec.709 CST (7 stop) sopra il grigio una zona vale mezzo stop, sotto 0,9; con la Scena DWG (18 stop) quasi due.
 
-Come in camera oscura il lavoro è diviso in fasi, una per nodo. Scegli Modalità **Zonale**, poi **Fase**; la riga
-**Guida** dice a che passo sei e cosa fare dopo.
+Come in camera oscura il lavoro è diviso in fasi, una per nodo. Scegli Modalità **Zonale**, poi **Fase**; la sezione
+**Guida**, in fondo al pannello, cambia con la fase: lo scopo, tre passi e cosa fare dopo.
 
 ```
 S-Log MetaRaw → Detail · 1 Sviluppo → Detail · 2 Stampa → Detail · 3 Presenza → CST / DRT d'uscita
