@@ -31,12 +31,12 @@ SM_CONST float SM_DT_HL_GAMMA = 0.6f;          // Local Highlights raises the ke
 #define SM_DT_PV_MAX 25   // cells of the test print (provino)
 
 // One development curve (Zonale, Split grade): the shadow Ls lands on Lso with slope K; with two layers (two != 0) the
-// soft layer's line, through Lh at Lho with slope K2, is joined to it by a smooth minimum. mark: the cell of the
-// current exposures in the provino.
+// soft layer's line, through Lh at Lho with slope K2, is joined to it by a smooth minimum. kind: 0 one line with toe and
+// shoulder, 1 two layers, 2 a bare line (the first stage of Unito). mark: the cell of the current exposures in the provino.
 struct SMZdCurve {
     float Ls, Lso, K, Hi, HiD, LoD;
     float K2, Lh, Lho;
-    int two, mark;
+    int kind, mark;
 };
 
 struct DetailParams {
@@ -68,6 +68,8 @@ struct DetailParams {
     float zoneBlack;   // its black in stops under grey: zone 0
     int zdOn;          // Zonale, development: a curve on the pixel's own L (dt_zonal_gain)
     SMZdCurve zd;
+    int zd1On;         // Unito: the development first (a bare line), then the print's curve zd
+    SMZdCurve zd1;
     // the test print: a grid of cells, each developed with its own exposures; row 0 on top
     int pvOn, pvCols, pvRows, pvBw;
     SMZdCurve pv[SM_DT_PV_MAX];
@@ -83,7 +85,8 @@ struct DetailParams {
 // Two layers (Split grade): the hard layer's line and the soft layer's, the lower of the two (smooth, 0.5 stop).
 SM_FN float dt_zonal_curve(float L, SMZdCurve c) {
     float y = c.Lso + c.K * (L - c.Ls);
-    if (c.two != 0) {
+    if (c.kind == 2) return y;
+    if (c.kind == 1) {
         float y2 = c.Lho + c.K2 * (L - c.Lh);
         y = 0.5f * (y + y2 - SM_SQRT((y - y2) * (y - y2) + 0.25f));
     }
@@ -236,7 +239,8 @@ SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, f
     }
     float Gz = 0.0f;
     if (p.zdOn != 0) {
-        Gz = dt_zonal_curve(L, p.pvOn != 0 ? p.pv[dt_pv_cell(x, y, p)] : p.zd) - L;
+        float Lc = p.zd1On != 0 ? dt_zonal_curve(L, p.zd1) : L;
+        Gz = dt_zonal_curve(Lc, p.pvOn != 0 ? p.pv[dt_pv_cell(x, y, p)] : p.zd) - L;
         if (Gz > 0.0f) Gz *= sm_t5_ramp((L - SM_DT_FLOOR_EV) / SM_DT_FLOOR_W);
     }
     float wz = 1.0f;

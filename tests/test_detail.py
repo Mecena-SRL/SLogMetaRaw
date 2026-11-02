@@ -81,6 +81,10 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
           'provinoStep': 0.75, 'splitEngine': 1},
          {'devMode': 1, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'viewProvino': 1, 'provinoKind': 2,
           'splitSoft': 0.5},
+         {'devMode': 2, 'adamsShadowL': -4.0, 'adamsHighL': 4.0, 'texture': 20},
+         {'devMode': 2, 'splitEngine': 1, 'adamsShadowL': -4.0, 'adamsHighL': 3.5, 'splitSoft': 0.4,
+          'splitHard': -0.3, 'localShadows': 30},
+         {'devMode': 2, 'zonalPhase': 1, 'adamsShadowL': -1.5, 'adamsHighL': 1.0, 'destination': 1},
          {'devMode': 0, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
           'localShadows': 40, 'printEdgeBurn': 1.5, 'printEdgeSize': 40, 'clarity': 50},
          {'devMode': 0, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
@@ -269,6 +273,29 @@ class Model(unittest.TestCase):
                 seen.add(cell)
         self.assertEqual(len(seen), 25)
         self.assertEqual(D.provino_cell(0, H - 1, W, H, cols, rows), (0, 0))   # the top left pixel is cell 0, on its edge
+
+    def test_unito_lands_the_measure_on_the_paper(self):
+        """Unito: the development and the print together put the measured shadow on III and the highlight on VIII,
+        whatever the subject's range, as long as the two can reach it; the development takes the first share."""
+        for Ls, Lh in ((-4.0, 4.0), (-3.0, 1.0), (-1.5, 1.0), (-5.0, 5.5)):
+            ctrl = {'devMode': 2, 'adamsShadowL': Ls, 'adamsHighL': Lh}
+            (l1, g1), (l2, g2) = self.flat_g(Ls, ctrl), self.flat_g(Lh, ctrl)
+            v = D.controls_clamped(ctrl)
+            w, b = D.destination_white(v), D.destination_black(v)
+            zd = D.zonal_develop(v)
+            self.assertAlmostEqual(l1 + g1, D.zone_L(3, w, b), places=5, msg=ctrl)
+            self.assertAlmostEqual(l2 + g2, D.zone_L(8, w, b), places=5, msg=ctrl)
+            want = (D.zone_L(8, w, b) - D.zone_L(3, w, b)) / (Lh - Ls)
+            self.assertAlmostEqual(zd['k1'], min(max(want, 0.5), 2.0))
+            if 0.5 <= want <= 2.0:   # the development alone is enough: the print stays at the normal grade
+                self.assertAlmostEqual(zd['k'], 1.0)
+
+    def test_auto_zone_reads_percentiles(self):
+        L = [i / 99.0 * 10.0 - 6.0 for i in range(100)]   # a ramp from -6 to 4 in 100 steps
+        Ls, Lh = D.auto_zone(L)
+        self.assertAlmostEqual(Ls, L[2])
+        self.assertAlmostEqual(Lh, L[97])
+        self.assertIsNone(D.auto_zone(L[:10]))
 
     def test_split_grade_readout(self):
         """Grade 2.5 for the slope of the measure itself; each doubling of the slope is 2.5 grades."""

@@ -38,6 +38,10 @@ ancora il pannello vecchio.
     il più basso dei due).
   - **Provino**: la stessa immagine in celle con esposizioni diverse (strisce, matrice morbida × dura, unioni a
     confronto); **Usa la cella** porta quelle esposizioni nel nodo.
+- **Detail, Unito** (Split grade + Auto zone + BTZS): terza modalità. **Misura automatica** (in ogni modalità) legge
+  ombra e luce dall'immagine; il soggetto è confrontato con la scala della carta: lo sviluppo del negativo (N−/N+)
+  porta il soggetto alla carta fin dove può, la stampa a due esposizioni dà il resto. Il Grado dice quanto fa
+  ciascuno.
 - **Detail, Zonale in tre fasi** (Ansel Adams: sviluppo, stampa, presenza), un nodo ciascuna in serie: scegli
   Modalità Zonale e poi **Fase**; la sezione **Guida**, in fondo al pannello, dà per ogni fase lo scopo, tre passi
   e il passo dopo (copia il nodo, incollalo dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.

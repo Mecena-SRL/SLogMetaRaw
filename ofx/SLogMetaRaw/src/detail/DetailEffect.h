@@ -10,14 +10,18 @@
 const int kDetailSettingsVersion = 3;   // 3: Zonale is mode 0 (Standard and Cinematografico are gone)
 const int kDetailSliderCount = 23;
 
-const int kDetailModeCount = 2;
-static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)", "Split grade (stampa)" };
+const int kDetailModeCount = 3;
+static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)", "Split grade (stampa)",
+                                                                   "Unito (Split grade + Auto zone + BTZS)" };
 static const char* const kDetailModeInfo[kDetailModeCount] = {
     "Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci "
     "con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della "
     "Destinazione",
     "Stampa a due esposizioni (split grade) in tre fasi: Esposizioni (luci morbide e ombre dure, il grado esce dal "
-    "rapporto), Locale (brucia e scherma per aree, bordi), Presenza (dettaglio). Non serve il sistema zonale" };
+    "rapporto), Locale (brucia e scherma per aree, bordi), Presenza (dettaglio). Non serve il sistema zonale",
+    "Misura automatica del soggetto (percentili), confronto con la scala della carta come nel BTZS: lo sviluppo del "
+    "negativo (N-/N+) porta il soggetto alla carta finché può, la stampa a due esposizioni dà il resto. Fasi: "
+    "Esposizioni, Locale, Presenza" };
 // The phases (SM_DT_PHASE_*): one node each, in series, or all in one. Zonale and Split grade name them their own way.
 const int kPhaseCount = 4;
 static const char* const kZonalPhaseNames[kPhaseCount] = { "Un nodo (tutte le fasi)", "1 · Sviluppo", "2 · Stampa",
@@ -69,6 +73,26 @@ static const char* const kGuide[kDetailModeCount][kPhaseCount][kGuideRows] = { {
       "Texture: dettaglio fine, solo sopra la soglia del rumore",
       "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
       "Dehaze: toglie il velo, sotto Livello velo",
+      "Ultimo nodo prima del CST o DRT d'uscita" } }, {
+    { "Unito in un nodo: misura, sviluppo e stampa insieme; tre nodi in serie lavorano meglio",
+      "Misura automatica legge soggetto e scala; Ombra e Luce correggono la lettura",
+      "Il Grado dice quanto fa lo sviluppo (N-/N+) e quanto la stampa",
+      "Luci morbide e Ombre dure rifiniscono la stampa; Locale e Presenza restano nello stesso nodo",
+      "Per tre nodi: copia il nodo, incollalo dopo, cambia Fase" },
+    { "1/3 Esposizioni: misura del soggetto, sviluppo del negativo e due esposizioni di stampa",
+      "Misura automatica: legge il 2° e il 98° percentile; o Ombra e Luce sul viewer e Misura",
+      "Il soggetto è più ampio della carta? Lo sviluppo lo stringe (N-) fin dove può, la stampa fa il resto",
+      "Luci morbide e Ombre dure spostano le luci e le ombre sulla carta; Unione: Curva o Due strati",
+      "Copia il nodo, incollalo dopo, Fase: 2 · Locale" },
+    { "2/3 Locale: bruciare e schermare per aree, come all'ingranditore",
+      "Local Highlights brucia le luci, a dettaglio intatto",
+      "Local Shadows schiarisce le ombre, Local Contrast dà contrasto per aree",
+      "Brucia i bordi e Ampiezza bordi scuriscono i margini del fotogramma",
+      "Copia il nodo, incollalo dopo, Fase: 3 · Presenza" },
+    { "3/3 Presenza: micro-contrasto, solo nelle zone II–VIII che hanno dettaglio",
+      "Texture: dettaglio fine, solo sopra la soglia del rumore",
+      "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
+      "Dehaze: toglie il velo, sotto Livello velo",
       "Ultimo nodo prima del CST o DRT d'uscita" } } };
 const int kSplitEngineCount = 2;
 static const char* const kSplitEngineNames[kSplitEngineCount] = { "Curva (perno scorrevole)", "Due strati (per luce)" };
@@ -105,6 +129,7 @@ private:
     void resetAll();
     void updateMode();                                // what each mode and Zonale phase shows, guide lines
     void measureZones(double p_Time);
+    void measureAuto(double p_Time);                  // Auto zone: percentiles of the whole picture
     void refreshZoneInfo();
     bool readPoints(double p_Time, const char* const names[2], double Ln[2], double Ly[2]);
 

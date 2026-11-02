@@ -86,6 +86,17 @@ dura dall'alto in basso. *Unioni a confronto*: Curva a sinistra e Due strati a d
 **Provino: passo** sono gli stop fra due celle. Porta **Provino: cella** su una cella e premi **Usa la cella**: le
 esposizioni (o l'unione) di quella cella diventano quelle del nodo.
 
+### Modalità Unito: misura, sviluppo e stampa
+
+Split grade con la misura automatica e il ragionamento del BTZS: **Misura automatica** (nel gruppo Misura, vale in ogni
+modalità) legge tutta l'immagine e prende come ombra e luce il 2° e il 98° percentile della luminanza; Ombra, Luce e
+Misura le correggono. Il **soggetto** (luce meno ombra, in stop) è confrontato con la **scala della carta**, la
+distanza fra le zone III e VIII sulla Destinazione (spostata da Luci morbide e Ombre dure). Se il soggetto è più ampio o
+più stretto della carta, lo **sviluppo** del negativo (una retta attorno all'ombra, N− o N+) lo porta alla carta fin
+dove può (pendenza da 0,5 a 2); la **stampa** a due esposizioni (Unione: Curva o Due strati) dà il resto. Il Grado
+dice soggetto, carta, sviluppo e stampa. Fasi e Guida come nello Split grade; il Provino è dello Split grade. I
+percentili e i limiti dello sviluppo sono scelte di questa implementazione, non formule del BTZS.
+
 ### Modalità Zonale: tre fasi, tre nodi
 
 Il sistema zonale di Ansel Adams: esponi per le ombre, sviluppa per le luci, poi stampa. Zona V è il grigio 18 %,
