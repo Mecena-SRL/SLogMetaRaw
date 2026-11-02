@@ -139,9 +139,65 @@ def zone_L(z, white, black):
     return (z - 5.0) * black / 5.0 if z <= 5.0 else (z - 5.0) * white / 5.0
 
 
-def view_zones_colour(Lout, white, black, grey):
-    z = int(min(max(f32(zone_of(f32(Lout), f32(white), f32(black))) + 0.5, 0.0), 10.0))
+GLYPH = (0x7B6F, 0x2C97, 0x73E7, 0x72CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF, 0x5AAD)   # 0-9, X
+LEGEND_MIN_H = 48
+
+
+def zone_rgb(z, grey):
     return [0.1 * z] * 3 if grey else list(ZONE_RGB[z])
+
+
+def view_zones_colour(Lout, white, black, grey, X=1, Y=0):
+    """dt_view_zones: the zone out of the node as a flat colour; 0 and X (no detail) hatched."""
+    z = int(min(max(f32(zone_of(f32(Lout), f32(white), f32(black))) + 0.5, 0.0), 10.0))
+    c = zone_rgb(z, grey)
+    if z in (0, 10) and (X + Y) % 8 < 3:
+        return [f32(0.5 * f32(v) + 0.25) for v in c]
+    return c
+
+
+def legend_layout(W, H, view, zd, v):
+    """The zone views' legend in pixels from the bottom left (dt_prepare), None without it."""
+    if view < 3 or H < LEGEND_MIN_H:
+        return None
+    hb, m = max(H // 20, 6), max(W * 3 // 100, 2)
+    span = W - 2 * m
+    lg = {'m': m, 'y0': hb // 2, 'y1': hb // 2 + hb, 'sc': max(hb * 2 // 15, 1), 'tk': zd is not None,
+          'tw': max(hb // 12, 1)}
+    lg['th'] = hb * 2 // 3 if lg['tk'] else 0
+    lg['top'], lg['x0'], lg['x1'] = lg['y1'] + lg['th'] + hb // 4, m - hb // 4, W - m + hb // 4
+    if zd is not None:
+        white, black = destination_white(v), destination_black(v)
+        x = lambda z: m + int(math.floor(min(max(z + 0.5, 0.0), 11.0) * span / 11.0))
+        lg['in'] = [x(zone_of(f32(L), f32(white), f32(black))) for L in (zd['Ls'], v['adamsHighL'])]
+        lg['out'] = [x(zone_of(f32(L), f32(white), f32(black))) for L in (zd['Lso'], zd['hi'])]
+    return lg
+
+
+def legend(X, Y, c, grey, W, lg):
+    """dt_legend: the bar 0-X numbered at the bottom, grey ticks where the points were read, white where they land."""
+    if lg is None or Y >= lg['top'] or X < lg['x0'] or X >= lg['x1']:
+        return c
+    band = [0.08] * 3
+    m = lg['m']
+    if lg['y0'] <= Y < lg['y1'] and m <= X < W - m:
+        span, u = W - 2 * m, (X - m) * 11
+        z = u // span
+        if u % span < 11:
+            return band
+        sc = lg['sc']
+        gl = m + (2 * z + 1) * span // 22 - 3 * sc // 2
+        gb = lg['y0'] + (lg['y1'] - lg['y0'] - 5 * sc) // 2
+        if gl <= X < gl + 3 * sc and gb <= Y < gb + 5 * sc:
+            if (GLYPH[z] >> (14 - 3 * (4 - (Y - gb) // sc) - (X - gl) // sc)) & 1:
+                return [0.0 if z >= 5 else 0.95] * 3
+        return zone_rgb(z, grey)
+    if lg['tk'] and lg['y1'] <= Y < lg['y1'] + lg['th']:
+        if any(t - lg['tw'] <= X <= t + lg['tw'] for t in lg['out']):
+            return [0.95] * 3
+        if any(t - lg['tw'] // 2 <= X <= t + lg['tw'] // 2 for t in lg['in']):
+            return [0.5] * 3
+    return band
 
 
 def f32(x):
@@ -235,6 +291,14 @@ def zonal_reached(v):
     return zone_of(zd['Lso'], white, black), zone_of(zd['hi'], white, black)
 
 
+def presence_weight(Lout, p):
+    """Zonale, presence: Texture and Clarity whole in zones II-VIII, fading to nothing at 0 and X."""
+    if not p['pzOn']:
+        return 1.0
+    z = zone_of(Lout, p['zoneWhite'], p['zoneBlack'])
+    return T.t5_ramp((z - 0.5) / 1.5) * T.t5_ramp((9.5 - z) / 1.5)
+
+
 def edge_burn(X, Y, W, H, p):
     """dt_edge_burn: the print's burned edges, log2 gain. A superellipse distance, 1 at the middle of each side,
     the burn growing smoothly over the outer printEdgeSize of it."""
@@ -306,7 +370,9 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         'space': space, 'zd': zd,
         'ebAmt': v['printEdgeBurn'] if zonal and printing else 0.0,
         'ebR0': 1.0 - v['printEdgeSize'] / 100.0, 'ebS': v['printEdgeSize'] / 100.0,
+        'pzOn': zonal and presence,
     }
+    p['legend'] = legend_layout(W, H, p['view'], zd, v)
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
     hv = 0.0 if cinema else v['localHighlights']
@@ -610,12 +676,13 @@ def render(img, W, H, p, gamma):
             ta = tau(B, p['tau0'])
             gate = DT * DT / (DT * DT + ta * ta + ETA) if p['texture'] > 0.0 else 1.0
             Tx = p['texture'] * DT / (1.0 + (DT / PSI) ** 2) * gate
-        G = Gb + soft1(K + Tx)
+        Gz = 0.0
         if p['zd'] is not None:
             Gz = zonal_gain(L[i], p['zd'])
             if Gz > 0.0:
                 Gz *= T.t5_ramp((L[i] - FLOOR_EV) / FLOOR_W)
-            G += Gz
+        G = Gb + soft1((K + Tx) * presence_weight(L[i] + Gb + Gz, p))
+        G += Gz
         if p['ebAmt'] != 0.0:
             G += edge_burn(X, Y, p['W'], p['H'], p)
         planes['B'].append(B)
@@ -629,8 +696,9 @@ def render(img, W, H, p, gamma):
             v = T.SM_T5_GREY * 2.0 ** B
             out.append([dm.encode1(v, gamma)] * 3)
         elif p['view'] >= 3:
-            out.append(emit_display(view_zones_colour(L[i] + G, p['zoneWhite'], p['zoneBlack'], p['view'] == 4),
-                                    space, gamma))
+            grey = p['view'] == 4
+            c = view_zones_colour(L[i] + G, p['zoneWhite'], p['zoneBlack'], grey, X, Y)
+            out.append(emit_display(legend(X, Y, c, grey, W, p['legend']), space, gamma))
         elif G == 0.0 and not p['hazeOn']:
             out.append(list(img[i]))
         else:

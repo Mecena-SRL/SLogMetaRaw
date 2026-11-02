@@ -46,7 +46,7 @@ static const char* const kZonalGuide[kZonalPhaseCount][kZonalGuideRows] = {
       "Local Contrast: contrasto per aree, come la gradazione della carta",
       "Brucia i bordi e Ampiezza bordi scuriscono i margini del fotogramma",
       "Copia il nodo, incollalo dopo, Fase: 3 · Presenza" },
-    { "3/3 Presenza: micro-contrasto, i toni restano sulle loro zone",
+    { "3/3 Presenza: micro-contrasto, solo nelle zone II–VIII che hanno dettaglio",
       "Texture: dettaglio fine, solo sopra la soglia del rumore",
       "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
       "Dehaze: toglie il velo, sotto Livello velo",

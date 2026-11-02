@@ -248,7 +248,7 @@ kernel void dt_final(const device float* src [[buffer(0)]], device float* dst [[
         const float g = sm_encode(SM_T5_GREY * SM_EXP2(r.B), p.gamma);
         out = smf3(g, g, g);
     } else if (p.view >= 3) {
-        out = dt_emit(dt_view_zones(L[o] + r.G, p.zoneWhite, p.zoneBlack, p.view == 4), p);
+        out = dt_emit(dt_legend(x, y, dt_view_zones(L[o] + r.G, x, y, p.view == 4, p), p.view == 4, p), p);
     } else if (r.G == 0.0f && !dehaze) {
         out = smf3(src[i], src[i + 1], src[i + 2]);
     } else {

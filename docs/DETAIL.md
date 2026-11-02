@@ -52,7 +52,7 @@ al bianco, e non resta niente da recuperare.
 | | **Local Shadows** | apre (+) o chiude (−) le ombre per aree, 100 = 2 stop |
 | | Vista: guadagno | quanto il nodo alza (arancio) o abbassa (blu) ogni zona; grigio = invariato |
 | | Vista: base | la base edge-aware su cui lavorano i toni locali, senza dettaglio |
-| | Vista: zone, Vista: zone in grigi | la zona 0–X di ogni area dopo il nodo, in undici colori o undici grigi, sulla scala della Destinazione |
+| | Vista: zone, Vista: zone in grigi | la zona 0–X di ogni area dopo il nodo, in undici colori o undici grigi, sulla scala della Destinazione. In basso la legenda 0–X; in Zonale (Sviluppo) due tacche grigie dove sono stati letti Ombra e Luce e due bianche dove arrivano. Le zone 0 e X, senza dettaglio, sono tratteggiate |
 | Presenza | **Texture** | dettaglio fine (pelle, tessuti, foglie); in negativo leviga; la grana sotto la soglia rumore non sale |
 | | **Clarity** | contrasto locale a media scala, pesato sui mezzitoni |
 | | **Dehaze** | toglie (+) o aggiunge (−) velo; il velo è quello che dichiari in Avanzate › Velo |
@@ -121,7 +121,7 @@ Copiando il nodo la Destinazione passa con lui; i comandi delle altre fasi resta
 | | Luci sulla zona (VIII) | sviluppo: la retta ruota attorno all'ombra (N+ espande, N− contrae) perché la luce arrivi lì |
 | 2 Stampa | Local Shadows, Highlights, Contrast | schiarire e bruciare per aree, a dettaglio intatto (come in Standard) |
 | | Brucia i bordi, Ampiezza bordi | scurisce i margini, fino a 2 stop, nella fascia esterna scelta |
-| 3 Presenza | Texture, Clarity, Dehaze | il dettaglio, come in Standard |
+| 3 Presenza | Texture, Clarity, Dehaze | il dettaglio, pieno nelle zone II–VIII e sfumato verso 0 e X |
 
 **Lo Sviluppo è una curva sul singolo pixel**: non guarda i vicini, quindi non fa aloni e regge qualsiasi bordo.
 Sotto l'ombra c'è un piede e sopra la luce una spalla, esponenziali, con la pendenza della retta dove cominciano: le

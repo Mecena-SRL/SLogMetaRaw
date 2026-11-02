@@ -245,7 +245,7 @@ class Model(unittest.TestCase):
         img = [[dm.encode1(0.18 * 2 ** (-6 + 0.016 * i), GAMMA)] * 3 for i in range(32 * 18)]
         for grey in (1, 2):
             out, _ = model(img, {'viewZones': grey, 'destination': 1}, 32, 18)
-            self.assertEqual(len({tuple(px) for px in out}), 11)
+            self.assertIn(len({tuple(px) for px in out}), (11, 12, 13))   # 0 and X are also hatched
 
     def test_zonale_development_is_monotone_and_smooth(self):
         """One curve, toe and shoulder included: the tones keep their order and the slope has no jump."""
@@ -277,8 +277,15 @@ class Model(unittest.TestCase):
         rest, _ = model(img, {}, 48, 27)
         self.assertEqual(model(img, dict(meas, zonalPhase=2), 48, 27)[0], rest)
         self.assertEqual(model(img, dict(meas, zonalPhase=3, localShadows=80, printEdgeBurn=2), 48, 27)[0], rest)
-        texture = model(img, {'texture': 70}, 48, 27)[0]
-        self.assertEqual(model(img, dict(meas, zonalPhase=3, texture=70), 48, 27)[0], texture)
+        plain = model(img, {'texture': 70, 'clarity': 50}, 48, 27)[1]['G']
+        pres = model(img, dict(meas, zonalPhase=3, texture=70, clarity=50), 48, 27)[1]
+        v = D.controls_clamped(meas)
+        white, black = D.destination_white(v), D.destination_black(v)
+        for L, a, b in zip(pres['L'], plain, pres['G']):
+            if 2.0 <= D.zone_of(L, white, black) <= 8.0:
+                self.assertEqual(a, b)       # zones II-VIII: the presence in full
+            self.assertLessEqual(abs(b), abs(a) + 1e-12)   # elsewhere it can only fade
+        self.assertTrue(any(a != b for a, b in zip(plain, pres['G'])))
         shadows = model(img, {'localShadows': 70}, 48, 27)[0]
         self.assertEqual(model(img, dict(meas, zonalPhase=2, localShadows=70, texture=70), 48, 27)[0], shadows)
 
