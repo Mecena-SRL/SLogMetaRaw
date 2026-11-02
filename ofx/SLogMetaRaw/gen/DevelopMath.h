@@ -709,6 +709,10 @@ struct DetailParams {
     int zdOn;          // Zonale, development: a curve on the pixel's own L (dt_zonal_gain)
     float zdLs, zdLso, zdK, zdHi, zdHiD, zdLoD;
     float ebAmt, ebR0, ebS;   // the print's burned edges: stops at the edge, where the burn starts, its width
+    int pzOn;          // Zonale, presence: Texture and Clarity whole in zones II-VIII, fading to nothing at 0 and X
+    // the zone views' legend, in pixels from the bottom left: the bar 0-X (rows y0..y1), the ticks over it, the band
+    int lgOn, lgM, lgY0, lgY1, lgTop, lgX0, lgX1, lgSc, lgTk, lgTh, lgTw;
+    int lgIn[2], lgOut[2];   // where the shadow and the highlight were read and where they land: x of each tick
 };
 
 // Zonale, development: the shadow Ls lands on Lso, the line turns about it with slope k (N+/N-) up to the placed
@@ -790,6 +794,12 @@ SM_FN SMf3 dt_haze_pixel(SMf3 x, float t, SM_CREF(DetailParams) p) {
                 dt_haze_channel(x.z, p.hazeA[2], t));
 }
 
+// The zone (0..X) of a log2 luminance out of the node: zone V is grey, zone 0 the destination's black, zone X its
+// white; five zones share the stops on each side. So the scale follows the output: about 7 stops for Rec.709.
+SM_FN float dt_zone_of(float Lout, float white, float black) {
+    return Lout <= 0.0f ? 5.0f + 5.0f * Lout / black : 5.0f + 5.0f * Lout / white;
+}
+
 // Everything after the filters, for one pixel: the log2 gain G, B for the views, and Local Highlights' share of G
 // with the weight of its white taper (the colour follows it to white, as in the main node).
 struct DtOut { float G; float B; float H; float W; };
@@ -836,12 +846,18 @@ SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, f
         float q = dt / SM_DT_PSI;
         Tx = p.texture * dt / (1.0f + q * q) * gate;
     }
-    o.G = Gb + dt_soft1(K + Tx);
+    float Gz = 0.0f;
     if (p.zdOn != 0) {
-        float Gz = dt_zonal_gain(L, p);
+        Gz = dt_zonal_gain(L, p);
         if (Gz > 0.0f) Gz *= sm_t5_ramp((L - SM_DT_FLOOR_EV) / SM_DT_FLOOR_W);
-        o.G += Gz;
     }
+    float wz = 1.0f;
+    if (p.pzOn != 0) {   // the zone this pixel lands on: presence where the print still shows texture (II-VIII)
+        float z = dt_zone_of(L + Gb + Gz, p.zoneWhite, p.zoneBlack);
+        wz = sm_t5_ramp((z - 0.5f) / 1.5f) * sm_t5_ramp((9.5f - z) / 1.5f);
+    }
+    o.G = Gb + dt_soft1((K + Tx) * wz);
+    if (p.zdOn != 0) o.G += Gz;
     if (p.ebAmt != 0.0f) o.G += dt_edge_burn(x, y, p);
     o.B = B;
     return o;
@@ -861,24 +877,54 @@ SM_FN SMf3 dt_view_gain(float G, float L) {
     return smf3(SM_DT_ORANGE[band * 3], SM_DT_ORANGE[band * 3 + 1], SM_DT_ORANGE[band * 3 + 2]);
 }
 
-// The zone (0..X) of a log2 luminance out of the node: zone V is grey, zone 0 the destination's black, zone X its
-// white; five zones share the stops on each side. So the scale follows the output: about 7 stops for Rec.709.
-SM_FN float dt_zone_of(float Lout, float white, float black) {
-    return Lout <= 0.0f ? 5.0f + 5.0f * Lout / black : 5.0f + 5.0f * Lout / white;
-}
-
 // viewZones: the zones of the picture out, as flat colours or as an eleven-step grey scale (display values).
 SM_CONST float SM_DT_ZONE_RGB[33] = { 0.25f, 0.00f, 0.35f,  0.10f, 0.10f, 0.55f,  0.10f, 0.35f, 0.85f,
                                       0.00f, 0.60f, 0.70f,  0.25f, 0.65f, 0.30f,  0.50f, 0.50f, 0.50f,
                                       0.95f, 0.65f, 0.55f,  0.95f, 0.85f, 0.25f,  1.00f, 0.60f, 0.10f,
                                       0.95f, 0.20f, 0.10f,  1.00f, 1.00f, 1.00f };
-SM_FN SMf3 dt_view_zones(float Lout, float white, float black, int grey) {
-    int z = (int)sm_clamp(dt_zone_of(Lout, white, black) + 0.5f, 0.0f, 10.0f);   // >= 0: the cast is the floor
+SM_CONST int SM_DT_GLYPH[11] = { 0x7B6F, 0x2C97, 0x73E7, 0x72CF, 0x5BC9, 0x79CF, 0x79EF, 0x7249, 0x7BEF, 0x7BCF,
+                                  0x5AAD };   // 0-9 and X, 3x5, top row first, left column the high bit
+SM_FN SMf3 dt_zone_rgb(int z, int grey) {
     if (grey) {
         float g = 0.1f * (float)z;
         return smf3(g, g, g);
     }
     return smf3(SM_DT_ZONE_RGB[z * 3], SM_DT_ZONE_RGB[z * 3 + 1], SM_DT_ZONE_RGB[z * 3 + 2]);
+}
+// Zones 0 and X hold no detail: hatched, so what is lost shows at a glance.
+SM_FN SMf3 dt_view_zones(float Lout, int x, int y, int grey, SM_CREF(DetailParams) p) {
+    int z = (int)sm_clamp(dt_zone_of(Lout, p.zoneWhite, p.zoneBlack) + 0.5f, 0.0f, 10.0f);   // the cast is the floor
+    SMf3 c = dt_zone_rgb(z, grey);
+    if ((z == 0 || z == 10) && (x + y) % 8 < 3) return smf3(0.5f * c.x + 0.25f, 0.5f * c.y + 0.25f, 0.5f * c.z + 0.25f);
+    return c;
+}
+// The legend over the zone views: a dark band at the bottom, the bar 0-X numbered, and over it the ticks, grey where
+// the shadow and the highlight were read, white where they land. Outside the band, the view as it is.
+SM_FN SMf3 dt_legend(int x, int y, SMf3 c, int grey, SM_CREF(DetailParams) p) {
+    if (p.lgOn == 0 || y >= p.lgTop || x < p.lgX0 || x >= p.lgX1) return c;
+    SMf3 band = smf3(0.08f, 0.08f, 0.08f);
+    if (y >= p.lgY0 && y < p.lgY1 && x >= p.lgM && x < p.W - p.lgM) {
+        int span = p.W - 2 * p.lgM, u = (x - p.lgM) * 11;
+        int z = u / span;
+        if (u % span < 11) return band;   // the first column of each cell: a gap between the zones
+        int sc = p.lgSc, gl = p.lgM + (2 * z + 1) * span / 22 - 3 * sc / 2;
+        int gb = p.lgY0 + (p.lgY1 - p.lgY0 - 5 * sc) / 2;
+        if (x >= gl && x < gl + 3 * sc && y >= gb && y < gb + 5 * sc) {
+            int bit = 14 - 3 * (4 - (y - gb) / sc) - (x - gl) / sc;
+            if ((SM_DT_GLYPH[z] >> bit) & 1) {
+                float t = z >= 5 ? 0.0f : 0.95f;
+                return smf3(t, t, t);
+            }
+        }
+        return dt_zone_rgb(z, grey);
+    }
+    if (p.lgTk != 0 && y >= p.lgY1 && y < p.lgY1 + p.lgTh) {
+        for (int k = 0; k < 2; ++k)
+            if (x >= p.lgOut[k] - p.lgTw && x <= p.lgOut[k] + p.lgTw) return smf3(0.95f, 0.95f, 0.95f);
+        for (int k = 0; k < 2; ++k)
+            if (x >= p.lgIn[k] - p.lgTw / 2 && x <= p.lgIn[k] + p.lgTw / 2) return smf3(0.5f, 0.5f, 0.5f);
+    }
+    return band;
 }
 
 // The picture out, linear in the input gamut: the gain, and where Local Highlights pulls down, the path to white.
@@ -1289,6 +1335,7 @@ static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a st
 static const int SM_DT_MODE_STANDARD = 0, SM_DT_MODE_CINEMA = 1, SM_DT_MODE_ZONAL = 2;
 static const double SM_DT_ADAMS_MIN_SPREAD = 0.25;
 // Zonale in phases, one node each (or all in one): development (global), print (local), presence (detail)
+static const int SM_DT_LG_MIN_H = 48;   // under it the zone views have no legend
 static const int SM_DT_PHASE_ALL = 0, SM_DT_PHASE_DEVELOP = 1, SM_DT_PHASE_PRINT = 2, SM_DT_PHASE_PRESENCE = 3;
 static const double SM_DT_ZD_K_MIN = 0.25, SM_DT_ZD_K_MAX = 4.0;   // development slope
 static const double SM_DT_ZD_ROOM = 1.0;   // toe and shoulder approach a stop beyond zone 0 and zone X
@@ -1624,6 +1671,27 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->view = v.viewGain ? 1 : (v.viewBase ? 2 : (v.viewZones ? 2 + v.viewZones : 0));
     p->zoneWhite = (float)dt_destination_white(&v);
     p->zoneBlack = (float)dt_destination_black(&v);
+    p->pzOn = zonal && presence ? 1 : 0;
+    if (p->view >= 3 && H >= SM_DT_LG_MIN_H) {   // the legend: sizes follow the frame, ticks once measured
+        const int hb = H / 20 > 6 ? H / 20 : 6, m = W * 3 / 100 > 2 ? W * 3 / 100 : 2, span = W - 2 * m;
+        p->lgOn = 1;
+        p->lgM = m;
+        p->lgY0 = hb / 2;
+        p->lgY1 = p->lgY0 + hb;
+        p->lgSc = hb * 2 / 15 > 1 ? hb * 2 / 15 : 1;
+        p->lgTk = p->zdOn;
+        p->lgTh = p->lgTk ? hb * 2 / 3 : 0;
+        p->lgTw = hb / 12 > 1 ? hb / 12 : 1;
+        p->lgTop = p->lgY1 + p->lgTh + hb / 4;
+        p->lgX0 = m - hb / 4;
+        p->lgX1 = W - m + hb / 4;
+        const double white = p->zoneWhite, black = p->zoneBlack;
+        const double z[4] = { dt_L_zone(p->zdLs, white, black), dt_L_zone(v.adamsHighL, white, black),
+                              dt_L_zone(p->zdLso, white, black), dt_L_zone(p->zdHi, white, black) };
+        int* tick[4] = { &p->lgIn[0], &p->lgIn[1], &p->lgOut[0], &p->lgOut[1] };
+        for (int k = 0; k < 4; ++k)
+            *tick[k] = m + (int)floor(sm_clampd(z[k] + 0.5, 0.0, 11.0) * span / 11.0);
+    }
 
     const float* a = SM_XYZ_TO_RGB + SM_T5_REF * 9;
     const float* b = SM_RGB_TO_XYZ + space * 9;

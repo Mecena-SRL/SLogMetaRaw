@@ -347,7 +347,7 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                     const float g = sm_encode(SM_T5_GREY * SM_EXP2(o.B), p.gamma);
                     out[0] = out[1] = out[2] = g;
                 } else if (p.view >= 3) {
-                    const SMf3 c = dt_emit(dt_view_zones(L[i] + o.G, p.zoneWhite, p.zoneBlack, p.view == 4), p);
+                    const SMf3 c = dt_emit(dt_legend(x, y, dt_view_zones(L[i] + o.G, x, y, p.view == 4, p), p.view == 4, p), p);
                     out[0] = c.x; out[1] = c.y; out[2] = c.z;
                 } else if (o.G == 0.0f && !dehaze) {
                     out[0] = in[0]; out[1] = in[1]; out[2] = in[2];

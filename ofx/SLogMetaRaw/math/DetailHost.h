@@ -25,6 +25,7 @@ static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a st
 static const int SM_DT_MODE_STANDARD = 0, SM_DT_MODE_CINEMA = 1, SM_DT_MODE_ZONAL = 2;
 static const double SM_DT_ADAMS_MIN_SPREAD = 0.25;
 // Zonale in phases, one node each (or all in one): development (global), print (local), presence (detail)
+static const int SM_DT_LG_MIN_H = 48;   // under it the zone views have no legend
 static const int SM_DT_PHASE_ALL = 0, SM_DT_PHASE_DEVELOP = 1, SM_DT_PHASE_PRINT = 2, SM_DT_PHASE_PRESENCE = 3;
 static const double SM_DT_ZD_K_MIN = 0.25, SM_DT_ZD_K_MAX = 4.0;   // development slope
 static const double SM_DT_ZD_ROOM = 1.0;   // toe and shoulder approach a stop beyond zone 0 and zone X
@@ -360,6 +361,27 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->view = v.viewGain ? 1 : (v.viewBase ? 2 : (v.viewZones ? 2 + v.viewZones : 0));
     p->zoneWhite = (float)dt_destination_white(&v);
     p->zoneBlack = (float)dt_destination_black(&v);
+    p->pzOn = zonal && presence ? 1 : 0;
+    if (p->view >= 3 && H >= SM_DT_LG_MIN_H) {   // the legend: sizes follow the frame, ticks once measured
+        const int hb = H / 20 > 6 ? H / 20 : 6, m = W * 3 / 100 > 2 ? W * 3 / 100 : 2, span = W - 2 * m;
+        p->lgOn = 1;
+        p->lgM = m;
+        p->lgY0 = hb / 2;
+        p->lgY1 = p->lgY0 + hb;
+        p->lgSc = hb * 2 / 15 > 1 ? hb * 2 / 15 : 1;
+        p->lgTk = p->zdOn;
+        p->lgTh = p->lgTk ? hb * 2 / 3 : 0;
+        p->lgTw = hb / 12 > 1 ? hb / 12 : 1;
+        p->lgTop = p->lgY1 + p->lgTh + hb / 4;
+        p->lgX0 = m - hb / 4;
+        p->lgX1 = W - m + hb / 4;
+        const double white = p->zoneWhite, black = p->zoneBlack;
+        const double z[4] = { dt_L_zone(p->zdLs, white, black), dt_L_zone(v.adamsHighL, white, black),
+                              dt_L_zone(p->zdLso, white, black), dt_L_zone(p->zdHi, white, black) };
+        int* tick[4] = { &p->lgIn[0], &p->lgIn[1], &p->lgOut[0], &p->lgOut[1] };
+        for (int k = 0; k < 4; ++k)
+            *tick[k] = m + (int)floor(sm_clampd(z[k] + 0.5, 0.0, 11.0) * span / 11.0);
+    }
 
     const float* a = SM_XYZ_TO_RGB + SM_T5_REF * 9;
     const float* b = SM_RGB_TO_XYZ + space * 9;

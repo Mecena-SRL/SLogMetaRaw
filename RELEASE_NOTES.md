@@ -33,7 +33,7 @@ ancora il pannello vecchio.
     zona, la retta ruota attorno all'ombra (N±) perché la luce arrivi sulla sua; piede e spalla morbidi verso le zone
     0 e X.
   - **Stampa**: Local Shadows, Highlights e Contrast per aree, più **Brucia i bordi** e Ampiezza bordi.
-  - **Presenza**: Texture, Clarity, Dehaze.
+  - **Presenza**: Texture, Clarity, Dehaze. Texture e Clarity agiscono piene nelle zone II–VIII e sfumano a zero verso 0 e X, dove non c'è dettaglio da esaltare.
   - I nodi Zonale salvati con la 2.4.0 restano in un nodo solo ma **cambiano aspetto**: il vecchio motore (per aree)
     non c'è più. Standard e Cinematografico non cambiano. Da provare in Resolve, compreso Metal.
 
@@ -62,7 +62,7 @@ modalità, punti nel viewer, Misura e vista zone su Metal.
 - Detail, modalità **Zonale** (Ansel Adams): misuri un'ombra e una luce, collochi l'ombra su una zona (esposizione) e
   la luce sulla sua (sviluppo N+/N−). Zona V = grigio, zona 0 = nero e zona X = bianco della Destinazione: con un
   Rec.709 CST sono 7 stop, con la nuova Destinazione «Scena · DaVinci WG/Intermediate» 18.
-- Detail, **Vista: zone** a colori e in grigi: la zona di ogni area dopo il nodo, sulla scala dell'uscita.
+- Detail, **Vista: zone** a colori e in grigi: la zona di ogni area dopo il nodo, sulla scala dell'uscita. Con legenda 0–X in basso, tacche di Ombra e Luce (lette e di arrivo) in Zonale e tratteggio sulle zone 0 e X, che non hanno dettaglio.
 - I nodi salvati restano identici: Standard e «Dal Bianco (manuale)» sono i default.
 
 ### Script
