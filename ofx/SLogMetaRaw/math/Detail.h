@@ -28,6 +28,17 @@ SM_CONST float SM_DT_HAZE_MIN_T = 0.4f;
 SM_CONST float SM_DT_HAZE_G0 = 0.015625f;
 SM_CONST float SM_DT_HL_GAMMA = 0.6f;          // Local Highlights raises the kept detail by GAMMA * (1 - T')
 
+#define SM_DT_PV_MAX 25   // cells of the test print (provino)
+
+// One development curve (Zonale, Split grade): the shadow Ls lands on Lso with slope K; with two layers (two != 0) the
+// soft layer's line, through Lh at Lho with slope K2, is joined to it by a smooth minimum. mark: the cell of the
+// current exposures in the provino.
+struct SMZdCurve {
+    float Ls, Lso, K, Hi, HiD, LoD;
+    float K2, Lh, Lho;
+    int two, mark;
+};
+
 struct DetailParams {
     int W, H;          // frame
     int s, w, h;       // working grid: scale and size
@@ -56,7 +67,10 @@ struct DetailParams {
     float zoneWhite;   // the destination's white in stops over grey: zone X (views 3, 4)
     float zoneBlack;   // its black in stops under grey: zone 0
     int zdOn;          // Zonale, development: a curve on the pixel's own L (dt_zonal_gain)
-    float zdLs, zdLso, zdK, zdHi, zdHiD, zdLoD;
+    SMZdCurve zd;
+    // the test print: a grid of cells, each developed with its own exposures; row 0 on top
+    int pvOn, pvCols, pvRows, pvBw;
+    SMZdCurve pv[SM_DT_PV_MAX];
     float ebAmt, ebR0, ebS;   // the print's burned edges: stops at the edge, where the burn starts, its width
     int pzOn;          // Zonale, presence: Texture and Clarity whole in zones II-VIII, fading to nothing at 0 and X
     // the zone views' legend, in pixels from the bottom left: the bar 0-X (rows y0..y1), the ticks over it, the band
@@ -66,11 +80,36 @@ struct DetailParams {
 
 // Zonale, development: the shadow Ls lands on Lso, the line turns about it with slope k (N+/N-) up to the placed
 // highlight hi; under the shadow a toe, over the highlight a shoulder, each with the line's slope where it starts.
-SM_FN float dt_zonal_gain(float L, SM_CREF(DetailParams) p) {
-    float y = p.zdLso + p.zdK * (L - p.zdLs);
-    if (y > p.zdHi) y = p.zdHi + p.zdHiD * (1.0f - SM_EXP(-(y - p.zdHi) / p.zdHiD));
-    else if (y < p.zdLso) y = p.zdLso - p.zdLoD * (1.0f - SM_EXP(-(p.zdLso - y) / p.zdLoD));
-    return y - L;
+// Two layers (Split grade): the hard layer's line and the soft layer's, the lower of the two (smooth, 0.5 stop).
+SM_FN float dt_zonal_curve(float L, SMZdCurve c) {
+    float y = c.Lso + c.K * (L - c.Ls);
+    if (c.two != 0) {
+        float y2 = c.Lho + c.K2 * (L - c.Lh);
+        y = 0.5f * (y + y2 - SM_SQRT((y - y2) * (y - y2) + 0.25f));
+    }
+    if (y > c.Hi) y = c.Hi + c.HiD * (1.0f - SM_EXP(-(y - c.Hi) / c.HiD));
+    else if (y < c.Lso) y = c.Lso - c.LoD * (1.0f - SM_EXP(-(c.Lso - y) / c.LoD));
+    return y;
+}
+
+// The test print's cell of a pixel (row 0 on top; y counts from the bottom) and, on the cell's edge, its frame:
+// 1 a dark rule, 2 a light one round the cell of the current exposures. Integers only.
+SM_FN int dt_pv_cell(int x, int y, SM_CREF(DetailParams) p) {
+    int cx = x * p.pvCols / p.W, cy = (p.H - 1 - y) * p.pvRows / p.H;
+    return cy * p.pvCols + cx;
+}
+SM_FN int dt_pv_frame(int x, int y, SM_CREF(DetailParams) p) {
+    int ty = p.H - 1 - y;
+    int cx = x * p.pvCols / p.W, cy = ty * p.pvRows / p.H;
+    int dl = x - (cx * p.W + p.pvCols - 1) / p.pvCols;
+    int dr = ((cx + 1) * p.W + p.pvCols - 1) / p.pvCols - 1 - x;
+    int dt = ty - (cy * p.H + p.pvRows - 1) / p.pvRows;
+    int db = ((cy + 1) * p.H + p.pvRows - 1) / p.pvRows - 1 - ty;
+    int d = dl < dr ? dl : dr;
+    d = d < dt ? d : dt;
+    d = d < db ? d : db;
+    if (d >= p.pvBw) return 0;
+    return p.pv[cy * p.pvCols + cx].mark != 0 ? 2 : 1;
 }
 
 // The print's burned edges: a superellipse distance, 1 at the middle of each side, the burn growing smoothly over
@@ -197,7 +236,7 @@ SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, f
     }
     float Gz = 0.0f;
     if (p.zdOn != 0) {
-        Gz = dt_zonal_gain(L, p);
+        Gz = dt_zonal_curve(L, p.pvOn != 0 ? p.pv[dt_pv_cell(x, y, p)] : p.zd) - L;
         if (Gz > 0.0f) Gz *= sm_t5_ramp((L - SM_DT_FLOOR_EV) / SM_DT_FLOOR_W);
     }
     float wz = 1.0f;

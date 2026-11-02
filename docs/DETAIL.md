@@ -73,7 +73,18 @@ Ombra e Luce e **Misura** sono quelli della Zonale. **Luci morbide** e **Ombre d
 scuro): a 0 le luci cadono sulla zona VIII e le ombre sulla III. Il **Grado** (da 0 morbida a 5 dura) esce dalla
 pendenza della curva, 2,5 per la pendenza dell'immagine stessa e 2,5 gradi per ogni raddoppio: è un'ipotesi, da
 verificare su stampe vere. In Locale, Local Highlights brucia le luci e Local Shadows schiarisce le ombre.
-Il provino (strisce, matrice morbida×dura, modi di unire) e il motore a due strati arrivano in un passo successivo.
+
+**Unione.** *Curva*: una sola curva, la pendenza esce dal rapporto fra le due esposizioni (perno scorrevole). *Due
+strati*: la carta ha uno strato morbido (grado 0, pendenza 0,5) e uno duro (grado 5, pendenza 2), ognuno una retta
+ancorata alla sua esposizione, e a ogni luce prende la più bassa con un raccordo di mezzo stop: ombre dure, luci
+morbide, senza una pendenza intermedia. I gradi dei due strati sono fissi (ipotesi, da verificare su stampe).
+
+**Provino.** Come il provino a strisce della camera oscura: **Provino** mostra sull'immagine una griglia di celle,
+ognuna la stessa immagine con esposizioni diverse (più scuro = più stop), con la cella attuale incorniciata di chiaro.
+*Strisce*: sette passi della morbida (riga alta) e della dura (riga bassa). *Matrice*: morbida da sinistra a destra,
+dura dall'alto in basso. *Unioni a confronto*: Curva a sinistra e Due strati a destra, con le stesse esposizioni.
+**Provino: passo** sono gli stop fra due celle. Porta **Provino: cella** su una cella e premi **Usa la cella**: le
+esposizioni (o l'unione) di quella cella diventano quelle del nodo.
 
 ### Modalità Zonale: tre fasi, tre nodi
 

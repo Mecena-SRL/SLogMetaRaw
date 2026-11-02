@@ -74,6 +74,13 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
           'texture': 30},
          {'devMode': 1, 'zonalPhase': 2, 'adamsShadowL': -3.0, 'adamsHighL': 2.0, 'splitSoft': -1.0,
           'splitHard': 1.0, 'localHighlights': -50, 'printEdgeBurn': 1.0},
+         {'devMode': 1, 'splitEngine': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'splitSoft': 0.3,
+          'splitHard': -0.4, 'texture': 20},
+         {'devMode': 1, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'viewProvino': 1, 'provinoKind': 0},
+         {'devMode': 1, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'viewProvino': 1, 'provinoKind': 1,
+          'provinoStep': 0.75, 'splitEngine': 1},
+         {'devMode': 1, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'viewProvino': 1, 'provinoKind': 2,
+          'splitSoft': 0.5},
          {'devMode': 0, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
           'localShadows': 40, 'printEdgeBurn': 1.5, 'printEdgeSize': 40, 'clarity': 50},
          {'devMode': 0, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
@@ -222,6 +229,46 @@ class Model(unittest.TestCase):
             w, b = D.destination_white(v), D.destination_black(v)
             self.assertAlmostEqual(l1 + g1, D.zone_L(3, w, b) - hard, places=6, msg=ctrl)
             self.assertAlmostEqual(l2 + g2, D.zone_L(8, w, b) - soft, places=6, msg=ctrl)
+
+    def test_two_layers_take_the_lower_line(self):
+        """Engine B: each layer is a line of its grade (hard 5 -> slope 2, soft 0 -> slope 0.5), the paper the lower:
+        steep under the crossing, flat over it, and a doubling of the exposure moves each line by a stop."""
+        ctrl = {'devMode': 1, 'splitEngine': 1, 'adamsShadowL': -2.0, 'adamsHighL': 2.0}
+        zd = D.zonal_develop(D.controls_clamped(ctrl))
+        self.assertEqual((zd['k'], zd['k2']), (2.0, 0.5))
+        lo, hi = D.zonal_curve(-4.0, zd), D.zonal_curve(4.0, zd)
+        far = D.zonal_curve(6.0, zd)
+        self.assertLess(D.zonal_curve(-1.0, zd) - lo, 2.0 * 3.0 + 1e-9)   # never steeper than the hard layer
+        self.assertLess(far - hi, 0.5 * 2.0 + 1e-9)                       # never steeper than the soft one over it
+        self.assertLessEqual(zd['hi'], zd['Lho'] + 1e-9)                  # the highlight lands at or under its place
+
+    def test_provino_cells(self):
+        """The test print: the current cell is marked, soft steps go across, hard steps down, unions are the engines."""
+        base = {'devMode': 1, 'adamsShadowL': -3.0, 'adamsHighL': 2.5, 'splitSoft': 0.0, 'splitHard': 0.0,
+                'provinoStep': 0.5}
+        v = D.controls_clamped(dict(base, provinoKind=1))
+        cols, rows, cells = D.provino_cells(v)
+        self.assertEqual((cols, rows, len(cells)), (5, 5, 25))
+        self.assertEqual([i for i, c in enumerate(cells) if c['mark']], [12])
+        white, black = D.destination_white(v), D.destination_black(v)
+        self.assertAlmostEqual(cells[0 * 5 + 4]['Lho'], D.zone_L(8, white, black) - 1.0)   # soft +2 steps, hard -2 steps
+        self.assertAlmostEqual(cells[4 * 5 + 0]['Lso'], D.zone_L(3, white, black) - 1.0)   # hard +2 steps down
+        cols, rows, cells = D.provino_cells(D.controls_clamped(dict(base, provinoKind=2)))
+        self.assertEqual([c['two'] for c in cells], [0, 1])
+        cols, rows, cells = D.provino_cells(D.controls_clamped(dict(base, provinoKind=0)))
+        self.assertEqual((cols, rows), (7, 2))
+        self.assertAlmostEqual(cells[0]['Lho'] - cells[6]['Lho'], 6 * 0.5)   # strips: soft steps along the top row
+
+    def test_provino_frame_rules_each_cell(self):
+        cols, rows, W, H = 5, 5, 100, 60
+        seen = set()
+        for y in range(H):
+            for x in range(W):
+                cell, d = D.provino_cell(x, y, W, H, cols, rows)
+                self.assertTrue(0 <= cell < cols * rows)
+                seen.add(cell)
+        self.assertEqual(len(seen), 25)
+        self.assertEqual(D.provino_cell(0, H - 1, W, H, cols, rows), (0, 0))   # the top left pixel is cell 0, on its edge
 
     def test_split_grade_readout(self):
         """Grade 2.5 for the slope of the measure itself; each doubling of the slope is 2.5 grades."""

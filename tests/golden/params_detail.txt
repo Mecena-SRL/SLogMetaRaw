@@ -19,6 +19,12 @@ param:splitGroup|OfxParamTypeGroup|Split grade|||1||||||||||||1
 param:splitSoft|OfxParamTypeDouble|Luci morbide (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione morbida (grado 0, filtro 00), che porta le luci: piu stop = luci piu scure. 0 = le luci cadono sulla zona VIII|||
 param:splitHard|OfxParamTypeDouble|Ombre dure (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione dura (grado 5), che porta le ombre: piu stop = ombre piu scure. 0 = le ombre cadono sulla zona III|||
 param:splitGrade|OfxParamTypeString|Grado|scegli i due punti e premi Misura|splitGroup|1|0|||||||0||||
+param:splitEngine|OfxParamTypeChoice|Unione|0|splitGroup|1||||||||0|Come si uniscono le due esposizioni. Curva: una sola curva, la pendenza esce dal rapporto fra le due. Due strati: la carta ha uno strato morbido (grado 0) e uno duro (grado 5) e prende, a ogni luce, il più basso dei due|Curva (perno scorrevole),Due strati (per luce)||
+param:viewProvino|OfxParamTypeBoolean|Provino|0|splitGroup|1||||||||0|Mostra il provino sull'immagine: ogni cella è la stessa immagine con esposizioni diverse. Più scuro = più stop. La cella incorniciata di chiaro è quella attuale|||
+param:provinoKind|OfxParamTypeChoice|Provino: forma|0|splitGroup|1||||||||0|Strisce: sette passi della morbida (riga alta) e della dura (riga bassa). Matrice: morbida da sinistra a destra, dura dall'alto in basso. Unioni: curva a sinistra, due strati a destra|Strisce (morbida e dura),Matrice morbida × dura,Unioni a confronto||
+param:provinoStep|OfxParamTypeDouble|Provino: passo (stop)|0.5|splitGroup|1||0.1|1.5|0.1|1.5|0.05|2||Gli stop fra una cella e la vicina|||
+param:provinoPos|OfxParamTypeDouble2D|Provino: cella|0.5,0.5|splitGroup|1||||||||0|Porta il punto sulla cella da usare, poi premi Usa la cella|||
+param:provinoApply|OfxParamTypePushButton|Usa la cella||splitGroup|1|||||||||Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo|||
 param:rangeGroup|OfxParamTypeGroup|Gamma dinamica|||||||||||||||1
 param:viewGain|OfxParamTypeBoolean|Vista: guadagno|0|rangeGroup|||||||||0|Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. Bande a 0,25 / 0,5 / 1 / 2 stop||view_gain.png|
 param:viewBase|OfxParamTypeBoolean|Vista: base|0|rangeGroup|||||||||0|Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio||view_base.png|

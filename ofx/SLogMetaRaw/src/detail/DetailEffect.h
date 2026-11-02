@@ -8,7 +8,7 @@
 #include "../common/UpdateBadge.h"
 
 const int kDetailSettingsVersion = 3;   // 3: Zonale is mode 0 (Standard and Cinematografico are gone)
-const int kDetailSliderCount = 22;
+const int kDetailSliderCount = 23;
 
 const int kDetailModeCount = 2;
 static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)", "Split grade (stampa)" };
@@ -58,7 +58,7 @@ static const char* const kGuide[kDetailModeCount][kPhaseCount][kGuideRows] = { {
     { "1/3 Esposizioni: le due esposizioni della stampa, una curva su tutta l'immagine",
       "Ombra su un'ombra con dettaglio, Luce su una luce con dettaglio, poi Misura",
       "Luci morbide: il tempo dell'esposizione morbida, sposta le luci (come il filtro 00)",
-      "Ombre dure: il tempo dell'esposizione dura, sposta le ombre (come il filtro 5); il Grado va da 0 a 5",
+      "Ombre dure: il tempo dell'esposizione dura, sposta le ombre (come il filtro 5). Provino: scegli la cella e Usa la cella",
       "Copia il nodo, incollalo dopo, Fase: 2 · Locale" },
     { "2/3 Locale: bruciare e schermare per aree, come all'ingranditore",
       "Local Highlights brucia le luci, a dettaglio intatto",
@@ -70,6 +70,11 @@ static const char* const kGuide[kDetailModeCount][kPhaseCount][kGuideRows] = { {
       "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
       "Dehaze: toglie il velo, sotto Livello velo",
       "Ultimo nodo prima del CST o DRT d'uscita" } } };
+const int kSplitEngineCount = 2;
+static const char* const kSplitEngineNames[kSplitEngineCount] = { "Curva (perno scorrevole)", "Due strati (per luce)" };
+const int kProvinoKindCount = 3;
+static const char* const kProvinoKindNames[kProvinoKindCount] = { "Strisce (morbida e dura)", "Matrice morbida × dura",
+                                                                  "Unioni a confronto" };
 const int kDetailDestCount = 5;   // SM_DT_DEST_COUNT
 static const char* const kDetailDestNames[kDetailDestCount] = {
     "Dal Bianco (manuale)", "Rec.709 · CST senza tone mapping", "Rec.709 · DRT (ACES, AgX, DaVinci)",
@@ -120,6 +125,10 @@ private:
     OFX::ChoiceParam* m_Destination = nullptr;
     OFX::ChoiceParam* m_ZonalPhase = nullptr;
     OFX::ChoiceParam* m_SplitPhase = nullptr;
+    OFX::ChoiceParam* m_SplitEngine = nullptr;
+    OFX::ChoiceParam* m_ProvinoKind = nullptr;
+    OFX::BooleanParam* m_ViewProvino = nullptr;
+    void applyProvino(double p_Time);                 // the exposures of the cell the point is on
     OFX::BooleanParam* m_ViewZonesColor = nullptr;
     OFX::BooleanParam* m_ViewZonesGrey = nullptr;
 };

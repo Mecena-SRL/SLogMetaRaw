@@ -33,14 +33,16 @@ static const struct { const char* name; double SMDetailControls::*field; } kDeta
     { "adamsShadowL", &SMDetailControls::adamsShadowL }, { "adamsHighL", &SMDetailControls::adamsHighL },
     { "adamsShadowPlace", &SMDetailControls::adamsShadowPlace }, { "adamsHighPlace", &SMDetailControls::adamsHighPlace },
     { "printEdgeBurn", &SMDetailControls::printEdgeBurn }, { "printEdgeSize", &SMDetailControls::printEdgeSize },
-    { "splitSoft", &SMDetailControls::splitSoft }, { "splitHard", &SMDetailControls::splitHard } };
+    { "splitSoft", &SMDetailControls::splitSoft }, { "splitHard", &SMDetailControls::splitHard },
+    { "provinoStep", &SMDetailControls::provinoStep } };
 // the measure of the shadow and the highlight, shown by the development of either mode; the zones are Zonale's own
 static const char* const kMeasureParams[] = { "adamsGroup", "adamsShadowPos", "adamsHighPos", "adamsMeasure",
                                               "adamsInfo" };
 static const char* const kAdamsOnly[] = { "adamsShadowPlace", "adamsHighPlace" };
-static const char* const kSplitDevelop[] = { "splitGroup", "splitSoft", "splitHard", "splitGrade" };
+static const char* const kSplitDevelop[] = { "splitGroup", "splitSoft", "splitHard", "splitGrade", "splitEngine",
+                                             "viewProvino", "provinoKind", "provinoStep", "provinoPos", "provinoApply" };
 // the views: one at a time
-static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", "viewZonesGrey" };
+static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", "viewZonesGrey", "viewProvino" };
 // The print's own controls; what each phase runs
 static const char* const kPrintParams[] = { "localContrast", "localHighlights", "localShadows" };
 static const char* const kPresenceParams[] = { "texture", "clarity", "dehaze", "hazeGroup", "clarityCenter",
@@ -79,6 +81,9 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         if (paramExists("destination")) m_Destination = fetchChoiceParam("destination");
         if (paramExists("zonalPhase")) m_ZonalPhase = fetchChoiceParam("zonalPhase");
         if (paramExists("splitPhase")) m_SplitPhase = fetchChoiceParam("splitPhase");
+        if (paramExists("splitEngine")) m_SplitEngine = fetchChoiceParam("splitEngine");
+        if (paramExists("provinoKind")) m_ProvinoKind = fetchChoiceParam("provinoKind");
+        if (paramExists("viewProvino")) m_ViewProvino = fetchBooleanParam("viewProvino");
     } catch (...) {
     }
     try {
@@ -168,7 +173,7 @@ bool DetailEffect::neutralAt(double p_Time) const
     const SMDetailControls c = readControls(p_Time);
     if (c.adamsHighL - c.adamsShadowL > SM_DT_MIN_GAP) return false;
     if (c.printEdgeBurn != 0.0) return false;
-    return !c.viewGain && !c.viewBase && !c.viewZones;
+    return !c.viewGain && !c.viewBase && !c.viewZones && !c.viewProvino;
 }
 
 void DetailEffect::resetAll()
@@ -246,7 +251,10 @@ void DetailEffect::refreshZoneInfo()
     if (paramExists("splitGrade")) {   // the grade the two exposures give: from the slope of the curve
         SMZonalDevelop d;
         char g[64] = "scegli i due punti e premi Misura";
-        if (dt_zonal_develop(&c, &d)) snprintf(g, sizeof(g), "grado %.1f su 5 (0 morbida, 5 dura)", sm_clampd(dt_split_grade(d.k), 0, 5));
+        if (dt_zonal_develop(&c, &d)) {
+            if (d.two) snprintf(g, sizeof(g), "due strati: luci grado %.0f, ombre grado %.0f", SM_DT_LAYER_SOFT_GRADE, SM_DT_LAYER_HARD_GRADE);
+            else snprintf(g, sizeof(g), "grado %.1f su 5 (0 morbida, 5 dura)", sm_clampd(dt_split_grade(d.k), 0, 5));
+        }
         OFX::StringParam* gi = fetchStringParam("splitGrade");
         std::string cg;
         gi->getValue(cg);
@@ -289,6 +297,37 @@ void DetailEffect::measureZones(double p_Time)
     const double white = dt_destination_white(&c), black = dt_destination_black(&c);
     const double Lso = dt_zone_L(c.adamsShadowPlace, white, black);
     fetchDoubleParam("adamsHighPlace")->setValue(sm_clampd(dt_L_zone(Lso + (Lh - Ls), white, black), 0, 10));
+    refreshZoneInfo();
+}
+
+// Usa la cella: the exposures (or the engine) of the test print's cell under the point become the node's own.
+void DetailEffect::applyProvino(double p_Time)
+{
+    if (!m_ProvinoKind || !paramExists("provinoPos") || !m_Sliders[0]) return;
+    int kind = 0;
+    m_ProvinoKind->getValue(kind);
+    const int cols = kind == SM_DT_PV_STRIPS ? 7 : (kind == SM_DT_PV_MATRIX ? 5 : 2);
+    const int rows = kind == SM_DT_PV_STRIPS ? 2 : (kind == SM_DT_PV_MATRIX ? 5 : 1);
+    double fx = 0.5, fy = 0.5;
+    fetchDouble2DParam("provinoPos")->getValueAtTime(p_Time, fx, fy);
+    const OfxRectD rod = m_SrcClip->getRegionOfDefinition(p_Time);
+    if (!(fx <= 1.0 && fy <= 1.0) && rod.x2 > rod.x1 && rod.y2 > rod.y1) {   // a host that hands back canonical coordinates
+        fx = (fx - rod.x1) / (rod.x2 - rod.x1);
+        fy = (fy - rod.y1) / (rod.y2 - rod.y1);
+    }
+    const int c = std::min(cols - 1, std::max(0, (int)floor(sm_clampd(fx, 0, 1) * cols)));
+    const int r = std::min(rows - 1, std::max(0, (int)floor(sm_clampd(1.0 - fy, 0, 1) * rows)));
+    const SMDetailControls v = readControls(p_Time);
+    double soft = v.splitSoft, hard = v.splitHard;
+    if (kind == SM_DT_PV_STRIPS) (r == 0 ? soft : hard) += (c - cols / 2) * v.provinoStep;
+    else if (kind == SM_DT_PV_MATRIX) {
+        soft += (c - 2) * v.provinoStep;
+        hard += (r - 2) * v.provinoStep;
+    } else if (m_SplitEngine) {
+        m_SplitEngine->setValue(c);
+    }
+    fetchDoubleParam("splitSoft")->setValue(sm_clampd(soft, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE));
+    fetchDoubleParam("splitHard")->setValue(sm_clampd(hard, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE));
     refreshZoneInfo();
 }
 
@@ -371,6 +410,7 @@ void DetailEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const st
     else if (p_ParamName == "nodeInput") refreshInfo();
     else if (p_ParamName == "devMode" || p_ParamName == "zonalPhase" || p_ParamName == "splitPhase") updateMode();
     else if (p_ParamName == "adamsMeasure") measureZones(p_Args.time);
+    else if (p_ParamName == "provinoApply") applyProvino(p_Args.time);
     else if (p_ParamName.compare(0, 5, "adams") == 0 || p_ParamName.compare(0, 5, "split") == 0 || p_ParamName == "destination" || p_ParamName == "localWhite")
         refreshZoneInfo();
     else if (p_ParamName.compare(0, 4, "view") == 0 && paramExists(p_ParamName) && fetchBooleanParam(p_ParamName)->getValue()) {
@@ -469,6 +509,9 @@ SMDetailControls DetailEffect::readControls(double t) const
                   : (m_ViewZonesGrey && m_ViewZonesGrey->getValueAtTime(t) ? 2 : 0);
     if (m_DevMode) m_DevMode->getValueAtTime(t, c.devMode);
     if (m_Destination) m_Destination->getValueAtTime(t, c.destination);
+    if (m_SplitEngine) m_SplitEngine->getValueAtTime(t, c.splitEngine);
+    if (m_ProvinoKind) m_ProvinoKind->getValueAtTime(t, c.provinoKind);
+    c.viewProvino = m_ViewProvino && m_ViewProvino->getValueAtTime(t) ? 1 : 0;
     if (c.devMode == SM_DT_MODE_SPLIT ? m_SplitPhase != nullptr : m_ZonalPhase != nullptr)
         (c.devMode == SM_DT_MODE_SPLIT ? m_SplitPhase : m_ZonalPhase)->getValueAtTime(t, c.zonalPhase);
     return c;

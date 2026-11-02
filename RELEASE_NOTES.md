@@ -33,7 +33,11 @@ ancora il pannello vecchio.
 - **Detail, Split grade** (stampa a due esposizioni): seconda modalità, con le sue fasi (*1 · Esposizioni*,
   *2 · Locale*, *3 · Presenza*) e la Guida. Misuri Ombra e Luce come nella Zonale; **Luci morbide** (esposizione
   morbida, grado 0) porta le luci sulla zona VIII e **Ombre dure** (grado 5) le ombre sulla III, in stop; il **Grado**
-  esce dalla pendenza (formula da verificare su stampe vere). Il provino e il motore a due strati arrivano dopo.
+  esce dalla pendenza (formula da verificare su stampe vere).
+  - **Unione**: *Curva* (una curva, pendenza dal rapporto) o *Due strati* (carta con strato morbido e duro, a ogni luce
+    il più basso dei due).
+  - **Provino**: la stessa immagine in celle con esposizioni diverse (strisce, matrice morbida × dura, unioni a
+    confronto); **Usa la cella** porta quelle esposizioni nel nodo.
 - **Detail, Zonale in tre fasi** (Ansel Adams: sviluppo, stampa, presenza), un nodo ciascuna in serie: scegli
   Modalità Zonale e poi **Fase**; la sezione **Guida**, in fondo al pannello, dà per ogni fase lo scopo, tre passi
   e il passo dopo (copia il nodo, incollalo dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.

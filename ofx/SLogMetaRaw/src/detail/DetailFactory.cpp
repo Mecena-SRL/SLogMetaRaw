@@ -126,6 +126,30 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
         }
     if (auto* p = defineInfo(d, page, split, "splitGrade", "Grado", "scegli i due punti e premi Misura"))
         p->setIsSecret(true);
+    if (auto* p = defineChoice(d, page, "splitEngine", "Unione", kSplitEngineNames, kSplitEngineCount, 0,
+                               "Come si uniscono le due esposizioni. Curva: una sola curva, la pendenza esce dal "
+                               "rapporto fra le due. Due strati: la carta ha uno strato morbido (grado 0) e uno duro "
+                               "(grado 5) e prende, a ogni luce, il più basso dei due", split))
+        p->setIsSecret(true);
+    if (auto* p = defineCheck(d, page, "viewProvino", "Provino", false,
+                              "Mostra il provino sull'immagine: ogni cella è la stessa immagine con esposizioni "
+                              "diverse. Più scuro = più stop. La cella incorniciata di chiaro è quella attuale", split))
+        p->setIsSecret(true);
+    if (auto* p = defineChoice(d, page, "provinoKind", "Provino: forma", kProvinoKindNames, kProvinoKindCount, 0,
+                               "Strisce: sette passi della morbida (riga alta) e della dura (riga bassa). Matrice: "
+                               "morbida da sinistra a destra, dura dall'alto in basso. Unioni: curva a sinistra, due "
+                               "strati a destra", split))
+        p->setIsSecret(true);
+    if (auto* p = defineSlider(d, page, "provinoStep", "Provino: passo (stop)", 0.5, 0.1, 1.5, 0.1, 1.5, 0.05,
+                               "Gli stop fra una cella e la vicina", split)) {
+        p->setDigits(2);
+        p->setIsSecret(true);
+    }
+    definePoint(d, page, split, "provinoPos", "Provino: cella", 0.5, 0.5,
+                "Porta il punto sulla cella da usare, poi premi Usa la cella");
+    if (auto* p = defineButton(d, page, "provinoApply", "Usa la cella",
+                               "Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo", split))
+        p->setIsSecret(true);
 
     GroupParamDescriptor* range = defineGroup(d, page, "rangeGroup", "Gamma dinamica", true);
     defineToggle(d, page, "viewGain", "Vista: guadagno", "view_gain.png",
