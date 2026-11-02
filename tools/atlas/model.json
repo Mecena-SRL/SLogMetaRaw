@@ -1010,7 +1010,7 @@
      "id": "dc.mode",
      "kind": "decision",
      "label": "Quale modalità?",
-     "text": "Sviluppo e spazio colore › Modalità: Zonale (Ansel Adams) o Split grade (stampa a due esposizioni). Ognuna ha la sua Fase (Zonale: Sviluppo, Stampa, Presenza; Split grade: Esposizioni, Locale, Presenza, o un nodo) e la sezione Guida in fondo, che cambia con modalità e fase: ogni fase mostra solo i suoi comandi. Standard e Cinematografico sono stati eliminati su decisione di Ivan (nessuna migrazione). Unito (Misura automatica, BTZS) è da fare.",
+     "text": "Sviluppo e spazio colore › Modalità: Zonale (Ansel Adams), Split grade (stampa a due esposizioni) o Unito (Split grade con Misura automatica e sviluppo alla BTZS). Ognuna ha la sua Fase (Zonale: Sviluppo, Stampa, Presenza; Split grade: Esposizioni, Locale, Presenza, o un nodo) e la sezione Guida in fondo, che cambia con modalità e fase: ogni fase mostra solo i suoi comandi. Standard e Cinematografico sono stati eliminati su decisione di Ivan (nessuna migrazione).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1052,7 +1052,7 @@
      "id": "dc.zonal",
      "kind": "function",
      "label": "Zonale (Ansel Adams) in tre fasi",
-     "text": "Tre fasi, un nodo ciascuna (Fase), o tutte in uno. Sviluppo: una curva sul singolo pixel, senza vicini né aloni; l'esposizione porta l'ombra misurata sulla sua zona, la pendenza (N±) ruota la retta attorno all'ombra perché la luce arrivi sulla sua; sotto l'ombra un piede, sopra la luce una spalla esponenziali verso uno stop oltre la zona 0 e la X. Stampa: Local Contrast/Highlights/Shadows sulla base per aree e Brucia i bordi (solo posizione). Presenza: Texture e Clarity piene nelle zone II–VIII e sfumate a zero verso 0 e X (zona dopo sviluppo e stampa), Dehaze. Vista zone: legenda 0–X, tacche di Ombra e Luce, tratteggio su 0 e X. Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18). Split grade usa lo stesso Sviluppo: le zone di destinazione non vengono dai cursori Zonale ma dalle due esposizioni (ombra = III meno Ombre dure, luce = VIII meno Luci morbide); la Stampa è Locale (Highlights brucia le luci).",
+     "text": "Tre fasi, un nodo ciascuna (Fase), o tutte in uno. Sviluppo: una curva sul singolo pixel, senza vicini né aloni; l'esposizione porta l'ombra misurata sulla sua zona, la pendenza (N±) ruota la retta attorno all'ombra perché la luce arrivi sulla sua; sotto l'ombra un piede, sopra la luce una spalla esponenziali verso uno stop oltre la zona 0 e la X. Stampa: Local Contrast/Highlights/Shadows sulla base per aree e Brucia i bordi (solo posizione). Presenza: Texture e Clarity piene nelle zone II–VIII e sfumate a zero verso 0 e X (zona dopo sviluppo e stampa), Dehaze. Vista zone: legenda 0–X, tacche di Ombra e Luce, tratteggio su 0 e X. Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18). Split grade usa lo stesso Sviluppo: le zone di destinazione non vengono dai cursori Zonale ma dalle due esposizioni (ombra = III meno Ombre dure, luce = VIII meno Luci morbide); la Stampa è Locale (Highlights brucia le luci). Split grade ha due unioni delle esposizioni: Curva (la stessa retta con pendenza dal rapporto) e Due strati (due rette, grado 5 per le ombre e grado 0 per le luci, la carta prende la più bassa con raccordo di mezzo stop). Il Provino mostra la stessa immagine in celle con esposizioni diverse: strisce, matrice morbida×dura, unioni a confronto; Usa la cella riporta le esposizioni al nodo. Unito: Misura automatica legge il 2° e il 98° percentile della luminanza come ombra e luce; il soggetto (luce meno ombra) è confrontato con la scala della carta (da III a VIII); lo sviluppo del negativo, una retta attorno all'ombra con pendenza fra 0,5 e 2 (N-/N+), prende la prima parte, la stampa a due esposizioni (Curva o Due strati) il resto. Le pendenze limite e i percentili sono scelte, non formule del BTZS.",
      "basis": "verificato",
      "refs": [
       {
@@ -1086,7 +1086,7 @@
        "test": "tests/test_detail.py::Model.test_zonale_development_is_monotone_and_smooth"
       },
       {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_gain"
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_curve"
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_edge_burn"
@@ -1504,10 +1504,10 @@
     {
      "id": "P-003",
      "status": "in corso",
-     "label": "Modalità di sviluppo: Zonale e Split grade (motore a curva) fatti; Provino, motore a due strati e Unito da fare",
+     "label": "Modalità di sviluppo: Zonale, Split grade, Provino e Unito fatti; da provare in Resolve",
      "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
      "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco. Zonale con vista zone a colori e in grigi, scala sull'uscita, poi rifatta in tre fasi, tre nodi in serie: Sviluppo globale (curva sul pixel, niente aloni), Stampa (per aree e bordi bruciati), Presenza. Standard e Cinematografico eliminati (codice, parametri, test): restano le tre modalità volute, Zonale, Split grade e Unito. Split grade: stessa curva dello Sviluppo con il vocabolario della stampa, Luci morbide (esposizione morbida, porta le luci sulla zona VIII) e Ombre dure (esposizione dura, porta le ombre sulla zona III); il grado (2,5 + 2,5·log2 della pendenza) è un'ipotesi da verificare su stampe vere.",
-     "impact": "Pannello Detail (nomi permanenti salvo i parametri eliminati: Cinematografico e Zone locali, elencati in DROPPED_AFTER_2_4_0 di tests/test_ofx_host.py), math/DetailHost.h, kernel CPU e Metal (dt_zonal_gain, dt_edge_burn, peso di Presenza per zona, legenda), golden params_detail.txt, settingsVersion 3: i nodi salvati in Standard o Cinematografico diventano Zonale e cambiano aspetto.",
+     "impact": "Pannello Detail (nomi permanenti salvo i parametri eliminati: Cinematografico e Zone locali, elencati in DROPPED_AFTER_2_4_0 di tests/test_ofx_host.py), math/DetailHost.h, kernel CPU e Metal (dt_zonal_curve, dt_edge_burn, peso di Presenza per zona, legenda), golden params_detail.txt, settingsVersion 3: i nodi salvati in Standard o Cinematografico diventano Zonale e cambiano aspetto.",
      "verification": "Modello Python e parità CPU (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura zone (lettura immagine fuori dal render), legenda; Metal non eseguito.",
      "refs": [
       {
@@ -1561,18 +1561,18 @@
    "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones": "db1f208e7d9a",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_gain": "c7671d67cc90",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_curve": "18b0aab0b135",
    "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of": "b95c0e637405",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "1a075e48a9de",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "1ff77af5d3c9",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "c1d3a06b26b1",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "9bef2f90d804",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "2f63903727ab",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L": "25f44e13f0ff",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones": "ee7e34ac713c",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "e2c5e921e1df",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "3bd740018f08",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "d834f00e42f6",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "219bb62fdf7b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"

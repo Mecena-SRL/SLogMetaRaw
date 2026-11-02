@@ -8,16 +8,20 @@
 #include "../common/UpdateBadge.h"
 
 const int kDetailSettingsVersion = 3;   // 3: Zonale is mode 0 (Standard and Cinematografico are gone)
-const int kDetailSliderCount = 22;
+const int kDetailSliderCount = 23;
 
-const int kDetailModeCount = 2;
-static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)", "Split grade (stampa)" };
+const int kDetailModeCount = 3;
+static const char* const kDetailModeNames[kDetailModeCount] = { "Zonale (Ansel Adams)", "Split grade (stampa)",
+                                                                   "Unito (Split grade + Auto zone + BTZS)" };
 static const char* const kDetailModeInfo[kDetailModeCount] = {
     "Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci "
     "con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della "
     "Destinazione",
     "Stampa a due esposizioni (split grade) in tre fasi: Esposizioni (luci morbide e ombre dure, il grado esce dal "
-    "rapporto), Locale (brucia e scherma per aree, bordi), Presenza (dettaglio). Non serve il sistema zonale" };
+    "rapporto), Locale (brucia e scherma per aree, bordi), Presenza (dettaglio). Non serve il sistema zonale",
+    "Misura automatica del soggetto (percentili), confronto con la scala della carta come nel BTZS: lo sviluppo del "
+    "negativo (N-/N+) porta il soggetto alla carta finché può, la stampa a due esposizioni dà il resto. Fasi: "
+    "Esposizioni, Locale, Presenza" };
 // The phases (SM_DT_PHASE_*): one node each, in series, or all in one. Zonale and Split grade name them their own way.
 const int kPhaseCount = 4;
 static const char* const kZonalPhaseNames[kPhaseCount] = { "Un nodo (tutte le fasi)", "1 · Sviluppo", "2 · Stampa",
@@ -58,7 +62,27 @@ static const char* const kGuide[kDetailModeCount][kPhaseCount][kGuideRows] = { {
     { "1/3 Esposizioni: le due esposizioni della stampa, una curva su tutta l'immagine",
       "Ombra su un'ombra con dettaglio, Luce su una luce con dettaglio, poi Misura",
       "Luci morbide: il tempo dell'esposizione morbida, sposta le luci (come il filtro 00)",
-      "Ombre dure: il tempo dell'esposizione dura, sposta le ombre (come il filtro 5); il Grado va da 0 a 5",
+      "Ombre dure: il tempo dell'esposizione dura, sposta le ombre (come il filtro 5). Provino: scegli la cella e Usa la cella",
+      "Copia il nodo, incollalo dopo, Fase: 2 · Locale" },
+    { "2/3 Locale: bruciare e schermare per aree, come all'ingranditore",
+      "Local Highlights brucia le luci, a dettaglio intatto",
+      "Local Shadows schiarisce le ombre, Local Contrast dà contrasto per aree",
+      "Brucia i bordi e Ampiezza bordi scuriscono i margini del fotogramma",
+      "Copia il nodo, incollalo dopo, Fase: 3 · Presenza" },
+    { "3/3 Presenza: micro-contrasto, solo nelle zone II–VIII che hanno dettaglio",
+      "Texture: dettaglio fine, solo sopra la soglia del rumore",
+      "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
+      "Dehaze: toglie il velo, sotto Livello velo",
+      "Ultimo nodo prima del CST o DRT d'uscita" } }, {
+    { "Unito in un nodo: misura, sviluppo e stampa insieme; tre nodi in serie lavorano meglio",
+      "Misura automatica legge soggetto e scala; Ombra e Luce correggono la lettura",
+      "Il Grado dice quanto fa lo sviluppo (N-/N+) e quanto la stampa",
+      "Luci morbide e Ombre dure rifiniscono la stampa; Locale e Presenza restano nello stesso nodo",
+      "Per tre nodi: copia il nodo, incollalo dopo, cambia Fase" },
+    { "1/3 Esposizioni: misura del soggetto, sviluppo del negativo e due esposizioni di stampa",
+      "Misura automatica: legge il 2° e il 98° percentile; o Ombra e Luce sul viewer e Misura",
+      "Il soggetto è più ampio della carta? Lo sviluppo lo stringe (N-) fin dove può, la stampa fa il resto",
+      "Luci morbide e Ombre dure spostano le luci e le ombre sulla carta; Unione: Curva o Due strati",
       "Copia il nodo, incollalo dopo, Fase: 2 · Locale" },
     { "2/3 Locale: bruciare e schermare per aree, come all'ingranditore",
       "Local Highlights brucia le luci, a dettaglio intatto",
@@ -70,6 +94,11 @@ static const char* const kGuide[kDetailModeCount][kPhaseCount][kGuideRows] = { {
       "Clarity: contrasto dei bordi medi, attorno a Clarity: centro",
       "Dehaze: toglie il velo, sotto Livello velo",
       "Ultimo nodo prima del CST o DRT d'uscita" } } };
+const int kSplitEngineCount = 2;
+static const char* const kSplitEngineNames[kSplitEngineCount] = { "Curva (perno scorrevole)", "Due strati (per luce)" };
+const int kProvinoKindCount = 3;
+static const char* const kProvinoKindNames[kProvinoKindCount] = { "Strisce (morbida e dura)", "Matrice morbida × dura",
+                                                                  "Unioni a confronto" };
 const int kDetailDestCount = 5;   // SM_DT_DEST_COUNT
 static const char* const kDetailDestNames[kDetailDestCount] = {
     "Dal Bianco (manuale)", "Rec.709 · CST senza tone mapping", "Rec.709 · DRT (ACES, AgX, DaVinci)",
@@ -100,6 +129,7 @@ private:
     void resetAll();
     void updateMode();                                // what each mode and Zonale phase shows, guide lines
     void measureZones(double p_Time);
+    void measureAuto(double p_Time);                  // Auto zone: percentiles of the whole picture
     void refreshZoneInfo();
     bool readPoints(double p_Time, const char* const names[2], double Ln[2], double Ly[2]);
 
@@ -120,6 +150,10 @@ private:
     OFX::ChoiceParam* m_Destination = nullptr;
     OFX::ChoiceParam* m_ZonalPhase = nullptr;
     OFX::ChoiceParam* m_SplitPhase = nullptr;
+    OFX::ChoiceParam* m_SplitEngine = nullptr;
+    OFX::ChoiceParam* m_ProvinoKind = nullptr;
+    OFX::BooleanParam* m_ViewProvino = nullptr;
+    void applyProvino(double p_Time);                 // the exposures of the cell the point is on
     OFX::BooleanParam* m_ViewZonesColor = nullptr;
     OFX::BooleanParam* m_ViewZonesGrey = nullptr;
 };

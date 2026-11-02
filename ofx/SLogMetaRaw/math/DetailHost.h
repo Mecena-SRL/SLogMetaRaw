@@ -5,6 +5,8 @@
 #include "HostOnly.h"
 #include "ToneHost.h"
 #ifndef __METAL_VERSION__
+#include <algorithm>
+#include <vector>
 
 struct SMDetailControls {
     double localContrast, localHighlights, localShadows, texture, clarity, dehaze;
@@ -14,15 +16,25 @@ struct SMDetailControls {
     int devMode, destination;                     // SM_DT_MODE_*, SM_DT_DEST_*
     double adamsShadowL, adamsHighL, adamsShadowPlace, adamsHighPlace;  // Zonale: L read, zones placed on
     double splitSoft, splitHard;                  // Split grade: stops of the soft and the hard exposure
+    int splitEngine;                              // SM_DT_ENGINE_*: how the two exposures join
+    int viewProvino, provinoKind;                 // the test print on the picture: SM_DT_PV_*
+    double provinoStep;                           // stops between neighbouring cells
     int zonalPhase;                               // SM_DT_PHASE_*: Zonale in one node or in three
     double printEdgeBurn, printEdgeSize;          // Zonale, print: stops burned at the edges, % of the frame
 };
 
 static const int SM_DT_GRID_BASE = 540;   // working height: H / s in [0.707, 1.414) * 540
 static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a stop under grey: the detail is kept there
-static const int SM_DT_MODE_ZONAL = 0, SM_DT_MODE_SPLIT = 1;   // the development modes: Zonale (Ansel Adams), Split grade
+static const int SM_DT_MODE_ZONAL = 0, SM_DT_MODE_SPLIT = 1, SM_DT_MODE_UNITO = 2;   // Zonale (Ansel Adams), Split grade, Unito
 static const double SM_DT_SPLIT_RANGE = 3.0;                    // stops either way of each exposure
 static const double SM_DT_SPLIT_SHADOW_ZONE = 3.0, SM_DT_SPLIT_HIGH_ZONE = 8.0;   // where a print with both at 0 puts them
+static const int SM_DT_ENGINE_CURVE = 0, SM_DT_ENGINE_LAYERS = 1;   // one curve with a sliding pivot; two layers of paper
+static const double SM_DT_LAYER_HARD_GRADE = 5.0, SM_DT_LAYER_SOFT_GRADE = 0.0;   // what the two layers are
+static const int SM_DT_PV_STRIPS = 0, SM_DT_PV_MATRIX = 1, SM_DT_PV_UNIONS = 2;   // the test print's layouts
+// Unito: the negative's development takes the subject's range to the paper's as far as it can (N-/N+), the print's
+// grade the rest. Auto zone reads the shadow and the highlight at these percentiles of the picture.
+static const double SM_DT_UNITO_K_MIN = 0.5, SM_DT_UNITO_K_MAX = 2.0;
+static const double SM_DT_AUTO_LOW = 0.02, SM_DT_AUTO_HIGH = 0.98;
 static const double SM_DT_ADAMS_MIN_SPREAD = 0.25;
 // Zonale in phases, one node each (or all in one): development (global), print (local), presence (detail)
 static const int SM_DT_LG_MIN_H = 48;   // under it the zone views have no legend
@@ -47,6 +59,7 @@ static inline SMDetailControls sm_detail_defaults(void) {
     c.adamsShadowPlace = 3.0;
     c.adamsHighPlace = 8.0;
     c.printEdgeSize = 30.0;
+    c.provinoStep = 0.5;
     return c;
 }
 
@@ -69,13 +82,31 @@ static inline double dt_L_zone(double L, double white, double black) {
 
 // Zonale, development (tests/model/detail.py zonal_develop): exposure places the shadow on its zone, the slope
 // (N+/N-) turns the line about it so the highlight lands on its own. False without a measure.
-struct SMZonalDevelop { double Ls, Lso, k, hi, hiD, loD; };
+struct SMZonalDevelop { double Ls, Lso, k, hi, hiD, loD, sh, k2, Lh, Lho, k1; int two; };   // k1: Unito's development slope, 0 without
+// The grade of a slope and its inverse: 2.5 is normal, each doubling of the slope is 2.5 grades (hypothesis, to be
+// checked on prints: the sources give one grade per doubling of the soft/hard ratio).
+static inline double dt_split_grade(double k) { return 2.5 + 2.5 * log2(k); }
+static inline double dt_grade_slope(double g) { return exp2((g - 2.5) / 2.5); }
+
+// The curve at L (math/Detail.h dt_zonal_curve, in double): the line, or the lower of two lines, with toe and shoulder.
+static inline double dt_zonal_eval(const SMZonalDevelop* d, double L) {
+    double y = d->Lso + d->k * (L - d->Ls);
+    if (d->two) {
+        const double y2 = d->Lho + d->k2 * (L - d->Lh);
+        y = 0.5 * (y + y2 - sqrt((y - y2) * (y - y2) + 0.25));
+    }
+    if (y > d->sh) y = d->sh + d->hiD * (1.0 - exp(-(y - d->sh) / d->hiD));
+    else if (y < d->Lso) y = d->Lso - d->loD * (1.0 - exp(-(d->Lso - y) / d->loD));
+    return y;
+}
+
 static inline bool dt_zonal_develop(const SMDetailControls* v, SMZonalDevelop* d) {
     const double Ls = v->adamsShadowL, Lh = v->adamsHighL, gap = Lh - Ls;
     if (!(gap > SM_DT_MIN_GAP)) return false;
     const double white = dt_destination_white(v), black = dt_destination_black(v);
     double Lso, Lho;
-    if (v->devMode == SM_DT_MODE_SPLIT) {   // the print's two exposures: the soft one places the light, the hard one the shadow
+    const bool split = v->devMode != SM_DT_MODE_ZONAL;
+    if (split) {   // the print's two exposures: the soft one places the light, the hard one the shadow
         Lso = dt_zone_L(SM_DT_SPLIT_SHADOW_ZONE, white, black) - v->splitHard;
         Lho = fmax(dt_zone_L(SM_DT_SPLIT_HIGH_ZONE, white, black) - v->splitSoft, Lso + SM_DT_MIN_GAP);
     } else {
@@ -83,18 +114,33 @@ static inline bool dt_zonal_develop(const SMDetailControls* v, SMZonalDevelop* d
         Lso = dt_zone_L(zs, white, black);
         Lho = dt_zone_L(zh, white, black);
     }
+    double Lh2 = Lh;
+    d->k1 = 0.0;
+    if (v->devMode == SM_DT_MODE_UNITO) {   // the development first, as far as N-/N+ go; the print takes the rest
+        d->k1 = sm_clampd((Lho - Lso) / gap, SM_DT_UNITO_K_MIN, SM_DT_UNITO_K_MAX);
+        Lh2 = Ls + d->k1 * gap;
+    }
+    const double gap2 = Lh2 - Ls;
     d->Ls = Ls;
     d->Lso = Lso;
-    d->k = sm_clampd((Lho - Lso) / gap, SM_DT_ZD_K_MIN, SM_DT_ZD_K_MAX);
-    d->hi = Lso + d->k * gap;
-    d->hiD = fmax(white + SM_DT_ZD_ROOM - d->hi, 0.25);
+    d->Lh = Lh2;
+    d->Lho = Lho;
+    d->two = split && v->splitEngine == SM_DT_ENGINE_LAYERS ? 1 : 0;
+    if (d->two) {   // each layer is a line of its own grade; the paper takes the lower
+        d->k = dt_grade_slope(SM_DT_LAYER_HARD_GRADE);
+        d->k2 = dt_grade_slope(SM_DT_LAYER_SOFT_GRADE);
+        d->sh = Lho;
+    } else {
+        d->k = sm_clampd((Lho - Lso) / gap2, SM_DT_ZD_K_MIN, SM_DT_ZD_K_MAX);
+        d->k2 = 0.0;
+        d->sh = Lso + d->k * gap2;
+    }
+    d->hiD = fmax(white + SM_DT_ZD_ROOM - d->sh, 0.25);
     d->loD = fmax(Lso + black + SM_DT_ZD_ROOM, 0.25);
+    d->hi = dt_zonal_eval(d, Lh2);
     return true;
 }
 
-// The paper grade the slope stands for: 2.5 is normal, each doubling of the slope is 2.5 grades (hypothesis, to be
-// checked on prints: the sources give one grade per doubling of the soft/hard ratio).
-static inline double dt_split_grade(double k) { return 2.5 + 2.5 * log2(k); }
 
 // The zones the shadow and the highlight land on: exact, unless the slope hits its limit.
 static inline void dt_zonal_reached(const SMDetailControls* v, double* zs, double* zh) {
@@ -146,6 +192,70 @@ static inline void dt_veil(double warmth, int space, double out[3]) {
 }
 
 // href: the height the radii are relative to (the frame height; tests pass another to scale a small image).
+// Auto zone: the shadow and the highlight as the 2nd and 98th percentile of the picture's L (nearest rank), in stops.
+// L is sorted in place; false for too few samples.
+static inline bool dt_auto_zone(std::vector<float>& L, double* Ls, double* Lh) {
+    if (L.size() < 16) return false;
+    std::sort(L.begin(), L.end());
+    const double n1 = (double)(L.size() - 1);
+    *Ls = L[(size_t)floor(SM_DT_AUTO_LOW * n1 + 0.5)];
+    *Lh = L[(size_t)floor(SM_DT_AUTO_HIGH * n1 + 0.5)];
+    return true;
+}
+
+// Unito's first stage: the development, a bare line about the shadow (the shadow stays where it was read).
+static inline SMZdCurve dt_zd_first(const SMZonalDevelop* d) {
+    SMZdCurve c = SMZdCurve();
+    c.Ls = c.Lso = (float)d->Ls;
+    c.K = (float)d->k1;
+    c.kind = 2;
+    return c;
+}
+
+static inline SMZdCurve dt_zd_curve(const SMZonalDevelop* d, int mark) {
+    SMZdCurve c = SMZdCurve();
+    c.Ls = (float)d->Ls; c.Lso = (float)d->Lso; c.K = (float)d->k; c.Hi = (float)d->sh;
+    c.HiD = (float)d->hiD; c.LoD = (float)d->loD;
+    c.K2 = (float)d->k2; c.Lh = (float)d->Lh; c.Lho = (float)d->Lho;
+    c.kind = d->two;
+    c.mark = mark;
+    return c;
+}
+
+// The test print (provino): a grid of cells, each the picture developed with its own exposures. Strips: seven steps of
+// the soft exposure (top row) and of the hard one (bottom); matrix: soft across, hard down; unions: the two engines
+// side by side. The cell in the middle (or the engine in use) is the current one.
+static inline void dt_prepare_provino(DetailParams* p, int W, int H, const SMDetailControls* v) {
+    const int kind = v->provinoKind;
+    const int cols = kind == SM_DT_PV_STRIPS ? 7 : (kind == SM_DT_PV_MATRIX ? 5 : 2);
+    const int rows = kind == SM_DT_PV_STRIPS ? 2 : (kind == SM_DT_PV_MATRIX ? 5 : 1);
+    p->pvOn = 1;
+    p->pvCols = cols;
+    p->pvRows = rows;
+    p->pvBw = H / 270 > 1 ? H / 270 : 1;
+    for (int r = 0; r < rows; ++r)
+        for (int c = 0; c < cols; ++c) {
+            SMDetailControls cv = *v;
+            cv.devMode = SM_DT_MODE_SPLIT;
+            int mark = 0;
+            if (kind == SM_DT_PV_STRIPS) {
+                const double s = (c - cols / 2) * v->provinoStep;
+                (r == 0 ? cv.splitSoft : cv.splitHard) += s;
+                mark = c == cols / 2;
+            } else if (kind == SM_DT_PV_MATRIX) {
+                cv.splitSoft += (c - 2) * v->provinoStep;
+                cv.splitHard += (r - 2) * v->provinoStep;
+                mark = c == 2 && r == 2;
+            } else {
+                cv.splitEngine = c;
+                mark = c == v->splitEngine;
+            }
+            SMZonalDevelop d;
+            if (dt_zonal_develop(&cv, &d)) p->pv[r * cols + c] = dt_zd_curve(&d, mark);
+        }
+    (void)W;
+}
+
 static inline void dt_prepare(DetailParams* p, int W, int H, double href, double par, int space, int gamma,
                               const SMDetailControls* in, int base) {
     SMDetailControls v = *in;
@@ -163,9 +273,12 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.hazeLevel = sm_clampd(v.hazeLevel, -2, 6);
     v.hazeWarmth = sm_clampd(v.hazeWarmth, -100, 100);
     v.localWhite = sm_clampd(v.localWhite, 1, 10);
-    v.devMode = v.devMode == SM_DT_MODE_SPLIT ? SM_DT_MODE_SPLIT : SM_DT_MODE_ZONAL;
+    v.devMode = v.devMode < 0 ? 0 : (v.devMode > SM_DT_MODE_UNITO ? SM_DT_MODE_UNITO : v.devMode);
     v.splitSoft = sm_clampd(v.splitSoft, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE);
     v.splitHard = sm_clampd(v.splitHard, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE);
+    v.splitEngine = v.splitEngine == SM_DT_ENGINE_LAYERS ? SM_DT_ENGINE_LAYERS : SM_DT_ENGINE_CURVE;
+    v.provinoKind = v.provinoKind < 0 ? 0 : (v.provinoKind > SM_DT_PV_UNIONS ? SM_DT_PV_UNIONS : v.provinoKind);
+    v.provinoStep = sm_clampd(v.provinoStep, 0.1, 1.5);
     v.destination = v.destination < 0 ? 0 : (v.destination >= SM_DT_DEST_COUNT ? SM_DT_DEST_COUNT - 1 : v.destination);
     v.viewZones = v.viewZones < 0 ? 0 : (v.viewZones > 2 ? 2 : v.viewZones);
     v.adamsShadowL = sm_clampd(v.adamsShadowL, -16, 16);
@@ -220,8 +333,12 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     SMZonalDevelop zd;
     if (develop && dt_zonal_develop(&v, &zd)) {
         p->zdOn = 1;
-        p->zdLs = (float)zd.Ls; p->zdLso = (float)zd.Lso; p->zdK = (float)zd.k;
-        p->zdHi = (float)zd.hi; p->zdHiD = (float)zd.hiD; p->zdLoD = (float)zd.loD;
+        p->zd = dt_zd_curve(&zd, 0);
+        if (zd.k1 != 0.0) {
+            p->zd1On = 1;
+            p->zd1 = dt_zd_first(&zd);
+        }
+        if (v.viewProvino && v.devMode == SM_DT_MODE_SPLIT) dt_prepare_provino(p, W, H, &v);
     }
     p->ebAmt = printing ? (float)v.printEdgeBurn : 0.0f;
     p->ebS = (float)(v.printEdgeSize / 100.0);
@@ -285,8 +402,8 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
         p->lgX0 = m - hb / 4;
         p->lgX1 = W - m + hb / 4;
         const double white = p->zoneWhite, black = p->zoneBlack;
-        const double z[4] = { dt_L_zone(p->zdLs, white, black), dt_L_zone(v.adamsHighL, white, black),
-                              dt_L_zone(p->zdLso, white, black), dt_L_zone(p->zdHi, white, black) };
+        const double z[4] = { dt_L_zone(p->zd.Ls, white, black), dt_L_zone(v.adamsHighL, white, black),
+                              dt_L_zone(p->zd.Lso, white, black), dt_L_zone(zd.hi, white, black) };
         int* tick[4] = { &p->lgIn[0], &p->lgIn[1], &p->lgOut[0], &p->lgOut[1] };
         for (int k = 0; k < 4; ++k)
             *tick[k] = m + (int)floor(sm_clampd(z[k] + 0.5, 0.0, 11.0) * span / 11.0);

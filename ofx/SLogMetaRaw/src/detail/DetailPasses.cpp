@@ -349,6 +349,10 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                 } else if (p.view >= 3) {
                     const SMf3 c = dt_emit(dt_legend(x, y, dt_view_zones(L[i] + o.G, x, y, p.view == 4, p), p.view == 4, p), p);
                     out[0] = c.x; out[1] = c.y; out[2] = c.z;
+                } else if (p.pvOn != 0 && dt_pv_frame(x, y, p) != 0) {
+                    const float t = dt_pv_frame(x, y, p) == 2 ? 0.95f : 0.08f;
+                    const SMf3 c = dt_emit(smf3(t, t, t), p);
+                    out[0] = c.x; out[1] = c.y; out[2] = c.z;
                 } else if (o.G == 0.0f && !dehaze) {
                     out[0] = in[0]; out[1] = in[1]; out[2] = in[2];
                 } else {

@@ -66,7 +66,8 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     GroupParamDescriptor* mode = defineGroup(d, page, "modeGroup", "Sviluppo e spazio colore", true);
     defineChoice(d, page, "devMode", "Modalità", kDetailModeNames, kDetailModeCount, 0,
                  "Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone. Split grade: stampa a due "
-                 "esposizioni, morbida per le luci e dura per le ombre", mode);
+                 "esposizioni, morbida per le luci e dura per le ombre. Unito: misura automatica, sviluppo del negativo e "
+                 "stampa a due esposizioni insieme", mode);
     defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
     if (auto* p = defineChoice(d, page, "zonalPhase", "Fase", kZonalPhaseNames, kPhaseCount, 0,
                                "Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, "
@@ -95,6 +96,10 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     if (auto* p = defineButton(d, page, "adamsMeasure", "Misura zone",
                                "Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con "
                                "sviluppo normale (N 0)", adams))
+        p->setIsSecret(true);
+    if (auto* p = defineButton(d, page, "adamsAuto", "Misura automatica",
+                               "Legge tutta l'immagine: ombra e luce sono il 2° e il 98° percentile della luminanza. "
+                               "Poi si possono correggere con Ombra e Luce e Misura", adams))
         p->setIsSecret(true);
     DoubleParamDescriptor* places[] = {
         defineSlider(d, page, "adamsShadowPlace", "Ombra sulla zona", 3, 0, 10, 0, 10, 0.1,
@@ -125,6 +130,30 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
             p->setIsSecret(true);
         }
     if (auto* p = defineInfo(d, page, split, "splitGrade", "Grado", "scegli i due punti e premi Misura"))
+        p->setIsSecret(true);
+    if (auto* p = defineChoice(d, page, "splitEngine", "Unione", kSplitEngineNames, kSplitEngineCount, 0,
+                               "Come si uniscono le due esposizioni. Curva: una sola curva, la pendenza esce dal "
+                               "rapporto fra le due. Due strati: la carta ha uno strato morbido (grado 0) e uno duro "
+                               "(grado 5) e prende, a ogni luce, il più basso dei due", split))
+        p->setIsSecret(true);
+    if (auto* p = defineCheck(d, page, "viewProvino", "Provino", false,
+                              "Mostra il provino sull'immagine: ogni cella è la stessa immagine con esposizioni "
+                              "diverse. Più scuro = più stop. La cella incorniciata di chiaro è quella attuale", split))
+        p->setIsSecret(true);
+    if (auto* p = defineChoice(d, page, "provinoKind", "Provino: forma", kProvinoKindNames, kProvinoKindCount, 0,
+                               "Strisce: sette passi della morbida (riga alta) e della dura (riga bassa). Matrice: "
+                               "morbida da sinistra a destra, dura dall'alto in basso. Unioni: curva a sinistra, due "
+                               "strati a destra", split))
+        p->setIsSecret(true);
+    if (auto* p = defineSlider(d, page, "provinoStep", "Provino: passo (stop)", 0.5, 0.1, 1.5, 0.1, 1.5, 0.05,
+                               "Gli stop fra una cella e la vicina", split)) {
+        p->setDigits(2);
+        p->setIsSecret(true);
+    }
+    definePoint(d, page, split, "provinoPos", "Provino: cella", 0.5, 0.5,
+                "Porta il punto sulla cella da usare, poi premi Usa la cella");
+    if (auto* p = defineButton(d, page, "provinoApply", "Usa la cella",
+                               "Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo", split))
         p->setIsSecret(true);
 
     GroupParamDescriptor* range = defineGroup(d, page, "rangeGroup", "Gamma dinamica", true);

@@ -48,16 +48,24 @@ DETAIL_CONTROLS = {
     'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0),
     # development mode and destination (the transform after the node)
     'viewZones': (0.0, 2.0, 0.0),
-    'devMode': (0.0, 1.0, 0.0), 'destination': (0.0, 4.0, 0.0),
+    'devMode': (0.0, 2.0, 0.0), 'destination': (0.0, 4.0, 0.0),
     'splitSoft': (-SPLIT_RANGE, SPLIT_RANGE, 0.0), 'splitHard': (-SPLIT_RANGE, SPLIT_RANGE, 0.0),
+    # Split grade: how the two exposures join, and the test print (provino) on the picture
+    'splitEngine': (0.0, 1.0, 0.0), 'viewProvino': (0.0, 1.0, 0.0), 'provinoKind': (0.0, 2.0, 0.0),
+    'provinoStep': (0.1, 1.5, 0.5),
     # Zonale: the shadow and the highlight read on the picture (L of the norm), the zones they are placed on
     'adamsShadowL': (-16.0, 16.0, 0.0), 'adamsHighL': (-16.0, 16.0, 0.0),
     'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0),
     # Zonale in phases: one node (all), 1 development, 2 print, 3 presence; the print's edge burn
     'zonalPhase': (0.0, 3.0, 0.0), 'printEdgeBurn': (0.0, 2.0, 0.0), 'printEdgeSize': (10.0, 60.0, 30.0)}
 
-MODE_ZONAL, MODE_SPLIT = 0, 1     # the development modes: Zonale (Ansel Adams), Split grade
+MODE_ZONAL, MODE_SPLIT, MODE_UNITO = 0, 1, 2     # the development modes: Zonale (Ansel Adams), Split grade
 SPLIT_SHADOW_ZONE, SPLIT_HIGH_ZONE = 3.0, 8.0   # where a print with both exposures at 0 puts them
+ENGINE_CURVE, ENGINE_LAYERS = 0, 1   # one curve with a sliding pivot; two layers of paper, the lower line of the two
+LAYER_HARD_GRADE, LAYER_SOFT_GRADE = 5.0, 0.0
+UNITO_K_MIN, UNITO_K_MAX = 0.5, 2.0   # Unito: what the negative's development can do (N-/N+); the print does the rest
+AUTO_LOW, AUTO_HIGH = 0.02, 0.98       # Auto zone: the percentiles read as shadow and highlight
+PV_STRIPS, PV_MATRIX, PV_UNIONS = 0, 1, 2   # the test print's layouts
 ADAMS_MIN_SPREAD = 0.25           # the highlight stays at least this many zones above the shadow
 PHASE_ALL, PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE = 0, 1, 2, 3
 ZD_K_MIN, ZD_K_MAX = 0.25, 4.0    # development slope: about N-2.5 to N+5 on a 3-stop scene
@@ -210,17 +218,43 @@ def zonal_develop(v):
     if gap <= MIN_GAP:
         return None
     white, black = destination_white(v), destination_black(v)
-    if int(round(v['devMode'])) == MODE_SPLIT:   # the soft exposure places the light, the hard one the shadow
+    mode = int(round(v['devMode']))
+    if mode != MODE_ZONAL:   # the soft exposure places the light, the hard one the shadow
         Lso = zone_L(SPLIT_SHADOW_ZONE, white, black) - v['splitHard']
         Lho = max(zone_L(SPLIT_HIGH_ZONE, white, black) - v['splitSoft'], Lso + MIN_GAP)
     else:
         zs = v['adamsShadowPlace']
         zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
         Lso, Lho = zone_L(zs, white, black), zone_L(zh, white, black)
-    k = min(max((Lho - Lso) / gap, ZD_K_MIN), ZD_K_MAX)
-    hi = Lso + k * gap
-    return {'Ls': Ls, 'Lso': Lso, 'k': k, 'hi': hi,
-            'hiD': max(white + ZD_ROOM - hi, 0.25), 'loD': max(Lso + black + ZD_ROOM, 0.25)}
+    k1, Lh2 = 0.0, Lh
+    if mode == MODE_UNITO:   # the development first, as far as N-/N+ go; the print takes the rest
+        k1 = min(max((Lho - Lso) / gap, UNITO_K_MIN), UNITO_K_MAX)
+        Lh2 = Ls + k1 * gap
+    gap2 = Lh2 - Ls
+    two = mode != MODE_ZONAL and int(round(v['splitEngine'])) == ENGINE_LAYERS
+    if two:   # each layer is a line of its own grade; the paper takes the lower
+        k, k2, sh = grade_slope(LAYER_HARD_GRADE), grade_slope(LAYER_SOFT_GRADE), Lho
+    else:
+        k = min(max((Lho - Lso) / gap2, ZD_K_MIN), ZD_K_MAX)
+        k2, sh = 0.0, Lso + k * gap2
+    zd = {'Ls': Ls, 'Lso': Lso, 'k': k, 'sh': sh, 'two': two, 'k2': k2, 'Lh': Lh2, 'Lho': Lho, 'k1': k1,
+          'hiD': max(white + ZD_ROOM - sh, 0.25), 'loD': max(Lso + black + ZD_ROOM, 0.25)}
+    zd['hi'] = zonal_curve(Lh2, zd)
+    return zd
+
+
+def auto_zone(L):
+    """dt_auto_zone: the shadow and the highlight as percentiles of the picture's L (nearest rank), None if too few."""
+    if len(L) < 16:
+        return None
+    L = sorted(L)
+    n1 = len(L) - 1
+    return L[int(math.floor(AUTO_LOW * n1 + 0.5))], L[int(math.floor(AUTO_HIGH * n1 + 0.5))]
+
+
+def grade_slope(g):
+    """The slope a paper grade stands for (the inverse of split_grade)."""
+    return 2.0 ** ((g - 2.5) / 2.5)
 
 
 def split_grade(k):
@@ -228,16 +262,63 @@ def split_grade(k):
     return 2.5 + 2.5 * math.log2(k)
 
 
-def zonal_gain(L, zd):
-    """dt_zonal_gain: the development's log2 gain at L."""
+def zonal_curve(L, zd):
+    """dt_zonal_curve: where the development puts L; two layers: the lower of the hard and the soft line (0.5 stop)."""
     y = zd['Lso'] + zd['k'] * (L - zd['Ls'])
-    if y > zd['hi']:
+    if zd['two']:
+        y2 = zd['Lho'] + zd['k2'] * (L - zd['Lh'])
+        y = 0.5 * (y + y2 - math.sqrt((y - y2) ** 2 + 0.25))
+    if y > zd['sh']:
         d = zd['hiD']
-        y = zd['hi'] + d * (1.0 - math.exp(-(y - zd['hi']) / d))
+        y = zd['sh'] + d * (1.0 - math.exp(-(y - zd['sh']) / d))
     elif y < zd['Lso']:
         d = zd['loD']
         y = zd['Lso'] - d * (1.0 - math.exp(-(zd['Lso'] - y) / d))
-    return y - L
+    return y
+
+
+def zonal_gain(L, zd, pv=None):
+    """The development's log2 gain at L; Unito: the negative's line first, then the print's curve (pv: a test print cell)."""
+    Lc = zd['Ls'] + zd['k1'] * (L - zd['Ls']) if zd['k1'] else L
+    return zonal_curve(Lc, pv or zd) - L
+
+
+def provino_cells(v, zd_fn=None):
+    """dt_prepare_provino: (cols, rows, cells), each cell the development of its own exposures, row 0 on top."""
+    kind = int(round(v['provinoKind']))
+    cols, rows = (7, 2) if kind == PV_STRIPS else ((5, 5) if kind == PV_MATRIX else (2, 1))
+    step = v['provinoStep']
+    cells = []
+    for r in range(rows):
+        for c in range(cols):
+            cv = dict(v, devMode=MODE_SPLIT)
+            if kind == PV_STRIPS:
+                key = 'splitSoft' if r == 0 else 'splitHard'
+                cv[key] += (c - cols // 2) * step
+                mark = c == cols // 2
+            elif kind == PV_MATRIX:
+                cv['splitSoft'] += (c - 2) * step
+                cv['splitHard'] += (r - 2) * step
+                mark = c == 2 and r == 2
+            else:
+                cv['splitEngine'] = c
+                mark = c == int(round(v['splitEngine']))
+            zd = zonal_develop(cv)
+            if zd is not None:
+                zd['mark'] = int(mark)
+            cells.append(zd)
+    return cols, rows, cells
+
+
+def provino_cell(x, y, W, H, cols, rows):
+    """dt_pv_cell and dt_pv_frame's geometry: the cell of a pixel and its distance to the cell's edge (integers)."""
+    ty = H - 1 - y
+    cx, cy = x * cols // W, ty * rows // H
+    dl = x - (cx * W + cols - 1) // cols
+    dr = ((cx + 1) * W + cols - 1) // cols - 1 - x
+    dt = ty - (cy * H + rows - 1) // rows
+    db = ((cy + 1) * H + rows - 1) // rows - 1 - ty
+    return cy * cols + cx, min(dl, dr, dt, db)
 
 
 def zonal_reached(v):
@@ -313,7 +394,10 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         'ebAmt': v['printEdgeBurn'] if printing else 0.0,
         'ebR0': 1.0 - v['printEdgeSize'] / 100.0, 'ebS': v['printEdgeSize'] / 100.0,
         'pzOn': presence,
+        'pv': None, 'pvBw': max(H // 270, 1),
     }
+    if zd is not None and v['viewProvino'] and int(round(v['devMode'])) == MODE_SPLIT:
+        p['pv'] = provino_cells(v)
     p['legend'] = legend_layout(W, H, p['view'], zd, v)
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
@@ -620,7 +704,10 @@ def render(img, W, H, p, gamma):
             Tx = p['texture'] * DT / (1.0 + (DT / PSI) ** 2) * gate
         Gz = 0.0
         if p['zd'] is not None:
-            Gz = zonal_gain(L[i], p['zd'])
+            zc = None
+            if p['pv'] is not None:
+                zc = p['pv'][2][provino_cell(X, Y, p['W'], p['H'], p['pv'][0], p['pv'][1])[0]]
+            Gz = zonal_gain(L[i], p['zd'], zc)
             if Gz > 0.0:
                 Gz *= T.t5_ramp((L[i] - FLOOR_EV) / FLOOR_W)
         G = Gb + soft1((K + Tx) * presence_weight(L[i] + Gb + Gz, p))
@@ -641,6 +728,9 @@ def render(img, W, H, p, gamma):
             grey = p['view'] == 4
             c = view_zones_colour(L[i] + G, p['zoneWhite'], p['zoneBlack'], grey, X, Y)
             out.append(emit_display(legend(X, Y, c, grey, W, p['legend']), space, gamma))
+        elif p['pv'] is not None and provino_cell(X, Y, p['W'], p['H'], p['pv'][0], p['pv'][1])[1] < p['pvBw']:
+            cell = p['pv'][2][provino_cell(X, Y, p['W'], p['H'], p['pv'][0], p['pv'][1])[0]]
+            out.append(emit_display([0.95 if cell['mark'] else 0.08] * 3, space, gamma))
         elif G == 0.0 and not p['hazeOn']:
             out.append(list(img[i]))
         else:

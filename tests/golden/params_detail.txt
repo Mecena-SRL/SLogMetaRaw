@@ -2,7 +2,7 @@ param:Controls|OfxParamTypePage||||||||||||||||
 param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllare gli aggiornamenti|||
 param:detailInfo|OfxParamTypeString|Detail|Spaziale · escluso da Generate LUT|||0|||||||0||||
 param:modeGroup|OfxParamTypeGroup|Sviluppo e spazio colore|||||||||||||||1
-param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone. Split grade: stampa a due esposizioni, morbida per le luci e dura per le ombre|Zonale (Ansel Adams),Split grade (stampa)||
+param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone. Split grade: stampa a due esposizioni, morbida per le luci e dura per le ombre. Unito: misura automatica, sviluppo del negativo e stampa a due esposizioni insieme|Zonale (Ansel Adams),Split grade (stampa),Unito (Split grade + Auto zone + BTZS)||
 param:modeInfo|OfxParamTypeString|Cosa fa|Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della Destinazione|modeGroup||0|||||||0||||
 param:zonalPhase|OfxParamTypeChoice|Fase|0|modeGroup|1||||||||0|Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, senza aloni: esposizione e N+/N-), 2 Stampa (per aree e bordi), 3 Presenza (Texture, Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase|Un nodo (tutte le fasi),1 · Sviluppo,2 · Stampa,3 · Presenza||
 param:splitPhase|OfxParamTypeChoice|Fase|0|modeGroup|1||||||||0|Split grade in tre nodi in serie: 1 Esposizioni (curva globale: luci morbide e ombre dure), 2 Locale (brucia, scherma, bordi), 3 Presenza (Texture, Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase|Un nodo (tutte le fasi),1 · Esposizioni,2 · Locale,3 · Presenza||
@@ -12,6 +12,7 @@ param:adamsGroup|OfxParamTypeGroup|Misura|||1||||||||||||1
 param:adamsShadowPos|OfxParamTypeDouble2D|Ombra|0.3,0.3|adamsGroup|1||||||||0|Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)|||
 param:adamsHighPos|OfxParamTypeDouble2D|Luce|0.7,0.7|adamsGroup|1||||||||0|Una luce in cui vuoi ancora dettaglio|||
 param:adamsMeasure|OfxParamTypePushButton|Misura zone||adamsGroup|1|||||||||Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con sviluppo normale (N 0)|||
+param:adamsAuto|OfxParamTypePushButton|Misura automatica||adamsGroup|1|||||||||Legge tutta l'immagine: ombra e luce sono il 2° e il 98° percentile della luminanza. Poi si possono correggere con Ombra e Luce e Misura|||
 param:adamsShadowPlace|OfxParamTypeDouble|Ombra sulla zona|3|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui collocare l'ombra misurata (esposizione): III = ombra con dettaglio|||
 param:adamsHighPlace|OfxParamTypeDouble|Luci sulla zona|8|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui portare la luce misurata (sviluppo): sopra quella misurata N+, sotto N-. VIII = luce con dettaglio|||
 param:adamsInfo|OfxParamTypeString|Zone|Scegli i due punti e premi Misura zone|adamsGroup|1|0|||||||0||||
@@ -19,6 +20,12 @@ param:splitGroup|OfxParamTypeGroup|Split grade|||1||||||||||||1
 param:splitSoft|OfxParamTypeDouble|Luci morbide (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione morbida (grado 0, filtro 00), che porta le luci: piu stop = luci piu scure. 0 = le luci cadono sulla zona VIII|||
 param:splitHard|OfxParamTypeDouble|Ombre dure (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione dura (grado 5), che porta le ombre: piu stop = ombre piu scure. 0 = le ombre cadono sulla zona III|||
 param:splitGrade|OfxParamTypeString|Grado|scegli i due punti e premi Misura|splitGroup|1|0|||||||0||||
+param:splitEngine|OfxParamTypeChoice|Unione|0|splitGroup|1||||||||0|Come si uniscono le due esposizioni. Curva: una sola curva, la pendenza esce dal rapporto fra le due. Due strati: la carta ha uno strato morbido (grado 0) e uno duro (grado 5) e prende, a ogni luce, il più basso dei due|Curva (perno scorrevole),Due strati (per luce)||
+param:viewProvino|OfxParamTypeBoolean|Provino|0|splitGroup|1||||||||0|Mostra il provino sull'immagine: ogni cella è la stessa immagine con esposizioni diverse. Più scuro = più stop. La cella incorniciata di chiaro è quella attuale|||
+param:provinoKind|OfxParamTypeChoice|Provino: forma|0|splitGroup|1||||||||0|Strisce: sette passi della morbida (riga alta) e della dura (riga bassa). Matrice: morbida da sinistra a destra, dura dall'alto in basso. Unioni: curva a sinistra, due strati a destra|Strisce (morbida e dura),Matrice morbida × dura,Unioni a confronto||
+param:provinoStep|OfxParamTypeDouble|Provino: passo (stop)|0.5|splitGroup|1||0.1|1.5|0.1|1.5|0.05|2||Gli stop fra una cella e la vicina|||
+param:provinoPos|OfxParamTypeDouble2D|Provino: cella|0.5,0.5|splitGroup|1||||||||0|Porta il punto sulla cella da usare, poi premi Usa la cella|||
+param:provinoApply|OfxParamTypePushButton|Usa la cella||splitGroup|1|||||||||Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo|||
 param:rangeGroup|OfxParamTypeGroup|Gamma dinamica|||||||||||||||1
 param:viewGain|OfxParamTypeBoolean|Vista: guadagno|0|rangeGroup|||||||||0|Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. Bande a 0,25 / 0,5 / 1 / 2 stop||view_gain.png|
 param:viewBase|OfxParamTypeBoolean|Vista: base|0|rangeGroup|||||||||0|Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio||view_base.png|
