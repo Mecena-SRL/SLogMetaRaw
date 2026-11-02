@@ -26,7 +26,7 @@ ancora il pannello vecchio.
   (non l'EI assoluto, che sposterebbe l'immagine se la camera è diversa); il bilanciamento *As shot* segue la camera
   nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
-- **Detail, eliminate Standard e Cinematografico** (su decisione di Ivan, senza migrazione): il Detail ha ora la sola
+- **Detail, eliminate Standard e Cinematografico** (senza migrazione): il Detail ha ora la sola
   modalità Zonale e Split grade, con Unito in arrivo. Spariscono il gruppo Cinematografico (rapporto di luce, soggetto
   viso o paesaggio) e le Zone locali. I nodi salvati con Standard o Cinematografico si aprono come Zonale e cambiano
   aspetto; i valori dei comandi eliminati vengono ignorati.

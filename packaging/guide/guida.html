@@ -123,7 +123,7 @@
   <ul>
     <li>I file originali <b>non vengono mai modificati</b>: niente transcodifica, niente rewrap.</li>
     <li>Con profili non log (Cine, HLG, S-Cinetone) i nodi restano neutri e lo dicono. Per ProRes da registratori esterni
-        c'è <i>Avanzate › Sblocca controlli senza metadata</i>.</li>
+        c'è <i>Spazio colore › Senza metadata › Sblocca controlli</i>.</li>
     <li>I false color <b>sostituiscono l'immagine</b>: spegnili prima di renderizzare.</li>
     <li>In cima ai nodi c'è la versione: una volta al giorno chiede a GitHub se ce n'è una nuova (la richiesta porta solo il
         numero di versione) e diventa <b>🟢</b> se c'è; il clic apre il download nel browser. Si disattiva creando il file
@@ -170,21 +170,23 @@
 
   <div class="half">
     <div class="part"><h1>Il nodo S-Log MetaRaw</h1><span class="where">Color › OpenFX · primo nodo, prima di CST e LUT</span></div>
-    <p>Mostra la camera in cima e porta Color Temp, Tint ed Exposure ai valori di ripresa: lì <b>non cambia niente</b>. È un
+    <p>Mostra la camera in cima e porta Temperatura, Tint ed Esposizione ai valori di ripresa: lì <b>non cambia niente</b>. È un
     punto di partenza, non un look. Le impostazioni si salvano per clip; <b>Rileggi metadata</b> riporta tutto ai valori di
     camera e scrive i metadata di quella clip nel Media Pool.</p>
     <table>
-      <tr><td>Decode Using</td><td><i>Clip</i> permette di cambiare i controlli; <i>Camera metadata</i> li blocca sui valori
-        di ripresa.</td></tr>
-      <tr><td>White Balance</td><td><i>As shot</i> o preset (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash); muovendo
-        un cursore diventa <i>Custom</i>.</td></tr>
-      <tr><td>Color Temp · Tint</td><td>Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera.
-        Temp più alto scalda; Tint positivo va verso il magenta.</td></tr>
-      <tr><td>Exposure</td><td>In EI: il doppio dell'EI è +1 stop esatto, in luce lineare, prima di qualsiasi curva.</td></tr>
-      <tr><td>Color Space · Gamma</td><td>Uscita, come un Color Space Transform. <i>Timeline</i> non converte: in un progetto
-        color managed lasciali così. Per gradare in DWG: <i>DaVinci WG</i> · <i>DaVinci Intermediate</i>. <i>Rec.709</i> è
-        un CST senza tone mapping (luci oltre il Bianco tagliate) e chiude la strada al nodo Detail: meglio un CST d'uscita
-        in fondo.</td></tr>
+      <tr><td>Ripresa · Decodifica</td><td>Il gruppo della ripresa. <i>Clip</i> permette di cambiare i controlli;
+        <i>Camera metadata</i> li blocca sui valori di ripresa.</td></tr>
+      <tr><td>Bilanciamento</td><td><i>As shot</i> o preset (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash); muovendo
+        un cursore passa a <i>Custom</i>.</td></tr>
+      <tr><td>Temperatura · Tint</td><td>Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera.
+        Temperatura più alta scalda; Tint positivo va verso il magenta.</td></tr>
+      <tr><td>Punto bianco</td><td>Il contagocce di Resolve: scegli un punto che deve essere neutro e Temperatura e Tint si
+        impostano da soli, con la stessa matematica del render.</td></tr>
+      <tr><td>Esposizione (EI)</td><td>Il doppio dell'EI è +1 stop esatto, in luce lineare, prima di qualsiasi curva.</td></tr>
+      <tr><td>Spazio colore</td><td><b>Ingresso</b>: Spazio colore e Gamma in entrata (Automatico chiede a Resolve), Rilevato,
+        Data level e Livello, con i pulsanti <i>Ripristina</i>. <b>Senza metadata</b>: vedi pagina 3. <b>Uscita</b>: Spazio
+        colore e Gamma in uscita, come un Color Space Transform; <i>Timeline</i> non converte. Per lavorare in DWG:
+        <i>DaVinci WG</i> · <i>DaVinci Intermediate</i>. Poi Dimensione LUT ed <i>Esporta LUT (.cube)</i>.</td></tr>
     </table>
     <h2>False color: una vista per controllo, sopra il suo cursore</h2>
     <table>
@@ -196,7 +198,7 @@
         <span class="sw" style="background:#1a47e0"></span>ombra profonda ·
         <span class="sw" style="background:#6b1f9e"></span>nero. Il resto in grigio.</td></tr>
       <tr><td>Temperatura</td><td>Come CineMatch: l'immagine diventa grigia,
-        <span class="sw" style="background:#3d82d6"></span>blu = dominante fredda, alza Color Temp;
+        <span class="sw" style="background:#3d82d6"></span>blu = dominante fredda, alza Temperatura;
         <span class="sw" style="background:#e3882e"></span>arancio = calda, abbassala.
         Le dominanti quasi neutre sono esaltate fino a 8×.</td></tr>
       <tr><td>Tint</td><td><span class="sw" style="background:#5cc23d"></span>verde = alza Tint;
@@ -216,8 +218,9 @@
 <!-- ============ 3 · NODO (2) + DETAIL ============ -->
 <div class="page">
   <div class="half">
-    <div class="part"><h1>Il nodo S-Log MetaRaw</h1><span class="where">Toni, Zone, Avanzate</span></div>
-    <p><b>Toni</b>: Highlights è una <b>spalla filmica</b>; gli altri sono <b>esposizioni per zona</b>, in stop dal grigio 18%,
+    <div class="part"><h1>Il nodo S-Log MetaRaw</h1><span class="where">Toni, Zone, Senza metadata</span></div>
+    <p><b>Toni</b> mostra Highlights, Bianco, Soft Clip e Saturation; <i>Mostra tutti i controlli</i> aggiunge il resto e
+    le Zone (compaiono da soli anche quando il nodo li usa). Highlights è una <b>spalla filmica</b>; gli altri sono <b>esposizioni per zona</b>, in stop dal grigio 18%,
     dove l'immagine si sposta come con un'esposizione e la texture resta. Nessuna combinazione può solarizzare.</p>
     <table>
       <tr><td>Contrast</td><td>Ruota attorno al Pivot; a +100 la pendenza raddoppia, a −100 si dimezza, estremi limitati.</td></tr>
@@ -234,9 +237,8 @@
       <tr><td>Zone <span class="note">(chiuso)</span></td><td>Black, Shadow, Light, Specular: Exp (stop), Sat, Range (bordo),
         Falloff (transizione). <b>Soft Clip</b> ripiega le alte luci sotto un tetto: è contenimento, non recupero.
         <b>False color zone</b> mostra quale zona muove ogni pixel.</td></tr>
-      <tr><td>Avanzate</td><td><i>Ingresso nodo</i> (Automatico chiede a Resolve) · <i>Data level in ingresso</i> (corregge
-        la scala di code value se Resolve la sbaglia) · <i>Stato</i> · <b>Sblocca controlli senza metadata</b>: per ProRes
-        o clip illeggibili, scrivi EI, Kelvin e tinta di ripresa e i controlli si attivano.</td></tr>
+      <tr><td>Senza metadata</td><td><b>Sblocca controlli</b>: per ProRes o clip illeggibili, scrivi EI, Kelvin e tinta di
+        ripresa e i controlli si attivano.</td></tr>
     </table>
     <div class="tip"><b>Ricette</b> · luci che bruciano: Highlights −50…−100 (con un DRT dopo, Bianco a 4-5) · controluce:
     Shadows +30…+60 e Blacks −20…−40 · look pellicola: Contrast +20…+30, Highlights −60 · ombre rumorose: Shadow Sat −30…−50.

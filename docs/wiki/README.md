@@ -39,4 +39,4 @@ cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multil
 ```
 
 Dopo il push, chiudere/aggiornare la #35 (il problema che descrive sarà risolto) e segnalare qui se qualcosa non torna
-nelle traduzioni — sono state scritte da un'unica sessione automatica, senza revisione madrelingua.
+nelle traduzioni: non hanno avuto una revisione madrelingua.

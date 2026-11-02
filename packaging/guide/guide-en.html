@@ -122,7 +122,7 @@
   <ul>
     <li>Original files are <b>never modified</b>: no transcoding, no rewrapping.</li>
     <li>With non-log profiles (Cine, HLG, S-Cinetone) the nodes stay neutral and say so. For ProRes from external recorders
-        there is <i>Avanzate › Sblocca controlli senza metadata</i> (unlock without metadata).</li>
+        there is <i>Spazio colore › Senza metadata › Sblocca controlli</i> (unlock without metadata).</li>
     <li>False colour views <b>replace the image</b>: turn them off before you render.</li>
     <li>The version sits at the top of the nodes: once a day it asks GitHub whether there is a newer one (the request carries
         only the version number) and turns <b>🟢</b> if so; a click opens the download in the browser. To turn it off,
@@ -170,21 +170,23 @@
 
   <div class="half">
     <div class="part"><h1>The S-Log MetaRaw node</h1><span class="where">Color › OpenFX · first node, before CST and LUT</span></div>
-    <p>It shows the camera at the top and sets Color Temp, Tint and Exposure to the as-shot values: there it <b>changes
+    <p>It shows the camera at the top and sets Temperatura, Tint and Esposizione to the as-shot values: there it <b>changes
     nothing</b>. It is a starting point, not a look. Settings are saved per clip; <b>Rileggi metadata</b> (re-read) resets
     everything to the camera values and writes that clip's metadata into the Media Pool.</p>
     <table>
-      <tr><td>Decode Using</td><td><i>Clip</i> lets you change the controls; <i>Camera metadata</i> locks them to the
-        as-shot values.</td></tr>
-      <tr><td>White Balance</td><td><i>As shot</i> or presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash); moving
+      <tr><td>Ripresa · Decodifica</td><td>The shot group. <i>Clip</i> lets you change the controls; <i>Camera
+        metadata</i> locks them to the as-shot values.</td></tr>
+      <tr><td>Bilanciamento</td><td><i>As shot</i> or presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash); moving
         a slider switches it to <i>Custom</i>.</td></tr>
-      <tr><td>Color Temp · Tint</td><td>Bradford chromatic adaptation in linear light, from the white the camera recorded.
-        Higher Temp warms; positive Tint goes towards magenta.</td></tr>
-      <tr><td>Exposure</td><td>In EI: double the EI is exactly +1 stop, in linear light, before any curve.</td></tr>
-      <tr><td>Color Space · Gamma</td><td>Output, like a Color Space Transform. <i>Timeline</i> does not convert: leave
-        them there in a colour-managed project. To grade in DWG: <i>DaVinci WG</i> · <i>DaVinci Intermediate</i>.
-        <i>Rec.709</i> is a CST without tone mapping (highlights past Bianco clip) and shuts out the Detail node: better an
-        output CST at the end.</td></tr>
+      <tr><td>Temperatura · Tint</td><td>Bradford chromatic adaptation in linear light, from the white the camera recorded.
+        Higher Temperatura warms; positive Tint goes towards magenta.</td></tr>
+      <tr><td>Punto bianco</td><td>Resolve's eyedropper: pick a point that should be neutral and Temperatura and Tint set
+        themselves, with the same maths as the render.</td></tr>
+      <tr><td>Esposizione (EI)</td><td>Double the EI is exactly +1 stop, in linear light, before any curve.</td></tr>
+      <tr><td>Spazio colore</td><td><b>Ingresso</b>: input Spazio colore and Gamma (Automatico asks Resolve), Rilevato,
+        Data level and Livello, with <i>Ripristina</i> buttons. <b>Senza metadata</b>: see page 3. <b>Uscita</b>: output
+        Spazio colore and Gamma, like a Color Space Transform; <i>Timeline</i> does not convert. To grade in DWG:
+        <i>DaVinci WG</i> · <i>DaVinci Intermediate</i>. Also LUT size and <i>Esporta LUT (.cube)</i>.</td></tr>
     </table>
     <h2>False colour: one view per control, above its slider</h2>
     <table>
@@ -196,13 +198,13 @@
         <span class="sw" style="background:#1a47e0"></span>deep shadow ·
         <span class="sw" style="background:#6b1f9e"></span>black. The rest in grey.</td></tr>
       <tr><td>Temperature</td><td>As in CineMatch: the picture turns grey,
-        <span class="sw" style="background:#3d82d6"></span>blue = cool cast, raise Color Temp;
+        <span class="sw" style="background:#3d82d6"></span>blue = cool cast, raise Temperatura;
         <span class="sw" style="background:#e3882e"></span>orange = warm, lower it.
         Near-neutral casts are boosted up to 8×.</td></tr>
       <tr><td>Tint</td><td><span class="sw" style="background:#5cc23d"></span>green = raise Tint;
         <span class="sw" style="background:#c43dba"></span>magenta = lower it. Each view reacts only to its own slider.</td></tr>
     </table>
-    <div class="tip">Pick a surface that should be neutral and move the slider <b>until it stays grey</b>; alternate Temp
+    <div class="tip">Pick a surface that should be neutral and move the slider <b>until it stays grey</b>; alternate Temperatura
     and Tint a couple of times. For exposure: middle grey in green, skin in pink. The view replaces the image: turn it off
     before you render.</div>
   </div>
@@ -216,8 +218,9 @@
 <!-- ============ 3 · NODE (2) + DETAIL ============ -->
 <div class="page">
   <div class="half">
-    <div class="part"><h1>The S-Log MetaRaw node</h1><span class="where">Toni (tones), Zone, Avanzate (advanced)</span></div>
-    <p><b>Tones</b>: Highlights is a <b>film shoulder</b>; the others are <b>exposures for a zone</b>, in stops from 18% grey,
+    <div class="part"><h1>The S-Log MetaRaw node</h1><span class="where">Toni (tones), Zone, Senza metadata</span></div>
+    <p><b>Tones</b> shows Highlights, Bianco, Soft Clip and Saturation; <i>Mostra tutti i controlli</i> adds the rest
+    and the Zone (they also appear by themselves when the node uses them). Highlights is a <b>film shoulder</b>; the others are <b>exposures for a zone</b>, in stops from 18% grey,
     where the image moves as with an exposure and texture is kept. No combination can solarise.</p>
     <table>
       <tr><td>Contrast</td><td>Turns around the Pivot; at +100 the slope doubles, at −100 it halves, with bounded ends.</td></tr>
@@ -234,10 +237,8 @@
       <tr><td>Zone <span class="note">(closed)</span></td><td>Black, Shadow, Light, Specular: Exp (stops), Sat, Range (edge),
         Falloff (transition). <b>Soft Clip</b> folds the highlights under a roof: containment, not recovery.
         <b>Zone false colour</b> shows which zone moves each pixel.</td></tr>
-      <tr><td>Avanzate</td><td><i>Ingresso nodo</i> (node input; Automatico asks Resolve) · <i>Data level in ingresso</i>
-        (fixes the code-value scale when Resolve gets it wrong) · <i>Stato</i> (status) · <b>Sblocca controlli senza
-        metadata</b> (unlock without metadata): for ProRes or unreadable clips, type the shooting EI, Kelvin and tint and
-        the controls come alive.</td></tr>
+      <tr><td>Senza metadata</td><td><b>Sblocca controlli</b>: for ProRes or unreadable clips, type the shooting EI, Kelvin
+        and tint and the controls come alive.</td></tr>
     </table>
     <div class="tip"><b>Recipes</b> · burning highlights: Highlights −50…−100 (with a DRT after, Bianco at 4-5) ·
     backlight: Shadows +30…+60 and Blacks −20…−40 · film look: Contrast +20…+30, Highlights −60 · noisy shadows: Shadow Sat
