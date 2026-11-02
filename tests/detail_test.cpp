@@ -26,6 +26,7 @@ static void set(SMDetailControls& c, const std::string& name, double v)
         { "hazeLevel", &c.hazeLevel }, { "hazeWarmth", &c.hazeWarmth }, { "localWhite", &c.localWhite },
         { "adamsShadowL", &c.adamsShadowL }, { "adamsHighL", &c.adamsHighL },
         { "adamsShadowPlace", &c.adamsShadowPlace }, { "adamsHighPlace", &c.adamsHighPlace },
+        { "splitSoft", &c.splitSoft }, { "splitHard", &c.splitHard },
         { "printEdgeBurn", &c.printEdgeBurn }, { "printEdgeSize", &c.printEdgeSize } };
     if (name == "viewGain") c.viewGain = v != 0.0;
     else if (name == "viewBase") c.viewBase = v != 0.0;

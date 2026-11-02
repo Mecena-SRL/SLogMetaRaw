@@ -65,13 +65,19 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
 
     GroupParamDescriptor* mode = defineGroup(d, page, "modeGroup", "Sviluppo e spazio colore", true);
     defineChoice(d, page, "devMode", "Modalità", kDetailModeNames, kDetailModeCount, 0,
-                 "Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone", mode);
+                 "Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone. Split grade: stampa a due "
+                 "esposizioni, morbida per le luci e dura per le ombre", mode);
     defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
-    if (auto* p = defineChoice(d, page, "zonalPhase", "Fase", kZonalPhaseNames, kZonalPhaseCount, 0,
+    if (auto* p = defineChoice(d, page, "zonalPhase", "Fase", kZonalPhaseNames, kPhaseCount, 0,
                                "Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, "
                                "senza aloni: esposizione e N+/N-), 2 Stampa (per aree e bordi), 3 Presenza (Texture, "
                                "Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase", mode))
         p->setIsSecret(true);   // shown in Zonale
+    if (auto* p = defineChoice(d, page, "splitPhase", "Fase", kSplitPhaseNames, kPhaseCount, 0,
+                               "Split grade in tre nodi in serie: 1 Esposizioni (curva globale: luci morbide e ombre "
+                               "dure), 2 Locale (brucia, scherma, bordi), 3 Presenza (Texture, Clarity, Dehaze). "
+                               "Copia il nodo, incollalo dopo e cambia solo Fase", mode))
+        p->setIsSecret(true);   // shown in Split grade
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
                  "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
@@ -81,7 +87,7 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "in tutto), DRT 4,5 / 6, PQ 1000 nit 6,5 / 7, Scena DaVinci WG 9 / 9. Il nodo non converte: lavora "
                  "sempre nella codifica d'ingresso", mode);
 
-    GroupParamDescriptor* adams = defineGroup(d, page, "adamsGroup", "Zonale", true);
+    GroupParamDescriptor* adams = defineGroup(d, page, "adamsGroup", "Misura", true);
     if (adams) adams->setIsSecret(true);
     definePoint(d, page, adams, "adamsShadowPos", "Ombra", 0.3, 0.3,
                 "Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)");
@@ -102,6 +108,23 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
             p->setIsSecret(true);
         }
     if (auto* p = defineInfo(d, page, adams, "adamsInfo", "Zone", "Scegli i due punti e premi Misura zone"))
+        p->setIsSecret(true);
+
+    GroupParamDescriptor* split = defineGroup(d, page, "splitGroup", "Split grade", true);
+    if (split) split->setIsSecret(true);
+    DoubleParamDescriptor* exposures[] = {
+        defineSlider(d, page, "splitSoft", "Luci morbide (stop)", 0, -3, 3, -3, 3, 0.05,
+                     "Tempo dell'esposizione morbida (grado 0, filtro 00), che porta le luci: piu stop = luci piu "
+                     "scure. 0 = le luci cadono sulla zona VIII", split),
+        defineSlider(d, page, "splitHard", "Ombre dure (stop)", 0, -3, 3, -3, 3, 0.05,
+                     "Tempo dell'esposizione dura (grado 5), che porta le ombre: piu stop = ombre piu scure. 0 = le "
+                     "ombre cadono sulla zona III", split) };
+    for (DoubleParamDescriptor* p : exposures)
+        if (p) {
+            p->setDigits(2);
+            p->setIsSecret(true);
+        }
+    if (auto* p = defineInfo(d, page, split, "splitGrade", "Grado", "scegli i due punti e premi Misura"))
         p->setIsSecret(true);
 
     GroupParamDescriptor* range = defineGroup(d, page, "rangeGroup", "Gamma dinamica", true);
@@ -126,7 +149,7 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     trim(d, page, range, "localShadows", "Local Shadows", -100, 100,
          "Apre (positivo) o chiude le ombre per aree, a dettaglio intatto. 100 = 2 stop");
     if (auto* p = defineSlider(d, page, "printEdgeBurn", "Brucia i bordi (stop)", 0, 0, 2, 0, 2, 0.05,
-                               "Zonale, Stampa: scurisce i margini dell'inquadratura come la bruciatura dei bordi in "
+                               "Stampa e Locale: scurisce i margini dell'inquadratura come la bruciatura dei bordi in "
                                "camera oscura. Dipende solo dalla posizione: nessun alone", range)) {
         p->setDigits(2);
         p->setIsSecret(true);
@@ -173,19 +196,15 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineSlider(d, page, "hazeWarmth", "Colore velo", 0, -100, 100, -100, 100, 0.1,
                  "Negativo = velo freddo (cielo, distanza), positivo = caldo (fumo, polvere)", haze);
 
-    if (auto* g = defineGroup(d, page, "zonalGuideGroup", "Guida", true)) {   // shown in Zonale
-        g->setIsSecret(true);
-        for (int i = 0; i < kZonalGuideRows; ++i)
-            if (auto* p = defineInfo(d, page, g, kZonalGuideNames[i], kZonalGuideLabels[i],
-                                     kZonalGuide[SM_DT_PHASE_DEVELOP][i]))
-                p->setIsSecret(true);
-    }
+    if (auto* g = defineGroup(d, page, "zonalGuideGroup", "Guida", true))   // in every mode; the rows follow mode and phase
+        for (int i = 0; i < kGuideRows; ++i)
+            defineInfo(d, page, g, kGuideNames[i], kGuideLabels[i], kGuide[SM_DT_MODE_ZONAL][SM_DT_PHASE_DEVELOP][i]);
 
     if (claimName("boundPath")) hideParam(d.defineStringParam("boundPath"), page);
     defineHiddenInt(d, page, "camSpace", -1);
     defineHiddenInt(d, page, "camGamma", -1);
     defineHiddenInt(d, page, "settingsVersion", 0);
-    defineHiddenDouble(d, page, "adamsShadowL", 0.0);    // Zonale: L of the norm at the shadow and the highlight
+    defineHiddenDouble(d, page, "adamsShadowL", 0.0);    // Zonale and Split grade: L of the norm at the shadow and the highlight
     defineHiddenDouble(d, page, "adamsHighL", 0.0);
 }
 

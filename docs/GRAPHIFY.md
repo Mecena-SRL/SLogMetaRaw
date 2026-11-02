@@ -58,7 +58,7 @@ common/  (condiviso dai due nodi)
   controlli di Toni e Zone). Pannello a gruppi annidati: Ripresa, Spazio colore (Ingresso, Senza metadata,
   Uscita), Toni, Zone, Dati di ripresa.
 - **Detail** (secondo nodo): recupero locale/texture; non legge metadata clip, lavora sui pixel
-  in ingresso (`DetailPasses`, GPU Metal + fallback CPU). Modalità Zonale (Standard e Cinematografico eliminati); la
+  in ingresso (`DetailPasses`, GPU Metal + fallback CPU). Modalità Zonale e Split grade (Standard e Cinematografico eliminati); la
   Zonale in fasi (`zonalPhase`): Sviluppo puntuale (`dt_zonal_gain`), Stampa per aree + `dt_edge_burn`,
   Presenza. Parametri: `math/DetailHost.h::dt_prepare`, per pixel: `math/Detail.h::dt_gain`.
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando

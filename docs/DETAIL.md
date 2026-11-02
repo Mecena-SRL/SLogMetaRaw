@@ -44,7 +44,7 @@ al bianco, e non resta niente da recuperare.
 
 | Gruppo | Controllo | Cosa fa |
 |---|---|---|
-| Sviluppo e spazio colore | **Modalità** | Zonale (Ansel Adams), vedi sotto; una riga dice cosa fa |
+| Sviluppo e spazio colore | **Modalità** | Zonale (Ansel Adams) o Split grade (stampa), vedi sotto; una riga dice cosa fa |
 | | **Ingresso (IDT)** | la codifica che entra nel nodo (prima in Avanzate, stesso nome salvato) |
 | | **Destinazione (ODT)** | bianco e nero dell'uscita: Dal Bianco (manuale), Rec.709 CST, Rec.709 DRT, PQ 1000, Scena DWG |
 | Gamma dinamica | **Local Contrast** (−100…+50) | contrasto delle grandi aree attorno al grigio, a dettaglio intatto |
@@ -64,6 +64,16 @@ al bianco, e non resta niente da recuperare.
 | | Clarity: centro | il tono dove Clarity lavora di più |
 | | Bianco (2,5 stop) | dove Local Highlights −100 porta il massimo registrato, con Destinazione «Dal Bianco»; con un DRT dopo, 4–5 |
 | Velo | Livello (EV), Colore | luminanza e colore del velo; mai stimati fotogramma per fotogramma |
+
+### Modalità Split grade: due esposizioni
+
+La stampa a due esposizioni: una morbida (grado 0, filtro 00) che porta le luci e una dura (grado 5) che porta le
+ombre; l'ordine non conta. Fasi: **1 · Esposizioni**, **2 · Locale**, **3 · Presenza**, o un nodo; la Guida segue.
+Ombra e Luce e **Misura** sono quelli della Zonale. **Luci morbide** e **Ombre dure** sono in stop (più stop = più
+scuro): a 0 le luci cadono sulla zona VIII e le ombre sulla III. Il **Grado** (da 0 morbida a 5 dura) esce dalla
+pendenza della curva, 2,5 per la pendenza dell'immagine stessa e 2,5 gradi per ogni raddoppio: è un'ipotesi, da
+verificare su stampe vere. In Locale, Local Highlights brucia le luci e Local Shadows schiarisce le ombre.
+Il provino (strisce, matrice morbida×dura, modi di unire) e il motore a due strati arrivano in un passo successivo.
 
 ### Modalità Zonale: tre fasi, tre nodi
 

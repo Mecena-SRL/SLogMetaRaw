@@ -122,6 +122,10 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    Cinematografico eliminati con codice, parametri e test, senza migrazione (settingsVersion 3: i nodi salvati diventano
    Zonale). Proposta e fonti: Claude Doc «Detail: Stampa split grade, BTZS e Auto zone». Da fare in PR successive: Split grade,
    Misura automatica e Unito, provino.
+   Split grade, motore a curva (02/11/2026, non rilasciato): seconda modalità, con Fase propria (Esposizioni, Locale,
+   Presenza), Guida per modalità e fase, Luci morbide e Ombre dure in stop sulla stessa curva dello Sviluppo e Grado
+   letto dalla pendenza (2,5 + 2,5·log2 k: ipotesi da verificare su stampe vere). Misura e punti sul viewer sono
+   condivisi con la Zonale. Da fare: provino (strisce, matrice morbida×dura, unioni), motore a due strati, Unito.
    Detail, Zonale in tre fasi (02/11/2026, non rilasciato): dopo la ricerca sul sistema zonale e la prova di Ivan
    (troppi artefatti), il lavoro è diviso come in camera oscura, un nodo per fase in serie: Sviluppo (curva puntuale,
    ruota attorno all'ombra, piede e spalla), Stampa (toni per aree + bordi bruciati), Presenza. Decisioni: tre nodi,

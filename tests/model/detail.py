@@ -36,6 +36,8 @@ HL_GAMMA = 0.6             # where the base is compressed, the kept detail is ra
 HL_T = (0.7, 0.6)          # x edgeThreshold: detail kept whole up to T1, saturating by T1 + T2 (edges)
 HL_B = (0.3, 0.2)          # x edgeThreshold: the same, smaller, for the boost
 
+SPLIT_RANGE = 3.0                 # Split grade: stops either way of each exposure
+
 DETAIL_CONTROLS = {
     'localContrast': (-100.0, 50.0, 0.0), 'localHighlights': (-100.0, 100.0, 0.0),
     'localShadows': (-100.0, 100.0, 0.0), 'texture': (-100.0, 100.0, 0.0), 'clarity': (-100.0, 100.0, 0.0),
@@ -46,14 +48,16 @@ DETAIL_CONTROLS = {
     'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0),
     # development mode and destination (the transform after the node)
     'viewZones': (0.0, 2.0, 0.0),
-    'devMode': (0.0, 0.0, 0.0), 'destination': (0.0, 4.0, 0.0),
+    'devMode': (0.0, 1.0, 0.0), 'destination': (0.0, 4.0, 0.0),
+    'splitSoft': (-SPLIT_RANGE, SPLIT_RANGE, 0.0), 'splitHard': (-SPLIT_RANGE, SPLIT_RANGE, 0.0),
     # Zonale: the shadow and the highlight read on the picture (L of the norm), the zones they are placed on
     'adamsShadowL': (-16.0, 16.0, 0.0), 'adamsHighL': (-16.0, 16.0, 0.0),
     'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0),
     # Zonale in phases: one node (all), 1 development, 2 print, 3 presence; the print's edge burn
     'zonalPhase': (0.0, 3.0, 0.0), 'printEdgeBurn': (0.0, 2.0, 0.0), 'printEdgeSize': (10.0, 60.0, 30.0)}
 
-MODE_ZONAL = 0                    # the development modes: Zonale (Ansel Adams)
+MODE_ZONAL, MODE_SPLIT = 0, 1     # the development modes: Zonale (Ansel Adams), Split grade
+SPLIT_SHADOW_ZONE, SPLIT_HIGH_ZONE = 3.0, 8.0   # where a print with both exposures at 0 puts them
 ADAMS_MIN_SPREAD = 0.25           # the highlight stays at least this many zones above the shadow
 PHASE_ALL, PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE = 0, 1, 2, 3
 ZD_K_MIN, ZD_K_MAX = 0.25, 4.0    # development slope: about N-2.5 to N+5 on a 3-stop scene
@@ -205,14 +209,23 @@ def zonal_develop(v):
     gap = Lh - Ls
     if gap <= MIN_GAP:
         return None
-    zs = v['adamsShadowPlace']
-    zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
     white, black = destination_white(v), destination_black(v)
-    Lso, Lho = zone_L(zs, white, black), zone_L(zh, white, black)
+    if int(round(v['devMode'])) == MODE_SPLIT:   # the soft exposure places the light, the hard one the shadow
+        Lso = zone_L(SPLIT_SHADOW_ZONE, white, black) - v['splitHard']
+        Lho = max(zone_L(SPLIT_HIGH_ZONE, white, black) - v['splitSoft'], Lso + MIN_GAP)
+    else:
+        zs = v['adamsShadowPlace']
+        zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
+        Lso, Lho = zone_L(zs, white, black), zone_L(zh, white, black)
     k = min(max((Lho - Lso) / gap, ZD_K_MIN), ZD_K_MAX)
     hi = Lso + k * gap
     return {'Ls': Ls, 'Lso': Lso, 'k': k, 'hi': hi,
             'hiD': max(white + ZD_ROOM - hi, 0.25), 'loD': max(Lso + black + ZD_ROOM, 0.25)}
+
+
+def split_grade(k):
+    """dt_split_grade: the paper grade the slope stands for (2.5 normal; a hypothesis to check on prints)."""
+    return 2.5 + 2.5 * math.log2(k)
 
 
 def zonal_gain(L, zd):
@@ -270,14 +283,13 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     sigma_t = math.sqrt(max(sigma2 * sigma2 - tent_variance(st), 0.25)) / st
 
     radius = v['detailRadius']
-    zonal = int(round(v['devMode'])) == MODE_ZONAL
-    phase = int(round(v['zonalPhase'])) if zonal else PHASE_ALL
+    phase = int(round(v['zonalPhase']))
     develop, printing, presence = (phase in (PHASE_ALL, ph) for ph in (PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE))
     if not presence:
         v['texture'] = v['clarity'] = v['dehaze'] = 0.0
     if not printing:
         v['localContrast'] = v['localShadows'] = v['localHighlights'] = 0.0
-    zd = zonal_develop(v) if zonal and develop else None
+    zd = zonal_develop(v) if develop else None
     nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS   # the print has three local tones
     nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
     curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, 0.0, nominal)
@@ -298,9 +310,9 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         'view': 1 if v['viewGain'] else (2 if v['viewBase'] else (2 + int(round(v['viewZones'])) if v['viewZones'] else 0)),
         'zoneWhite': destination_white(v), 'zoneBlack': destination_black(v),
         'space': space, 'zd': zd,
-        'ebAmt': v['printEdgeBurn'] if zonal and printing else 0.0,
+        'ebAmt': v['printEdgeBurn'] if printing else 0.0,
         'ebR0': 1.0 - v['printEdgeSize'] / 100.0, 'ebS': v['printEdgeSize'] / 100.0,
-        'pzOn': zonal and presence,
+        'pzOn': presence,
     }
     p['legend'] = legend_layout(W, H, p['view'], zd, v)
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))

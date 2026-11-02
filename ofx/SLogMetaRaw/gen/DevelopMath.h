@@ -1323,13 +1323,16 @@ struct SMDetailControls {
     int viewGain, viewBase, viewZones;            // viewZones: 0 off, 1 colours, 2 greys
     int devMode, destination;                     // SM_DT_MODE_*, SM_DT_DEST_*
     double adamsShadowL, adamsHighL, adamsShadowPlace, adamsHighPlace;  // Zonale: L read, zones placed on
+    double splitSoft, splitHard;                  // Split grade: stops of the soft and the hard exposure
     int zonalPhase;                               // SM_DT_PHASE_*: Zonale in one node or in three
     double printEdgeBurn, printEdgeSize;          // Zonale, print: stops burned at the edges, % of the frame
 };
 
 static const int SM_DT_GRID_BASE = 540;   // working height: H / s in [0.707, 1.414) * 540
 static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a stop under grey: the detail is kept there
-static const int SM_DT_MODE_ZONAL = 0;   // the development modes: Zonale (Ansel Adams)
+static const int SM_DT_MODE_ZONAL = 0, SM_DT_MODE_SPLIT = 1;   // the development modes: Zonale (Ansel Adams), Split grade
+static const double SM_DT_SPLIT_RANGE = 3.0;                    // stops either way of each exposure
+static const double SM_DT_SPLIT_SHADOW_ZONE = 3.0, SM_DT_SPLIT_HIGH_ZONE = 8.0;   // where a print with both at 0 puts them
 static const double SM_DT_ADAMS_MIN_SPREAD = 0.25;
 // Zonale in phases, one node each (or all in one): development (global), print (local), presence (detail)
 static const int SM_DT_LG_MIN_H = 48;   // under it the zone views have no legend
@@ -1380,9 +1383,16 @@ struct SMZonalDevelop { double Ls, Lso, k, hi, hiD, loD; };
 static inline bool dt_zonal_develop(const SMDetailControls* v, SMZonalDevelop* d) {
     const double Ls = v->adamsShadowL, Lh = v->adamsHighL, gap = Lh - Ls;
     if (!(gap > SM_DT_MIN_GAP)) return false;
-    const double zs = v->adamsShadowPlace, zh = fmax(v->adamsHighPlace, zs + SM_DT_ADAMS_MIN_SPREAD);
     const double white = dt_destination_white(v), black = dt_destination_black(v);
-    const double Lso = dt_zone_L(zs, white, black), Lho = dt_zone_L(zh, white, black);
+    double Lso, Lho;
+    if (v->devMode == SM_DT_MODE_SPLIT) {   // the print's two exposures: the soft one places the light, the hard one the shadow
+        Lso = dt_zone_L(SM_DT_SPLIT_SHADOW_ZONE, white, black) - v->splitHard;
+        Lho = fmax(dt_zone_L(SM_DT_SPLIT_HIGH_ZONE, white, black) - v->splitSoft, Lso + SM_DT_MIN_GAP);
+    } else {
+        const double zs = v->adamsShadowPlace, zh = fmax(v->adamsHighPlace, zs + SM_DT_ADAMS_MIN_SPREAD);
+        Lso = dt_zone_L(zs, white, black);
+        Lho = dt_zone_L(zh, white, black);
+    }
     d->Ls = Ls;
     d->Lso = Lso;
     d->k = sm_clampd((Lho - Lso) / gap, SM_DT_ZD_K_MIN, SM_DT_ZD_K_MAX);
@@ -1391,6 +1401,10 @@ static inline bool dt_zonal_develop(const SMDetailControls* v, SMZonalDevelop* d
     d->loD = fmax(Lso + black + SM_DT_ZD_ROOM, 0.25);
     return true;
 }
+
+// The paper grade the slope stands for: 2.5 is normal, each doubling of the slope is 2.5 grades (hypothesis, to be
+// checked on prints: the sources give one grade per doubling of the soft/hard ratio).
+static inline double dt_split_grade(double k) { return 2.5 + 2.5 * log2(k); }
 
 // The zones the shadow and the highlight land on: exact, unless the slope hits its limit.
 static inline void dt_zonal_reached(const SMDetailControls* v, double* zs, double* zh) {
@@ -1459,7 +1473,9 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.hazeLevel = sm_clampd(v.hazeLevel, -2, 6);
     v.hazeWarmth = sm_clampd(v.hazeWarmth, -100, 100);
     v.localWhite = sm_clampd(v.localWhite, 1, 10);
-    v.devMode = SM_DT_MODE_ZONAL;
+    v.devMode = v.devMode == SM_DT_MODE_SPLIT ? SM_DT_MODE_SPLIT : SM_DT_MODE_ZONAL;
+    v.splitSoft = sm_clampd(v.splitSoft, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE);
+    v.splitHard = sm_clampd(v.splitHard, -SM_DT_SPLIT_RANGE, SM_DT_SPLIT_RANGE);
     v.destination = v.destination < 0 ? 0 : (v.destination >= SM_DT_DEST_COUNT ? SM_DT_DEST_COUNT - 1 : v.destination);
     v.viewZones = v.viewZones < 0 ? 0 : (v.viewZones > 2 ? 2 : v.viewZones);
     v.adamsShadowL = sm_clampd(v.adamsShadowL, -16, 16);
@@ -1469,9 +1485,8 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.zonalPhase = v.zonalPhase < 0 ? 0 : (v.zonalPhase > SM_DT_PHASE_PRESENCE ? SM_DT_PHASE_PRESENCE : v.zonalPhase);
     v.printEdgeBurn = sm_clampd(v.printEdgeBurn, 0, 2);
     v.printEdgeSize = sm_clampd(v.printEdgeSize, 10, 60);
-    const bool zonal = v.devMode == SM_DT_MODE_ZONAL;
     // Zonale: each phase runs its own part; in one node (all) every part runs
-    const int phase = zonal ? v.zonalPhase : SM_DT_PHASE_ALL;
+    const int phase = v.zonalPhase;   // Zonale and Split grade share the three phases and the development curve
     const bool develop = phase == SM_DT_PHASE_ALL || phase == SM_DT_PHASE_DEVELOP;
     const bool printing = phase == SM_DT_PHASE_ALL || phase == SM_DT_PHASE_PRINT;
     const bool presence = phase == SM_DT_PHASE_ALL || phase == SM_DT_PHASE_PRESENCE;
@@ -1513,12 +1528,12 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     for (int k = 0; k < 4; ++k) nominal[5][k] = sh[k];
     sm_zone_policy(exp2(v.localContrast / 100.0) - 1.0, 0.0, nominal, &p->curve);
     SMZonalDevelop zd;
-    if (zonal && develop && dt_zonal_develop(&v, &zd)) {
+    if (develop && dt_zonal_develop(&v, &zd)) {
         p->zdOn = 1;
         p->zdLs = (float)zd.Ls; p->zdLso = (float)zd.Lso; p->zdK = (float)zd.k;
         p->zdHi = (float)zd.hi; p->zdHiD = (float)zd.hiD; p->zdLoD = (float)zd.loD;
     }
-    p->ebAmt = zonal && printing ? (float)v.printEdgeBurn : 0.0f;
+    p->ebAmt = printing ? (float)v.printEdgeBurn : 0.0f;
     p->ebS = (float)(v.printEdgeSize / 100.0);
     p->ebR0 = 1.0f - p->ebS;
     int slots = 0;
@@ -1565,7 +1580,7 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->view = v.viewGain ? 1 : (v.viewBase ? 2 : (v.viewZones ? 2 + v.viewZones : 0));
     p->zoneWhite = (float)dt_destination_white(&v);
     p->zoneBlack = (float)dt_destination_black(&v);
-    p->pzOn = zonal && presence ? 1 : 0;
+    p->pzOn = presence ? 1 : 0;
     if (p->view >= 3 && H >= SM_DT_LG_MIN_H) {   // the legend: sizes follow the frame, ticks once measured
         const int hb = H / 20 > 6 ? H / 20 : 6, m = W * 3 / 100 > 2 ? W * 3 / 100 : 2, span = W - 2 * m;
         p->lgOn = 1;
