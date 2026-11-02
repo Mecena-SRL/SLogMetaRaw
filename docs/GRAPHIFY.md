@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 2.4.0. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 3.0.0. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -96,7 +96,8 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: 01/11/2026 — verificata la mappa contro main alla 2.4.0 (nessun modulo nuovo o rimosso:
+_Ultimo aggiornamento: 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
+dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:
 cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
 `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata
 dall'Atlante, vista Manutenzione._

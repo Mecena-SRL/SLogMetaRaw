@@ -22,7 +22,7 @@ S-Log MetaRaw lee esos datos y los usa. Tiene tres partes:
 |---|---|---|
 | **Script** | Workspace › Scripts › S-Log MetaRaw | lee los metadatos de todos los clips del proyecto y los escribe en el Media Pool |
 | Nodo **S-Log MetaRaw** | Color › OpenFX | revela un clip a partir de sus valores de rodaje: balance, exposición, espacio de color, tonos por zonas, falso color |
-| Nodo **S-Log MetaRaw Detail** | Color › OpenFX | el nodo creativo: recuperación local de tonos, Texture, Clarity, Dehaze |
+| Nodo **S-Log MetaRaw Detail** | Color › OpenFX | el nodo creativo, con los modos del cuarto oscuro (Zonale, Split grade, Unito): recuperación local de tonos, Texture, Clarity, Dehaze |
 
 Ningún archivo se transcodifica y ningún original se escribe nunca.
 
@@ -45,7 +45,7 @@ lo mejor de lo que hay. No puede crear lo que no hay.
 
 ## Instalación
 
-1. Descarga `SLogMetaRaw-2.4.0.dmg` desde **Releases** y ábrelo.
+1. Descarga `SLogMetaRaw-3.0.0.dmg` desde **Releases** y ábrelo.
 2. Doble clic en **Installa S-Log MetaRaw.pkg**. No está firmado con un certificado de Apple: la primera vez, clic
    derecho › **Abrir**. Pide la contraseña del Mac porque el plugin va en una carpeta del sistema.
 3. Reinicia DaVinci Resolve.
@@ -131,7 +131,7 @@ El nodo es puntual: cada píxel depende solo de sí mismo. Nunca crea halos y **
 
 | Control | Qué hace |
 |---|---|
-| **Versión** (arriba) | `v2.4.0`. Una vez al día pregunta a GitHub por la última release. Si la hay muestra **🟢 v2.4.0 → 2.x.y** y el clic abre en el navegador la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo |
+| **Versión** (arriba) | `v3.0.0`. Una vez al día pregunta a GitHub por la última release. Si la hay muestra **🟢 v3.0.0 → 3.x.y** y el clic abre en el navegador la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo |
 | **Camera** · **Rileggi metadata** | la cámara leída. *Rileggi* (releer) vuelve a leer el clip, devuelve cada control a los valores de cámara y escribe los metadatos del clip en el Media Pool |
 | **Ripresa** (rodaje) · **Decodifica** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot o un preset. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
@@ -186,20 +186,24 @@ aplanar el detalle fino. Es la parte de Highlights y Shadows de Lightroom que un
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
+| **Misura** (medición) | puntos *Ombra* y *Luce* en el visor, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
+| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** (tira de prueba) |
 | **Gamma dinamica** (rango dinámico) | Local Contrast, Local Highlights, Local Shadows; vistas de *ganancia* y *base*. Local Highlights comprime las grandes áreas luminosas y conserva, incluso refuerza, la textura fina: el cielo se oscurece y las nubes mantienen su detalle. El Highlights del nodo principal en cambio suaviza la textura de las altas luces, como la película |
 | **Presenza** (presencia) | Texture, Clarity, Dehaze |
 | **Avanzate** (avanzado) | preservación del detalle, radio, umbrales de bordes y ruido, centro de Clarity, **Bianco** de Local Highlights |
 | **Velo** | nivel y color del velo que quita Dehaze: los decides tú, nunca se estiman fotograma a fotograma |
 
-**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. No publicado: Standard y Cinematografico se han eliminado (por ahora solo Zonale); los nodos guardados con ellos se abren como Zonale.
+**Modos (3.0.0).** Tres métodos del cuarto oscuro, cada uno en tres **fases**, un nodo por fase en serie (o todas en un nodo). La **Guida**, al final del panel, da para cada fase el objetivo, tres pasos y qué hacer después (copia el nodo, pégalo detrás, cambia Fase). Los nodos guardados con la 2.4.0 en Standard o Cinematografico se abren como Zonale y cambian de aspecto.
 
 - **Destinazione (ODT)** indica al nodo qué transformación viene después, para saber dónde quedan el blanco (zona X) y el negro (zona 0). Nunca convierte la imagen. *Dal Bianco (manuale)* usa Avanzate › Bianco; las demás lo fijan: Rec.709 CST +2,5/−4,5 pasos alrededor del gris, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (sistema de zonas de Ansel Adams): elige una *Ombra* y una *Luce* con detalle, pulsa **Misura zone**, coloca la sombra con *Ombra sulla zona* (exposición, III por defecto) y la luz con *Luci sulla zona* (revelado N+/N−, VIII por defecto). Zona V = gris 18 %; zonas 0 y X = negro y blanco del destino. La línea de información muestra zonas medidas → alcanzadas, N y el rango de salida.
-  En tres fases, un nodo cada una en serie (**Fase**): *1 · Sviluppo* (revelado: curva global por píxel, sin halos: exposición y N±), *2 · Stampa* (copia: Local Shadows/Highlights/Contrast por zonas y **Brucia i bordi**, quemado de bordes), *3 · Presenza* (Texture, Clarity, Dehaze). La línea **Guida** indica el paso siguiente: copia el nodo, pégalo después y cambia Fase.
-- **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran, en cualquier modo, en qué zona cae cada área tras el nodo. Una vista a la vez.
+- **Zonale** (Ansel Adams): pon *Ombra* y *Luce* sobre detalles que quieras conservar, pulsa **Misura zone** y luego *Ombra sulla zona* (exposición, III por defecto) y *Luci sulla zona* (revelado N+/N−, VIII por defecto). Fases: *1 · Sviluppo* (curva por píxel, sin halos), *2 · Stampa* (Local Shadows, Highlights, Contrast por áreas, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, plenas en las zonas II–VIII).
+- **Split grade** (copia con dos exposiciones): **Luci morbide** (exposición suave, grado 0) lleva las luces a la zona VIII y **Ombre dure** (dura, grado 5) las sombras a la III, en pasos; **Grado** lee el resultado. **Unione**: *Curva* (una sola curva) o *Due strati* (una capa suave y una dura, como en el papel). **Provino** muestra una tira de prueba sobre la imagen (tiras, matriz suave × dura o las dos uniones comparadas): mueve *Provino: cella* y pulsa **Usa la cella**. Fases: *Esposizioni*, *Locale*, *Presenza*.
+- **Unito** (Split grade + zonas automáticas + BTZS): el rango del sujeto se compara con la escala del papel (zonas III–VIII del destino); el revelado (N±) lo acerca y la copia con dos exposiciones hace el resto.
+- **Misura automatica**, en cualquier modo, lee todo el fotograma y toma los percentiles 2 y 98 como sombra y luz.
+- **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran en qué zona cae cada área tras el nodo, con la leyenda 0–X.
 
-Aún no verificado en Resolve: aparición de los controles por modo, puntos en el visor, Misura y vista de zonas en Metal.
+Aún no probado en Resolve y Metal no ejecutado. La fórmula del grado, los percentiles y los límites del revelado son hipótesis de esta implementación, no verificadas con el BTZS ni en copias reales. [docs/DETAIL.md](docs/DETAIL.md)
 
 - Ponlo **justo después** de S-Log MetaRaw, antes de CST, LUT o DRT. Decodifica a luz lineal lo que recibe y lo vuelve a
   escribir en la misma codificación, así que va antes de cualquier conversión: deja Color Space y Gamma del nodo principal
@@ -220,7 +224,7 @@ quitar. [docs/DETAIL.md](docs/DETAIL.md)
 ## Actualizaciones y privacidad
 
 - Los **nodos** preguntan a GitHub por la última release de este proyecto como mucho una vez al día, en segundo plano.
-  La petición lleva solo la versión del programa (`User-Agent: SLogMetaRaw/2.4.0`). Para desactivarlo crea el archivo
+  La petición lleva solo la versión del programa (`User-Agent: SLogMetaRaw/3.0.0`). Para desactivarlo crea el archivo
   vacío `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - El **script** solo consulta cuando haces clic en su versión.
 - Un clic solo abre un enlace de descarga de las releases de GitHub de este proyecto. Nada se instala sin ti.

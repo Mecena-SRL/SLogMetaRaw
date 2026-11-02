@@ -248,35 +248,38 @@
 
   <div class="half" style="flex-grow: 1.25">
     <div class="part"><h1>Il nodo S-Log MetaRaw Detail</h1><span class="where">Color › OpenFX · dopo S-Log MetaRaw, prima del CST d'uscita</span></div>
-    <p>Il nodo creativo. Lavora <b>per aree</b>, su una base che rispetta i bordi: sposta le grandi zone di luce senza
-    appiattire il dettaglio fine. È la parte di Highlights e Shadows "alla Lightroom" che un nodo puntuale non può fare.</p>
-    <p><b>In e Out sono lo stesso spazio</b>: decodifica in luce lineare quello che riceve e lo riscrive nella stessa
-    codifica. Accetta solo codifiche <b>log di scena</b>: S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct. Non Rec.709,
-    Gamma 2.4 o sRGB: sono già per il monitor, con le luci tagliate al bianco.</p>
+    <p>Il nodo creativo: tre metodi della camera oscura, ognuno in tre <b>fasi</b> (<i>Fase</i>), un nodo per fase in serie o
+    tutte in uno. La <b>Guida</b> in fondo al pannello dà per ogni fase lo scopo, tre passi e il passo dopo.
+    <b>Destinazione (ODT)</b> dichiara la trasformazione dopo il nodo (non converte mai): decide dove cadono la zona 0
+    (nero) e la zona X (bianco). <b>Misura automatica</b> legge il fotogramma (2° e 98° percentile) in ogni modalità.
+    Ingresso: solo log di scena (S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct), riscritto nella stessa codifica.</p>
+    <table style="margin-bottom: 1.8mm">
+      <tr><td>Zonale</td><td>Ansel Adams. Metti <i>Ombra</i> e <i>Luce</i> nel viewer, <b>Misura zone</b>, poi <i>Ombra sulla
+        zona</i> (esposizione, III) e <i>Luci sulla zona</i> (sviluppo N±, VIII). Fasi: Sviluppo (curva sul pixel, senza
+        aloni) · Stampa (toni locali, <b>Brucia i bordi</b>) · Presenza.</td></tr>
+      <tr><td>Split grade</td><td>Stampa a due esposizioni: <b>Luci morbide</b> (grado 0) porta le luci sulla VIII, <b>Ombre
+        dure</b> (grado 5) le ombre sulla III; <b>Unione</b> Curva o Due strati. <b>Provino</b>: un provino sull'immagine;
+        scegli una cella e <b>Usa la cella</b>.</td></tr>
+      <tr><td>Unito</td><td>Split grade + zone automatiche + BTZS: lo sviluppo (N±) porta il soggetto verso la scala della
+        carta (zone III–VIII), la stampa fa il resto.</td></tr>
+    </table>
     <table style="margin-bottom: 1.8mm">
       <tr><td>Consigliato</td><td>Nodo principale su <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail con
-        <i>Ingresso nodo</i> su <i>DaVinci WG/Intermediate</i> (in una timeline non gestita va dichiarato) → grade in DWG →
+        <i>Ingresso (IDT)</i> su <i>DaVinci WG/Intermediate</i> → grade in DWG →
         per ultimo un <b>CST d'uscita</b> DaVinci WG/Intermediate → Rec.709 · Gamma 2.4, tone mapping DaVinci. Con il tone mapping dopo, il <b>Bianco</b> dei due nodi va a 4-5.</td></tr>
       <tr><td>Tutto in log</td><td>Nodo principale su Timeline → Detail su Automatico (usa l'S-Log3 della clip) → CST
         S-Gamut3.Cine/S-Log3 → Rec.709 o DWG.</td></tr>
-      <tr><td>Color managed</td><td>Timeline in DaVinci WG/Intermediate: entrambi su Timeline e Automatico, l'uscita la fa il
-        progetto.</td></tr>
-      <tr><td>Da evitare</td><td>Nodo principale in Rec.709 → Detail: Automatico non lo sa e lo decodifica come S-Log3 (o
-        come la timeline), e le luci sono già tagliate.</td></tr>
     </table>
     <table>
-      <tr><td>Gamma dinamica</td><td><b>Local Highlights</b> comprime le grandi aree luminose e tiene, anzi rinforza, la
-        texture: il cielo si scurisce e le nuvole restano definite (quello del nodo principale la ammorbidisce, come la
-        pellicola). <b>Local Shadows</b> apre (+) o chiude (−) le ombre; <b>Local Contrast</b> il contrasto delle grandi
+      <tr><td>Gamma dinamica</td><td><i>Vista: zone</i> (colori o grigi, legenda 0–X) · <b>Local Highlights</b> comprime le grandi aree luminose e tiene, anzi rinforza, la
+        texture: il cielo si scurisce e le nuvole restano definite. <b>Local Shadows</b> apre (+) o chiude (−) le ombre; <b>Local Contrast</b> il contrasto delle grandi
         aree. Viste <i>guadagno</i> e <i>base</i>.</td></tr>
       <tr><td>Presenza</td><td><b>Texture</b>: dettaglio fine, non alza la grana sotto la soglia rumore; in negativo leviga.
         <b>Clarity</b>: contrasto locale sui mezzitoni. <b>Dehaze</b>: toglie (+) o aggiunge (−) velo.</td></tr>
       <tr><td>Avanzate · Velo</td><td>Preserva dettaglio, raggio, <b>soglia bordi</b>, soglia rumore, centro di Clarity,
-        <b>Bianco</b> di Local Highlights, ingresso. Il velo (livello e colore) lo decidi tu: mai stimato per fotogramma.</td></tr>
+        <b>Bianco</b> di Local Highlights. Il velo (livello e colore) lo decidi tu: mai stimato per fotogramma.</td></tr>
     </table>
-    <div class="tip"><b>Per iniziare</b> · Local Highlights −30…−60 e Local Shadows +20…+50 · Texture +10…+30 · Clarity
-    con moderazione · Dehaze solo se c'è un velo vero, con il livello del velo regolato sulla scena.<br>
-    <b>Limiti misurati</b> · Local Highlights −100: alone sotto il 3% sul lato scuro dei bordi. Local Shadows e zone a ±100:
+    <div class="tip"><b>Limiti misurati</b> · Local Highlights −100: alone sotto il 3% sul lato scuro dei bordi. Local Shadows a ±100:
     su un bordo netto di 1 stop l'alone arriva a circa il 12% del gradino (4-6% su 2-3
     stop): se lo vedi, abbassa <i>Soglia bordi</i>. Vicino ai bordi forti la grana può crescere di 1,25-1,7 volte. È
     <b>spaziale</b>: Generate LUT lo esclude insieme al resto del suo nodo, quindi tienilo in un nodo tutto suo. Stesso

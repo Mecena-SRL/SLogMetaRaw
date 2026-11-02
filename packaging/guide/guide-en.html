@@ -249,40 +249,42 @@
 
   <div class="half" style="flex-grow: 1.25">
     <div class="part"><h1>The S-Log MetaRaw Detail node</h1><span class="where">Color › OpenFX · after S-Log MetaRaw, before the output CST</span></div>
-    <p>The creative node. It works <b>by areas</b>, over an edge-aware base: it moves large areas of light without flattening
-    the fine detail. That is the "Lightroom" part of Highlights and Shadows a pointwise node cannot do.</p>
-    <p><b>In and Out are the same space</b>: it decodes what it receives to linear light and writes it back in the same
-    encoding. It only takes <b>scene log</b> encodings: S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct. Not Rec.709,
-    Gamma 2.4 or sRGB: those are already for the monitor, with highlights clipped at white.</p>
+    <p>The creative node: three darkroom methods, each in three <b>phases</b> (<i>Fase</i>), one node per phase in series or
+    all in one. The <b>Guida</b> at the bottom of the panel gives each phase's purpose, three steps and the next step.
+    <b>Destinazione (ODT)</b> declares the transform after the node (it never converts): it sets where zone 0 (black) and
+    zone X (white) land. <b>Misura automatica</b> reads the frame (2nd/98th percentile) in every mode.
+    Input: scene log only (S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct), written back in the same encoding.</p>
+    <table style="margin-bottom: 1.8mm">
+      <tr><td>Zonale</td><td>Ansel Adams. Put <i>Ombra</i> and <i>Luce</i> on the viewer, <b>Misura zone</b>, then <i>Ombra sulla
+        zona</i> (exposure, III) and <i>Luci sulla zona</i> (development N±, VIII). Phases: Sviluppo (per-pixel curve, no
+        halos) · Stampa (local tones, <b>Brucia i bordi</b>) · Presenza.</td></tr>
+      <tr><td>Split grade</td><td>Two-exposure print: <b>Luci morbide</b> (grade 0) puts the highlights on VIII, <b>Ombre
+        dure</b> (grade 5) the shadows on III; <b>Unione</b> Curva or Due strati. <b>Provino</b>: a test strip on the image;
+        pick a cell and <b>Usa la cella</b>.</td></tr>
+      <tr><td>Unito</td><td>Split grade + automatic zones + BTZS: development (N±) brings the subject towards the paper scale
+        (zones III–VIII), the print does the rest.</td></tr>
+    </table>
     <table style="margin-bottom: 1.8mm">
       <tr><td>Recommended</td><td>Main node on <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail with <i>Ingresso
-        nodo</i> (node input) on <i>DaVinci WG/Intermediate</i> (on an unmanaged timeline you must declare it) → grade in DWG →
+        (IDT)</i> on <i>DaVinci WG/Intermediate</i> → grade in DWG →
         last, an <b>output CST</b> DaVinci WG/Intermediate → Rec.709 · Gamma 2.4, DaVinci tone mapping. With tone mapping
         after, set <b>Bianco</b> to 4-5 in both nodes.</td></tr>
       <tr><td>All in log</td><td>Main node on Timeline → Detail on Automatic (uses the clip's S-Log3) → CST
         S-Gamut3.Cine/S-Log3 → Rec.709 or DWG.</td></tr>
-      <tr><td>Colour managed</td><td>Timeline in DaVinci WG/Intermediate: both on Timeline and Automatic, the project does the
-        output.</td></tr>
-      <tr><td>Avoid</td><td>Main node in Rec.709 → Detail: Automatic cannot know, decodes it as S-Log3 (or as the timeline),
-        and the highlights are already clipped.</td></tr>
     </table>
     <table>
-      <tr><td>Gamma dinamica</td><td><span class="note">dynamic range</span> · <b>Local Highlights</b> compresses the large bright areas and keeps, even strengthens,
-        the texture: the sky gets deeper and the clouds stay defined (the main node's softens it, like film). <b>Local
+      <tr><td>Gamma dinamica</td><td><span class="note">dynamic range</span> · <i>Vista: zone</i> (colours or greys, 0–X legend) · <b>Local Highlights</b> compresses the large bright areas and keeps, even strengthens,
+        the texture: the sky gets deeper and the clouds stay defined. <b>Local
         Shadows</b> opens (+) or closes (−) shadows; <b>Local Contrast</b> the contrast of large areas. <i>Gain</i> and
         <i>base</i> views.</td></tr>
       <tr><td>Presenza</td><td><span class="note">presence</span> · <b>Texture</b>: fine detail; does not raise grain below the noise threshold; negative
         smooths. <b>Clarity</b>: local contrast on the midtones. <b>Dehaze</b>: removes (+) or adds (−) haze.</td></tr>
       <tr><td>Avanzate · Velo</td><td><span class="note">advanced · haze</span> · detail preservation, radius, <b>Soglia bordi</b> (edge threshold), noise threshold,
-        Clarity centre, <b>Bianco</b> for Local Highlights, input. You set the haze (level and colour): never guessed per frame.</td></tr>
+        Clarity centre, <b>Bianco</b> for Local Highlights. You set the haze (level and colour): never guessed per frame.</td></tr>
     </table>
-    <div class="tip"><b>To start</b> · Local Highlights −30…−60 and Local Shadows +20…+50 · Texture +10…+30 · Clarity
-    in moderation · Dehaze only on real haze, with the haze level set to the scene.<br>
-    <b>Measured limits</b> · Local Highlights −100: halo under 3% on the dark side of edges. Local Shadows and zones at ±100:
-    on a hard one-stop edge the halo reaches about 12% of the step (4-6% on 2-3 stops):
-    if you see it, lower <i>Soglia bordi</i> (edge threshold). Next to strong edges grain can grow 1.25-1.7×. It is
-    <b>spatial</b>: Generate LUT leaves it out together with the rest of its node, so keep it in a node of its own. Same
-    look at full resolution, in proxy and in the viewer; on Metal a UHD frame costs about 6-18 ms.</div>
+    <div class="tip"><b>Measured limits</b> · halo under 3% with Local Highlights −100, up to 12% on a hard one-stop edge
+    with Local Shadows ±100: lower <i>Soglia bordi</i>. Grain can grow 1.25-1.7× next to strong edges. It is <b>spatial</b>:
+    Generate LUT leaves out its whole node. On Metal a UHD frame costs about 6-18 ms.</div>
   </div>
 
   <footer>

@@ -2,7 +2,7 @@
 
 **English** · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home)
 
-> Version **2.4.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Version **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
 S-Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin, tint, EI, lens, aperture, shutter, colour profile) and uses it inside DaVinci Resolve. Resolve does this only for FX6/FX9 MXF files; for MP4 from FX30, FX3, a7 and a6000 series it ignores that data.
@@ -36,7 +36,7 @@ Three tools, one install:
 |---|---|---|
 | **Script** | Workspace › Scripts › S-Log MetaRaw | Reads the metadata of every clip and writes it into the Media Pool. Fixes each clip's Data Level. |
 | **S-Log MetaRaw** node | Color › OpenFX — **first node** | Develops a clip from its as-shot values: white balance, exposure, colour space, tones by zones, false colour. |
-| **S-Log MetaRaw Detail** node | Color › OpenFX — **right after** | The creative node: local highlight/shadow recovery, Texture, Clarity, Dehaze. |
+| **S-Log MetaRaw Detail** node | Color › OpenFX — **right after** | The creative node, with darkroom modes (Zonale, Split grade, Unito): local highlight/shadow recovery, Texture, Clarity, Dehaze. |
 
 Original files are **never modified**: no transcoding, no rewrapping.
 
@@ -46,7 +46,7 @@ Original files are **never modified**: no transcoding, no rewrapping.
 
 ## 2. Install
 
-1. Download `SLogMetaRaw-2.4.0.dmg` from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) and open it.
+1. Download `SLogMetaRaw-3.0.0.dmg` from [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) and open it.
 
    ![The DMG window](images/01-dmg.png)
 
@@ -145,7 +145,7 @@ The node is **pointwise**: each pixel depends only on itself. It never makes hal
 
 | Control | What it does |
 |---|---|
-| **Version** (top) | Shows `v2.4.0`. Once a day it asks GitHub for the latest release; if there is one it reads **🟢 v2.4.0 → 2.x.y** and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). It never installs anything itself. |
+| **Version** (top) | Shows `v3.0.0`. Once a day it asks GitHub for the latest release; if there is one it reads **🟢 v3.0.0 → 3.x.y** and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). It never installs anything itself. |
 | **Camera** · **Rileggi metadata** (re-read) | The camera that was read. *Rileggi* re-reads the clip, resets every control to the camera values and writes the clip's metadata into the Media Pool. Answers within ~2 s. |
 | **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
@@ -269,20 +269,24 @@ It works **by areas**, over an edge-aware base: it moves large areas of light wi
 
 | Group | Controls |
 |---|---|
-| **Sviluppo e spazio colore** (development and colour space) | **Modalità** (Zonale), **Ingresso (IDT)** (the node input, moved here from Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (development and colour space) | **Modalità** (Zonale, Split grade, Unito), **Fase** (phase), **Ingresso (IDT)**, **Destinazione (ODT)** |
+| **Misura** (measure) | *Ombra* and *Luce* points on the viewer, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
+| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva or Due strati), **Provino** (test strip) |
 | **Gamma dinamica** (dynamic range) | Local Contrast, Local Highlights, Local Shadows; *gain* and *base* check views. |
 | **Presenza** (presence) | **Texture** (fine detail; doesn't raise grain below the noise threshold), **Clarity** (mid-scale local contrast), **Dehaze**. |
 | **Avanzate** (advanced) | Detail preservation, radius, edge threshold (*Soglia bordi*), noise threshold, Clarity centre, **Bianco** for Local Highlights. |
 | **Velo** (haze) | Level and colour of the haze Dehaze removes. You set them; never estimated per frame → no flicker. |
 
-**Modes and destination (2.4.0).** The top group picks how the node works. Unreleased: Standard and Cinematografico were removed (Zonale is the only mode for now); nodes saved with them open as Zonale.
+**Modes (3.0.0).** Three darkroom methods, each split into three **phases**, one node each in series (or all in one node). The **Guida** at the bottom of the panel gives, for each phase, the purpose, three steps and what to do next (copy the node, paste it after, change Fase). Nodes saved with 2.4.0 in Standard or Cinematografico open as Zonale and look different.
 
 - **Destinazione (ODT)** tells the node which transform comes after it, so it knows where white (zone X) and black (zone 0) land. It never converts the image. *Dal Bianco (manuale)* uses Avanzate › Bianco; the others fix it: Rec.709 CST +2.5/−4.5 stops around grey, Rec.709 DRT (ACES, AgX, DaVinci) +4.5/−6, HDR PQ 1000 nit +6.5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (Ansel Adams zone system): pick an *Ombra* and a *Luce* with detail, press **Misura zone**, place the shadow on a zone with *Ombra sulla zona* (exposure, default III) and the light with *Luci sulla zona* (development N+/N−, default VIII). Zone V is 18% grey; zone 0 and X are the Destinazione's black and white. The info line shows measured → reached zones, N and the output range.
-  In three phases, one node each in series (**Fase**): *1 · Sviluppo* (development: a global per-pixel curve, no halos: exposure and N±), *2 · Stampa* (print: Local Shadows/Highlights/Contrast by area and **Brucia i bordi**, edge burning), *3 · Presenza* (Texture, Clarity, Dehaze). The **Guida** line says the next step: copy the node, paste it after and change Fase.
-- **Vista: zone** (11 colours) and **Vista: zone in grigi** (11 greys) show, in any mode, which zone every area falls in after the node. One view at a time.
+- **Zonale** (Ansel Adams): place *Ombra* and *Luce* on details you want to keep, press **Misura zone**, then *Ombra sulla zona* (exposure, default III) and *Luci sulla zona* (development N+/N−, default VIII). Phases: *1 · Sviluppo* (a per-pixel curve, no halos), *2 · Stampa* (Local Shadows, Highlights, Contrast by areas, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, full in zones II–VIII).
+- **Split grade** (two-exposure print): **Luci morbide** (soft exposure, grade 0) brings the highlights to zone VIII and **Ombre dure** (hard, grade 5) the shadows to zone III, in stops; **Grado** reads the result. **Unione**: *Curva* (one curve) or *Due strati* (a soft and a hard layer, as on paper). **Provino** shows a test strip on the image (strips, soft × hard matrix, or the two unions side by side): move *Provino: cella* and press **Usa la cella**. Phases: *Esposizioni*, *Locale*, *Presenza*.
+- **Unito** (Split grade + auto zones + BTZS): the subject range is compared with the paper scale (zones III–VIII of the Destinazione); development (N±) brings it closer, the two-exposure print does the rest.
+- **Misura automatica**, in every mode, reads the whole frame and takes the 2nd and 98th percentile as shadow and light.
+- **Vista: zone** (11 colours) and **Vista: zone in grigi** (11 greys) show which zone each area falls in after the node, with a 0–X legend.
 
-Not yet verified in Resolve: showing and hiding the controls by mode, the points on the viewer, Misura, and the zone view on Metal.
+Not tried in Resolve yet and Metal not run. The grade formula, the percentiles and the development limits are this implementation's assumptions, not checked against BTZS or real prints. [docs/DETAIL.md](docs/DETAIL.md)
 
 **Azzera dettaglio** resets the node.
 
@@ -366,7 +370,7 @@ Leave Color Space/Gamma on **Timeline** in the main node. Enable the script's *A
 
 ## 12. Updates and privacy
 
-- The **nodes** ask GitHub for the latest release at most once a day, in the background. The request carries only the version (`User-Agent: SLogMetaRaw/2.4.0`).
+- The **nodes** ask GitHub for the latest release at most once a day, in the background. The request carries only the version (`User-Agent: SLogMetaRaw/3.0.0`).
 - The **script** checks only when you click its version.
 - A click only opens a download link from this project's GitHub releases. Nothing is installed without you.
 

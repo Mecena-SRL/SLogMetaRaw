@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · **Italiano** · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-it)
 
-> Versione **2.4.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versione **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testato solo su DaVinci Resolve Studio 21.1 su macOS.
 
 S-Log MetaRaw legge i dati di ripresa che le camere Sony scrivono in ogni file (Kelvin, tinta, EI, obiettivo, diaframma, shutter, profilo colore) e li usa dentro DaVinci Resolve. Resolve lo fa solo per i file MXF di FX6/FX9; per gli MP4 di FX30, FX3, serie a7 e a6000 ignora questi dati.
@@ -36,7 +36,7 @@ Tre strumenti, un'unica installazione:
 |---|---|---|
 | **Script** | Workspace › Scripts › S-Log MetaRaw | Legge i metadata di ogni clip e li scrive nel Media Pool. Corregge il Data Level di ogni clip. |
 | Nodo **S-Log MetaRaw** | Color › OpenFX — **primo nodo** | Sviluppa una clip dai valori di ripresa: bilanciamento del bianco, esposizione, spazio colore, toni per zone, falso colore. |
-| Nodo **S-Log MetaRaw Detail** | Color › OpenFX — **subito dopo** | Il nodo creativo: recupero locale di alte luci/ombre, Texture, Clarity, Dehaze. |
+| Nodo **S-Log MetaRaw Detail** | Color › OpenFX — **subito dopo** | Il nodo creativo, con le modalità della camera oscura (Zonale, Split grade, Unito): recupero locale di alte luci/ombre, Texture, Clarity, Dehaze. |
 
 I file originali non vengono **mai modificati**: nessuna transcodifica, nessun rewrap.
 
@@ -46,7 +46,7 @@ I file originali non vengono **mai modificati**: nessuna transcodifica, nessun r
 
 ## 2. Installazione
 
-1. Scarica `SLogMetaRaw-2.4.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
+1. Scarica `SLogMetaRaw-3.0.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
 
    ![La finestra del DMG](images/01-dmg.png)
 
@@ -143,7 +143,7 @@ Il nodo è **puntuale**: ogni pixel dipende solo da sé stesso. Non crea mai alo
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | Mostra `v2.4.0`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v2.4.0 → 2.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
+| **Versione** (in cima) | Mostra `v3.0.0`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v3.0.0 → 3.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
 | **Camera** · **Rileggi metadata** | La camera che è stata letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool. Risponde in circa 2 s. |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -267,20 +267,24 @@ Lavora **per aree**, su una base che rispetta i bordi: muove grandi aree di luce
 
 | Gruppo | Controlli |
 |---|---|
-| **Sviluppo e spazio colore** | **Modalità** (Zonale), **Ingresso (IDT)** (l'ingresso del nodo, spostato qui da Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
+| **Misura** | punti *Ombra* e *Luce* nel viewer, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
+| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** |
 | **Gamma dinamica** | Local Contrast, Local Highlights, Local Shadows; viste di controllo *gain* e *base*. |
 | **Presenza** | **Texture** (dettaglio fine; non alza la grana sotto la soglia rumore), **Clarity** (contrasto locale a media scala), **Dehaze**. |
 | **Avanzate** | Preservazione del dettaglio, raggio, soglia bordi (*Soglia bordi*), soglia rumore, centro di Clarity, **Bianco** per Local Highlights. |
 | **Velo** | Livello e colore del velo che Dehaze rimuove. Li imposti tu; non vengono mai stimati per fotogramma → niente flicker. |
 
-**Modalità e destinazione (2.4.0).** Il gruppo in cima sceglie come lavora il nodo. Non rilasciato: Standard e Cinematografico sono stati eliminati (per ora c'è solo Zonale); i nodi salvati con loro si aprono come Zonale.
+**Modalità (3.0.0).** Tre metodi della camera oscura, ognuno in tre **fasi**, un nodo per fase in serie (o tutte in un nodo). La **Guida** in fondo al pannello dà per ogni fase lo scopo, tre passi e cosa fare dopo (copia il nodo, incollalo dopo, cambia Fase). I nodi salvati con la 2.4.0 in Standard o Cinematografico si aprono come Zonale e cambiano aspetto.
 
 - **Destinazione (ODT)** dice al nodo quale trasformazione viene dopo, così sa dove arrivano il bianco (zona X) e il nero (zona 0). Non converte mai l'immagine. *Dal Bianco (manuale)* usa Avanzate › Bianco; le altre lo fissano: Rec.709 CST +2,5/−4,5 stop attorno al grigio, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (sistema zonale di Ansel Adams): scegli un'*Ombra* e una *Luce* con dettaglio, premi **Misura zone**, colloca l'ombra con *Ombra sulla zona* (esposizione, default III) e la luce con *Luci sulla zona* (sviluppo N+/N−, default VIII). Zona V = grigio 18%; zona 0 e X = nero e bianco della Destinazione. La riga informativa mostra zone misurate → raggiunte, N e la gamma d'uscita.
-  In tre fasi, un nodo ciascuna in serie (**Fase**): *1 · Sviluppo* (curva globale sul pixel, senza aloni: esposizione e N±), *2 · Stampa* (Local Shadows/Highlights/Contrast per aree e **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze). La riga **Guida** dice il passo dopo: copia il nodo, incollalo dopo e cambia Fase.
-- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano, in ogni modalità, in che zona cade ogni area dopo il nodo. Una vista alla volta.
+- **Zonale** (Ansel Adams): metti *Ombra* e *Luce* su dettagli da conservare, premi **Misura zone**, poi *Ombra sulla zona* (esposizione, default III) e *Luci sulla zona* (sviluppo N+/N−, default VIII). Fasi: *1 · Sviluppo* (curva sul singolo pixel, senza aloni), *2 · Stampa* (Local Shadows, Highlights, Contrast per aree, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, piene nelle zone II–VIII).
+- **Split grade** (stampa a due esposizioni): **Luci morbide** (esposizione morbida, grado 0) porta le luci sulla zona VIII e **Ombre dure** (dura, grado 5) le ombre sulla III, in stop; **Grado** legge il risultato. **Unione**: *Curva* (una curva sola) o *Due strati* (uno morbido e uno duro, come sulla carta). **Provino** mostra sull'immagine un provino (strisce, matrice morbida × dura, o le due unioni a confronto): sposta *Provino: cella* e premi **Usa la cella**. Fasi: *Esposizioni*, *Locale*, *Presenza*.
+- **Unito** (Split grade + zone automatiche + BTZS): l'estensione del soggetto si confronta con la scala della carta (zone III–VIII della Destinazione); lo sviluppo (N±) la avvicina, la stampa a due esposizioni fa il resto.
+- **Misura automatica**, in ogni modalità, legge tutto il fotogramma e prende il 2° e il 98° percentile come ombra e luce.
+- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano in che zona cade ogni area dopo il nodo, con la legenda 0–X.
 
-Non ancora verificati in Resolve: comparsa dei controlli per modalità, punti nel viewer, Misura e vista zone su Metal.
+Non ancora provato in Resolve e Metal non eseguito. La formula del grado, i percentili e i limiti dello sviluppo sono ipotesi di questa implementazione, non verificate col BTZS né su stampe vere. [docs/DETAIL.md](docs/DETAIL.md)
 
 **Azzera dettaglio** azzera il nodo.
 
@@ -364,7 +368,7 @@ Lascia Color Space/Gamma su **Timeline** nel nodo principale. Attiva l'opzione d
 
 ## 12. Aggiornamenti e privacy
 
-- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/2.4.0`).
+- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/3.0.0`).
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre solo un link di download dalle release GitHub di questo progetto. Niente viene installato senza di te.
 

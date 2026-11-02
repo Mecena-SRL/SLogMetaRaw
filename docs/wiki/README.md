@@ -8,7 +8,7 @@ link doppi malformati `[[testo](url)](url)`, nessuna traduzione) — confermato 
 **Contenuto, aggiornato al 12 ottobre:**
 - `Home.md` / `Home-it.md` / `Home-es.md` / `Home-pt.md` / `Home-zh.md` — pagina iniziale, con selettore di lingua, una
   sola copia pulita per lingua, URL aggiornati a `Mecena-SRL/SLogMetaRaw`.
-- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **2.4.0** (modalità del Detail), con una sezione nuova
+- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **3.0.0** (pannelli Develop e Detail nuovi), con una sezione nuova
   (§15, "Linux and Windows (experimental)") che non c'era nella versione precedente di questo file.
 - `Wiki-Software-it.md` / `-es.md` / `-pt.md` / `-zh.md` — la stessa guida nelle altre 4 lingue del progetto, adattata
   dalle rispettive traduzioni di `README.*.md` più il materiale solo-wiki (ricette, casi speciali, FAQ) tradotto a parte.
@@ -35,7 +35,7 @@ in italiano in ogni versione, come per il resto del progetto.
 ```bash
 git clone https://github.com/Mecena-SRL/SLogMetaRaw.wiki.git
 cp docs/wiki/*.md SLogMetaRaw.wiki/
-cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 2.4.0" && git push
+cd SLogMetaRaw.wiki && git add -A && git commit -m "Wiki: guida ripulita, multilingua, versione 3.0.0" && git push
 ```
 
 Dopo il push, chiudere/aggiornare la #35 (il problema che descrive sarà risolto) e segnalare qui se qualcosa non torna

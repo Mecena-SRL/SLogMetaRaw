@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · **Español** · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-es)
 
-> Versión **2.4.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versión **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Probado solo en DaVinci Resolve Studio 21.1 en macOS.
 
 S-Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archivo (Kelvin, tinte, EI, objetivo, diafragma, obturador, perfil de color) y los usa dentro de DaVinci Resolve. Resolve hace esto solo con los MXF de FX6/FX9; en los MP4 de FX30, FX3, serie a7 y a6000 los ignora.
@@ -36,7 +36,7 @@ Tres herramientas, una sola instalación:
 |---|---|---|
 | **Script** | Workspace › Scripts › S-Log MetaRaw | Lee los metadatos de todos los clips y los escribe en el Media Pool. Corrige el Data Level de cada clip. |
 | Nodo **S-Log MetaRaw** | Color › OpenFX — **primer nodo** | Revela un clip a partir de sus valores de rodaje: balance de blancos, exposición, espacio de color, tonos por zonas, falso color. |
-| Nodo **S-Log MetaRaw Detail** | Color › OpenFX — **justo después** | El nodo creativo: recuperación local de altas luces/sombras, Texture, Clarity, Dehaze. |
+| Nodo **S-Log MetaRaw Detail** | Color › OpenFX — **justo después** | El nodo creativo, con los modos del cuarto oscuro (Zonale, Split grade, Unito): recuperación local de altas luces/sombras, Texture, Clarity, Dehaze. |
 
 Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapping.
 
@@ -46,7 +46,7 @@ Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapp
 
 ## 2. Instalación
 
-1. Descarga `SLogMetaRaw-2.4.0.dmg` desde [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) y ábrelo.
+1. Descarga `SLogMetaRaw-3.0.0.dmg` desde [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) y ábrelo.
 
    ![La ventana del DMG](images/01-dmg.png)
 
@@ -145,7 +145,7 @@ El nodo es **puntual**: cada píxel depende solo de sí mismo. Nunca crea halos,
 
 | Control | Qué hace |
 |---|---|
-| **Versión** (arriba) | Muestra `v2.4.0`. Una vez al día pregunta a GitHub por la última release; si la hay, muestra **🟢 v2.4.0 → 2.x.y** y el clic abre la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo. |
+| **Versión** (arriba) | Muestra `v3.0.0`. Una vez al día pregunta a GitHub por la última release; si la hay, muestra **🟢 v3.0.0 → 3.x.y** y el clic abre la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo. |
 | **Camera** · **Rileggi metadata** (releer) | La cámara que se leyó. *Rileggi* vuelve a leer el clip, devuelve cada control a los valores de cámara y escribe los metadatos del clip en el Media Pool. Responde en unos 2 s como máximo. |
 | **Ripresa** (rodaje) · **Decodifica** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot o un preset. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
@@ -269,20 +269,24 @@ Trabaja **por áreas**, sobre una base que respeta los bordes: mueve grandes ár
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
+| **Misura** (medición) | puntos *Ombra* y *Luce* en el visor, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
+| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** (tira de prueba) |
 | **Gamma dinamica** (rango dinámico) | Local Contrast, Local Highlights, Local Shadows; vistas de comprobación *gain* y *base*. |
 | **Presenza** (presencia) | **Texture** (detalle fino; no sube el grano por debajo del umbral de ruido), **Clarity** (contraste local de escala media), **Dehaze**. |
 | **Avanzate** (avanzado) | Preservación del detalle, radio, umbral de bordes (*Soglia bordi*), umbral de ruido, centro de Clarity, **Bianco** de Local Highlights. |
 | **Velo** (neblina) | Nivel y color de la neblina que quita Dehaze. Los fijas tú; nunca se estiman fotograma a fotograma → sin parpadeo. |
 
-**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. No publicado: Standard y Cinematografico se han eliminado (por ahora solo Zonale); los nodos guardados con ellos se abren como Zonale.
+**Modos (3.0.0).** Tres métodos del cuarto oscuro, cada uno en tres **fases**, un nodo por fase en serie (o todas en un nodo). La **Guida**, al final del panel, da para cada fase el objetivo, tres pasos y qué hacer después (copia el nodo, pégalo detrás, cambia Fase). Los nodos guardados con la 2.4.0 en Standard o Cinematografico se abren como Zonale y cambian de aspecto.
 
 - **Destinazione (ODT)** indica al nodo qué transformación viene después, para saber dónde quedan el blanco (zona X) y el negro (zona 0). Nunca convierte la imagen. *Dal Bianco (manuale)* usa Avanzate › Bianco; las demás lo fijan: Rec.709 CST +2,5/−4,5 pasos alrededor del gris, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (sistema de zonas de Ansel Adams): elige una *Ombra* y una *Luce* con detalle, pulsa **Misura zone**, coloca la sombra con *Ombra sulla zona* (exposición, III por defecto) y la luz con *Luci sulla zona* (revelado N+/N−, VIII por defecto). Zona V = gris 18 %; zonas 0 y X = negro y blanco del destino. La línea de información muestra zonas medidas → alcanzadas, N y el rango de salida.
-  En tres fases, un nodo cada una en serie (**Fase**): *1 · Sviluppo* (revelado: curva global por píxel, sin halos: exposición y N±), *2 · Stampa* (copia: Local Shadows/Highlights/Contrast por zonas y **Brucia i bordi**, quemado de bordes), *3 · Presenza* (Texture, Clarity, Dehaze). La línea **Guida** indica el paso siguiente: copia el nodo, pégalo después y cambia Fase.
-- **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran, en cualquier modo, en qué zona cae cada área tras el nodo. Una vista a la vez.
+- **Zonale** (Ansel Adams): pon *Ombra* y *Luce* sobre detalles que quieras conservar, pulsa **Misura zone** y luego *Ombra sulla zona* (exposición, III por defecto) y *Luci sulla zona* (revelado N+/N−, VIII por defecto). Fases: *1 · Sviluppo* (curva por píxel, sin halos), *2 · Stampa* (Local Shadows, Highlights, Contrast por áreas, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, plenas en las zonas II–VIII).
+- **Split grade** (copia con dos exposiciones): **Luci morbide** (exposición suave, grado 0) lleva las luces a la zona VIII y **Ombre dure** (dura, grado 5) las sombras a la III, en pasos; **Grado** lee el resultado. **Unione**: *Curva* (una sola curva) o *Due strati* (una capa suave y una dura, como en el papel). **Provino** muestra una tira de prueba sobre la imagen (tiras, matriz suave × dura o las dos uniones comparadas): mueve *Provino: cella* y pulsa **Usa la cella**. Fases: *Esposizioni*, *Locale*, *Presenza*.
+- **Unito** (Split grade + zonas automáticas + BTZS): el rango del sujeto se compara con la escala del papel (zonas III–VIII del destino); el revelado (N±) lo acerca y la copia con dos exposiciones hace el resto.
+- **Misura automatica**, en cualquier modo, lee todo el fotograma y toma los percentiles 2 y 98 como sombra y luz.
+- **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran en qué zona cae cada área tras el nodo, con la leyenda 0–X.
 
-Aún no verificado en Resolve: aparición de los controles por modo, puntos en el visor, Misura y vista de zonas en Metal.
+Aún no probado en Resolve y Metal no ejecutado. La fórmula del grado, los percentiles y los límites del revelado son hipótesis de esta implementación, no verificadas con el BTZS ni en copias reales. [docs/DETAIL.md](docs/DETAIL.md)
 
 **Azzera dettaglio** reinicia el nodo.
 
@@ -366,7 +370,7 @@ Deja Color Space/Gamma en **Timeline** en el nodo principal. Activa *Establecer 
 
 ## 12. Actualizaciones y privacidad
 
-- Los **nodos** preguntan a GitHub por la última release como mucho una vez al día, en segundo plano. La petición lleva solo la versión (`User-Agent: SLogMetaRaw/2.4.0`).
+- Los **nodos** preguntan a GitHub por la última release como mucho una vez al día, en segundo plano. La petición lleva solo la versión (`User-Agent: SLogMetaRaw/3.0.0`).
 - El **script** solo consulta cuando haces clic en su versión.
 - Un clic solo abre un enlace de descarga de las releases de GitHub de este proyecto. Nada se instala sin ti.
 
