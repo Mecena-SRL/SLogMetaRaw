@@ -32,15 +32,16 @@ static const struct { const char* name; double SMDetailControls::*field; } kDeta
     { "hazeWarmth", &SMDetailControls::hazeWarmth }, { "localWhite", &SMDetailControls::localWhite },
     { "adamsShadowL", &SMDetailControls::adamsShadowL }, { "adamsHighL", &SMDetailControls::adamsHighL },
     { "adamsShadowPlace", &SMDetailControls::adamsShadowPlace }, { "adamsHighPlace", &SMDetailControls::adamsHighPlace },
-    { "printEdgeBurn", &SMDetailControls::printEdgeBurn }, { "printEdgeSize", &SMDetailControls::printEdgeSize } };
-// shown only in Zonale
-static const char* const kAdamsParams[] = { "adamsGroup", "adamsShadowPos", "adamsHighPos", "adamsMeasure",
-                                            "adamsShadowPlace", "adamsHighPlace", "adamsInfo" };
+    { "printEdgeBurn", &SMDetailControls::printEdgeBurn }, { "printEdgeSize", &SMDetailControls::printEdgeSize },
+    { "splitSoft", &SMDetailControls::splitSoft }, { "splitHard", &SMDetailControls::splitHard } };
+// the measure of the shadow and the highlight, shown by the development of either mode; the zones are Zonale's own
+static const char* const kMeasureParams[] = { "adamsGroup", "adamsShadowPos", "adamsHighPos", "adamsMeasure",
+                                              "adamsInfo" };
+static const char* const kAdamsOnly[] = { "adamsShadowPlace", "adamsHighPlace" };
+static const char* const kSplitDevelop[] = { "splitGroup", "splitSoft", "splitHard", "splitGrade" };
 // the views: one at a time
 static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", "viewZonesGrey" };
-// Zonale: the phase choice and its guide; the print's own controls; what each phase runs
-static const char* const kZonalParams[] = { "zonalPhase", "zonalGuideGroup", "zonalGuide", "zonalGuideStep1",
-                                            "zonalGuideStep2", "zonalGuideStep3", "zonalGuideNext" };
+// The print's own controls; what each phase runs
 static const char* const kPrintParams[] = { "localContrast", "localHighlights", "localShadows" };
 static const char* const kPresenceParams[] = { "texture", "clarity", "dehaze", "hazeGroup", "clarityCenter",
                                                "noiseThreshold" };
@@ -77,6 +78,7 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         if (paramExists("devMode")) m_DevMode = fetchChoiceParam("devMode");
         if (paramExists("destination")) m_Destination = fetchChoiceParam("destination");
         if (paramExists("zonalPhase")) m_ZonalPhase = fetchChoiceParam("zonalPhase");
+        if (paramExists("splitPhase")) m_SplitPhase = fetchChoiceParam("splitPhase");
     } catch (...) {
     }
     try {
@@ -84,6 +86,7 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         if (saved < kDetailSettingsVersion) {
             // a new node starts Zonale at 1 · Sviluppo; one saved before the phases keeps all of them in one node
             if (saved == 0 && m_ZonalPhase) m_ZonalPhase->setValue(SM_DT_PHASE_DEVELOP);
+            if (saved == 0 && m_SplitPhase) m_SplitPhase->setValue(SM_DT_PHASE_DEVELOP);
             if (saved > 0 && saved < 3 && m_DevMode) m_DevMode->setValue(SM_DT_MODE_ZONAL);   // the old modes are gone
             m_SettingsVersion->setValue(kDetailSettingsVersion);
         }
@@ -163,8 +166,8 @@ bool DetailEffect::neutralAt(double p_Time) const
     for (int i = 0; i < kIntensityCount; ++i)
         if (m_Sliders[i] && m_Sliders[i]->getValueAtTime(p_Time) != 0.0) return false;
     const SMDetailControls c = readControls(p_Time);
-    if (c.devMode == SM_DT_MODE_ZONAL && c.adamsHighL - c.adamsShadowL > SM_DT_MIN_GAP) return false;
-    if (c.devMode == SM_DT_MODE_ZONAL && c.printEdgeBurn != 0.0) return false;
+    if (c.adamsHighL - c.adamsShadowL > SM_DT_MIN_GAP) return false;
+    if (c.printEdgeBurn != 0.0) return false;
     return !c.viewGain && !c.viewBase && !c.viewZones;
 }
 
@@ -175,7 +178,7 @@ void DetailEffect::resetAll()
         p->deleteAllKeys();
         p->setValue(0.0);
     }
-    for (const char* name : { "adamsShadowL", "adamsHighL" })   // the measure
+    for (const char* name : { "adamsShadowL", "adamsHighL", "splitSoft", "splitHard" })   // the measure, the exposures
         if (paramExists(name)) {
             OFX::DoubleParam* p = fetchDoubleParam(name);
             p->deleteAllKeys();
@@ -189,30 +192,33 @@ void DetailEffect::updateMode()
     if (!m_DevMode) return;
     int mode = 0;
     m_DevMode->getValue(mode);
-    const bool zonal = mode == SM_DT_MODE_ZONAL;
+    if (mode < 0 || mode >= kDetailModeCount) mode = SM_DT_MODE_ZONAL;
+    const bool zonal = mode == SM_DT_MODE_ZONAL, split = mode == SM_DT_MODE_SPLIT;
     int phase = SM_DT_PHASE_ALL;
-    if (m_ZonalPhase) m_ZonalPhase->getValue(phase);
-    if (phase < 0 || phase >= kZonalPhaseCount) phase = SM_DT_PHASE_ALL;
-    const bool all = !zonal || phase == SM_DT_PHASE_ALL;
-    const bool develop = zonal && (all || phase == SM_DT_PHASE_DEVELOP);
+    if (OFX::ChoiceParam* ph = split ? m_SplitPhase : m_ZonalPhase) ph->getValue(phase);
+    if (phase < 0 || phase >= kPhaseCount) phase = SM_DT_PHASE_ALL;
+    const bool all = phase == SM_DT_PHASE_ALL;
+    const bool develop = all || phase == SM_DT_PHASE_DEVELOP;
     const bool printing = all || phase == SM_DT_PHASE_PRINT, presence = all || phase == SM_DT_PHASE_PRESENCE;
     auto show = [this](const char* name, bool on) {
         if (paramExists(name)) getParam(name)->setIsSecret(!on);
     };
-    for (const char* name : kZonalParams) show(name, zonal);
-    for (const char* name : kAdamsParams) show(name, develop);
+    show("zonalPhase", zonal);
+    show("splitPhase", split);
+    for (const char* name : kMeasureParams) show(name, develop);
+    for (const char* name : kAdamsOnly) show(name, zonal && develop);
+    for (const char* name : kSplitDevelop) show(name, split && develop);
     for (const char* name : kPrintParams) show(name, printing);
     for (const char* name : kPresenceParams) show(name, presence);
-    show("printEdgeBurn", zonal && printing);
-    show("printEdgeSize", zonal && printing);
-    if (zonal)
-        for (int i = 0; i < kZonalGuideRows; ++i)
-            if (paramExists(kZonalGuideNames[i])) {
-                OFX::StringParam* row = fetchStringParam(kZonalGuideNames[i]);
-                std::string cur;
-                row->getValue(cur);
-                if (cur != kZonalGuide[phase][i]) row->setValue(kZonalGuide[phase][i]);
-            }
+    show("printEdgeBurn", printing);
+    show("printEdgeSize", printing);
+    for (int i = 0; i < kGuideRows; ++i)
+        if (paramExists(kGuideNames[i])) {
+            OFX::StringParam* row = fetchStringParam(kGuideNames[i]);
+            std::string cur;
+            row->getValue(cur);
+            if (cur != kGuide[mode][phase][i]) row->setValue(kGuide[mode][phase][i]);
+        }
     if (paramExists("modeInfo")) {
         OFX::StringParam* info = fetchStringParam("modeInfo");
         std::string cur;
@@ -237,6 +243,15 @@ void DetailEffect::refreshZoneInfo()
 {
     if (!paramExists("adamsInfo")) return;
     const SMDetailControls c = readControls(0.0);
+    if (paramExists("splitGrade")) {   // the grade the two exposures give: from the slope of the curve
+        SMZonalDevelop d;
+        char g[64] = "scegli i due punti e premi Misura";
+        if (dt_zonal_develop(&c, &d)) snprintf(g, sizeof(g), "grado %.1f su 5 (0 morbida, 5 dura)", sm_clampd(dt_split_grade(d.k), 0, 5));
+        OFX::StringParam* gi = fetchStringParam("splitGrade");
+        std::string cg;
+        gi->getValue(cg);
+        if (cg != g) gi->setValue(g);
+    }
     const double white = dt_destination_white(&c), black = dt_destination_black(&c);
     char out[96];
     snprintf(out, sizeof(out), "uscita %.1f stop (nero -%.1f, bianco +%.1f)", white + black, black, white);
@@ -354,9 +369,9 @@ void DetailEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const st
     }
     if (p_ParamName == "detailReset") resetAll();
     else if (p_ParamName == "nodeInput") refreshInfo();
-    else if (p_ParamName == "devMode" || p_ParamName == "zonalPhase") updateMode();
+    else if (p_ParamName == "devMode" || p_ParamName == "zonalPhase" || p_ParamName == "splitPhase") updateMode();
     else if (p_ParamName == "adamsMeasure") measureZones(p_Args.time);
-    else if (p_ParamName.compare(0, 5, "adams") == 0 || p_ParamName == "destination" || p_ParamName == "localWhite")
+    else if (p_ParamName.compare(0, 5, "adams") == 0 || p_ParamName.compare(0, 5, "split") == 0 || p_ParamName == "destination" || p_ParamName == "localWhite")
         refreshZoneInfo();
     else if (p_ParamName.compare(0, 4, "view") == 0 && paramExists(p_ParamName) && fetchBooleanParam(p_ParamName)->getValue()) {
         for (const char* other : kViews)   // one view at a time
@@ -454,7 +469,8 @@ SMDetailControls DetailEffect::readControls(double t) const
                   : (m_ViewZonesGrey && m_ViewZonesGrey->getValueAtTime(t) ? 2 : 0);
     if (m_DevMode) m_DevMode->getValueAtTime(t, c.devMode);
     if (m_Destination) m_Destination->getValueAtTime(t, c.destination);
-    if (m_ZonalPhase) m_ZonalPhase->getValueAtTime(t, c.zonalPhase);
+    if (c.devMode == SM_DT_MODE_SPLIT ? m_SplitPhase != nullptr : m_ZonalPhase != nullptr)
+        (c.devMode == SM_DT_MODE_SPLIT ? m_SplitPhase : m_ZonalPhase)->getValueAtTime(t, c.zonalPhase);
     return c;
 }
 

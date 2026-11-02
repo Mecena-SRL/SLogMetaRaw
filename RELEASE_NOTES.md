@@ -27,9 +27,13 @@ ancora il pannello vecchio.
   nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
 - **Detail, eliminate Standard e Cinematografico** (su decisione di Ivan, senza migrazione): il Detail ha ora la sola
-  modalità Zonale, con Split grade e Unito in arrivo. Spariscono il gruppo Cinematografico (rapporto di luce, soggetto
+  modalità Zonale e Split grade, con Unito in arrivo. Spariscono il gruppo Cinematografico (rapporto di luce, soggetto
   viso o paesaggio) e le Zone locali. I nodi salvati con Standard o Cinematografico si aprono come Zonale e cambiano
   aspetto; i valori dei comandi eliminati vengono ignorati.
+- **Detail, Split grade** (stampa a due esposizioni): seconda modalità, con le sue fasi (*1 · Esposizioni*,
+  *2 · Locale*, *3 · Presenza*) e la Guida. Misuri Ombra e Luce come nella Zonale; **Luci morbide** (esposizione
+  morbida, grado 0) porta le luci sulla zona VIII e **Ombre dure** (grado 5) le ombre sulla III, in stop; il **Grado**
+  esce dalla pendenza (formula da verificare su stampe vere). Il provino e il motore a due strati arrivano dopo.
 - **Detail, Zonale in tre fasi** (Ansel Adams: sviluppo, stampa, presenza), un nodo ciascuna in serie: scegli
   Modalità Zonale e poi **Fase**; la sezione **Guida**, in fondo al pannello, dà per ogni fase lo scopo, tre passi
   e il passo dopo (copia il nodo, incollalo dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.

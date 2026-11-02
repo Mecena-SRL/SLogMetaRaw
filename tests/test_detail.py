@@ -70,6 +70,10 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
          {'viewZones': 2, 'destination': 1, 'localShadows': 50}, {'viewZones': 1, 'localHighlights': -60},
          {'devMode': 0, 'zonalPhase': 1, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'adamsShadowPlace': 3,
           'adamsHighPlace': 8, 'destination': 1, 'texture': 60, 'localShadows': 60},
+         {'devMode': 1, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'splitSoft': 0.5, 'splitHard': -0.7,
+          'texture': 30},
+         {'devMode': 1, 'zonalPhase': 2, 'adamsShadowL': -3.0, 'adamsHighL': 2.0, 'splitSoft': -1.0,
+          'splitHard': 1.0, 'localHighlights': -50, 'printEdgeBurn': 1.0},
          {'devMode': 0, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
           'localShadows': 40, 'printEdgeBurn': 1.5, 'printEdgeSize': 40, 'clarity': 50},
          {'devMode': 0, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
@@ -206,6 +210,29 @@ class Model(unittest.TestCase):
             (l1, g1), (l2, g2) = self.flat_g(-1.3, ctrl), self.flat_g(4.1, ctrl)
             self.assertAlmostEqual(D.zone_of(l1 + g1, 2.5, 4.5), zs, places=6, msg=ctrl)
             self.assertAlmostEqual(D.zone_of(l2 + g2, 2.5, 4.5), zh, places=6, msg=ctrl)
+
+    def test_split_grade_exposures_place_the_zones(self):
+        """Split grade: zero exposures put the shadow on III and the highlight on VIII; each stop darkens its tone by a stop."""
+        Ls, Lh = self.flat_g(-1.3, {})[0], self.flat_g(4.1, {})[0]
+        base = {'devMode': 1, 'adamsShadowL': Ls, 'adamsHighL': Lh}
+        for soft, hard in ((0, 0), (1.0, 0), (0, -1.0), (-0.5, 0.75)):
+            ctrl = dict(base, splitSoft=soft, splitHard=hard)
+            (l1, g1), (l2, g2) = self.flat_g(-1.3, ctrl), self.flat_g(4.1, ctrl)
+            v = D.controls_clamped(ctrl)
+            w, b = D.destination_white(v), D.destination_black(v)
+            self.assertAlmostEqual(l1 + g1, D.zone_L(3, w, b) - hard, places=6, msg=ctrl)
+            self.assertAlmostEqual(l2 + g2, D.zone_L(8, w, b) - soft, places=6, msg=ctrl)
+
+    def test_split_grade_readout(self):
+        """Grade 2.5 for the slope of the measure itself; each doubling of the slope is 2.5 grades."""
+        self.assertAlmostEqual(D.split_grade(1.0), 2.5)
+        self.assertAlmostEqual(D.split_grade(2.0), 5.0)
+        self.assertAlmostEqual(D.split_grade(0.5), 0.0)
+
+    def test_zonale_is_unchanged_by_the_exposures(self):
+        ctrl = {'devMode': 0, 'adamsShadowL': -2.0, 'adamsHighL': 3.0}
+        self.assertEqual(D.zonal_develop(D.controls_clamped(ctrl)),
+                         D.zonal_develop(D.controls_clamped(dict(ctrl, splitSoft=2.0, splitHard=-2.0))))
 
     def test_zones_follow_the_destination(self):
         """Rec.709 with a CST: zone 0 to X span 7 stops; the scene (DaVinci WG, no ODT yet) 18; zone V is grey."""
