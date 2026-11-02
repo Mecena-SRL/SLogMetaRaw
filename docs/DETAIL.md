@@ -44,7 +44,7 @@ al bianco, e non resta niente da recuperare.
 
 | Gruppo | Controllo | Cosa fa |
 |---|---|---|
-| Sviluppo e spazio colore | **Modalità** | Standard (i controlli qui sotto), Cinematografico (rapporto di luce sul soggetto) o Zonale (Ansel Adams), vedi sotto; una riga dice cosa fa |
+| Sviluppo e spazio colore | **Modalità** | Zonale (Ansel Adams), vedi sotto; una riga dice cosa fa |
 | | **Ingresso (IDT)** | la codifica che entra nel nodo (prima in Avanzate, stesso nome salvato) |
 | | **Destinazione (ODT)** | bianco e nero dell'uscita: Dal Bianco (manuale), Rec.709 CST, Rec.709 DRT, PQ 1000, Scena DWG |
 | Gamma dinamica | **Local Contrast** (−100…+50) | contrasto delle grandi aree attorno al grigio, a dettaglio intatto |
@@ -57,7 +57,6 @@ al bianco, e non resta niente da recuperare.
 | | **Clarity** | contrasto locale a media scala, pesato sui mezzitoni |
 | | **Dehaze** | toglie (+) o aggiunge (−) velo; il velo è quello che dichiari in Avanzate › Velo |
 | | Azzera dettaglio | riporta a zero tutto il nodo |
-| Zone locali | Pivot, Black/Shadow/Light/Specular Exp, Range, Falloff | le stesse zone del nodo principale, applicate alla base |
 | Avanzate | Preserva dettaglio (100 %) | 100 = le zone muovono solo le aree; 0 = come il nodo principale |
 | | Raggio (4 % dell'altezza) | dimensione delle aree |
 | | Soglia bordi (0,5 EV) | salto che conta come bordo, per la base e per Local Highlights: più bassa = meno aloni, meno recupero |
@@ -65,27 +64,6 @@ al bianco, e non resta niente da recuperare.
 | | Clarity: centro | il tono dove Clarity lavora di più |
 | | Bianco (2,5 stop) | dove Local Highlights −100 porta il massimo registrato, con Destinazione «Dal Bianco»; con un DRT dopo, 4–5 |
 | Velo | Livello (EV), Colore | luminanza e colore del velo; mai stimati fotogramma per fotogramma |
-
-### Modalità Cinematografico
-
-Per i primi piani: il rapporto fra il lato illuminato e il lato in ombra del soggetto, come lo misura un direttore
-della fotografia (1:2 = 1 stop, 1:4 = 2, 1:8 = 3).
-
-| Controllo | Cosa fa |
-|---|---|
-| Soggetto: viso / paesaggio | viso misura la luminanza (Y) e usa aree più piccole (raggio ×0,75); paesaggio misura la norma del colore e aree più grandi (×2) |
-| Viso luce, Viso ombra | i due punti sull'immagine (frazione del fotogramma, 0,0 in basso a sinistra) |
-| Misura rapporto | legge la media attorno ai due punti (1 % dell'altezza) e imposta l'obiettivo uguale al misurato |
-| Rapporto obiettivo (stop) | dove portare l'ombra; la luce resta ferma |
-| Durezza passaggio | 0 passaggio morbido (luce diffusa), 100 netto (taglio di luce) |
-| Spegni sfondo | porta verso il nero ciò che sta sotto l'ombra del soggetto, fino a 4 stop: il fondo del chiaroscuro |
-| Luce sul soggetto | alza il lato illuminato fino a 1 stop, rapporto invariato |
-
-Local Contrast, Local Highlights, Local Shadows e le Zone locali qui non agiscono; Texture, Clarity, Dehaze sì.
-Il rapporto è ottenuto con gli stessi slot della curva a zone: uno parte dalla luce e sposta ciò che sta sotto, con
-l'intensità risolta perché l'ombra arrivi esattamente sull'obiettivo (verificato su campi uniformi, nel modello e
-nel plugin). Schiarire l'ombra comprime i toni: oltre la pendenza minima della curva non si va, e la riga Rapporto
-mostra il valore raggiungibile. Avvisa anche se la luce supera il bianco della Destinazione.
 
 ### Modalità Zonale: tre fasi, tre nodi
 
@@ -119,7 +97,7 @@ Copiando il nodo la Destinazione passa con lui; i comandi delle altre fasi resta
 | | Misura zone | legge i due punti; l'ombra resta sulla zona scelta, la luce va dove cade con sviluppo normale (N 0) |
 | | Ombra sulla zona (III) | esposizione: l'ombra misurata arriva esattamente lì |
 | | Luci sulla zona (VIII) | sviluppo: la retta ruota attorno all'ombra (N+ espande, N− contrae) perché la luce arrivi lì |
-| 2 Stampa | Local Shadows, Highlights, Contrast | schiarire e bruciare per aree, a dettaglio intatto (come in Standard) |
+| 2 Stampa | Local Shadows, Highlights, Contrast | schiarire e bruciare per aree, a dettaglio intatto  |
 | | Brucia i bordi, Ampiezza bordi | scurisce i margini, fino a 2 stop, nella fascia esterna scelta |
 | 3 Presenza | Texture, Clarity, Dehaze | il dettaglio, pieno nelle zone II–VIII e sfumato verso 0 e X |
 
@@ -144,7 +122,7 @@ lettura dell'immagine quando premi Misura, Metal (la parità CPU è verificata q
 3. **Base** B: guided filter auto-guidato di L sulla griglia (He et al.), applicato a piena
    risoluzione a una guida da cui è tolto il rumore a scala di pixel. B segue i bordi forti e
    ignora la grana.
-4. **Toni locali**: Local Contrast, Local Shadows e le Zone locali usano la stessa curva a zone
+4. **Toni locali**: Local Contrast e Local Shadows usano la stessa curva a zone
    del nodo principale, applicata a B. Il dettaglio `L − B` passa con pendenza 1: le aree si
    spostano, la texture no. Le aperture svaniscono fra −6,5 e −9,5 stop, così il pavimento del
    rumore resta dov'era.
@@ -171,7 +149,7 @@ Nessuna statistica per fotogramma: niente flicker.
 
 ## Limiti dichiarati
 
-- Local Shadows e le Zone locali, a ±100: su un gradino di 1 stop l'alone arriva a circa il 12 %
+- Local Shadows a ±100: su un gradino di 1 stop l'alone arriva a circa il 12 %
   del gradino, il 4-6 % su gradini di 2-3 stop; Clarity +100 circa il 7 %.
 - Local Highlights −100, Soglia bordi 0,5: sul lato scuro di un bordo l'alone resta sotto il 3 %
   del gradino (0,08 stop su 3 stop). Sul lato chiaro una fascia larga come il raggio viene

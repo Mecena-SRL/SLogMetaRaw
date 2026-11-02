@@ -183,18 +183,15 @@ detalhe fino. É a parte de Highlights e Shadows do Lightroom que um nó pontual
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (a entrada do nó, movida para cá de Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Zonale), **Ingresso (IDT)** (a entrada do nó, movida para cá de Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (faixa dinâmica) | Local Contrast, Local Highlights, Local Shadows; vistas de *ganho* e *base*. Local Highlights comprime as grandes áreas claras e mantém, até reforça, a textura fina: o céu escurece e as nuvens mantêm o detalhe. O Highlights do nó principal, ao contrário, suaviza a textura das altas luzes, como a película |
 | **Presenza** (presença) | Texture, Clarity, Dehaze |
-| **Zone locali** (zonas locais) | as zonas do nó principal, aplicadas às áreas |
 | **Avanzate** (avançado) | preservação do detalhe, raio, limiares de bordas e ruído, centro do Clarity, **Bianco** do Local Highlights |
 | **Velo** (véu) | nível e cor do véu que o Dehaze remove: quem decide é você, nunca são estimados quadro a quadro |
 
-**Modos e destino (2.4.0).** O grupo do topo escolhe como o nó trabalha. Os nós salvos não mudam: Standard e *Dal Bianco (manuale)* são os padrões.
+**Modos e destino (2.4.0).** O grupo do topo escolhe como o nó trabalha. Não lançado: Standard e Cinematografico foram removidos (por ora só Zonale); os nós salvos com eles abrem como Zonale.
 
 - **Destinazione (ODT)** diz ao nó qual transformação vem depois, para saber onde ficam o branco (zona X) e o preto (zona 0). Nunca converte a imagem. *Dal Bianco (manuale)* usa Avanzate › Bianco; as outras o fixam: Rec.709 CST +2,5/−4,5 stops em torno do cinza, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: os grupos abaixo (tons locais, presença, zonas locais), como antes.
-- **Cinematografico**, para closes: escolha *Viso luce* e *Viso ombra* no visor, clique em **Misura rapporto** e defina a **razão alvo** em stops (1 = 1:2, 2 = 1:4, 3 = 1:8). A luz fica parada e a sombra se move. *Durezza passaggio* (transição suave ou dura), *Spegni sfondo* (escurece o que está abaixo da sombra, até 4 stops), *Luce sul soggetto* (sobe o lado iluminado, razão igual). Assunto: rosto (luminância, áreas pequenas) ou paisagem. Se a razão não puder ser alcançada, a linha de informação mostra a alcançável.
 - **Zonale** (sistema de zonas de Ansel Adams): escolha uma *Ombra* e uma *Luce* com detalhe, clique em **Misura zone**, coloque a sombra com *Ombra sulla zona* (exposição, padrão III) e a luz com *Luci sulla zona* (revelação N+/N−, padrão VIII). Zona V = cinza 18%; zonas 0 e X = preto e branco do destino. A linha de informação mostra zonas medidas → alcançadas, N e a faixa de saída.
   Em três fases, um nó cada em série (**Fase**): *1 · Sviluppo* (revelação: curva global por pixel, sem halos: exposição e N±), *2 · Stampa* (ampliação: Local Shadows/Highlights/Contrast por áreas e **Brucia i bordi**, queima das bordas), *3 · Presenza* (Texture, Clarity, Dehaze). A linha **Guida** indica o próximo passo: copie o nó, cole depois e mude a Fase.
 - **Vista: zone** (11 cores) e **Vista: zone in grigi** (11 cinzas) mostram, em qualquer modo, em que zona cai cada área após o nó. Uma vista por vez.
@@ -210,7 +207,7 @@ Ainda não verificado no Resolve: exibição dos controles por modo, pontos no v
 - No Metal um quadro UHD leva cerca de 6–18 ms, medidos em Apple silicon. A alternativa por CPU é bem mais lenta.
 
 **Os seus limites, medidos.** Com Local Highlights −100 o halo no lado escuro de uma borda fica abaixo de 3% do degrau.
-Com Local Shadows ou as zonas locais a ±100, numa borda nítida de um stop o halo chega a cerca de 12% do degrau, e a 4–6% em
+Com Local Shadows a ±100, numa borda nítida de um stop o halo chega a cerca de 12% do degrau, e a 4–6% em
 degraus de 2–3 stops. Se o vir, baixe *Soglia bordi* (limiar de bordas). Texture não sobe o grão abaixo do limiar de
 ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaze precisa de um véu real para remover.
 [docs/DETAIL.md](docs/DETAIL.md)

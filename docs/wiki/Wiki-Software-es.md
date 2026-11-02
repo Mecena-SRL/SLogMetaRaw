@@ -269,18 +269,15 @@ Trabaja **por áreas**, sobre una base que respeta los bordes: mueve grandes ár
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (rango dinámico) | Local Contrast, Local Highlights, Local Shadows; vistas de comprobación *gain* y *base*. |
 | **Presenza** (presencia) | **Texture** (detalle fino; no sube el grano por debajo del umbral de ruido), **Clarity** (contraste local de escala media), **Dehaze**. |
-| **Zone locali** (zonas locales) | Las zonas del nodo principal, aplicadas a áreas en lugar de a píxeles. |
 | **Avanzate** (avanzado) | Preservación del detalle, radio, umbral de bordes (*Soglia bordi*), umbral de ruido, centro de Clarity, **Bianco** de Local Highlights. |
 | **Velo** (neblina) | Nivel y color de la neblina que quita Dehaze. Los fijas tú; nunca se estiman fotograma a fotograma → sin parpadeo. |
 
-**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. Los nodos guardados no cambian: Standard y *Dal Bianco (manuale)* son los valores por defecto.
+**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. No publicado: Standard y Cinematografico se han eliminado (por ahora solo Zonale); los nodos guardados con ellos se abren como Zonale.
 
 - **Destinazione (ODT)** indica al nodo qué transformación viene después, para saber dónde quedan el blanco (zona X) y el negro (zona 0). Nunca convierte la imagen. *Dal Bianco (manuale)* usa Avanzate › Bianco; las demás lo fijan: Rec.709 CST +2,5/−4,5 pasos alrededor del gris, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: los grupos de abajo (tonos locales, presencia, zonas locales), como antes.
-- **Cinematografico**, para primeros planos: elige *Viso luce* y *Viso ombra* en el visor, pulsa **Misura rapporto** y fija la **relación objetivo** en pasos (1 = 1:2, 2 = 1:4, 3 = 1:8). La luz queda fija y la sombra se mueve. *Durezza passaggio* (transición suave o dura), *Spegni sfondo* (oscurece lo que está bajo la sombra, hasta 4 pasos), *Luce sul soggetto* (sube el lado iluminado, relación igual). Sujeto: rostro (luminancia, áreas pequeñas) o paisaje. Si la relación no se alcanza, la línea de información muestra la alcanzable.
 - **Zonale** (sistema de zonas de Ansel Adams): elige una *Ombra* y una *Luce* con detalle, pulsa **Misura zone**, coloca la sombra con *Ombra sulla zona* (exposición, III por defecto) y la luz con *Luci sulla zona* (revelado N+/N−, VIII por defecto). Zona V = gris 18 %; zonas 0 y X = negro y blanco del destino. La línea de información muestra zonas medidas → alcanzadas, N y el rango de salida.
   En tres fases, un nodo cada una en serie (**Fase**): *1 · Sviluppo* (revelado: curva global por píxel, sin halos: exposición y N±), *2 · Stampa* (copia: Local Shadows/Highlights/Contrast por zonas y **Brucia i bordi**, quemado de bordes), *3 · Presenza* (Texture, Clarity, Dehaze). La línea **Guida** indica el paso siguiente: copia el nodo, pégalo después y cambia Fase.
 - **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran, en cualquier modo, en qué zona cae cada área tras el nodo. Una vista a la vez.
@@ -303,7 +300,7 @@ Aún no verificado en Resolve: aparición de los controles por modo, puntos en e
 **Límites medidos**
 
 - Local Highlights a −100: halo en el lado oscuro de un borde por debajo del 3% del escalón.
-- Local Shadows o las zonas locales a ±100: ~12% en un borde nítido de 1 paso, 4–6% en bordes de 2–3 pasos. Si lo ves, baja *Soglia bordi*.
+- Local Shadows a ±100: ~12% en un borde nítido de 1 paso, 4–6% en bordes de 2–3 pasos. Si lo ves, baja *Soglia bordi*.
 - Texture cerca de bordes fuertes puede aumentar el grano 1,25–1,7×.
 - Dehaze necesita una neblina real que quitar.
 
@@ -415,7 +412,7 @@ Se quedó una vista encendida. Apaga todas las vistas de falso color antes de re
 Tienes un DRT (ACES, AgX, DaVinci tone mapping) después del nodo: sube **Bianco** a 4–5 (también en el nodo Detail).
 
 **Halos alrededor de los bordes con el nodo Detail.**
-Baja *Avanzate › Soglia bordi*, o reduce Local Shadows / las zonas locales.
+Baja *Avanzate › Soglia bordi*, o reduce Local Shadows .
 
 **El script se saltó un clip.**
 Lee la columna *Estado*: dice por qué (archivo no soportado, disco que no responde, etc.).

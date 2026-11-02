@@ -269,18 +269,15 @@ Trabalha **por áreas**, sobre uma base que respeita as bordas: move grandes ár
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (a entrada do nó, movida para cá de Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Zonale), **Ingresso (IDT)** (a entrada do nó, movida para cá de Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (faixa dinâmica) | Local Contrast, Local Highlights, Local Shadows; vistas de verificação *gain* e *base*. |
 | **Presenza** (presença) | **Texture** (detalhe fino; não sobe o grão abaixo do limiar de ruído), **Clarity** (contraste local de média escala), **Dehaze**. |
-| **Zone locali** (zonas locais) | As zonas do nó principal, aplicadas a áreas em vez de pixels. |
 | **Avanzate** (avançado) | Preservação do detalhe, raio, limiar de bordas (*Soglia bordi*), limiar de ruído, centro do Clarity, **Bianco** do Local Highlights. |
 | **Velo** (véu) | Nível e cor do véu que o Dehaze remove. Você define; nunca são estimados quadro a quadro → sem flicker. |
 
-**Modos e destino (2.4.0).** O grupo do topo escolhe como o nó trabalha. Os nós salvos não mudam: Standard e *Dal Bianco (manuale)* são os padrões.
+**Modos e destino (2.4.0).** O grupo do topo escolhe como o nó trabalha. Não lançado: Standard e Cinematografico foram removidos (por ora só Zonale); os nós salvos com eles abrem como Zonale.
 
 - **Destinazione (ODT)** diz ao nó qual transformação vem depois, para saber onde ficam o branco (zona X) e o preto (zona 0). Nunca converte a imagem. *Dal Bianco (manuale)* usa Avanzate › Bianco; as outras o fixam: Rec.709 CST +2,5/−4,5 stops em torno do cinza, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: os grupos abaixo (tons locais, presença, zonas locais), como antes.
-- **Cinematografico**, para closes: escolha *Viso luce* e *Viso ombra* no visor, clique em **Misura rapporto** e defina a **razão alvo** em stops (1 = 1:2, 2 = 1:4, 3 = 1:8). A luz fica parada e a sombra se move. *Durezza passaggio* (transição suave ou dura), *Spegni sfondo* (escurece o que está abaixo da sombra, até 4 stops), *Luce sul soggetto* (sobe o lado iluminado, razão igual). Assunto: rosto (luminância, áreas pequenas) ou paisagem. Se a razão não puder ser alcançada, a linha de informação mostra a alcançável.
 - **Zonale** (sistema de zonas de Ansel Adams): escolha uma *Ombra* e uma *Luce* com detalhe, clique em **Misura zone**, coloque a sombra com *Ombra sulla zona* (exposição, padrão III) e a luz com *Luci sulla zona* (revelação N+/N−, padrão VIII). Zona V = cinza 18%; zonas 0 e X = preto e branco do destino. A linha de informação mostra zonas medidas → alcançadas, N e a faixa de saída.
   Em três fases, um nó cada em série (**Fase**): *1 · Sviluppo* (revelação: curva global por pixel, sem halos: exposição e N±), *2 · Stampa* (ampliação: Local Shadows/Highlights/Contrast por áreas e **Brucia i bordi**, queima das bordas), *3 · Presenza* (Texture, Clarity, Dehaze). A linha **Guida** indica o próximo passo: copie o nó, cole depois e mude a Fase.
 - **Vista: zone** (11 cores) e **Vista: zone in grigi** (11 cinzas) mostram, em qualquer modo, em que zona cai cada área após o nó. Uma vista por vez.
@@ -303,7 +300,7 @@ Ainda não verificado no Resolve: exibição dos controles por modo, pontos no v
 **Limites medidos**
 
 - Local Highlights −100: halo no lado escuro de uma borda abaixo de 3% do degrau.
-- Local Shadows ou zonas locais a ±100: cerca de 12% numa borda nítida de 1 stop, 4–6% em bordas de 2–3 stops. Se vir isso, baixe *Soglia bordi*.
+- Local Shadows a ±100: cerca de 12% numa borda nítida de 1 stop, 4–6% em bordas de 2–3 stops. Se vir isso, baixe *Soglia bordi*.
 - Texture perto de bordas fortes pode aumentar o grão de 1,25 a 1,7×.
 - O Dehaze precisa de um véu real para remover.
 
@@ -415,7 +412,7 @@ Uma vista ficou ativada. Desligue todas as vistas de falsa cor antes de renderiz
 Você tem um DRT (ACES, AgX, tone mapping do DaVinci) depois do nó: suba **Bianco** para 4–5 (no nó Detail também).
 
 **Halos ao redor das bordas com o nó Detail.**
-Baixe *Avanzate › Soglia bordi*, ou reduza Local Shadows / zonas locais.
+Baixe *Avanzate › Soglia bordi*, ou reduza Local Shadows.
 
 **O script pulou um clipe.**
 Leia a coluna *Status*: ela diz por quê (arquivo não suportado, disco não responde, etc.).

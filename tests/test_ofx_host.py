@@ -23,6 +23,15 @@ GOLDEN = {0: os.path.join(ROOT, 'tests', 'golden', 'params_develop.txt'),
           1: os.path.join(ROOT, 'tests', 'golden', 'params_detail.txt')}
 
 
+# Parameters removed on purpose after 2.4.0 (Detail: Standard and Cinematografico are gone, decided with the owner,
+# no migration): a grade saved with them loads, the values are ignored. devMode is listed because its options changed.
+DROPPED_AFTER_2_4_0 = {1: {'param:' + n for n in (
+    'devMode', 'modeInfo', 'subjectFace', 'subjectLandscape', 'ratioLightPos', 'ratioShadowPos', 'ratioMeasure', 'ratioTarget',
+    'ratioHardness', 'ratioBackground', 'ratioSubjectLift', 'ratioInfo', 'ratioLight', 'ratioShadow', 'ratioMeasured',
+    'localZonePivot', *('localZone%s%s' % (z, k) for z in ('Black', 'Shadow', 'Light', 'Specular')
+                        for k in ('Exp', 'Range', 'Falloff')))}}
+
+
 class OfxHost(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -81,11 +90,12 @@ class OfxHost(unittest.TestCase):
                 if line.startswith('param:'):
                     f = line.split('|')
                     now[f[0]] = f
-            gone = [n for n in set(released) - set(now) if released[n][1] != 'OfxParamTypeGroup']   # no value
+            gone = [n for n in set(released) - set(now) if released[n][1] != 'OfxParamTypeGroup'   # no value
+                    and n not in DROPPED_AFTER_2_4_0.get(plugin, ())]
             self.assertEqual(sorted(gone), [], 'parametri della 2.4.0 spariti: %s' % released_file)
             TYPE, DEFAULT, MIN, MAX, OPTIONS = 1, 3, 7, 8, 15
             for name, old in released.items():
-                if name not in now:
+                if name not in now or name in DROPPED_AFTER_2_4_0.get(plugin, ()):
                     continue
                 new_ = now[name]
                 self.assertEqual(new_[TYPE], old[TYPE], name)
@@ -96,11 +106,11 @@ class OfxHost(unittest.TestCase):
 
     def test_a_new_detail_starts_zonale_at_development_and_a_saved_one_keeps_one_node(self):
         """Zonale in phases: a new node is guided from 1 · Sviluppo; a node saved before the phases (version 1)
-        keeps every phase in one node, as it was."""
+        keeps every phase in one node, as it was, and the old Standard and Cinematografico modes become Zonale."""
         new = self.values(plugin=1)
-        self.assertEqual((new.get('zonalPhase'), new.get('settingsVersion')), ('1', '2'))
-        saved = self.values('--set', 'settingsVersion=1', plugin=1)
-        self.assertEqual((saved.get('zonalPhase', '0'), saved.get('settingsVersion')), ('0', '2'))
+        self.assertEqual((new.get('zonalPhase'), new.get('settingsVersion')), ('1', '3'))
+        saved = self.values('--set', 'settingsVersion=1', '--set', 'devMode=0', plugin=1)
+        self.assertEqual((saved.get('zonalPhase', '0'), saved.get('settingsVersion')), ('0', '3'))
 
     def test_the_old_input_list_fills_the_two_choices(self):
         """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""

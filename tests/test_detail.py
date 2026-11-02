@@ -47,30 +47,32 @@ def model(img, controls, w=W, h=H, href=HREF, base=BASE):
     return D.render(img, w, h, p, GAMMA)
 
 
+def model_unweighted(img, controls, w=W, h=H):
+    """The model with the presence in full everywhere: what Texture and Clarity do before the zones weigh them."""
+    p = D.prepare(w, h, controls, space=SPACE, base=BASE, href=HREF)
+    p['pzOn'] = False
+    return D.render(img, w, h, p, GAMMA)
+
+
 CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -60},
          {'localHighlights': 60, 'localShadows': -40, 'localContrast': 40, 'preserveDetail': 60},
          {'clarity': 80}, {'clarity': -70, 'clarityCenter': 1.5}, {'texture': 90}, {'texture': -90, 'noiseThreshold': 0},
          {'dehaze': 70, 'hazeWarmth': 40, 'hazeLevel': 1.0}, {'dehaze': -50},
-         {'localZoneLightExp': -2, 'localZoneShadowExp': 1.5, 'localZonePivot': 1, 'localZoneSpecularFalloff': 0.5},
          {'localHighlights': -80, 'viewGain': 1}, {'viewBase': 1, 'detailRadius': 8, 'edgeThreshold': 0.25},
          {'texture': 50, 'clarity': 50, 'localShadows': 50, 'dehaze': 30},
          {'localHighlights': 60, 'localContrast': 30}, {'localHighlights': -100, 'localWhite': 4.5, 'texture': 40},
          {'localHighlights': -50, 'noiseThreshold': 0},
          {'localHighlights': -100, 'destination': 2, 'localWhite': 1.5},
-         {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -3.0, 'ratioMeasured': 4.0, 'ratioTarget': 5.0,
-          'ratioBackground': 40, 'ratioSubjectLift': 30, 'texture': 30, 'localHighlights': -80},
-         {'devMode': 1, 'subject': 1, 'ratioLight': 0.5, 'ratioShadow': -2.0, 'ratioMeasured': 2.5,
-          'ratioTarget': 1.5, 'ratioHardness': 0, 'localContrast': 40},
-         {'devMode': 2, 'adamsShadowL': -4.5, 'adamsHighL': 2.0, 'adamsShadowPlace': 3, 'adamsHighPlace': 9,
+         {'devMode': 0, 'adamsShadowL': -4.5, 'adamsHighL': 2.0, 'adamsShadowPlace': 3, 'adamsHighPlace': 9,
           'texture': 30, 'localShadows': 60},
-         {'devMode': 2, 'adamsShadowL': -3.0, 'adamsHighL': 4.0, 'adamsShadowPlace': 2.5, 'adamsHighPlace': 7,
+         {'devMode': 0, 'adamsShadowL': -3.0, 'adamsHighL': 4.0, 'adamsShadowPlace': 2.5, 'adamsHighPlace': 7,
           'destination': 4, 'viewZones': 1},
          {'viewZones': 2, 'destination': 1, 'localShadows': 50}, {'viewZones': 1, 'localHighlights': -60},
-         {'devMode': 2, 'zonalPhase': 1, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'adamsShadowPlace': 3,
+         {'devMode': 0, 'zonalPhase': 1, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'adamsShadowPlace': 3,
           'adamsHighPlace': 8, 'destination': 1, 'texture': 60, 'localShadows': 60},
-         {'devMode': 2, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
+         {'devMode': 0, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
           'localShadows': 40, 'printEdgeBurn': 1.5, 'printEdgeSize': 40, 'clarity': 50},
-         {'devMode': 2, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
+         {'devMode': 0, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
           'printEdgeBurn': 2}]
 
 
@@ -103,8 +105,8 @@ class Model(unittest.TestCase):
         img = scene()
         brighter = [[dm.encode1(dm.decode1(c, GAMMA) * 2.0, GAMMA) for c in px] for px in img]
         for ctrl in ({'texture': 70, 'noiseThreshold': 0}, {'clarity': 70, 'noiseThreshold': 0}):
-            _, a = model(img, dict(ctrl, clarityCenter=0))
-            _, b = model(brighter, dict(ctrl, clarityCenter=1.0) if 'clarity' in ctrl else ctrl)
+            _, a = model_unweighted(img, dict(ctrl, clarityCenter=0))
+            _, b = model_unweighted(brighter, dict(ctrl, clarityCenter=1.0) if 'clarity' in ctrl else ctrl)
             worst = max(abs(x - y) for x, y in zip(a['G'], b['G']))
             self.assertLess(worst, 1e-6, ctrl)
 
@@ -196,29 +198,11 @@ class Model(unittest.TestCase):
         _, planes = D.render(img, 32, 18, D.prepare(32, 18, ctrl, space=SPACE, base=BASE, href=HREF), GAMMA)
         return planes['L'][200], planes['G'][200]
 
-    def test_cinematografico_lands_the_shadow_on_the_target_ratio_and_keeps_the_light(self):
-        Ll, Ls = self.flat_g(1.0, {})[0], self.flat_g(-1.5, {})[0]   # L as the node reads it
-        for target, hard, bg, lift in ((4.0, 50, 0, 0), (1.5, 50, 0, 0), (4.5, 100, 60, 40), (3.0, 0, 30, 0)):
-            ctrl = {'devMode': 1, 'ratioLight': Ll, 'ratioShadow': Ls, 'ratioMeasured': Ll - Ls,
-                    'ratioTarget': target, 'ratioHardness': hard, 'ratioBackground': bg, 'ratioSubjectLift': lift}
-            (l1, g1), (l2, g2) = self.flat_g(Ll, ctrl), self.flat_g(Ls, ctrl)
-            self.assertAlmostEqual((l1 + g1) - (l2 + g2), target, places=6, msg=ctrl)
-            if not lift:
-                self.assertAlmostEqual(g1, 0.0, places=9, msg='la luce si e mossa: %s' % ctrl)
-
-    def test_cinematografico_an_unreachable_ratio_stops_where_the_slope_limit_is(self):
-        """Lifting the shadow is a compression: past the flattest slope (SM_T5_SMIN) it stops, and says so."""
-        v = D.controls_clamped({'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -1.5, 'ratioMeasured': 2.5,
-                                'ratioTarget': 0.5})
-        got = D.cinema_reached(v)
-        self.assertGreater(got, 0.5 + 0.1)
-        self.assertLess(got, 2.5)
-
     def test_zonale_places_the_shadow_and_develops_the_highlight(self):
         """Zone V is grey: the shadow lands on its zone, the highlight on its own, pixel by pixel on flat fields."""
         Ls, Lh = self.flat_g(-1.3, {})[0], self.flat_g(4.1, {})[0]
         for zs, zh in ((3, 8), (3, 7), (2, 9.5), (4, 9)):
-            ctrl = {'devMode': 2, 'adamsShadowL': Ls, 'adamsHighL': Lh, 'adamsShadowPlace': zs, 'adamsHighPlace': zh}
+            ctrl = {'devMode': 0, 'adamsShadowL': Ls, 'adamsHighL': Lh, 'adamsShadowPlace': zs, 'adamsHighPlace': zh}
             (l1, g1), (l2, g2) = self.flat_g(-1.3, ctrl), self.flat_g(4.1, ctrl)
             self.assertAlmostEqual(D.zone_of(l1 + g1, 2.5, 4.5), zs, places=6, msg=ctrl)
             self.assertAlmostEqual(D.zone_of(l2 + g2, 2.5, 4.5), zh, places=6, msg=ctrl)
@@ -250,7 +234,7 @@ class Model(unittest.TestCase):
     def test_zonale_development_is_monotone_and_smooth(self):
         """One curve, toe and shoulder included: the tones keep their order and the slope has no jump."""
         for zs, zh, dest in ((2, 10, 1), (3, 8, 4), (4, 4.5, 2), (1, 9, 0)):
-            v = D.controls_clamped({'devMode': 2, 'adamsShadowL': -2.0, 'adamsHighL': 2.0, 'adamsShadowPlace': zs,
+            v = D.controls_clamped({'devMode': 0, 'adamsShadowL': -2.0, 'adamsHighL': 2.0, 'adamsShadowPlace': zs,
                                     'adamsHighPlace': zh, 'destination': dest})
             zd = D.zonal_develop(v)
             out = [L + D.zonal_gain(L, zd) for L in [-12 + 0.01 * i for i in range(2400)]]
@@ -260,7 +244,7 @@ class Model(unittest.TestCase):
 
     def test_zonale_development_is_pointwise(self):
         """Development reads no neighbour: on a picture with edges each gain is the curve at its own pixel."""
-        ctrl = {'devMode': 2, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3,
+        ctrl = {'devMode': 0, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3,
                 'adamsHighPlace': 7, 'destination': 1, 'localShadows': 100, 'texture': 80}
         _, planes = model(scene(), ctrl)
         zd = D.zonal_develop(D.controls_clamped(ctrl))
@@ -273,11 +257,11 @@ class Model(unittest.TestCase):
     def test_zonale_phases_split_the_work(self):
         """Print and presence leave the development alone, and each phase ignores the others' controls."""
         img = scene(48, 27)
-        meas = {'devMode': 2, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3, 'adamsHighPlace': 7}
+        meas = {'devMode': 0, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3, 'adamsHighPlace': 7}
         rest, _ = model(img, {}, 48, 27)
         self.assertEqual(model(img, dict(meas, zonalPhase=2), 48, 27)[0], rest)
         self.assertEqual(model(img, dict(meas, zonalPhase=3, localShadows=80, printEdgeBurn=2), 48, 27)[0], rest)
-        plain = model(img, {'texture': 70, 'clarity': 50}, 48, 27)[1]['G']
+        plain = model_unweighted(img, {'texture': 70, 'clarity': 50}, 48, 27)[1]['G']
         pres = model(img, dict(meas, zonalPhase=3, texture=70, clarity=50), 48, 27)[1]
         v = D.controls_clamped(meas)
         white, black = D.destination_white(v), D.destination_black(v)
@@ -290,36 +274,20 @@ class Model(unittest.TestCase):
         self.assertEqual(model(img, dict(meas, zonalPhase=2, localShadows=70, texture=70), 48, 27)[0], shadows)
 
     def test_print_burns_the_edges_only(self):
-        p = D.prepare(64, 36, {'devMode': 2, 'zonalPhase': 2, 'printEdgeBurn': 1.5, 'printEdgeSize': 30})
+        p = D.prepare(64, 36, {'devMode': 0, 'zonalPhase': 2, 'printEdgeBurn': 1.5, 'printEdgeSize': 30})
         self.assertEqual(D.edge_burn(31, 17, 64, 36, p), 0.0)
         self.assertAlmostEqual(D.edge_burn(0, 17, 64, 36, p), -1.5, delta=0.02)
         row = [D.edge_burn(x, 17, 64, 36, p) for x in range(32)]
         self.assertTrue(all(a <= b for a, b in zip(row, row[1:])))
-        self.assertEqual(D.prepare(64, 36, {'printEdgeBurn': 1.5})['ebAmt'], 0.0)   # Zonale only
+        self.assertEqual(D.prepare(64, 36, {'zonalPhase': 1, 'printEdgeBurn': 1.5})['ebAmt'], 0.0)   # the print only
 
     def test_zonale_an_unreachable_contraction_says_where_it_stops(self):
         """Past the flattest slope the highlight stops short of its zone, and the panel says so."""
-        v = D.controls_clamped({'devMode': 2, 'adamsShadowL': -1.0, 'adamsHighL': 5.0, 'adamsShadowPlace': 4,
+        v = D.controls_clamped({'devMode': 0, 'adamsShadowL': -1.0, 'adamsHighL': 5.0, 'adamsShadowPlace': 4,
                                 'adamsHighPlace': 5, 'destination': 1})
         zs, zh = D.zonal_reached(v)
         self.assertAlmostEqual(zs, 4.0, places=6)
         self.assertGreater(zh, 5.5)
-
-    def test_cinematografico_background_only_goes_down(self):
-        ctrl = {'devMode': 1, 'ratioLight': 1.0, 'ratioShadow': -1.0, 'ratioMeasured': 2.0, 'ratioTarget': 2.0}
-        prev = None
-        for bg in (0, 25, 50, 100):
-            g = self.flat_g(-4.0, dict(ctrl, ratioBackground=bg))[1]
-            if prev is not None:
-                self.assertLess(g, prev)
-            prev = g
-
-    def test_cinematografico_without_a_measure_and_standard_mode_controls_are_inert(self):
-        img = scene(32, 18)
-        rest, _ = model(img, {}, 32, 18)
-        out, _ = model(img, {'devMode': 1, 'localShadows': 80, 'localContrast': 40, 'localHighlights': -100,
-                             'localZoneLightExp': 2}, 32, 18)
-        self.assertEqual(out, rest)
 
     def test_destination_white_moves_the_highlight_landing(self):
         top = D.prepare(64, 64, {'localHighlights': -100, 'destination': 1, 'localWhite': 8})
@@ -336,25 +304,13 @@ class Model(unittest.TestCase):
 
 
 class Panel(unittest.TestCase):
-    """The Cinematografico panel: the subject icons ship with the bundle, the mode names stay in step."""
-
-    def test_the_subject_icons_are_shipped_and_referenced(self):
-        src = open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'src', 'detail', 'DetailFactory.cpp'), encoding='utf-8').read()
-        lists = [open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', f), encoding='utf-8').read()
-                 for f in ('Makefile', 'CMakeLists.txt')]
-        for icon in ('subject_face.png', 'subject_landscape.png'):
-            self.assertIn('"%s"' % icon, src)
-            self.assertTrue(os.path.exists(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', icon)), icon)
-            for text in lists:
-                self.assertIn(icon, text)
-
     def test_the_hidden_values_reach_the_controls(self):
-        """Every Cinematografico value the model reads is bound by the effect (kDetailSliders) or read as a choice."""
+        """Every value the model reads from the picture is bound by the effect (kDetailSliders) or read as a choice."""
         src = open(os.path.join(ROOT, 'ofx', 'SLogMetaRaw', 'src', 'detail', 'DetailEffect.cpp'), encoding='utf-8').read()
         for name in D.DETAIL_CONTROLS:
-            if name.startswith(('ratio', 'adams')):
+            if name.startswith('adams'):
                 self.assertIn('{ "%s", &SMDetailControls::%s }' % (name, name), src)
-        for name in ('m_DevMode->getValueAtTime', 'm_Destination->getValueAtTime', 'm_SubjectLandscape->getValueAtTime'):
+        for name in ('m_DevMode->getValueAtTime', 'm_Destination->getValueAtTime'):
             self.assertIn(name, src)
 
 

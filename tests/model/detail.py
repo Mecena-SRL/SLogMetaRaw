@@ -39,29 +39,21 @@ HL_B = (0.3, 0.2)          # x edgeThreshold: the same, smaller, for the boost
 DETAIL_CONTROLS = {
     'localContrast': (-100.0, 50.0, 0.0), 'localHighlights': (-100.0, 100.0, 0.0),
     'localShadows': (-100.0, 100.0, 0.0), 'texture': (-100.0, 100.0, 0.0), 'clarity': (-100.0, 100.0, 0.0),
-    'dehaze': (-100.0, 100.0, 0.0), 'localZonePivot': (-4.0, 4.0, 0.0),
+    'dehaze': (-100.0, 100.0, 0.0),
     'preserveDetail': (0.0, 100.0, 100.0), 'detailRadius': (1.0, 8.0, 4.0), 'edgeThreshold': (0.25, 1.0, 0.5),
     'noiseThreshold': (0.0, 0.15, 0.04), 'clarityCenter': (-3.0, 3.0, 0.0), 'hazeLevel': (-2.0, 6.0, 2.0),
     'hazeWarmth': (-100.0, 100.0, 0.0), 'localWhite': (1.0, 10.0, 2.5),
     'viewGain': (0.0, 1.0, 0.0), 'viewBase': (0.0, 1.0, 0.0),
     # development mode and destination (the transform after the node)
     'viewZones': (0.0, 2.0, 0.0),
-    'devMode': (0.0, 2.0, 0.0), 'destination': (0.0, 4.0, 0.0), 'subject': (0.0, 1.0, 0.0),
-    # Cinematografico: the two points read on the picture (L of the norm) and their ratio in stops
-    'ratioLight': (-16.0, 16.0, 0.0), 'ratioShadow': (-16.0, 16.0, 0.0), 'ratioMeasured': (0.0, 16.0, 0.0),
-    'ratioTarget': (0.0, 5.0, 1.0), 'ratioHardness': (0.0, 100.0, 50.0), 'ratioBackground': (0.0, 100.0, 0.0),
-    'ratioSubjectLift': (0.0, 100.0, 0.0),
+    'devMode': (0.0, 0.0, 0.0), 'destination': (0.0, 4.0, 0.0),
     # Zonale: the shadow and the highlight read on the picture (L of the norm), the zones they are placed on
     'adamsShadowL': (-16.0, 16.0, 0.0), 'adamsHighL': (-16.0, 16.0, 0.0),
     'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0),
     # Zonale in phases: one node (all), 1 development, 2 print, 3 presence; the print's edge burn
     'zonalPhase': (0.0, 3.0, 0.0), 'printEdgeBurn': (0.0, 2.0, 0.0), 'printEdgeSize': (10.0, 60.0, 30.0)}
-for _z, _r, _f in zip(T.ZONES, T.ZONE_RANGE, T.ZONE_FALLOFF):
-    DETAIL_CONTROLS['localZone%sExp' % _z] = (-6.0, 6.0, 0.0)
-    DETAIL_CONTROLS['localZone%sRange' % _z] = (-10.0, 10.0, _r)
-    DETAIL_CONTROLS['localZone%sFalloff' % _z] = (0.5, 6.0, _f)
 
-MODE_STANDARD, MODE_CINEMA, MODE_ZONAL = 0, 1, 2
+MODE_ZONAL = 0                    # the development modes: Zonale (Ansel Adams)
 ADAMS_MIN_SPREAD = 0.25           # the highlight stays at least this many zones above the shadow
 PHASE_ALL, PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE = 0, 1, 2, 3
 ZD_K_MIN, ZD_K_MAX = 0.25, 4.0    # development slope: about N-2.5 to N+5 on a 3-stop scene
@@ -73,10 +65,7 @@ DEST_BLACK = (4.5, 4.5, 6.0, 7.0, 9.0)
 ZONE_RGB = ((0.25, 0.00, 0.35), (0.10, 0.10, 0.55), (0.10, 0.35, 0.85), (0.00, 0.60, 0.70), (0.25, 0.65, 0.30),
             (0.50, 0.50, 0.50), (0.95, 0.65, 0.55), (0.95, 0.85, 0.25), (1.00, 0.60, 0.10), (0.95, 0.20, 0.10),
             (1.00, 1.00, 1.00))
-SUBJECT_RADIUS = (0.75, 2.0)        # Cinematografico: base radius x this, Viso / Paesaggio
-RATIO_MIN_GAP = 0.05                # below this the two points are not a light and a shadow
-RATIO_E_MAX = 6.0
-RATIO_STEPS = 60
+MIN_GAP = 0.05                      # below this the two points are not a light and a shadow
 
 
 # ---------------------------------------------------------------- host side
@@ -206,50 +195,6 @@ def f32(x):
     return struct.unpack('f', struct.pack('f', x))[0]
 
 
-def cinema_nominal(v):
-    """Cinematografico: slots of the zone curve that bring the shadow side of the subject to the target ratio.
-
-    Slot 4 (down) starts at the light and lowers or raises what is under it; its E is solved so that
-    G(shadow) - G(light) = measured - target, with the other slots in place: the light does not move
-    (the slot is 0 there), the shadow lands on the ratio. Slot 1 (up) brightens the subject, slot 6
-    (down) takes the background under the shadow down. Returns the 7 nominal slots."""
-    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
-    Ll, Ls = v['ratioLight'], v['ratioShadow']
-    gap = Ll - Ls
-    if gap <= RATIO_MIN_GAP:
-        return nominal
-    lift = v['ratioSubjectLift'] / 100.0
-    if lift > 0.0:
-        nominal[1] = (lift, Ll - 0.5, 1.0, T.SM_T5_SMAX_CR)
-    push = max(v['ratioTarget'] - v['ratioMeasured'], 0.0)
-    bg = v['ratioBackground'] / 100.0
-    if bg > 0.0:
-        nominal[6] = (-4.0 * bg, Ls - push - 0.25, 1.5, T.SM_T5_SMAX_ZONE)
-    f = max(0.25, gap * (1.0 - 0.0075 * v['ratioHardness']))
-    want = v['ratioMeasured'] - v['ratioTarget']
-
-    def spread(E):
-        n = list(nominal)
-        n[4] = (E, Ll, f, T.SM_T5_SMAX_ZONE)
-        c = T.zone_policy(0.0, 0.0, n)
-        return T.t5_curve(Ls, c)[0] - T.t5_curve(Ll, c)[0]
-    lo, hi = -RATIO_E_MAX, RATIO_E_MAX
-    if spread(lo) >= want:
-        E = lo
-    elif spread(hi) <= want:
-        E = hi
-    else:
-        for _ in range(RATIO_STEPS):
-            mid = 0.5 * (lo + hi)
-            if spread(mid) < want:
-                lo = mid
-            else:
-                hi = mid
-        E = 0.5 * (lo + hi)
-    nominal[4] = (E, Ll, f, T.SM_T5_SMAX_ZONE)
-    return nominal
-
-
 def zonal_develop(v):
     """Zonale, development: one curve on the pixel's own L, as a negative is developed (no neighbours, no halo).
 
@@ -258,7 +203,7 @@ def zonal_develop(v):
     the line's slope where they start, towards a stop beyond zone 0 and zone X. None without a measure."""
     Ls, Lh = v['adamsShadowL'], v['adamsHighL']
     gap = Lh - Ls
-    if gap <= RATIO_MIN_GAP:
+    if gap <= MIN_GAP:
         return None
     zs = v['adamsShadowPlace']
     zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
@@ -309,12 +254,6 @@ def edge_burn(X, Y, W, H, p):
     return -p['ebAmt'] * t * t * (3.0 - 2.0 * t)
 
 
-def cinema_reached(v):
-    """The ratio in stops the slots give between the two points (= target unless it is out of reach)."""
-    c = T.zone_policy(0.0, 0.0, cinema_nominal(v))
-    return v['ratioMeasured'] + T.t5_curve(v['ratioLight'], c)[0] - T.t5_curve(v['ratioShadow'], c)[0]
-
-
 def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     """Everything the kernels read, from the frame size and the panel (= dt_prepare).
     href: the height the radii are relative to, H in the plugin; tests set it to make a small image
@@ -330,10 +269,8 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     st = 2 ** nt
     sigma_t = math.sqrt(max(sigma2 * sigma2 - tent_variance(st), 0.25)) / st
 
-    mode = int(round(v['devMode']))
-    cinema = mode == MODE_CINEMA
-    radius = v['detailRadius'] * (SUBJECT_RADIUS[int(round(v['subject']))] if cinema else 1.0)
-    zonal = mode == MODE_ZONAL
+    radius = v['detailRadius']
+    zonal = int(round(v['devMode'])) == MODE_ZONAL
     phase = int(round(v['zonalPhase'])) if zonal else PHASE_ALL
     develop, printing, presence = (phase in (PHASE_ALL, ph) for ph in (PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE))
     if not presence:
@@ -341,16 +278,9 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     if not printing:
         v['localContrast'] = v['localShadows'] = v['localHighlights'] = 0.0
     zd = zonal_develop(v) if zonal and develop else None
-    if cinema:
-        curve = T.zone_policy(0.0, 0.0, cinema_nominal(v))
-    else:
-        nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
-        nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
-        for z, slot in zip(T.ZONES, T.ZONE_SLOT):   # Zonale prints with the three local tones alone
-            nominal[slot] = (0.0 if zonal else v['localZone%sExp' % z], v['localZone%sRange' % z],
-                             v['localZone%sFalloff' % z], T.SM_T5_SMAX_ZONE)
-        curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, 0.0 if zonal else v['localZonePivot'],
-                              nominal)
+    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS   # the print has three local tones
+    nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
+    curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, 0.0, nominal)
 
     haze_v = v['dehaze']
     veil = veil_colour(v['hazeWarmth'], space)
@@ -375,7 +305,7 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     p['legend'] = legend_layout(W, H, p['view'], zd, v)
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
-    hv = 0.0 if cinema else v['localHighlights']
+    hv = v['localHighlights']
     white = destination_white(v)
     a = abs(hv) / 100.0
     a *= 1.5 - 0.5 * a

@@ -182,18 +182,15 @@ the fine detail. That is the part of Lightroom's Highlights and Shadows a pointw
 
 | Group | Controls |
 |---|---|
-| **Sviluppo e spazio colore** (development and colour space) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (the node input, moved here from Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (development and colour space) | **Modalità** (Zonale), **Ingresso (IDT)** (the node input, moved here from Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (dynamic range) | Local Contrast, Local Highlights, Local Shadows; *gain* and *base* views. Local Highlights compresses the large bright areas and keeps, even strengthens, the fine texture: a sky gets deeper and its clouds keep their detail. The main node's Highlights instead softens highlight texture, like film |
 | **Presenza** (presence) | Texture, Clarity, Dehaze |
-| **Zone locali** (local zones) | the main node's zones, applied to the areas |
 | **Avanzate** (advanced) | detail preservation, radius, edge and noise thresholds, Clarity centre, **Bianco** for Local Highlights |
 | **Velo** (haze) | the level and colour of the haze Dehaze removes: you set them, they are never guessed frame by frame |
 
-**Modes and destination (2.4.0).** The top group picks how the node works. Saved grades do not change: Standard and *Dal Bianco (manuale)* are the defaults.
+**Modes and destination (2.4.0).** The top group picks how the node works. Unreleased: Standard and Cinematografico were removed (Zonale is the only mode for now); nodes saved with them open as Zonale.
 
 - **Destinazione (ODT)** tells the node which transform comes after it, so it knows where white (zone X) and black (zone 0) land. It never converts the image. *Dal Bianco (manuale)* uses Avanzate › Bianco; the others fix it: Rec.709 CST +2.5/−4.5 stops around grey, Rec.709 DRT (ACES, AgX, DaVinci) +4.5/−6, HDR PQ 1000 nit +6.5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: the groups below (local tones, presence, local zones), as before.
-- **Cinematografico**, for close-ups: pick *Viso luce* and *Viso ombra* on the viewer, press **Misura rapporto**, then set the **target ratio** in stops (1 = 1:2, 2 = 1:4, 3 = 1:8). The light stays put and the shadow moves. *Durezza passaggio* (soft or hard transition), *Spegni sfondo* (sinks what is below the shadow, up to 4 stops), *Luce sul soggetto* (lifts the lit side, ratio unchanged). Subject: face (luminance, small areas) or landscape. If the ratio cannot be reached, the info line shows the reachable one.
 - **Zonale** (Ansel Adams zone system): pick an *Ombra* and a *Luce* with detail, press **Misura zone**, place the shadow on a zone with *Ombra sulla zona* (exposure, default III) and the light with *Luci sulla zona* (development N+/N−, default VIII). Zone V is 18% grey; zone 0 and X are the Destinazione's black and white. The info line shows measured → reached zones, N and the output range.
   In three phases, one node each in series (**Fase**): *1 · Sviluppo* (development: a global per-pixel curve, no halos: exposure and N±), *2 · Stampa* (print: Local Shadows/Highlights/Contrast by area and **Brucia i bordi**, edge burning), *3 · Presenza* (Texture, Clarity, Dehaze). The **Guida** line says the next step: copy the node, paste it after and change Fase.
 - **Vista: zone** (11 colours) and **Vista: zone in grigi** (11 greys) show, in any mode, which zone every area falls in after the node. One view at a time.
@@ -208,7 +205,7 @@ Not yet verified in Resolve: showing and hiding the controls by mode, the points
 - On Metal a UHD frame takes about 6–18 ms, measured on Apple silicon. The CPU fallback is much slower.
 
 **Its limits, measured.** With Local Highlights −100 the halo on the dark side of an edge stays under 3% of the step. With
-Local Shadows or the local zones at ±100, on a hard one-stop edge the halo reaches about 12% of the step, and 4–6% on 2–3 stop
+Local Shadows at ±100, on a hard one-stop edge the halo reaches about 12% of the step, and 4–6% on 2–3 stop
 edges. If you see one, lower *Soglia bordi* (edge threshold). Texture does not raise grain below the noise threshold,
 but next to strong edges grain can grow 1.25–1.7×. Dehaze needs a real haze to remove. [docs/DETAIL.md](docs/DETAIL.md)
 

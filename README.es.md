@@ -186,18 +186,15 @@ aplanar el detalle fino. Es la parte de Highlights y Shadows de Lightroom que un
 
 | Grupo | Controles |
 |---|---|
-| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Standard, Cinematografico, Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
+| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale), **Ingresso (IDT)** (la entrada del nodo, movida aquí desde Avanzate), **Destinazione (ODT)** |
 | **Gamma dinamica** (rango dinámico) | Local Contrast, Local Highlights, Local Shadows; vistas de *ganancia* y *base*. Local Highlights comprime las grandes áreas luminosas y conserva, incluso refuerza, la textura fina: el cielo se oscurece y las nubes mantienen su detalle. El Highlights del nodo principal en cambio suaviza la textura de las altas luces, como la película |
 | **Presenza** (presencia) | Texture, Clarity, Dehaze |
-| **Zone locali** (zonas locales) | las zonas del nodo principal, aplicadas a las áreas |
 | **Avanzate** (avanzado) | preservación del detalle, radio, umbrales de bordes y ruido, centro de Clarity, **Bianco** de Local Highlights |
 | **Velo** | nivel y color del velo que quita Dehaze: los decides tú, nunca se estiman fotograma a fotograma |
 
-**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. Los nodos guardados no cambian: Standard y *Dal Bianco (manuale)* son los valores por defecto.
+**Modos y destino (2.4.0).** El grupo superior elige cómo trabaja el nodo. No publicado: Standard y Cinematografico se han eliminado (por ahora solo Zonale); los nodos guardados con ellos se abren como Zonale.
 
 - **Destinazione (ODT)** indica al nodo qué transformación viene después, para saber dónde quedan el blanco (zona X) y el negro (zona 0). Nunca convierte la imagen. *Dal Bianco (manuale)* usa Avanzate › Bianco; las demás lo fijan: Rec.709 CST +2,5/−4,5 pasos alrededor del gris, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Standard**: los grupos de abajo (tonos locales, presencia, zonas locales), como antes.
-- **Cinematografico**, para primeros planos: elige *Viso luce* y *Viso ombra* en el visor, pulsa **Misura rapporto** y fija la **relación objetivo** en pasos (1 = 1:2, 2 = 1:4, 3 = 1:8). La luz queda fija y la sombra se mueve. *Durezza passaggio* (transición suave o dura), *Spegni sfondo* (oscurece lo que está bajo la sombra, hasta 4 pasos), *Luce sul soggetto* (sube el lado iluminado, relación igual). Sujeto: rostro (luminancia, áreas pequeñas) o paisaje. Si la relación no se alcanza, la línea de información muestra la alcanzable.
 - **Zonale** (sistema de zonas de Ansel Adams): elige una *Ombra* y una *Luce* con detalle, pulsa **Misura zone**, coloca la sombra con *Ombra sulla zona* (exposición, III por defecto) y la luz con *Luci sulla zona* (revelado N+/N−, VIII por defecto). Zona V = gris 18 %; zonas 0 y X = negro y blanco del destino. La línea de información muestra zonas medidas → alcanzadas, N y el rango de salida.
   En tres fases, un nodo cada una en serie (**Fase**): *1 · Sviluppo* (revelado: curva global por píxel, sin halos: exposición y N±), *2 · Stampa* (copia: Local Shadows/Highlights/Contrast por zonas y **Brucia i bordi**, quemado de bordes), *3 · Presenza* (Texture, Clarity, Dehaze). La línea **Guida** indica el paso siguiente: copia el nodo, pégalo después y cambia Fase.
 - **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran, en cualquier modo, en qué zona cae cada área tras el nodo. Una vista a la vez.
@@ -213,7 +210,7 @@ Aún no verificado en Resolve: aparición de los controles por modo, puntos en e
 - En Metal un fotograma UHD tarda unos 6–18 ms, medidos en Apple silicon. La alternativa por CPU es mucho más lenta.
 
 **Sus límites, medidos.** Con Local Highlights −100 el halo en el lado oscuro de un borde queda por debajo del 3% del
-escalón. Con Local Shadows o las zonas locales a ±100, en un borde nítido de un paso el halo llega a cerca del 12% del escalón, y al 4–6% en
+escalón. Con Local Shadows a ±100, en un borde nítido de un paso el halo llega a cerca del 12% del escalón, y al 4–6% en
 escalones de 2–3 pasos. Si lo ves, baja *Soglia bordi* (umbral de bordes). Texture no sube el grano por debajo del
 umbral de ruido, pero junto a bordes fuertes el grano puede crecer 1,25–1,7 veces. Dehaze necesita un velo real que
 quitar. [docs/DETAIL.md](docs/DETAIL.md)

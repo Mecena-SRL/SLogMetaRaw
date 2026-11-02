@@ -269,18 +269,15 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 | 分组 | 控件 |
 |---|---|
-| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Standard、Cinematografico、Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
+| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
 | **Gamma dinamica**（动态范围） | Local Contrast、Local Highlights、Local Shadows；*gain* 和 *base* 检查视图。 |
 | **Presenza**（质感） | **Texture**（细节纹理；不会提升低于噪声阈值的颗粒）、**Clarity**（中等尺度的局部对比度）、**Dehaze**。 |
-| **Zone locali**（局部分区） | 主节点的分区设置，作用于区域而非像素。 |
 | **Avanzate**（高级） | 细节保留、半径、边缘阈值（*Soglia bordi*）、噪声阈值、Clarity 中心、Local Highlights 专用的 **Bianco**。 |
 | **Velo**（雾霭） | Dehaze 去除的雾霭的亮度和颜色。由你手动设定，绝不逐帧估计 → 不会闪烁。 |
 
-**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。已保存的节点不变：Standard 和 *Dal Bianco (manuale)* 是默认值。
+**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。未发布：已移除 Standard 和 Cinematografico（目前只有 Zonale）；用它们保存的节点将以 Zonale 打开。
 
 - **Destinazione (ODT)** 告诉节点其后是哪种变换，从而知道白（X 区）和黑（0 区）落在哪里。它从不转换图像。*Dal Bianco (manuale)* 使用 Avanzate › Bianco；其他选项固定它：Rec.709 CST 灰之上 +2.5／之下 −4.5 档，Rec.709 DRT（ACES、AgX、DaVinci）+4.5/−6，HDR PQ 1000 nit +6.5/−7，*Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9。
-- **Standard**：下方各组（局部影调、质感、局部分区），与以前相同。
-- **Cinematografico**，用于特写：在检视器中选 *Viso luce*（亮面）和 *Viso ombra*（暗面），按 **Misura rapporto**，再以档为单位设置**目标光比**（1 = 1:2，2 = 1:4，3 = 1:8）。亮面不动，暗面移动。*Durezza passaggio*（过渡软硬）、*Spegni sfondo*（压暗暗面以下部分，最多 4 档）、*Luce sul soggetto*（提亮受光面，光比不变）。主体：人脸（亮度，小区域）或风景。达不到目标时，信息行显示可达到的光比。
 - **Zonale**（安塞尔·亚当斯分区曝光法）：选一个有细节的 *Ombra*（暗部）和 *Luce*（亮部），按 **Misura zone**，用 *Ombra sulla zona* 放置暗部（曝光，默认 III），用 *Luci sulla zona* 放置亮部（显影 N+/N−，默认 VIII）。V 区 = 18% 灰；0 区和 X 区 = 目标的黑和白。信息行显示测得 → 达到的分区、N 和输出范围。
   分三个阶段，每个阶段一个串联节点（**Fase**）：*1 · Sviluppo*（显影：逐像素的全局曲线，无光晕：曝光与 N±），*2 · Stampa*（放大：按区域的 Local Shadows/Highlights/Contrast 与 **Brucia i bordi** 边缘加深），*3 · Presenza*（Texture、Clarity、Dehaze）。**Guida** 一行提示下一步：复制节点，粘贴在后面并更改 Fase。
 - **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）在任何模式下显示节点之后每个区域落在哪一区。一次只能开一个视图。
@@ -303,7 +300,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 **实测局限**
 
 - Local Highlights 为 −100 时：边缘暗侧的光晕低于台阶的 3%。
-- Local Shadows 或局部分区为 ±100 时：在一档的硬边缘上约为台阶的 12%，在 2–3 档的边缘上为 4–6%。如果看到光晕，请降低 *Soglia bordi*。
+- Local Shadows 为 ±100 时：在一档的硬边缘上约为台阶的 12%，在 2–3 档的边缘上为 4–6%。如果看到光晕，请降低 *Soglia bordi*。
 - Texture 在强边缘附近可能让颗粒增大 1.25–1.7 倍。
 - Dehaze 需要画面中真的有雾霭可去除。
 
@@ -415,7 +412,7 @@ Resolve 正在使用旧的插件缓存。退出 Resolve，删除 `OFXPluginCache
 节点之后接有 DRT（ACES、AgX、DaVinci 色调映射）：把 **Bianco** 调到 4–5（Detail 节点中也要调）。
 
 **Detail 节点在边缘产生光晕。**
-降低 *Avanzate › Soglia bordi*，或减小 Local Shadows / 局部分区的数值。
+降低 *Avanzate › Soglia bordi*，或减小 Local Shadows的数值。
 
 **脚本跳过了某个片段。**
 查看 *状态* 列：它会说明原因（不支持的文件格式、磁盘无响应等）。

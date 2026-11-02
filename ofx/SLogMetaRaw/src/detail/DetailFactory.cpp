@@ -5,7 +5,6 @@
 #include "../common/ParamDefs.h"
 #include "../common/Update.h"
 #include "../common/UpdateBadge.h"
-#include "../common/ZoneParams.h"
 #include "DetailEffect.h"
 
 using namespace OFX;
@@ -43,7 +42,7 @@ static void definePoint(ImageEffectDescriptor& d, PageParamDescriptor* page, Gro
     p->setDefaultCoordinateSystem(eCoordinatesNormalised);
     p->setDefault(x, y);
     p->setAnimates(false);
-    p->setIsSecret(true);   // shown in Cinematografico
+    p->setIsSecret(true);   // shown in Zonale
     p->setParent(*group);
     page->addChild(*p);
 }
@@ -66,8 +65,7 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
 
     GroupParamDescriptor* mode = defineGroup(d, page, "modeGroup", "Sviluppo e spazio colore", true);
     defineChoice(d, page, "devMode", "Modalità", kDetailModeNames, kDetailModeCount, 0,
-                 "Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato "
-                 "sull'immagine. Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone", mode);
+                 "Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone", mode);
     defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
     if (auto* p = defineChoice(d, page, "zonalPhase", "Fase", kZonalPhaseNames, kZonalPhaseCount, 0,
                                "Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, "
@@ -82,44 +80,6 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Bianco usa Avanzate › Bianco; le altre lo fissano: CST 2,5 stop sopra il grigio e 4,5 sotto (7 stop "
                  "in tutto), DRT 4,5 / 6, PQ 1000 nit 6,5 / 7, Scena DaVinci WG 9 / 9. Il nodo non converte: lavora "
                  "sempre nella codifica d'ingresso", mode);
-
-    GroupParamDescriptor* cinema = defineGroup(d, page, "cinemaGroup", "Cinematografico", true);
-    if (cinema) cinema->setIsSecret(true);
-    if (auto* p = defineToggle(d, page, "subjectFace", "Soggetto: viso", "subject_face.png",
-                               "Incarnato: misura la luminanza (Y), aree piccole, tiene la pelle", cinema)) {
-        p->setDefault(true);
-        p->setIsSecret(true);
-    }
-    if (auto* p = defineToggle(d, page, "subjectLandscape", "Soggetto: paesaggio", "subject_landscape.png",
-                               "Sfondo o paesaggio: misura la norma del colore, aree grandi", cinema))
-        p->setIsSecret(true);
-    definePoint(d, page, cinema, "ratioLightPos", "Viso luce", 0.4, 0.55,
-                "Punto sul lato illuminato del soggetto (frazione del fotogramma, 0,0 in basso a sinistra)");
-    definePoint(d, page, cinema, "ratioShadowPos", "Viso ombra", 0.6, 0.55,
-                "Punto sul lato in ombra del soggetto");
-    if (auto* p = defineButton(d, page, "ratioMeasure", "Misura rapporto",
-                               "Legge luce e ombra nei due punti (media su un'area dell'1% dell'altezza) e imposta "
-                               "il rapporto obiettivo uguale al misurato", cinema))
-        p->setIsSecret(true);
-    DoubleParamDescriptor* sliders[] = {
-        defineSlider(d, page, "ratioTarget", "Rapporto obiettivo (stop)", 1, 0, 5, 0, 5, 0.05,
-                     "1 stop = 1:2, 2 = 1:4, 3 = 1:8. La luce resta ferma, l'ombra si sposta. Misura lo imposta da solo",
-                     cinema),
-        defineSlider(d, page, "ratioHardness", "Durezza passaggio", 50, 0, 100, 0, 100, 1,
-                     "Quanto e netto il passaggio dalla luce all'ombra: 0 morbido (luce diffusa), 100 netto (taglio di "
-                     "luce)", cinema),
-        defineSlider(d, page, "ratioBackground", "Spegni sfondo", 0, 0, 100, 0, 100, 1,
-                     "Porta verso il nero cio che e sotto l'ombra del soggetto: il fondo del chiaroscuro. 100 = 4 stop",
-                     cinema),
-        defineSlider(d, page, "ratioSubjectLift", "Luce sul soggetto", 0, 0, 100, 0, 100, 1,
-                     "Alza il lato illuminato e cio che e sopra, rapporto invariato. 100 = 1 stop", cinema) };
-    for (DoubleParamDescriptor* p : sliders)
-        if (p) {
-            p->setDigits(2);
-            p->setIsSecret(true);
-        }
-    if (auto* p = defineInfo(d, page, cinema, "ratioInfo", "Rapporto", "Scegli i due punti e premi Misura rapporto"))
-        p->setIsSecret(true);
 
     GroupParamDescriptor* adams = defineGroup(d, page, "adamsGroup", "Zonale", true);
     if (adams) adams->setIsSecret(true);
@@ -188,9 +148,6 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
          "fotogramma per fotogramma");
     defineButton(d, page, "detailReset", "Azzera dettaglio", "Riporta a zero tutti i controlli di questo nodo", presence);
 
-    GroupParamDescriptor* zones = defineGroup(d, page, "localZonesGroup", "Zone locali", false);
-    defineZoneParams(d, page, zones, "localZone", false);
-
     GroupParamDescriptor* adv = defineGroup(d, page, "detailAdvancedGroup", "Avanzate", false);
     if (auto* p = defineSlider(d, page, "preserveDetail", "Preserva dettaglio", 100, 0, 100, 0, 100, 1,
                                "100 = i toni locali muovono solo le aree; 0 = come il nodo principale, puntuale", adv))
@@ -228,9 +185,6 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineHiddenInt(d, page, "camSpace", -1);
     defineHiddenInt(d, page, "camGamma", -1);
     defineHiddenInt(d, page, "settingsVersion", 0);
-    defineHiddenDouble(d, page, "ratioLight", 0.0);      // L of the norm at the two points, set by Misura
-    defineHiddenDouble(d, page, "ratioShadow", 0.0);
-    defineHiddenDouble(d, page, "ratioMeasured", 0.0);   // their ratio in stops (Y for a face, the norm for a landscape)
     defineHiddenDouble(d, page, "adamsShadowL", 0.0);    // Zonale: L of the norm at the shadow and the highlight
     defineHiddenDouble(d, page, "adamsHighL", 0.0);
 }

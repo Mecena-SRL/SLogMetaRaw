@@ -134,18 +134,15 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 | 分组 | 控件 |
 |---|---|
-| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Standard、Cinematografico、Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
+| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Zonale）、**Ingresso (IDT)**（节点输入，从 Avanzate 移到这里）、**Destinazione (ODT)** |
 | **Gamma dinamica**（动态范围） | Local Contrast、Local Highlights、Local Shadows；*增益*和*基础层*视图。Local Highlights 压缩大面积的明亮区域，同时保留甚至加强细节纹理：天空变深，云层保持细节。主节点的 Highlights 则像胶片一样柔化高光纹理 |
 | **Presenza**（质感） | Texture、Clarity、Dehaze |
-| **Zone locali**（局部分区） | 主节点的分区，作用于区域 |
 | **Avanzate**（高级） | 细节保留、半径、边缘与噪声阈值、Clarity 中心、Local Highlights 的 **Bianco** |
 | **Velo**（雾霭） | Dehaze 去除的雾霭的亮度和颜色：由你设定，从不逐帧估计 |
 
-**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。已保存的节点不变：Standard 和 *Dal Bianco (manuale)* 是默认值。
+**模式与目标（2.4.0）。** 顶部分组决定节点的工作方式。未发布：已移除 Standard 和 Cinematografico（目前只有 Zonale）；用它们保存的节点将以 Zonale 打开。
 
 - **Destinazione (ODT)** 告诉节点其后是哪种变换，从而知道白（X 区）和黑（0 区）落在哪里。它从不转换图像。*Dal Bianco (manuale)* 使用 Avanzate › Bianco；其他选项固定它：Rec.709 CST 灰之上 +2.5／之下 −4.5 档，Rec.709 DRT（ACES、AgX、DaVinci）+4.5/−6，HDR PQ 1000 nit +6.5/−7，*Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9。
-- **Standard**：下方各组（局部影调、质感、局部分区），与以前相同。
-- **Cinematografico**，用于特写：在检视器中选 *Viso luce*（亮面）和 *Viso ombra*（暗面），按 **Misura rapporto**，再以档为单位设置**目标光比**（1 = 1:2，2 = 1:4，3 = 1:8）。亮面不动，暗面移动。*Durezza passaggio*（过渡软硬）、*Spegni sfondo*（压暗暗面以下部分，最多 4 档）、*Luce sul soggetto*（提亮受光面，光比不变）。主体：人脸（亮度，小区域）或风景。达不到目标时，信息行显示可达到的光比。
 - **Zonale**（安塞尔·亚当斯分区曝光法）：选一个有细节的 *Ombra*（暗部）和 *Luce*（亮部），按 **Misura zone**，用 *Ombra sulla zona* 放置暗部（曝光，默认 III），用 *Luci sulla zona* 放置亮部（显影 N+/N−，默认 VIII）。V 区 = 18% 灰；0 区和 X 区 = 目标的黑和白。信息行显示测得 → 达到的分区、N 和输出范围。
   分三个阶段，每个阶段一个串联节点（**Fase**）：*1 · Sviluppo*（显影：逐像素的全局曲线，无光晕：曝光与 N±），*2 · Stampa*（放大：按区域的 Local Shadows/Highlights/Contrast 与 **Brucia i bordi** 边缘加深），*3 · Presenza*（Texture、Clarity、Dehaze）。**Guida** 一行提示下一步：复制节点，粘贴在后面并更改 Fase。
 - **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）在任何模式下显示节点之后每个区域落在哪一区。一次只能开一个视图。
@@ -157,7 +154,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 - 半径随画面高度缩放。全分辨率、代理和检视器中的效果一致。不做逐帧统计，因此不会闪烁。
 - 在 Metal 上处理一帧 UHD 约需 6–18 毫秒（在 Apple 芯片上测得）。CPU 备用路径要慢得多。
 
-**它的局限（实测）。** Local Highlights 为 −100 时，边缘暗侧的光晕低于台阶的 3%。Local Shadows 或局部分区为 ±100 时，一档的硬边缘处光晕约为台阶的 12%，2–3 档的边缘约为 4–6%。如果看到光晕，请降低 *Soglia bordi*（边缘阈值）。Texture 不会提升低于噪声阈值的颗粒，但在强边缘附近颗粒可能增大 1.25–1.7 倍。Dehaze 需要画面中真的有雾霭可去。[docs/DETAIL.md](docs/DETAIL.md)
+**它的局限（实测）。** Local Highlights 为 −100 时，边缘暗侧的光晕低于台阶的 3%。Local Shadows 为 ±100 时，一档的硬边缘处光晕约为台阶的 12%，2–3 档的边缘约为 4–6%。如果看到光晕，请降低 *Soglia bordi*（边缘阈值）。Texture 不会提升低于噪声阈值的颗粒，但在强边缘附近颗粒可能增大 1.25–1.7 倍。Dehaze 需要画面中真的有雾霭可去。[docs/DETAIL.md](docs/DETAIL.md)
 
 ---
 

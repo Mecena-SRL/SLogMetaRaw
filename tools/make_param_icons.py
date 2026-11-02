@@ -15,8 +15,6 @@ editor reads as "contrast":
     view_base.png       smooth dark -> light the edge-aware base, without its detail
     view_zones.png      eleven bands         the zones 0..X of the Detail's zone view, in its colours
     view_zones_grey.png eleven greys         the same as a grey scale
-    subject_face.png    a face lit from one side   Cinematografico: the subject is a face (skin)
-    subject_landscape.png  a mountain under a sky  Cinematografico: the subject is a landscape
 
 Written with zlib only, so the build needs nothing installed.
 """
@@ -42,26 +40,6 @@ ICONS = {
     'view_zones_grey': [(0.1 * z,) * 3 for z in range(11)],
 }
 SMOOTH = {'view_base': ((0.08, 0.08, 0.09), (0.94, 0.94, 0.94))}
-
-
-def face(x, y):
-    """A face lit from the left, dark background: chiaroscuro."""
-    if ((x - 0.5) / 0.27) ** 2 + ((y - 0.5) / 0.36) ** 2 > 1.0:
-        return (0.07, 0.07, 0.08)
-    return (0.96, 0.80, 0.66) if x < 0.5 else (0.30, 0.20, 0.15)
-
-
-def landscape(x, y):
-    """A mountain with a snowy top under a sky, on a green ground."""
-    if y > 0.72:
-        return (0.28, 0.55, 0.25)
-    peak = 0.25 + 1.3 * abs(x - 0.5)
-    if y >= peak:
-        return (0.96, 0.96, 0.97) if y < 0.40 else (0.48, 0.50, 0.55)
-    return (0.45, 0.70, 1.00)
-
-
-PICTURES = {'subject_face': face, 'subject_landscape': landscape}
 
 
 def disc(colour_at):
@@ -117,7 +95,6 @@ def main(argv):
     shapes = {name: (lambda t, _y, b=bands: b[int(t * len(b))]) for name, bands in ICONS.items()}
     shapes.update({name: (lambda t, _y, a=a, b=b: tuple(a[i] + (b[i] - a[i]) * t for i in range(3)))
                    for name, (a, b) in SMOOTH.items()})
-    shapes.update(PICTURES)
     for name, colour_at in shapes.items():
         path = os.path.join(out_dir, name + '.png')
         write_png(path, disc(colour_at), SIZE, SIZE)

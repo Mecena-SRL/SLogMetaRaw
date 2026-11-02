@@ -1318,13 +1318,10 @@ static inline void sm_set_tone(DevelopParams* p, const SMToneControls* in, int o
 
 struct SMDetailControls {
     double localContrast, localHighlights, localShadows, texture, clarity, dehaze;
-    double zonePivot, zoneExp[4], zoneRange[4], zoneFalloff[4];
     double preserveDetail, detailRadius, edgeThreshold, noiseThreshold, clarityCenter, hazeLevel, hazeWarmth;
     double localWhite;
     int viewGain, viewBase, viewZones;            // viewZones: 0 off, 1 colours, 2 greys
-    int devMode, destination, subject;            // SM_DT_MODE_*, SM_DT_DEST_WHITE, 0 viso / 1 paesaggio
-    double ratioLight, ratioShadow, ratioMeasured; // Cinematografico: L of the two points read, their ratio in stops
-    double ratioTarget, ratioHardness, ratioBackground, ratioSubjectLift;
+    int devMode, destination;                     // SM_DT_MODE_*, SM_DT_DEST_*
     double adamsShadowL, adamsHighL, adamsShadowPlace, adamsHighPlace;  // Zonale: L read, zones placed on
     int zonalPhase;                               // SM_DT_PHASE_*: Zonale in one node or in three
     double printEdgeBurn, printEdgeSize;          // Zonale, print: stops burned at the edges, % of the frame
@@ -1332,7 +1329,7 @@ struct SMDetailControls {
 
 static const int SM_DT_GRID_BASE = 540;   // working height: H / s in [0.707, 1.414) * 540
 static const double SM_DT_HL_START = -0.5;  // Local Highlights starts half a stop under grey: the detail is kept there
-static const int SM_DT_MODE_STANDARD = 0, SM_DT_MODE_CINEMA = 1, SM_DT_MODE_ZONAL = 2;
+static const int SM_DT_MODE_ZONAL = 0;   // the development modes: Zonale (Ansel Adams)
 static const double SM_DT_ADAMS_MIN_SPREAD = 0.25;
 // Zonale in phases, one node each (or all in one): development (global), print (local), presence (detail)
 static const int SM_DT_LG_MIN_H = 48;   // under it the zone views have no legend
@@ -1344,90 +1341,20 @@ static const double SM_DT_ZD_ROOM = 1.0;   // toe and shoulder approach a stop b
 static const int SM_DT_DEST_COUNT = 5;
 static const double SM_DT_DEST_WHITE[SM_DT_DEST_COUNT] = { 0.0, 2.5, 4.5, 6.5, 9.0 };
 static const double SM_DT_DEST_BLACK[SM_DT_DEST_COUNT] = { 4.5, 4.5, 6.0, 7.0, 9.0 };
-static const double SM_DT_SUBJECT_RADIUS[2] = { 0.75, 2.0 };       // Cinematografico: base radius x, Viso / Paesaggio
-static const double SM_DT_RATIO_MIN_GAP = 0.05;
-static const double SM_DT_RATIO_E_MAX = 6.0;
-static const int SM_DT_RATIO_STEPS = 60;
+static const double SM_DT_MIN_GAP = 0.05;   // two measured points closer than this (stops) are not a measure
 
 static inline SMDetailControls sm_detail_defaults(void) {
     SMDetailControls c = SMDetailControls();
-    const double range[4] = { -4.0, 1.0, -1.0, 4.0 }, falloff[4] = { 1.0, 2.0, 2.0, 1.0 };
-    for (int z = 0; z < 4; ++z) { c.zoneRange[z] = range[z]; c.zoneFalloff[z] = falloff[z]; }
     c.preserveDetail = 100.0;
     c.detailRadius = 4.0;
     c.edgeThreshold = 0.5;
     c.noiseThreshold = 0.04;
     c.hazeLevel = 2.0;
     c.localWhite = 2.5;
-    c.ratioTarget = 1.0;
-    c.ratioHardness = 50.0;
     c.adamsShadowPlace = 3.0;
     c.adamsHighPlace = 8.0;
     c.printEdgeSize = 30.0;
     return c;
-}
-
-// The zone slot of sm_t5_zone in double (tests/model/tone.py t5_zone), for the host-side solve.
-static inline double dt_zone_d(double t, double edge, double dir, double k, double fill) {
-    const double d = (t - edge) * dir;
-    if (d <= 0.0) return 0.0;
-    double psi;
-    if (d < fill) { const double u = d / fill; psi = fill * (u * u * u - 0.5 * u * u * u * u); }
-    else psi = d - 0.5 * fill;
-    const double x = k * psi, w = 1.0 / 6.0;   // SM_T5_W
-    if (x <= 1.0 - w) return x;
-    if (x >= 1.0 + w) return 1.0;
-    const double v = (x - (1.0 - w)) / (2.0 * w);
-    return x - 2.0 * w * (v * v * v - 0.5 * v * v * v * v);
-}
-
-// T(t) - t of the slots alone (no Contrast, no shoulder), placed as sm_zone_policy places them, in double.
-static inline double dt_slots_d(double t, const double nominal[SM_T5_SLOTS][4]) {
-    double d = 0.0;
-    for (int i = 0; i < SM_T5_SLOTS; ++i) {
-        const double E = nominal[i][0];
-        if (E == 0.0) continue;
-        const double dir = i < SM_T5_UP ? 1.0 : -1.0;
-        const double fm = fmax(nominal[i][2], (double)SM_T5_F_MIN);
-        const double lim = dir * E < 0.0 ? 1.0 - SM_T5_SMIN : nominal[i][3] - 1.0;
-        const double k = fmin((double)SM_T5_RMAX / fm, lim / fabs(E));
-        d += E * dt_zone_d(t + d, nominal[i][1], dir, k, 0.25 * fm);
-    }
-    return d;
-}
-
-// Cinematografico (tests/model/detail.py cinema_nominal): slot 4 starts at the light and its E is solved so the
-// shadow lands on the target ratio while the light stays; slot 1 lifts the subject, slot 6 lowers the background.
-static inline void dt_cinema_nominal(const SMDetailControls* v, double nominal[SM_T5_SLOTS][4]) {
-    for (int i = 0; i < SM_T5_SLOTS; ++i) {
-        nominal[i][0] = 0.0; nominal[i][1] = 0.0; nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR;
-    }
-    const double Ll = v->ratioLight, Ls = v->ratioShadow, gap = Ll - Ls;
-    if (!(gap > SM_DT_RATIO_MIN_GAP)) return;
-    const double lift = v->ratioSubjectLift / 100.0;
-    if (lift > 0.0) { nominal[1][0] = lift; nominal[1][1] = Ll - 0.5; nominal[1][2] = 1.0; nominal[1][3] = SM_T5_SMAX_CR; }
-    const double push = fmax(v->ratioTarget - v->ratioMeasured, 0.0), bg = v->ratioBackground / 100.0;
-    if (bg > 0.0) {
-        nominal[6][0] = -4.0 * bg; nominal[6][1] = Ls - push - 0.25; nominal[6][2] = 1.5; nominal[6][3] = SM_T5_SMAX_ZONE;
-    }
-    const double f = fmax(0.25, gap * (1.0 - 0.0075 * v->ratioHardness)), want = v->ratioMeasured - v->ratioTarget;
-    nominal[4][1] = Ll; nominal[4][2] = f; nominal[4][3] = SM_T5_SMAX_ZONE;
-    double lo = -SM_DT_RATIO_E_MAX, hi = SM_DT_RATIO_E_MAX, E;
-    nominal[4][0] = lo;
-    const double sLo = dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal);
-    nominal[4][0] = hi;
-    const double sHi = dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal);
-    if (sLo >= want) E = lo;
-    else if (sHi <= want) E = hi;
-    else {
-        for (int it = 0; it < SM_DT_RATIO_STEPS; ++it) {
-            const double mid = 0.5 * (lo + hi);
-            nominal[4][0] = mid;
-            if (dt_slots_d(Ls, nominal) - dt_slots_d(Ll, nominal) < want) lo = mid; else hi = mid;
-        }
-        E = 0.5 * (lo + hi);
-    }
-    nominal[4][0] = E;
 }
 
 // The level the recorded top lands on: the node's own Bianco, or the destination's. And its black.
@@ -1452,7 +1379,7 @@ static inline double dt_L_zone(double L, double white, double black) {
 struct SMZonalDevelop { double Ls, Lso, k, hi, hiD, loD; };
 static inline bool dt_zonal_develop(const SMDetailControls* v, SMZonalDevelop* d) {
     const double Ls = v->adamsShadowL, Lh = v->adamsHighL, gap = Lh - Ls;
-    if (!(gap > SM_DT_RATIO_MIN_GAP)) return false;
+    if (!(gap > SM_DT_MIN_GAP)) return false;
     const double zs = v->adamsShadowPlace, zh = fmax(v->adamsHighPlace, zs + SM_DT_ADAMS_MIN_SPREAD);
     const double white = dt_destination_white(v), black = dt_destination_black(v);
     const double Lso = dt_zone_L(zs, white, black), Lho = dt_zone_L(zh, white, black);
@@ -1477,15 +1404,6 @@ static inline void dt_zonal_reached(const SMDetailControls* v, double* zs, doubl
     *zs = dt_L_zone(d.Lso, white, black);
     *zh = dt_L_zone(d.hi, white, black);
 }
-
-// The ratio in stops the slots give between the two points (= target unless it is out of reach).
-static inline double dt_cinema_reached(const SMDetailControls* v) {
-    double nominal[SM_T5_SLOTS][4];
-    dt_cinema_nominal(v, nominal);
-    return v->ratioMeasured + dt_slots_d(v->ratioLight, nominal) - dt_slots_d(v->ratioShadow, nominal);
-}
-
-
 
 // n with 2 H^2 >= base^2 4^n, integers only: the grid does not jump between proxy and full size.
 static inline int dt_grid_scale(int H, int base) {
@@ -1533,12 +1451,6 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.texture = sm_clampd(v.texture, -100, 100);
     v.clarity = sm_clampd(v.clarity, -100, 100);
     v.dehaze = sm_clampd(v.dehaze, -100, 100);
-    v.zonePivot = sm_clampd(v.zonePivot, -4, 4);
-    for (int z = 0; z < 4; ++z) {
-        v.zoneExp[z] = sm_clampd(v.zoneExp[z], -6, 6);
-        v.zoneRange[z] = sm_clampd(v.zoneRange[z], -10, 10);
-        v.zoneFalloff[z] = sm_clampd(v.zoneFalloff[z], 0.5, 6);
-    }
     v.preserveDetail = sm_clampd(v.preserveDetail, 0, 100);
     v.detailRadius = sm_clampd(v.detailRadius, 1, 8);
     v.edgeThreshold = sm_clampd(v.edgeThreshold, 0.25, 1.0);
@@ -1547,17 +1459,9 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.hazeLevel = sm_clampd(v.hazeLevel, -2, 6);
     v.hazeWarmth = sm_clampd(v.hazeWarmth, -100, 100);
     v.localWhite = sm_clampd(v.localWhite, 1, 10);
-    v.devMode = (v.devMode == SM_DT_MODE_CINEMA || v.devMode == SM_DT_MODE_ZONAL) ? v.devMode : SM_DT_MODE_STANDARD;
+    v.devMode = SM_DT_MODE_ZONAL;
     v.destination = v.destination < 0 ? 0 : (v.destination >= SM_DT_DEST_COUNT ? SM_DT_DEST_COUNT - 1 : v.destination);
     v.viewZones = v.viewZones < 0 ? 0 : (v.viewZones > 2 ? 2 : v.viewZones);
-    v.subject = v.subject ? 1 : 0;
-    v.ratioLight = sm_clampd(v.ratioLight, -16, 16);
-    v.ratioShadow = sm_clampd(v.ratioShadow, -16, 16);
-    v.ratioMeasured = sm_clampd(v.ratioMeasured, 0, 16);
-    v.ratioTarget = sm_clampd(v.ratioTarget, 0, 5);
-    v.ratioHardness = sm_clampd(v.ratioHardness, 0, 100);
-    v.ratioBackground = sm_clampd(v.ratioBackground, 0, 100);
-    v.ratioSubjectLift = sm_clampd(v.ratioSubjectLift, 0, 100);
     v.adamsShadowL = sm_clampd(v.adamsShadowL, -16, 16);
     v.adamsHighL = sm_clampd(v.adamsHighL, -16, 16);
     v.adamsShadowPlace = sm_clampd(v.adamsShadowPlace, 0, 10);
@@ -1565,8 +1469,7 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     v.zonalPhase = v.zonalPhase < 0 ? 0 : (v.zonalPhase > SM_DT_PHASE_PRESENCE ? SM_DT_PHASE_PRESENCE : v.zonalPhase);
     v.printEdgeBurn = sm_clampd(v.printEdgeBurn, 0, 2);
     v.printEdgeSize = sm_clampd(v.printEdgeSize, 10, 60);
-    const bool cinema = v.devMode == SM_DT_MODE_CINEMA, zonal = v.devMode == SM_DT_MODE_ZONAL;
-    if (cinema) v.localHighlights = 0.0;   // the mode sets the tones itself
+    const bool zonal = v.devMode == SM_DT_MODE_ZONAL;
     // Zonale: each phase runs its own part; in one node (all) every part runs
     const int phase = zonal ? v.zonalPhase : SM_DT_PHASE_ALL;
     const bool develop = phase == SM_DT_PHASE_ALL || phase == SM_DT_PHASE_DEVELOP;
@@ -1574,7 +1477,7 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     const bool presence = phase == SM_DT_PHASE_ALL || phase == SM_DT_PHASE_PRESENCE;
     if (!presence) v.texture = v.clarity = v.dehaze = 0.0;
     if (!printing) v.localContrast = v.localShadows = v.localHighlights = 0.0;
-    const double radius = v.detailRadius * (cinema ? SM_DT_SUBJECT_RADIUS[v.subject] : 1.0);
+    const double radius = v.detailRadius;
 
     *p = DetailParams();
     p->W = W;
@@ -1605,19 +1508,10 @@ static inline void dt_prepare(DetailParams* p, int W, int H, double href, double
     p->nT = dt_gauss_half(sigmaT, p->gT, SM_DT_GT);
 
     double nominal[SM_T5_SLOTS][4] = {};
-    if (cinema) {
-        dt_cinema_nominal(&v, nominal);
-        sm_zone_policy(0.0, 0.0, nominal, &p->curve);
-    } else {
-        for (int i = 0; i < SM_T5_SLOTS; ++i) { nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR; }
-        const double sh[4] = { 0.02 * v.localShadows, 0.0, 1.5, SM_T5_SMAX_CR };
-        for (int k = 0; k < 4; ++k) nominal[5][k] = sh[k];
-        for (int z = 0; z < 4; ++z) {   // Zonale prints with the three local tones alone
-            double* s = nominal[SM_T5_ZONE_SLOT[z]];
-            s[0] = zonal ? 0.0 : v.zoneExp[z]; s[1] = v.zoneRange[z]; s[2] = v.zoneFalloff[z]; s[3] = SM_T5_SMAX_ZONE;
-        }
-        sm_zone_policy(exp2(v.localContrast / 100.0) - 1.0, zonal ? 0.0 : v.zonePivot, nominal, &p->curve);
-    }
+    for (int i = 0; i < SM_T5_SLOTS; ++i) { nominal[i][2] = 1.0; nominal[i][3] = SM_T5_SMAX_CR; }
+    const double sh[4] = { 0.02 * v.localShadows, 0.0, 1.5, SM_T5_SMAX_CR };   // the print has three local tones
+    for (int k = 0; k < 4; ++k) nominal[5][k] = sh[k];
+    sm_zone_policy(exp2(v.localContrast / 100.0) - 1.0, 0.0, nominal, &p->curve);
     SMZonalDevelop zd;
     if (zonal && develop && dt_zonal_develop(&v, &zd)) {
         p->zdOn = 1;
