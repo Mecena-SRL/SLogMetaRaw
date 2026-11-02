@@ -49,7 +49,8 @@ static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", 
 // what Cinematografico replaces: greyed out there
 static const char* const kStandardOnly[] = { "localContrast", "localHighlights", "localShadows" };
 // Zonale: the phase choice and its guide; the print's own controls; what each phase runs
-static const char* const kZonalParams[] = { "zonalPhase", "zonalGuide" };
+static const char* const kZonalParams[] = { "zonalPhase", "zonalGuideGroup", "zonalGuide", "zonalGuideStep1",
+                                            "zonalGuideStep2", "zonalGuideStep3", "zonalGuideNext" };
 static const char* const kPrintParams[] = { "localContrast", "localHighlights", "localShadows" };
 static const char* const kPresenceParams[] = { "texture", "clarity", "dehaze", "hazeGroup", "clarityCenter",
                                                "noiseThreshold" };
@@ -231,12 +232,14 @@ void DetailEffect::updateMode()
     show("localZonesGroup", !zonal);   // Zonale prints with the three local tones alone
     for (const char* name : kStandardOnly)
         if (paramExists(name)) getParam(name)->setEnabled(!cinema);
-    if (zonal && paramExists("zonalGuide")) {
-        OFX::StringParam* guide = fetchStringParam("zonalGuide");
-        std::string cur;
-        guide->getValue(cur);
-        if (cur != kZonalGuide[phase]) guide->setValue(kZonalGuide[phase]);
-    }
+    if (zonal)
+        for (int i = 0; i < kZonalGuideRows; ++i)
+            if (paramExists(kZonalGuideNames[i])) {
+                OFX::StringParam* row = fetchStringParam(kZonalGuideNames[i]);
+                std::string cur;
+                row->getValue(cur);
+                if (cur != kZonalGuide[phase][i]) row->setValue(kZonalGuide[phase][i]);
+            }
     if (paramExists("modeInfo")) {
         OFX::StringParam* info = fetchStringParam("modeInfo");
         std::string cur;

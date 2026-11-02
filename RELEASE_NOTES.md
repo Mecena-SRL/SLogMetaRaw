@@ -27,8 +27,8 @@ ancora il pannello vecchio.
   nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
 - **Detail, Zonale in tre fasi** (Ansel Adams: sviluppo, stampa, presenza), un nodo ciascuna in serie: scegli
-  Modalità Zonale e poi **Fase**; la riga **Guida** dice cosa fare e qual è il passo dopo (copia il nodo, incollalo
-  dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.
+  Modalità Zonale e poi **Fase**; la sezione **Guida**, in fondo al pannello, dà per ogni fase lo scopo, tre passi
+  e il passo dopo (copia il nodo, incollalo dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.
   - **Sviluppo** ha un motore nuovo: una curva sul singolo pixel, senza aloni. L'ombra misurata va esatta sulla sua
     zona, la retta ruota attorno all'ombra (N±) perché la luce arrivi sulla sua; piede e spalla morbidi verso le zone
     0 e X.
