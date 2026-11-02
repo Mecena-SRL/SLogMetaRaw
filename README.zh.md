@@ -147,6 +147,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 - **Standard**：下方各组（局部影调、质感、局部分区），与以前相同。
 - **Cinematografico**，用于特写：在检视器中选 *Viso luce*（亮面）和 *Viso ombra*（暗面），按 **Misura rapporto**，再以档为单位设置**目标光比**（1 = 1:2，2 = 1:4，3 = 1:8）。亮面不动，暗面移动。*Durezza passaggio*（过渡软硬）、*Spegni sfondo*（压暗暗面以下部分，最多 4 档）、*Luce sul soggetto*（提亮受光面，光比不变）。主体：人脸（亮度，小区域）或风景。达不到目标时，信息行显示可达到的光比。
 - **Zonale**（安塞尔·亚当斯分区曝光法）：选一个有细节的 *Ombra*（暗部）和 *Luce*（亮部），按 **Misura zone**，用 *Ombra sulla zona* 放置暗部（曝光，默认 III），用 *Luci sulla zona* 放置亮部（显影 N+/N−，默认 VIII）。V 区 = 18% 灰；0 区和 X 区 = 目标的黑和白。信息行显示测得 → 达到的分区、N 和输出范围。
+  分三个阶段，每个阶段一个串联节点（**Fase**）：*1 · Sviluppo*（显影：逐像素的全局曲线，无光晕：曝光与 N±），*2 · Stampa*（放大：按区域的 Local Shadows/Highlights/Contrast 与 **Brucia i bordi** 边缘加深），*3 · Presenza*（Texture、Clarity、Dehaze）。**Guida** 一行提示下一步：复制节点，粘贴在后面并更改 Fase。
 - **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）在任何模式下显示节点之后每个区域落在哪一区。一次只能开一个视图。
 
 尚未在 Resolve 中验证：按模式显示控件、检视器中的点、Misura，以及 Metal 上的分区视图。

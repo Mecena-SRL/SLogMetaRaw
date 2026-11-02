@@ -87,24 +87,54 @@ l'intensità risolta perché l'ombra arrivi esattamente sull'obiettivo (verifica
 nel plugin). Schiarire l'ombra comprime i toni: oltre la pendenza minima della curva non si va, e la riga Rapporto
 mostra il valore raggiungibile. Avvisa anche se la luce supera il bianco della Destinazione.
 
-### Modalità Zonale
+### Modalità Zonale: tre fasi, tre nodi
 
-Il sistema zonale di Ansel Adams: esponi per le ombre, sviluppa per le luci. Zona V è il grigio 18 %, zona 0 il nero e
-zona X il bianco della Destinazione, con cinque zone per lato: le zone dipendono dall'uscita. Con un Rec.709 CST
-(7 stop) sopra il grigio una zona vale mezzo stop, sotto 0,9; con la Scena DWG (18 stop) quasi due.
+Il sistema zonale di Ansel Adams: esponi per le ombre, sviluppa per le luci, poi stampa. Zona V è il grigio 18 %,
+zona 0 il nero e zona X il bianco della Destinazione, con cinque zone per lato: le zone dipendono dall'uscita. Con un
+Rec.709 CST (7 stop) sopra il grigio una zona vale mezzo stop, sotto 0,9; con la Scena DWG (18 stop) quasi due.
 
-| Controllo | Cosa fa |
-|---|---|
-| Ombra, Luce | i due punti sull'immagine: un'ombra e una luce in cui vuoi ancora dettaglio |
-| Misura zone | legge i due punti; l'ombra resta sulla zona scelta, la luce va dove cade con sviluppo normale (N 0) |
-| Ombra sulla zona (III) | esposizione: tutta l'immagine si sposta perché l'ombra arrivi lì |
-| Luci sulla zona (VIII) | sviluppo: ciò che sta sopra l'ombra si espande (N+) o si contrae (N−) perché la luce arrivi lì |
+Come in camera oscura il lavoro è diviso in fasi, una per nodo. Scegli Modalità **Zonale**, poi **Fase**; la riga
+**Guida** dice a che passo sei e cosa fare dopo.
 
-La riga Zone mostra le zone misurate e quelle ottenute, lo sviluppo N± e l'estensione dell'uscita. Contrarre oltre la
-pendenza minima della curva non si può: la riga lo dice. Verificato su campi uniformi, nel modello e nel plugin.
+```
+S-Log MetaRaw → Detail · 1 Sviluppo → Detail · 2 Stampa → Detail · 3 Presenza → CST / DRT d'uscita
+```
 
-Da provare in Resolve: comandi che compaiono e spariscono al cambio di modalità, i punti sul viewer, la lettura
-dell'immagine quando premi Misura.
+**Guida rapida**
+
+1. Aggiungi un Detail dopo S-Log MetaRaw, Modalità Zonale: un nodo nuovo parte da **1 · Sviluppo**. Imposta la
+   Destinazione (decide le zone).
+2. Metti **Ombra** e **Luce** sul viewer, premi **Misura zone**, poi scegli **Ombra sulla zona** (esposizione, di
+   solito III) e **Luci sulla zona** (sviluppo, di solito VIII). Vista zone ti mostra dove cade ogni area.
+3. Copia il nodo, incollalo subito dopo e scegli **2 · Stampa**: schiarisci le ombre e brucia le luci per aree, brucia
+   i bordi.
+4. Incolla ancora dopo e scegli **3 · Presenza**: Texture, Clarity, Dehaze.
+
+Copiando il nodo la Destinazione passa con lui; i comandi delle altre fasi restano salvati ma non agiscono.
+**Un nodo (tutte le fasi)** fa tutto insieme: è la scelta dei nodi Zonale salvati prima delle fasi.
+
+| Fase | Controllo | Cosa fa |
+|---|---|---|
+| 1 Sviluppo | Ombra, Luce | i due punti sull'immagine: un'ombra e una luce in cui vuoi ancora dettaglio |
+| | Misura zone | legge i due punti; l'ombra resta sulla zona scelta, la luce va dove cade con sviluppo normale (N 0) |
+| | Ombra sulla zona (III) | esposizione: l'ombra misurata arriva esattamente lì |
+| | Luci sulla zona (VIII) | sviluppo: la retta ruota attorno all'ombra (N+ espande, N− contrae) perché la luce arrivi lì |
+| 2 Stampa | Local Shadows, Highlights, Contrast | schiarire e bruciare per aree, a dettaglio intatto (come in Standard) |
+| | Brucia i bordi, Ampiezza bordi | scurisce i margini, fino a 2 stop, nella fascia esterna scelta |
+| 3 Presenza | Texture, Clarity, Dehaze | il dettaglio, come in Standard |
+
+**Lo Sviluppo è una curva sul singolo pixel**: non guarda i vicini, quindi non fa aloni e regge qualsiasi bordo.
+Sotto l'ombra c'è un piede e sopra la luce una spalla, esponenziali, con la pendenza della retta dove cominciano: le
+ombre profonde scendono morbide verso la zona 0, le luci estreme verso la X, senza tagli. La pendenza va da 0,25 a 4:
+oltre, la luce si ferma prima della sua zona e la riga Zone lo dice. Il lavoro per aree (con la base e i suoi possibili
+aloni) resta tutto nella Stampa, dove lo controlli tu.
+
+La riga Zone mostra le zone misurate e quelle ottenute, lo sviluppo N± e l'estensione dell'uscita. Verificato su
+campi uniformi e sul modello: ombra e luce arrivano esatte, la curva è monotona e senza salti di pendenza, lo Sviluppo
+è puntuale, ogni fase ignora i comandi delle altre (`tests/test_detail.py`).
+
+Da provare in Resolve: comandi che compaiono e spariscono al cambio di modalità e di fase, i punti sul viewer, la
+lettura dell'immagine quando premi Misura, Metal (la parità CPU è verificata qui; quella Metal gira sulla CI macOS).
 
 ## Come funziona
 

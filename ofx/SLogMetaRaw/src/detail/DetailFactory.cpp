@@ -69,6 +69,13 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto misurato "
                  "sull'immagine. Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone", mode);
     defineInfo(d, page, mode, "modeInfo", "Cosa fa", kDetailModeInfo[0]);
+    if (auto* p = defineChoice(d, page, "zonalPhase", "Fase", kZonalPhaseNames, kZonalPhaseCount, 0,
+                               "Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, "
+                               "senza aloni: esposizione e N+/N-), 2 Stampa (per aree e bordi), 3 Presenza (Texture, "
+                               "Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase", mode))
+        p->setIsSecret(true);   // shown in Zonale
+    if (auto* p = defineInfo(d, page, mode, "zonalGuide", "Guida", kZonalGuide[SM_DT_PHASE_DEVELOP]))
+        p->setIsSecret(true);
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
                  "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
@@ -160,6 +167,18 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
          "Grigio e toni sotto restano fermi");
     trim(d, page, range, "localShadows", "Local Shadows", -100, 100,
          "Apre (positivo) o chiude le ombre per aree, a dettaglio intatto. 100 = 2 stop");
+    if (auto* p = defineSlider(d, page, "printEdgeBurn", "Brucia i bordi (stop)", 0, 0, 2, 0, 2, 0.05,
+                               "Zonale, Stampa: scurisce i margini dell'inquadratura come la bruciatura dei bordi in "
+                               "camera oscura. Dipende solo dalla posizione: nessun alone", range)) {
+        p->setDigits(2);
+        p->setIsSecret(true);
+    }
+    if (auto* p = defineSlider(d, page, "printEdgeSize", "Ampiezza bordi (%)", 30, 10, 60, 10, 60, 1,
+                               "Quanta parte dell'inquadratura, dai margini verso il centro, riceve la bruciatura",
+                               range)) {
+        p->setDigits(0);
+        p->setIsSecret(true);
+    }
 
     GroupParamDescriptor* presence = defineGroup(d, page, "presenceGroup", "Presenza", true);
     trim(d, page, presence, "texture", "Texture", -100, 100,

@@ -26,8 +26,21 @@ ancora il pannello vecchio.
   (non l'EI assoluto, che sposterebbe l'immagine se la camera è diversa); il bilanciamento *As shot* segue la camera
   nuova, uno *Custom* o un preset resta com'è. Toni, Zone, Spazio colore e Uscita passano invariati.
 
+- **Detail, Zonale in tre fasi** (Ansel Adams: sviluppo, stampa, presenza), un nodo ciascuna in serie: scegli
+  Modalità Zonale e poi **Fase**; la riga **Guida** dice cosa fare e qual è il passo dopo (copia il nodo, incollalo
+  dopo, cambia Fase). Un nodo nuovo parte da *1 · Sviluppo*; «Un nodo (tutte le fasi)» fa tutto insieme.
+  - **Sviluppo** ha un motore nuovo: una curva sul singolo pixel, senza aloni. L'ombra misurata va esatta sulla sua
+    zona, la retta ruota attorno all'ombra (N±) perché la luce arrivi sulla sua; piede e spalla morbidi verso le zone
+    0 e X.
+  - **Stampa**: Local Shadows, Highlights e Contrast per aree, più **Brucia i bordi** e Ampiezza bordi.
+  - **Presenza**: Texture, Clarity, Dehaze.
+  - I nodi Zonale salvati con la 2.4.0 restano in un nodo solo ma **cambiano aspetto**: il vecchio motore (per aree)
+    non c'è più. Standard e Cinematografico non cambiano. Da provare in Resolve, compreso Metal.
+
 ### Sviluppo
 
+- Test di compatibilità del Detail come del Develop (`params_detail_2.4.0.txt`); test della Zonale: curva puntuale,
+  monotona e senza salti, fasi separate, bordi bruciati, migrazione dei nodi (impostazioni versione 2).
 - Test di compatibilità: i parametri della 2.4.0 (`tests/golden/released/`) devono esistere ancora con stesso tipo,
   default, intervallo e opzioni solo in coda; test del Punto bianco sul render, di migrazione, dei controlli nascosti e
   della clip ricollegata. L'host di prova capisce i parametri colore.

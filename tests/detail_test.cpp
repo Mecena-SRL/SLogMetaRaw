@@ -29,7 +29,8 @@ static void set(SMDetailControls& c, const std::string& name, double v)
         { "ratioTarget", &c.ratioTarget }, { "ratioHardness", &c.ratioHardness },
         { "ratioBackground", &c.ratioBackground }, { "ratioSubjectLift", &c.ratioSubjectLift },
         { "adamsShadowL", &c.adamsShadowL }, { "adamsHighL", &c.adamsHighL },
-        { "adamsShadowPlace", &c.adamsShadowPlace }, { "adamsHighPlace", &c.adamsHighPlace } };
+        { "adamsShadowPlace", &c.adamsShadowPlace }, { "adamsHighPlace", &c.adamsHighPlace },
+        { "printEdgeBurn", &c.printEdgeBurn }, { "printEdgeSize", &c.printEdgeSize } };
     for (int z = 0; z < 4; ++z) {
         f[std::string("localZone") + zones[z] + "Exp"] = &c.zoneExp[z];
         f[std::string("localZone") + zones[z] + "Range"] = &c.zoneRange[z];
@@ -41,6 +42,7 @@ static void set(SMDetailControls& c, const std::string& name, double v)
     else if (name == "devMode") c.devMode = (int)v;
     else if (name == "destination") c.destination = (int)v;
     else if (name == "subject") c.subject = (int)v;
+    else if (name == "zonalPhase") c.zonalPhase = (int)v;
     else if (f.count(name)) *f[name] = v;
     else { fprintf(stderr, "controllo sconosciuto %s\n", name.c_str()); exit(2); }
 }

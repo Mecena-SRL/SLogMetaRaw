@@ -234,7 +234,7 @@ kernel void dt_final(const device float* src [[buffer(0)]], device float* dst [[
     const float g1 = p.texture != 0.0f ? G1[o] : 0.0f;
     const float g2 = p.texture != 0.0f ? dt_bilinear(G2, p.wt, p.ht, p.st, x, y) : 0.0f;
     const DtOut r = dt_gain(L[o], dt_bilinear(Lw, p.w, p.h, p.s, x, y), Gg[o], dt_bilinear(aB, p.w, p.h, p.s, x, y),
-                            dt_bilinear(bB, p.w, p.h, p.s, x, y), dt_bilinear(Dg, p.w, p.h, p.s, x, y), g1, g2, p);
+                            dt_bilinear(bB, p.w, p.h, p.s, x, y), dt_bilinear(Dg, p.w, p.h, p.s, x, y), g1, g2, x, y, p);
     dst[i + 3] = src[i + 3];
     const bool dehaze = p.hazeOn != 0;   // with Dehaze the picture comes from J: the source is not decoded again
     const SMf3 v = dehaze ? smf3(J[o], J[n + o], J[2 * n + o])
