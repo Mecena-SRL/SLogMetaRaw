@@ -8,8 +8,8 @@
 #include "../common/UpdateBadge.h"
 #include "../common/ZoneParams.h"
 
-const int kDetailSettingsVersion = 1;
-const int kDetailSliderCount = 25;
+const int kDetailSettingsVersion = 2;   // 2: Zonale in phases; a new node starts at 1 · Sviluppo
+const int kDetailSliderCount = 27;
 
 const int kDetailModeCount = 3;
 static const char* const kDetailModeNames[kDetailModeCount] = { "Standard", "Cinematografico", "Zonale" };
@@ -18,9 +18,18 @@ static const char* const kDetailModeInfo[kDetailModeCount] = {
     "Rapporto di luce sul soggetto: scegli i punti luce e ombra, premi Misura, imposta il rapporto (1:2, 1:4, "
     "1:8). La luce resta ferma, l'ombra si sposta; Spegni sfondo per il chiaroscuro. Local Contrast, Highlights, "
     "Shadows e Zone locali qui non agiscono",
-    "Sistema zonale (Ansel Adams): misura un'ombra e una luce, colloca l'ombra su una zona (esposizione) e la luce "
-    "sulla sua (sviluppo N+/N-). Zona V = grigio 18%, zona 0 = nero e zona X = bianco della Destinazione. Vista: "
-    "zone mostra dove cade ogni area" };
+    "Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci "
+    "con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della "
+    "Destinazione" };
+// Zonale in phases (SM_DT_PHASE_*): one node each, in series, or all in one. The guide line for each.
+const int kZonalPhaseCount = 4;
+static const char* const kZonalPhaseNames[kZonalPhaseCount] = { "Un nodo (tutte le fasi)", "1 · Sviluppo",
+                                                                "2 · Stampa", "3 · Presenza" };
+static const char* const kZonalGuide[kZonalPhaseCount] = {
+    "Un nodo fa tutto. Meglio tre in serie: copia questo nodo, incollalo dopo, cambia Fase",
+    "1/3 · Ombra e Luce sul viewer, Misura zone, colloca ombra e luci. Poi copia il nodo, incollalo dopo: 2 · Stampa",
+    "2/3 · Per aree: Local Shadows schiarisce, Local Highlights brucia, Brucia i bordi. Poi incolla dopo: 3 · Presenza",
+    "3/3 · Texture, Clarity, Dehaze. Ultimo nodo prima del CST o DRT d'uscita" };
 const int kDetailDestCount = 5;   // SM_DT_DEST_COUNT
 static const char* const kDetailDestNames[kDetailDestCount] = {
     "Dal Bianco (manuale)", "Rec.709 · CST senza tone mapping", "Rec.709 · DRT (ACES, AgX, DaVinci)",
@@ -49,7 +58,7 @@ private:
     SMDetailControls readControls(double p_Time) const;
     void refreshInfo();
     void resetAll();
-    void updateMode();                                // visibility of the Cinematografico group, mode description
+    void updateMode();                                // what each mode and Zonale phase shows, guide lines
     void measureRatio(double p_Time, bool p_KeepTarget);
     void refreshRatioInfo();
     void measureZones(double p_Time);
@@ -72,6 +81,7 @@ private:
     OFX::BooleanParam* m_ViewBase = nullptr;
     OFX::ChoiceParam* m_DevMode = nullptr;
     OFX::ChoiceParam* m_Destination = nullptr;
+    OFX::ChoiceParam* m_ZonalPhase = nullptr;
     OFX::BooleanParam* m_SubjectFace = nullptr;
     OFX::BooleanParam* m_SubjectLandscape = nullptr;
     OFX::BooleanParam* m_ViewZonesColor = nullptr;

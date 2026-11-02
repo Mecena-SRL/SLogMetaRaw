@@ -116,6 +116,12 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    spazio del colore campionato dal contagocce, controlli nascosti che riappaiono, scritte corte, rombi keyframe.
    Persistenza: `settingsVersion` 6, identità della clip (nome + dimensione) per il rilink, test di compatibilità con
    `tests/golden/released/`. Aperto: icone sulle caselle non disegnate da Resolve (le tre `fc_*.png` restano assegnate),
-   screenshot del wiki da rifare, pannello Detail non ancora rivisto.
+   screenshot del wiki da rifare.
+   Detail, Zonale in tre fasi (02/11/2026, non rilasciato): dopo la ricerca sul sistema zonale e la prova di Ivan
+   (troppi artefatti), il lavoro è diviso come in camera oscura, un nodo per fase in serie: Sviluppo (curva puntuale,
+   ruota attorno all'ombra, piede e spalla), Stampa (toni per aree + bordi bruciati), Presenza. Decisioni: tre nodi,
+   N± attorno all'ombra, riga Guida nel pannello. Il ridisegno del pannello Detail (simulazione con Vista e Soggetto
+   come scelte) è in pausa. Aperto: diagnosi degli artefatti su fotogrammi reali; Cinematografico e Standard usano
+   ancora la curva sulla base (per aree).
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

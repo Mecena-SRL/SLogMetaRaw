@@ -53,7 +53,9 @@ DETAIL_CONTROLS = {
     'ratioSubjectLift': (0.0, 100.0, 0.0),
     # Zonale: the shadow and the highlight read on the picture (L of the norm), the zones they are placed on
     'adamsShadowL': (-16.0, 16.0, 0.0), 'adamsHighL': (-16.0, 16.0, 0.0),
-    'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0)}
+    'adamsShadowPlace': (0.0, 10.0, 3.0), 'adamsHighPlace': (0.0, 10.0, 8.0),
+    # Zonale in phases: one node (all), 1 development, 2 print, 3 presence; the print's edge burn
+    'zonalPhase': (0.0, 3.0, 0.0), 'printEdgeBurn': (0.0, 2.0, 0.0), 'printEdgeSize': (10.0, 60.0, 30.0)}
 for _z, _r, _f in zip(T.ZONES, T.ZONE_RANGE, T.ZONE_FALLOFF):
     DETAIL_CONTROLS['localZone%sExp' % _z] = (-6.0, 6.0, 0.0)
     DETAIL_CONTROLS['localZone%sRange' % _z] = (-10.0, 10.0, _r)
@@ -61,8 +63,9 @@ for _z, _r, _f in zip(T.ZONES, T.ZONE_RANGE, T.ZONE_FALLOFF):
 
 MODE_STANDARD, MODE_CINEMA, MODE_ZONAL = 0, 1, 2
 ADAMS_MIN_SPREAD = 0.25           # the highlight stays at least this many zones above the shadow
-ADAMS_SHIFT_EDGE = 32.0           # the exposure slot: so far above every L that it moves all of them alike
-ADAMS_SHIFT_MAX = 6.0
+PHASE_ALL, PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE = 0, 1, 2, 3
+ZD_K_MIN, ZD_K_MAX = 0.25, 4.0    # development slope: about N-2.5 to N+5 on a 3-stop scene
+ZD_ROOM = 1.0                     # toe and shoulder approach a stop beyond zone 0 and zone X
 # Destinations: manual (localWhite), Rec.709 CST, Rec.709 DRT, PQ 1000, scene (DaVinci WG/Intermediate, no ODT yet).
 # White and black in stops from grey, zone X and zone 0: Rec.709 CST 2.5 + 4.5 = 7 stops.
 DEST_WHITE = (None, 2.5, 4.5, 6.5, 9.0)
@@ -191,55 +194,55 @@ def cinema_nominal(v):
     return nominal
 
 
-def zonal_nominal(v):
-    """Zonale: the shadow lands on its zone (exposure), the highlight on its own (development, N+/N-).
+def zonal_develop(v):
+    """Zonale, development: one curve on the pixel's own L, as a negative is developed (no neighbours, no halo).
 
-    Slot 1 (up) starts at the shadow and expands or contracts what is above it; its E is solved so that the
-    highlight ends (place_high - place_shadow) zones above the shadow. Slot 6 (down), with its edge far above
-    every L, moves the whole picture alike so the shadow sits on its zone. Returns the 7 nominal slots."""
-    nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
+    Exposure places the measured shadow on its zone; the slope k (N+/N-) turns the line about that shadow so the
+    measured highlight lands on its zone. Under the shadow a toe, over the highlight a shoulder: exponential, with
+    the line's slope where they start, towards a stop beyond zone 0 and zone X. None without a measure."""
     Ls, Lh = v['adamsShadowL'], v['adamsHighL']
     gap = Lh - Ls
     if gap <= RATIO_MIN_GAP:
-        return nominal
+        return None
     zs = v['adamsShadowPlace']
     zh = max(v['adamsHighPlace'], zs + ADAMS_MIN_SPREAD)
     white, black = destination_white(v), destination_black(v)
     Lso, Lho = zone_L(zs, white, black), zone_L(zh, white, black)
-    f = max(0.25, 0.5 * gap)
-    want = Lho - Lso
+    k = min(max((Lho - Lso) / gap, ZD_K_MIN), ZD_K_MAX)
+    hi = Lso + k * gap
+    return {'Ls': Ls, 'Lso': Lso, 'k': k, 'hi': hi,
+            'hiD': max(white + ZD_ROOM - hi, 0.25), 'loD': max(Lso + black + ZD_ROOM, 0.25)}
 
-    def spread(E):
-        n = list(nominal)
-        n[1] = (E, Ls, f, T.SM_T5_SMAX_ZONE)
-        c = T.zone_policy(0.0, 0.0, n)
-        return gap + T.t5_curve(Lh, c)[0] - T.t5_curve(Ls, c)[0]
-    lo, hi = -RATIO_E_MAX, RATIO_E_MAX
-    if spread(lo) >= want:
-        E = lo
-    elif spread(hi) <= want:
-        E = hi
-    else:
-        for _ in range(RATIO_STEPS):
-            mid = 0.5 * (lo + hi)
-            if spread(mid) < want:
-                lo = mid
-            else:
-                hi = mid
-        E = 0.5 * (lo + hi)
-    nominal[1] = (E, Ls, f, T.SM_T5_SMAX_ZONE)
-    dev = T.t5_curve(Ls, T.zone_policy(0.0, 0.0, nominal))[0]
-    shift = min(max(Lso - (Ls + dev), -ADAMS_SHIFT_MAX), ADAMS_SHIFT_MAX)
-    if shift != 0.0:
-        nominal[6] = (shift, ADAMS_SHIFT_EDGE, 0.5, T.SM_T5_SMAX_ZONE)
-    return nominal
+
+def zonal_gain(L, zd):
+    """dt_zonal_gain: the development's log2 gain at L."""
+    y = zd['Lso'] + zd['k'] * (L - zd['Ls'])
+    if y > zd['hi']:
+        d = zd['hiD']
+        y = zd['hi'] + d * (1.0 - math.exp(-(y - zd['hi']) / d))
+    elif y < zd['Lso']:
+        d = zd['loD']
+        y = zd['Lso'] - d * (1.0 - math.exp(-(zd['Lso'] - y) / d))
+    return y - L
 
 
 def zonal_reached(v):
-    """The zones the shadow and the highlight land on."""
-    c = T.zone_policy(0.0, 0.0, zonal_nominal(v))
+    """The zones the shadow and the highlight land on: exact, unless the slope hits its limit."""
+    zd = zonal_develop(v)
     white, black = destination_white(v), destination_black(v)
-    return tuple(zone_of(L + T.t5_curve(L, c)[0], white, black) for L in (v['adamsShadowL'], v['adamsHighL']))
+    if zd is None:
+        return tuple(zone_of(L, white, black) for L in (v['adamsShadowL'], v['adamsHighL']))
+    return zone_of(zd['Lso'], white, black), zone_of(zd['hi'], white, black)
+
+
+def edge_burn(X, Y, W, H, p):
+    """dt_edge_burn: the print's burned edges, log2 gain. A superellipse distance, 1 at the middle of each side,
+    the burn growing smoothly over the outer printEdgeSize of it."""
+    u = 2.0 * (X + 0.5) / W - 1.0
+    w = 2.0 * (Y + 0.5) / H - 1.0
+    r = math.sqrt(math.sqrt(u ** 4 + w ** 4))
+    t = min(max((r - p['ebR0']) / p['ebS'], 0.0), 1.0)
+    return -p['ebAmt'] * t * t * (3.0 - 2.0 * t)
 
 
 def cinema_reached(v):
@@ -266,17 +269,24 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
     mode = int(round(v['devMode']))
     cinema = mode == MODE_CINEMA
     radius = v['detailRadius'] * (SUBJECT_RADIUS[int(round(v['subject']))] if cinema else 1.0)
+    zonal = mode == MODE_ZONAL
+    phase = int(round(v['zonalPhase'])) if zonal else PHASE_ALL
+    develop, printing, presence = (phase in (PHASE_ALL, ph) for ph in (PHASE_DEVELOP, PHASE_PRINT, PHASE_PRESENCE))
+    if not presence:
+        v['texture'] = v['clarity'] = v['dehaze'] = 0.0
+    if not printing:
+        v['localContrast'] = v['localShadows'] = v['localHighlights'] = 0.0
+    zd = zonal_develop(v) if zonal and develop else None
     if cinema:
         curve = T.zone_policy(0.0, 0.0, cinema_nominal(v))
-    elif mode == MODE_ZONAL:
-        curve = T.zone_policy(0.0, 0.0, zonal_nominal(v))
     else:
         nominal = [(0.0, 0.0, 1.0, T.SM_T5_SMAX_CR)] * T.SM_T5_SLOTS
         nominal[5] = (0.02 * v['localShadows'], 0.0, 1.5, T.SM_T5_SMAX_CR)
-        for z, slot in zip(T.ZONES, T.ZONE_SLOT):
-            nominal[slot] = (v['localZone%sExp' % z], v['localZone%sRange' % z], v['localZone%sFalloff' % z],
-                             T.SM_T5_SMAX_ZONE)
-        curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, v['localZonePivot'], nominal)
+        for z, slot in zip(T.ZONES, T.ZONE_SLOT):   # Zonale prints with the three local tones alone
+            nominal[slot] = (0.0 if zonal else v['localZone%sExp' % z], v['localZone%sRange' % z],
+                             v['localZone%sFalloff' % z], T.SM_T5_SMAX_ZONE)
+        curve = T.zone_policy(2.0 ** (v['localContrast'] / 100.0) - 1.0, 0.0 if zonal else v['localZonePivot'],
+                              nominal)
 
     haze_v = v['dehaze']
     veil = veil_colour(v['hazeWarmth'], space)
@@ -293,11 +303,13 @@ def prepare(W, H, controls, space=8, par=1.0, base=GRID_BASE, href=None):
         'hazeA': A, 'hazeInvA': [1.0 / a for a in A], 'hazeLevel': v['hazeLevel'],
         'view': 1 if v['viewGain'] else (2 if v['viewBase'] else (2 + int(round(v['viewZones'])) if v['viewZones'] else 0)),
         'zoneWhite': destination_white(v), 'zoneBlack': destination_black(v),
-        'space': space,
+        'space': space, 'zd': zd,
+        'ebAmt': v['printEdgeBurn'] if zonal and printing else 0.0,
+        'ebR0': 1.0 - v['printEdgeSize'] / 100.0, 'ebS': v['printEdgeSize'] / 100.0,
     }
     p['toneOn'] = int(curve['conC'] != 0.0 or any(E != 0.0 for E in curve['zoneE']))
     # Local Highlights: the main node's shoulder, landing the recorded top on this node's Bianco at -100
-    hv = v['localHighlights'] if mode == MODE_STANDARD else 0.0
+    hv = 0.0 if cinema else v['localHighlights']
     white = destination_white(v)
     a = abs(hv) / 100.0
     a *= 1.5 - 0.5 * a
@@ -599,6 +611,13 @@ def render(img, W, H, p, gamma):
             gate = DT * DT / (DT * DT + ta * ta + ETA) if p['texture'] > 0.0 else 1.0
             Tx = p['texture'] * DT / (1.0 + (DT / PSI) ** 2) * gate
         G = Gb + soft1(K + Tx)
+        if p['zd'] is not None:
+            Gz = zonal_gain(L[i], p['zd'])
+            if Gz > 0.0:
+                Gz *= T.t5_ramp((L[i] - FLOOR_EV) / FLOOR_W)
+            G += Gz
+        if p['ebAmt'] != 0.0:
+            G += edge_burn(X, Y, p['W'], p['H'], p)
         planes['B'].append(B)
         planes['Dg'].append(bilinear(Dg, w, h, s, X, Y))
         planes['G'].append(G)

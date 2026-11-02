@@ -35,7 +35,8 @@ static const struct { const char* name; double SMDetailControls::*field; } kDeta
     { "ratioHardness", &SMDetailControls::ratioHardness }, { "ratioBackground", &SMDetailControls::ratioBackground },
     { "ratioSubjectLift", &SMDetailControls::ratioSubjectLift },
     { "adamsShadowL", &SMDetailControls::adamsShadowL }, { "adamsHighL", &SMDetailControls::adamsHighL },
-    { "adamsShadowPlace", &SMDetailControls::adamsShadowPlace }, { "adamsHighPlace", &SMDetailControls::adamsHighPlace } };
+    { "adamsShadowPlace", &SMDetailControls::adamsShadowPlace }, { "adamsHighPlace", &SMDetailControls::adamsHighPlace },
+    { "printEdgeBurn", &SMDetailControls::printEdgeBurn }, { "printEdgeSize", &SMDetailControls::printEdgeSize } };
 // shown only in Cinematografico
 static const char* const kCinemaParams[] = { "cinemaGroup", "subjectFace", "subjectLandscape", "ratioLightPos",
                                              "ratioShadowPos", "ratioMeasure", "ratioTarget", "ratioHardness",
@@ -45,8 +46,13 @@ static const char* const kAdamsParams[] = { "adamsGroup", "adamsShadowPos", "ada
                                             "adamsShadowPlace", "adamsHighPlace", "adamsInfo" };
 // the views: one at a time
 static const char* const kViews[] = { "viewGain", "viewBase", "viewZonesColor", "viewZonesGrey" };
-// what Cinematografico and Zonale replace: greyed out there
+// what Cinematografico replaces: greyed out there
 static const char* const kStandardOnly[] = { "localContrast", "localHighlights", "localShadows" };
+// Zonale: the phase choice and its guide; the print's own controls; what each phase runs
+static const char* const kZonalParams[] = { "zonalPhase", "zonalGuide" };
+static const char* const kPrintParams[] = { "localContrast", "localHighlights", "localShadows" };
+static const char* const kPresenceParams[] = { "texture", "clarity", "dehaze", "hazeGroup", "clarityCenter",
+                                               "noiseThreshold" };
 static const int kIntensityCount = sizeof(kIntensities) / sizeof(kIntensities[0]);
 
 static std::atomic<int>& liveNodes() { static std::atomic<int> n(0); return n; }
@@ -80,12 +86,18 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         if (paramExists("viewZonesGrey")) m_ViewZonesGrey = fetchBooleanParam("viewZonesGrey");
         if (paramExists("devMode")) m_DevMode = fetchChoiceParam("devMode");
         if (paramExists("destination")) m_Destination = fetchChoiceParam("destination");
+        if (paramExists("zonalPhase")) m_ZonalPhase = fetchChoiceParam("zonalPhase");
         if (paramExists("subjectFace")) m_SubjectFace = fetchBooleanParam("subjectFace");
         if (paramExists("subjectLandscape")) m_SubjectLandscape = fetchBooleanParam("subjectLandscape");
     } catch (...) {
     }
     try {
-        if (m_SettingsVersion->getValue() == 0) m_SettingsVersion->setValue(kDetailSettingsVersion);
+        const int saved = m_SettingsVersion->getValue();
+        if (saved < kDetailSettingsVersion) {
+            // a new node starts Zonale at 1 · Sviluppo; one saved before the phases keeps all of them in one node
+            if (saved == 0 && m_ZonalPhase) m_ZonalPhase->setValue(SM_DT_PHASE_DEVELOP);
+            m_SettingsVersion->setValue(kDetailSettingsVersion);
+        }
         syncClip();
         updateMode();
         m_Badge.attach(*this);
@@ -167,6 +179,7 @@ bool DetailEffect::neutralAt(double p_Time) const
     const SMDetailControls c = readControls(p_Time);
     if (c.devMode == SM_DT_MODE_CINEMA && c.ratioLight - c.ratioShadow > SM_DT_RATIO_MIN_GAP) return false;
     if (c.devMode == SM_DT_MODE_ZONAL && c.adamsHighL - c.adamsShadowL > SM_DT_RATIO_MIN_GAP) return false;
+    if (c.devMode == SM_DT_MODE_ZONAL && c.printEdgeBurn != 0.0) return false;
     return !c.viewGain && !c.viewBase && !c.viewZones;
 }
 
@@ -200,10 +213,30 @@ void DetailEffect::updateMode()
     const bool cinema = mode == SM_DT_MODE_CINEMA, zonal = mode == SM_DT_MODE_ZONAL;
     for (const char* name : kCinemaParams)
         if (paramExists(name)) getParam(name)->setIsSecret(!cinema);
-    for (const char* name : kAdamsParams)
-        if (paramExists(name)) getParam(name)->setIsSecret(!zonal);
+    int phase = SM_DT_PHASE_ALL;
+    if (m_ZonalPhase) m_ZonalPhase->getValue(phase);
+    if (phase < 0 || phase >= kZonalPhaseCount) phase = SM_DT_PHASE_ALL;
+    const bool all = !zonal || phase == SM_DT_PHASE_ALL;
+    const bool develop = zonal && (all || phase == SM_DT_PHASE_DEVELOP);
+    const bool printing = all || phase == SM_DT_PHASE_PRINT, presence = all || phase == SM_DT_PHASE_PRESENCE;
+    auto show = [this](const char* name, bool on) {
+        if (paramExists(name)) getParam(name)->setIsSecret(!on);
+    };
+    for (const char* name : kZonalParams) show(name, zonal);
+    for (const char* name : kAdamsParams) show(name, develop);
+    for (const char* name : kPrintParams) show(name, printing);
+    for (const char* name : kPresenceParams) show(name, presence);
+    show("printEdgeBurn", zonal && printing);
+    show("printEdgeSize", zonal && printing);
+    show("localZonesGroup", !zonal);   // Zonale prints with the three local tones alone
     for (const char* name : kStandardOnly)
-        if (paramExists(name)) getParam(name)->setEnabled(mode == SM_DT_MODE_STANDARD);
+        if (paramExists(name)) getParam(name)->setEnabled(!cinema);
+    if (zonal && paramExists("zonalGuide")) {
+        OFX::StringParam* guide = fetchStringParam("zonalGuide");
+        std::string cur;
+        guide->getValue(cur);
+        if (cur != kZonalGuide[phase]) guide->setValue(kZonalGuide[phase]);
+    }
     if (paramExists("modeInfo")) {
         OFX::StringParam* info = fetchStringParam("modeInfo");
         std::string cur;
@@ -212,7 +245,7 @@ void DetailEffect::updateMode()
         if (cur != text) info->setValue(text);
     }
     if (cinema) refreshRatioInfo();
-    if (zonal) refreshZoneInfo();
+    if (develop) refreshZoneInfo();
 }
 
 static std::string zoneText(double z)
@@ -241,7 +274,7 @@ void DetailEffect::refreshZoneInfo()
         dt_zonal_reached(&c, &zs, &zh);
         const double want = fmax(c.adamsHighPlace, c.adamsShadowPlace + SM_DT_ADAMS_MIN_SPREAD);
         char n[32];
-        snprintf(n, sizeof(n), "N%+.1f", (want - c.adamsShadowPlace) - (mh - ms));
+        snprintf(n, sizeof(n), "N%+.1f", (zh - zs) - (mh - ms));
         text = "Ombra " + zoneText(ms) + " → " + zoneText(zs) + " · Luci " + zoneText(mh) + " → " + zoneText(zh) + " · "
                + n + " · " + out;
         if (fabs(zh - want) > 0.05) text += " · luci: oltre il limite della curva";
@@ -390,7 +423,7 @@ void DetailEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const st
     }
     if (p_ParamName == "detailReset") resetAll();
     else if (p_ParamName == "nodeInput") refreshInfo();
-    else if (p_ParamName == "devMode") updateMode();
+    else if (p_ParamName == "devMode" || p_ParamName == "zonalPhase") updateMode();
     else if (p_ParamName == "ratioMeasure") measureRatio(p_Args.time, false);
     else if ((p_ParamName == "subjectFace" || p_ParamName == "subjectLandscape") && m_SubjectFace && m_SubjectLandscape) {
         // one subject at a time; none ticked reads as a face. A measure is read again in the new metric.
@@ -510,6 +543,7 @@ SMDetailControls DetailEffect::readControls(double t) const
                   : (m_ViewZonesGrey && m_ViewZonesGrey->getValueAtTime(t) ? 2 : 0);
     if (m_DevMode) m_DevMode->getValueAtTime(t, c.devMode);
     if (m_Destination) m_Destination->getValueAtTime(t, c.destination);
+    if (m_ZonalPhase) m_ZonalPhase->getValueAtTime(t, c.zonalPhase);
     c.subject = m_SubjectLandscape && m_SubjectLandscape->getValueAtTime(t) ? 1 : 0;
     return c;
 }

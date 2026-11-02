@@ -55,7 +55,29 @@ struct DetailParams {
     float toRef[9];    // input RGB -> Rec.2020, for the norm
     float zoneWhite;   // the destination's white in stops over grey: zone X (views 3, 4)
     float zoneBlack;   // its black in stops under grey: zone 0
+    int zdOn;          // Zonale, development: a curve on the pixel's own L (dt_zonal_gain)
+    float zdLs, zdLso, zdK, zdHi, zdHiD, zdLoD;
+    float ebAmt, ebR0, ebS;   // the print's burned edges: stops at the edge, where the burn starts, its width
 };
+
+// Zonale, development: the shadow Ls lands on Lso, the line turns about it with slope k (N+/N-) up to the placed
+// highlight hi; under the shadow a toe, over the highlight a shoulder, each with the line's slope where it starts.
+SM_FN float dt_zonal_gain(float L, SM_CREF(DetailParams) p) {
+    float y = p.zdLso + p.zdK * (L - p.zdLs);
+    if (y > p.zdHi) y = p.zdHi + p.zdHiD * (1.0f - SM_EXP(-(y - p.zdHi) / p.zdHiD));
+    else if (y < p.zdLso) y = p.zdLso - p.zdLoD * (1.0f - SM_EXP(-(p.zdLso - y) / p.zdLoD));
+    return y - L;
+}
+
+// The print's burned edges: a superellipse distance, 1 at the middle of each side, the burn growing smoothly over
+// its outer ebS. Position only: no neighbours, no halo.
+SM_FN float dt_edge_burn(int x, int y, SM_CREF(DetailParams) p) {
+    float u = 2.0f * ((float)x + 0.5f) / (float)p.W - 1.0f;
+    float w = 2.0f * ((float)y + 0.5f) / (float)p.H - 1.0f;
+    float r = SM_SQRT(SM_SQRT(u * u * u * u + w * w * w * w));
+    float t = sm_clamp((r - p.ebR0) / p.ebS, 0.0f, 1.0f);
+    return -p.ebAmt * t * t * (3.0f - 2.0f * t);
+}
 
 SM_FN float dt_luma(SMf3 x, SM_CREF(DetailParams) p) {
     SMf3 r = smf3(p.toRef[0] * x.x + p.toRef[1] * x.y + p.toRef[2] * x.z,
@@ -120,7 +142,7 @@ SM_FN SMf3 dt_haze_pixel(SMf3 x, float t, SM_CREF(DetailParams) p) {
 // Everything after the filters, for one pixel: the log2 gain G, B for the views, and Local Highlights' share of G
 // with the weight of its white taper (the colour follows it to white, as in the main node).
 struct DtOut { float G; float B; float H; float W; };
-SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, float G1, float G2,
+SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, float G1, float G2, int x, int y,
                     SM_CREF(DetailParams) p) {
     DtOut o;
     float tg = 2.0f * dt_tau(Lu, p.tau0);
@@ -164,6 +186,12 @@ SM_FN DtOut dt_gain(float L, float Lu, float Gg, float aB, float bB, float Dg, f
         Tx = p.texture * dt / (1.0f + q * q) * gate;
     }
     o.G = Gb + dt_soft1(K + Tx);
+    if (p.zdOn != 0) {
+        float Gz = dt_zonal_gain(L, p);
+        if (Gz > 0.0f) Gz *= sm_t5_ramp((L - SM_DT_FLOOR_EV) / SM_DT_FLOOR_W);
+        o.G += Gz;
+    }
+    if (p.ebAmt != 0.0f) o.G += dt_edge_burn(x, y, p);
     o.B = B;
     return o;
 }

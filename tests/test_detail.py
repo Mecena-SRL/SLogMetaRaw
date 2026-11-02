@@ -65,7 +65,13 @@ CASES = [{}, {'localHighlights': -100}, {'localShadows': 100, 'localContrast': -
           'texture': 30, 'localShadows': 60},
          {'devMode': 2, 'adamsShadowL': -3.0, 'adamsHighL': 4.0, 'adamsShadowPlace': 2.5, 'adamsHighPlace': 7,
           'destination': 4, 'viewZones': 1},
-         {'viewZones': 2, 'destination': 1, 'localShadows': 50}, {'viewZones': 1, 'localHighlights': -60}]
+         {'viewZones': 2, 'destination': 1, 'localShadows': 50}, {'viewZones': 1, 'localHighlights': -60},
+         {'devMode': 2, 'zonalPhase': 1, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'adamsShadowPlace': 3,
+          'adamsHighPlace': 8, 'destination': 1, 'texture': 60, 'localShadows': 60},
+         {'devMode': 2, 'zonalPhase': 2, 'adamsShadowL': -2.5, 'adamsHighL': 3.0, 'localHighlights': -70,
+          'localShadows': 40, 'printEdgeBurn': 1.5, 'printEdgeSize': 40, 'clarity': 50},
+         {'devMode': 2, 'zonalPhase': 3, 'texture': 50, 'clarity': 40, 'dehaze': 30, 'localShadows': 80,
+          'printEdgeBurn': 2}]
 
 
 class Model(unittest.TestCase):
@@ -241,15 +247,53 @@ class Model(unittest.TestCase):
             out, _ = model(img, {'viewZones': grey, 'destination': 1}, 32, 18)
             self.assertEqual(len({tuple(px) for px in out}), 11)
 
-    def test_zonale_keeps_the_order_of_the_tones(self):
-        ctrl = {'devMode': 2, 'adamsShadowL': -2.0, 'adamsHighL': 2.0, 'adamsShadowPlace': 2, 'adamsHighPlace': 10}
-        p = D.prepare(64, 64, ctrl)
-        out = [L + T.t5_curve(L, p['curve'])[0] for L in [-10 + 0.01 * i for i in range(2200)]]
-        self.assertGreater(min(b - a for a, b in zip(out, out[1:])), 0.0)
+    def test_zonale_development_is_monotone_and_smooth(self):
+        """One curve, toe and shoulder included: the tones keep their order and the slope has no jump."""
+        for zs, zh, dest in ((2, 10, 1), (3, 8, 4), (4, 4.5, 2), (1, 9, 0)):
+            v = D.controls_clamped({'devMode': 2, 'adamsShadowL': -2.0, 'adamsHighL': 2.0, 'adamsShadowPlace': zs,
+                                    'adamsHighPlace': zh, 'destination': dest})
+            zd = D.zonal_develop(v)
+            out = [L + D.zonal_gain(L, zd) for L in [-12 + 0.01 * i for i in range(2400)]]
+            steps = [b - a for a, b in zip(out, out[1:])]
+            self.assertGreater(min(steps), 0.0)
+            self.assertLess(max(abs(b - a) for a, b in zip(steps, steps[1:])), 1e-3)
+
+    def test_zonale_development_is_pointwise(self):
+        """Development reads no neighbour: on a picture with edges each gain is the curve at its own pixel."""
+        ctrl = {'devMode': 2, 'zonalPhase': 1, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3,
+                'adamsHighPlace': 7, 'destination': 1, 'localShadows': 100, 'texture': 80}
+        _, planes = model(scene(), ctrl)
+        zd = D.zonal_develop(D.controls_clamped(ctrl))
+        for L, G in zip(planes['L'], planes['G']):
+            want = D.zonal_gain(L, zd)
+            if want > 0.0:
+                want *= T.t5_ramp((L - D.FLOOR_EV) / D.FLOOR_W)
+            self.assertAlmostEqual(G, want, places=9)
+
+    def test_zonale_phases_split_the_work(self):
+        """Print and presence leave the development alone, and each phase ignores the others' controls."""
+        img = scene(48, 27)
+        meas = {'devMode': 2, 'adamsShadowL': -3.0, 'adamsHighL': 3.5, 'adamsShadowPlace': 3, 'adamsHighPlace': 7}
+        rest, _ = model(img, {}, 48, 27)
+        self.assertEqual(model(img, dict(meas, zonalPhase=2), 48, 27)[0], rest)
+        self.assertEqual(model(img, dict(meas, zonalPhase=3, localShadows=80, printEdgeBurn=2), 48, 27)[0], rest)
+        texture = model(img, {'texture': 70}, 48, 27)[0]
+        self.assertEqual(model(img, dict(meas, zonalPhase=3, texture=70), 48, 27)[0], texture)
+        shadows = model(img, {'localShadows': 70}, 48, 27)[0]
+        self.assertEqual(model(img, dict(meas, zonalPhase=2, localShadows=70, texture=70), 48, 27)[0], shadows)
+
+    def test_print_burns_the_edges_only(self):
+        p = D.prepare(64, 36, {'devMode': 2, 'zonalPhase': 2, 'printEdgeBurn': 1.5, 'printEdgeSize': 30})
+        self.assertEqual(D.edge_burn(31, 17, 64, 36, p), 0.0)
+        self.assertAlmostEqual(D.edge_burn(0, 17, 64, 36, p), -1.5, delta=0.02)
+        row = [D.edge_burn(x, 17, 64, 36, p) for x in range(32)]
+        self.assertTrue(all(a <= b for a, b in zip(row, row[1:])))
+        self.assertEqual(D.prepare(64, 36, {'printEdgeBurn': 1.5})['ebAmt'], 0.0)   # Zonale only
 
     def test_zonale_an_unreachable_contraction_says_where_it_stops(self):
+        """Past the flattest slope the highlight stops short of its zone, and the panel says so."""
         v = D.controls_clamped({'devMode': 2, 'adamsShadowL': -1.0, 'adamsHighL': 5.0, 'adamsShadowPlace': 4,
-                                'adamsHighPlace': 5})
+                                'adamsHighPlace': 5, 'destination': 1})
         zs, zh = D.zonal_reached(v)
         self.assertAlmostEqual(zs, 4.0, places=6)
         self.assertGreater(zh, 5.5)

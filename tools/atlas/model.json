@@ -1010,7 +1010,7 @@
      "id": "dc.mode",
      "kind": "decision",
      "label": "Quale modalità?",
-     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto. Zonale: sistema di Ansel Adams. Nelle ultime due Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello).",
+     "text": "Sviluppo e spazio colore › Modalità. Standard: toni locali, presenza e zone. Cinematografico: rapporto di luce sul soggetto. Zonale: sistema di Ansel Adams, con Fase (1 Sviluppo, 2 Stampa, 3 Presenza, o un nodo) e una riga Guida. In Cinematografico Local Contrast, Highlights, Shadows e Zone non agiscono (grigi nel pannello); in Zonale ogni fase mostra solo i suoi comandi e le Zone locali spariscono.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1096,12 +1096,12 @@
     {
      "id": "dc.zonal",
      "kind": "function",
-     "label": "Zonale (Ansel Adams)",
-     "text": "Uno slot parte dall'ombra misurata e espande o contrae ciò che sta sopra (sviluppo N±), con E risolto perché la luce arrivi sulla sua zona; un secondo slot, con il bordo sopra ogni valore, sposta tutto allo stesso modo perché l'ombra arrivi sulla sua (esposizione). Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18).",
+     "label": "Zonale (Ansel Adams) in tre fasi",
+     "text": "Tre fasi, un nodo ciascuna (Fase), o tutte in uno. Sviluppo: una curva sul singolo pixel, senza vicini né aloni; l'esposizione porta l'ombra misurata sulla sua zona, la pendenza (N±) ruota la retta attorno all'ombra perché la luce arrivi sulla sua; sotto l'ombra un piede, sopra la luce una spalla esponenziali verso uno stop oltre la zona 0 e la X. Stampa: Local Contrast/Highlights/Shadows sulla base per aree e Brucia i bordi (solo posizione). Presenza: Texture, Clarity, Dehaze. Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18).",
      "basis": "verificato",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_nominal"
+       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop"
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L"
@@ -1128,7 +1128,28 @@
        "test": "tests/test_detail.py::Model.test_zones_follow_the_destination"
       },
       {
-       "test": "tests/test_detail.py::Model.test_zonale_keeps_the_order_of_the_tones"
+       "test": "tests/test_detail.py::Model.test_zonale_development_is_monotone_and_smooth"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_gain"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_edge_burn"
+      },
+      {
+       "param": "param:detail.zonalPhase"
+      },
+      {
+       "param": "param:detail.printEdgeBurn"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_zonale_development_is_pointwise"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_zonale_phases_split_the_work"
+      },
+      {
+       "test": "tests/test_detail.py::Model.test_print_burns_the_edges_only"
       }
      ]
     },
@@ -1163,7 +1184,7 @@
      "id": "dc.tones",
      "kind": "function",
      "label": "Toni locali e zone (Standard)",
-     "text": "In Standard: Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. In Cinematografico non agiscono.",
+     "text": "In Standard: Local Contrast, Local Shadows e le Zone locali muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. In Zonale (fase Stampa o un nodo) agiscono i primi tre, senza Zone locali. In Cinematografico non agiscono.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1549,10 +1570,10 @@
     {
      "id": "P-003",
      "status": "in corso",
-     "label": "Modalità di sviluppo: Standard, Cinematografico e Zonale fatte; Stampa e Recupero HDR→SDR da fare",
+     "label": "Modalità di sviluppo: Standard, Cinematografico e Zonale in tre fasi fatte; Recupero HDR→SDR da fare",
      "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
-     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Restano Zonale, Stampa, Recupero. Zonale con vista zone a colori e in grigi, scala sull'uscita (Destinazione, opzione Scena DWG).",
-     "impact": "Pannello Detail (nuovi parametri, nomi permanenti; nodeInput spostato, nome invariato), math/DetailHost.h (solo host: kernel CPU/Metal invariati), golden params_detail.txt. Default Standard e Dal Bianco: grade salvati invariati.",
+     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco; modalità Cinematografico con misura del rapporto sul viso. Zonale con vista zone a colori e in grigi, scala sull'uscita (Destinazione, opzione Scena DWG); poi rifatta in tre fasi, tre nodi in serie: Sviluppo globale (curva sul pixel, niente aloni), Stampa (per aree e bordi bruciati), Presenza. Resta Recupero.",
+     "impact": "Pannello Detail (nuovi parametri, nomi permanenti; nodeInput spostato, nome invariato), math/DetailHost.h (solo host: kernel CPU/Metal invariati), golden params_detail.txt. Default Standard e Dal Bianco: grade salvati invariati. Zonale in fasi: kernel CPU e Metal (dt_zonal_gain, dt_edge_burn), settingsVersion 2; i nodi Zonale della 2.4.0 cambiano aspetto (motore nuovo).",
      "verification": "Modello Python e parità CPU per Cinematografico e Destinazione (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura (lettura immagine fuori dal render).",
      "refs": [
       {
@@ -1600,25 +1621,27 @@
   },
   "beh:detail.colour": {
    "ofx/SLogMetaRaw/math/Detail.h::dt_apply": "01a83eae2d74",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_edge_burn": "fd5aff5b1e59",
    "ofx/SLogMetaRaw/math/Detail.h::dt_emit": "9cc3dc73ad63",
    "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel": "f33417c4ec86",
    "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
    "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones": "821cb5ab6d82",
+   "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_gain": "c7671d67cc90",
    "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of": "b95c0e637405",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_nominal": "e063939095fb",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_cinema_reached": "7094c71738f1",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "1a075e48a9de",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "6384adb7f8b5",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_nominal": "af96f787cd47",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "7bb81d550415",
+   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "5e892694316f",
    "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L": "25f44e13f0ff",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureRatio": "3c4b898b7fbf",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones": "ee7e34ac713c",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "500190bb2f50",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "51952d6e8bd5",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
    "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "51dffe564cad",
+   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "a478243d93a2",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
    "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"

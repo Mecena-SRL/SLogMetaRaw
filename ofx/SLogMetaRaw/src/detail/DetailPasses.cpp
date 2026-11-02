@@ -329,7 +329,7 @@ void detailRenderCPU(const DetailParams& p, const float* src, size_t srcRow, flo
                 const float G2 = p.texture != 0.0f ? dt_bilinear(s.G2.data(), p.wt, p.ht, p.st, x, y) : 0.0f;
                 const Tap t(w, h, p.s, x, y);
                 const float Dg = p.clarity != 0.0f ? t(s.Dg.data()) : 0.0f;
-                const DtOut o = dt_gain(L[i], t(s.Lw.data()), s.Gg[i], t(s.aB.data()), t(s.bB.data()), Dg, G1, G2, p);
+                const DtOut o = dt_gain(L[i], t(s.Lw.data()), s.Gg[i], t(s.aB.data()), t(s.bB.data()), Dg, G1, G2, x, y, p);
                 if (planes) {
                     planes->B[i] = o.B;
                     planes->Dg[i] = Dg;
