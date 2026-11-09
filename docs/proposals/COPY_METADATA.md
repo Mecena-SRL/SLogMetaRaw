@@ -1,6 +1,9 @@
 # Proposta #7 — Copiare i metadata Sony su una clip senza metadata propri
 
-Stato: proposta di design, nessun codice. Da decidere: i punti in fondo.
+Stato: implementata nella 2.2.0 (abbinamento in sequenza per nome, copia una tantum). Abbinamento per timecode
+aggiunto dopo la 3.0.0 (`resolve_io.pair_clips`): vale solo se tutte le clip hanno un timecode e almeno una coppia si
+sovrappone, altrimenti resta la sequenza; la tabella mostra le coppie e il modo prima di *Copia sulle clip*, quindi
+resta un suggerimento da confermare. Non provato in Resolve con un registratore vero.
 
 ## Come funziona oggi (verificato nel codice)
 - Il plugin trova i metadata della clip da un **record JSON** in `~/Library/Application Support/SLogMetaRaw/cache/`, il cui

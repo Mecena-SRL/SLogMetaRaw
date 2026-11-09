@@ -142,4 +142,8 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    come scelte) è in pausa. Aperto: diagnosi degli artefatti su fotogrammi reali; Cinematografico e Standard usano
    ancora la curva sulla base (per aree).
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
+   Copia su clip senza metadata (09/11/2026, non rilasciato): abbinamento per timecode (Start TC/End TC/FPS del Media
+   Pool, secondi alla cadenza nominale, sovrapposizione massima, ogni originale una volta); ripiego sulla sequenza per
+   nome se manca un timecode o nessuna coppia si sovrappone. Provato con test su proprietà simulate (`test_copy_clips`);
+   da provare in Resolve con un registratore vero (Atomos) e con clip a cavallo della mezzanotte.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.

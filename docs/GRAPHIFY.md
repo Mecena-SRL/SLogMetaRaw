@@ -21,6 +21,7 @@ ui.py ──> i18n.py
    │                     ├──> datalevel.py
    │                     ├──> paths.py
    │                     └──> resolve_io.py ──> datalevel.py
+   │                                       └──> extract.py (timecode: abbinamento della copia)
    └────> update.py ──> paths.py
 
 connect.py            (standalone: apre/attiva Resolve e scrive una clip via scripting server)
