@@ -1,5 +1,19 @@
 # Changelog
 
+## Prossima versione (non rilasciata)
+
+Raccoglie le modifiche dopo la 3.0.0; al rilascio questa intestazione diventa `## S-Log MetaRaw X.Y.Z`.
+
+### Script
+
+- **Copia su clip senza metadata, abbinamento per timecode** (#7): se tutte le clip scelte hanno un timecode e almeno
+  una clip del registratore si sovrappone a un originale, ogni clip del registratore prende l'originale con cui si
+  sovrappone di più (ogni originale una sola volta). Una ripresa che il registratore ha perso, o una in più, non sposta
+  più le altre coppie. Il confronto usa Start TC, End TC e FPS del Media Pool, alla cadenza nominale (una camera a
+  50p e un registratore a 25p con lo stesso timecode coincidono). Senza timecode in comune (per esempio un
+  registratore in free-run da zero) resta l'abbinamento in sequenza per nome di prima. La riga sotto la tabella dice
+  quale dei due è in uso. Provato con test sulle proprietà simulate; non provato in Resolve con un registratore vero.
+
 ## S-Log MetaRaw 3.0.0
 
 Versione maggiore: il nodo Detail diventa un laboratorio con tre metodi della camera oscura (**Zonale**, **Split

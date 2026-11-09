@@ -13,6 +13,7 @@ import os
 import re
 
 from . import datalevel
+from .extract import _fps_value, _tc_rate, tc_to_frames
 
 NOTES_START = '[S-Log MetaRaw]'
 NOTES_END = '[/S-Log MetaRaw]'
@@ -349,15 +350,69 @@ def natural_key(name):
     return [int(p) if p.isdigit() else p.lower() for p in re.split(r'(\d+)', name or '')]
 
 
-def pair_clips(sources, targets):
-    """Pair the i-th original with the i-th external-recorder clip.
+def tc_span(start_tc, end_tc, fps):
+    """Start and end of a clip in seconds of timecode, or None when either is missing or unreadable.
 
-    Both lists are in the user's order of recording; the first pair is the anchor and the
-    rest follows in sequence, so no timecode is needed. Returns (pairs, leftover) where
-    leftover is the number of clips of the longer list that found no partner.
+    The frames are counted at the nominal rate (23.976 -> 24), so a camera at 50p and a recorder
+    at 25p that share the same timecode land on the same seconds. An end before the start
+    crosses midnight.
     """
+    try:
+        base = _tc_rate(_fps_value(fps) or 0)
+        if base <= 1 or not start_tc or not end_tc:
+            return None
+        start = tc_to_frames(str(start_tc).strip(), base) / base
+        end = tc_to_frames(str(end_tc).strip(), base) / base
+    except (ValueError, TypeError):
+        return None
+    if end <= start:
+        end += 24 * 3600
+    return start, end
+
+
+def clip_span(clip):
+    """Timecode span of a Media Pool clip (Resolve properties Start TC, End TC, FPS)."""
+    try:
+        return tc_span(clip.GetClipProperty('Start TC'), clip.GetClipProperty('End TC'),
+                       clip.GetClipProperty('FPS'))
+    except Exception:   # a clip that no longer answers: no timecode
+        return None
+
+
+def _overlap(a, b):
+    return max(0.0, min(a[1], b[1]) - max(a[0], b[0]))
+
+
+def pair_clips(sources, targets, source_spans=None, target_spans=None):
+    """Pair the originals with the external-recorder clips.
+
+    By timecode when every clip has one and at least one recorder clip overlaps an original: each
+    recorder clip takes the original it overlaps most, each original at most once, so missing or
+    extra clips on either side do not shift the others. Otherwise the i-th original goes with the
+    i-th recorder clip (both lists in the user's order of recording, the first pair is the anchor).
+    Returns (pairs, leftover, mode): leftover counts the clips that found no partner, mode is
+    'timecode' or 'sequence'.
+    """
+    spans_ok = (source_spans is not None and target_spans is not None
+                and len(source_spans) == len(sources) and len(target_spans) == len(targets)
+                and all(source_spans) and all(target_spans))
+    if spans_ok and sources and targets:
+        overlaps = sorted(((_overlap(source_spans[i], target_spans[j]), i, j)
+                           for i in range(len(sources)) for j in range(len(targets))),
+                          key=lambda o: (-o[0], o[2], o[1]))
+        used_src, partner = set(), {}
+        for amount, i, j in overlaps:
+            if amount <= 0:
+                break
+            if i in used_src or j in partner:
+                continue
+            used_src.add(i)
+            partner[j] = i
+        if partner:
+            pairs = [(sources[partner[j]], targets[j]) for j in range(len(targets)) if j in partner]
+            return pairs, len(sources) + len(targets) - 2 * len(pairs), 'timecode'
     n = min(len(sources), len(targets))
-    return list(zip(sources[:n], targets[:n])), abs(len(sources) - len(targets))
+    return list(zip(sources[:n], targets[:n])), abs(len(sources) - len(targets)), 'sequence'
 
 
 def copy_result(r, source_name, target_path):

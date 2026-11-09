@@ -313,6 +313,8 @@ def main(resolve, fusion, bmd, selftest=False):
         'results': {},      # uid -> result of the read
         'pair_src': [],     # [(uid, name)] Sony clips, in recording order
         'pair_dst': [],     # [(uid, clip, name)] clips that receive the values
+        'pair_src_tc': [],  # timecode spans of pair_src (None when a clip has none)
+        'pair_dst_tc': [],
         'running': None,    # None | 'read' | 'write'
         'done': [],         # rows produced by the reader thread, drained by the timer
         'total': 0,
@@ -779,30 +781,42 @@ def main(resolve, fusion, bmd, selftest=False):
         clips = project.GetMediaPool().GetSelectedClips() or []
         return sorted(clips, key=lambda c: resolve_io.natural_key(c.GetName()))
 
+    def _pairs():
+        return resolve_io.pair_clips(state['pair_src'], state['pair_dst'], state['pair_src_tc'],
+                                     state['pair_dst_tc'])
+
     def _show_pairs(states=None):
         pairs_tree.Clear()
-        pairs, leftover = resolve_io.pair_clips(state['pair_src'], state['pair_dst'])
+        pairs, leftover, mode = _pairs()
         for i, ((_, sname), (_, _, dname)) in enumerate(pairs):
             item = pairs_tree.NewItem()
             item.Text[0], item.Text[1] = sname, dname
             item.Text[2] = (states or {}).get(i, '')
             pairs_tree.AddTopLevelItem(item)
         info = t('%d coppie') % len(pairs)
-        if leftover:
+        if mode == 'timecode':
+            info += t(' · per timecode')
+            if leftover:
+                info += t(' · %d clip senza timecode in comune') % leftover
+        elif leftover:
             info += t(' · %d clip senza partner (numero diverso)') % leftover
         itm['PairInfo'].Text = info if (state['pair_src'] or state['pair_dst']) else ''
 
     def on_pair_sources(ev):
-        state['pair_src'] = [(c.GetUniqueId(), c.GetName()) for c in _selected()]
+        clips = _selected()
+        state['pair_src'] = [(c.GetUniqueId(), c.GetName()) for c in clips]
+        state['pair_src_tc'] = [resolve_io.clip_span(c) for c in clips]
         _show_pairs()
-        status(t('Originali: %d clip, in ordine di nome. La prima è l\'ancora, le altre seguono in sequenza.')
-               % len(state['pair_src']))
+        status(t('Originali: %d clip. Abbinate per timecode se coincide, altrimenti in ordine di nome '
+                 '(la prima è l\'ancora).') % len(state['pair_src']))
 
     def on_pair_targets(ev):
-        state['pair_dst'] = [(c.GetUniqueId(), c, c.GetName()) for c in _selected()]
+        clips = _selected()
+        state['pair_dst'] = [(c.GetUniqueId(), c, c.GetName()) for c in clips]
+        state['pair_dst_tc'] = [resolve_io.clip_span(c) for c in clips]
         _show_pairs()
-        status(t('Registratore: %d clip, in ordine di nome. La prima è l\'ancora, le altre seguono in sequenza.')
-               % len(state['pair_dst']))
+        status(t('Registratore: %d clip. Abbinate per timecode se coincide, altrimenti in ordine di nome '
+                 '(la prima è l\'ancora).') % len(state['pair_dst']))
 
     def on_pair_copy(ev):
         if not itm['PairEnable'].Checked:
@@ -812,7 +826,7 @@ def main(resolve, fusion, bmd, selftest=False):
         if project is None or project.GetName() != state['project']:
             status(t('Il progetto è cambiato: premi di nuovo "Leggi metadata".'))
             return
-        pairs, _ = resolve_io.pair_clips(state['pair_src'], state['pair_dst'])
+        pairs, _, _ = _pairs()
         if not pairs:
             status(t('Scegli prima gli originali e le clip del registratore.'))
             return
