@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Python reference of the S-Log MetaRaw Detail node (math/Detail.h, src/detail).
+"""Python reference of the Log MetaRaw Detail node (math/Detail.h, src/detail).
 
 Everything works on log2 luminance L = log2(N / 0.18) of the input's power norm (in Rec.2020), and
 returns one log2 gain G per pixel: out = in * 2^G, in the input encoding.

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""S-Log MetaRaw launcher for DaVinci Resolve: Workspace > Scripts.
+"""Log MetaRaw launcher for DaVinci Resolve: Workspace > Scripts.
 
 Installed by install.sh into Fusion/Scripts/Utility; LIB_DIR is replaced at
 install time with the folder that contains the 'slogmetaraw' package. A copy left
@@ -46,7 +46,7 @@ def _log(message):
 def _report_error(message, detail):
     _log(detail)
     try:
-        print('S-Log MetaRaw: %s\n%s' % (message, detail), file=sys.stderr)
+        print('Log MetaRaw: %s\n%s' % (message, detail), file=sys.stderr)
     except (OSError, AttributeError):
         pass
     _show_dialog(message[:700] + '\n\nDettagli: ' + LOG_PATH)
@@ -58,16 +58,16 @@ def _show_dialog(text):
             # Passing the message as argv preserves accents and quotes without generating
             # AppleScript source from exception text or a user's installation path.
             script = ('on run argv\n'
-                      'display dialog (item 1 of argv) with title "S-Log MetaRaw" '
+                      'display dialog (item 1 of argv) with title "Log MetaRaw" '
                       'buttons {"OK"} default button "OK" with icon caution\n'
                       'end run')
             subprocess.run(['/usr/bin/osascript', '-e', script, text], timeout=30, check=False)
         elif os.name == 'nt':
             import ctypes
-            ctypes.windll.user32.MessageBoxW(None, text, 'S-Log MetaRaw', 0x30)
+            ctypes.windll.user32.MessageBoxW(None, text, 'Log MetaRaw', 0x30)
         else:
-            for tool in (['zenity', '--warning', '--no-markup', '--title=S-Log MetaRaw', '--text=' + text],
-                         ['kdialog', '--title', 'S-Log MetaRaw', '--sorry', text]):
+            for tool in (['zenity', '--warning', '--no-markup', '--title=Log MetaRaw', '--text=' + text],
+                         ['kdialog', '--title', 'Log MetaRaw', '--sorry', text]):
                 try:
                     subprocess.run(tool, timeout=30, check=False)
                     return
@@ -178,7 +178,7 @@ def _lib_dir():
 def _import_library():
     lib_dir = _lib_dir()
     if not os.path.isfile(os.path.join(lib_dir, 'slogmetaraw', '__init__.py')):
-        raise RuntimeError('La libreria S-Log MetaRaw non si trova in:\n%s\n'
+        raise RuntimeError('La libreria Log MetaRaw non si trova in:\n%s\n'
                            'Reinstalla lo script dalla cartella del programma.' % lib_dir)
     if lib_dir in sys.path:
         sys.path.remove(lib_dir)
@@ -210,7 +210,7 @@ def main(namespace=None):
         else:
             # started outside the menu: Resolve may still be finishing its launch
             resolve = _retry(lambda: _connect(namespace, bmd),
-                             'S-Log MetaRaw non riesce a collegarsi a DaVinci Resolve.\n'
+                             'Log MetaRaw non riesce a collegarsi a DaVinci Resolve.\n'
                              'Apri un progetto e rilancia da Workspace > Scripts. '
                              'Se il problema persiste, chiudi e riapri Resolve.')
         fusion = _retry(lambda: _fusion(namespace, resolve),
@@ -218,10 +218,10 @@ def main(namespace=None):
                         attempts=int(PROJECT_WAIT / 0.25))
         _retry(lambda: resolve.GetProjectManager().GetCurrentProject(),
                'Non c\'è un progetto aperto. Apri un progetto in DaVinci Resolve '
-               'e rilancia S-Log MetaRaw da Workspace > Scripts.',
+               'e rilancia Log MetaRaw da Workspace > Scripts.',
                attempts=int(PROJECT_WAIT / 0.25))
         if getattr(fusion, 'UIManager', None) is None:
-            raise RuntimeError('UIManager non è disponibile. La finestra S-Log MetaRaw '
+            raise RuntimeError('UIManager non è disponibile. La finestra Log MetaRaw '
                                'richiede DaVinci Resolve Studio.')
         ui = _load_ui()
         _log('Avvio interfaccia')

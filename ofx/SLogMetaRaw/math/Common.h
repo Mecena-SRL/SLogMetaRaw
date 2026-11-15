@@ -11,6 +11,7 @@
 #define SM_POW precise::pow
 #define SM_LOG2 precise::log2
 #define SM_LOG10 precise::log10
+#define SM_LOG precise::log
 #define SM_EXP2 precise::exp2
 #define SM_EXP precise::exp
 #define SM_TANH precise::tanh
@@ -28,6 +29,7 @@
 #define SM_POW powf
 #define SM_LOG2 log2f
 #define SM_LOG10 log10f
+#define SM_LOG logf
 #define SM_EXP2 exp2f
 #define SM_EXP expf
 #define SM_TANH tanhf

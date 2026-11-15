@@ -38,7 +38,7 @@ jobs:
           export HOME="$RUNNER_TEMP/home"; mkdir -p "$HOME"
           sh dist/SLogMetaRaw-*-linux-x86_64.run --user
           test -x "$HOME/.local/share/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Linux-x86-64/SLogMetaRaw.ofx"
-          test -f "$HOME/.local/share/DaVinciResolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+          test -f "$HOME/.local/share/DaVinciResolve/Fusion/Scripts/Utility/Log MetaRaw.py"
           sh dist/SLogMetaRaw-*-linux-x86_64.run --uninstall --user
           test ! -e "$HOME/.local/share/OFX/Plugins/SLogMetaRaw.ofx.bundle"
       - uses: actions/upload-artifact@v4

@@ -15,8 +15,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OFX_SRC = os.path.join('ofx', 'SLogMetaRaw', 'src')
 GOLDEN_FIELDS = ('label', 'default', 'parent', 'secret', 'enabled', 'min', 'max', 'displayMin', 'displayMax',
                  'increment', 'digits', 'animates', 'hint', 'options', 'icon', 'groupOpen')
-PANELS = (('develop', 'S-Log MetaRaw (Develop)', 'tests/golden/params_develop.txt', 'develop'),
-          ('detail', 'S-Log MetaRaw Detail', 'tests/golden/params_detail.txt', 'detail'))
+PANELS = (('develop', 'Log MetaRaw (Develop)', 'tests/golden/params_develop.txt', 'develop'),
+          ('detail', 'Log MetaRaw Detail', 'tests/golden/params_detail.txt', 'detail'))
 
 
 def _read(rel):

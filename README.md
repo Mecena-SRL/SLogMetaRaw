@@ -1,7 +1,7 @@
-<p align="center"><img src="assets/icon_1024.png" width="140" alt="S-Log MetaRaw"></p>
+<p align="center"><img src="assets/icon_1024.png" width="140" alt="Log MetaRaw"></p>
 
-<h1 align="center">S-Log MetaRaw</h1>
-<p align="center"><b>Sony camera metadata and scene-referred development controls for DaVinci Resolve 20 and 21</b><br>
+<h1 align="center">Log MetaRaw</h1>
+<p align="center"><b>Camera log metadata (Sony, Panasonic, Apple, DJI and more) and scene-referred development controls for DaVinci Resolve 20 and 21</b><br>
 Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-94m</a> · <a href="https://instagram.com/ivan_94m">@ivan_94m</a></p>
 
 <p align="center">
@@ -16,13 +16,13 @@ Sony cameras write the shooting setup into every file: white balance in Kelvin, 
 colour profile. Resolve uses that data for the MXF files of an FX6 or FX9, which get a *Camera Raw* panel. For the MP4
 files of an FX30, FX3, a7 or a6000-series camera it ignores the data.
 
-S-Log MetaRaw reads that data and uses it. It has three parts:
+Log MetaRaw reads that data and uses it. It has three parts:
 
 | | Where | What it does |
 |---|---|---|
-| **Script** | Workspace › Scripts › S-Log MetaRaw | reads the metadata of every clip in the project and writes it into the Media Pool |
-| **S-Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
-| **S-Log MetaRaw Detail** node | Color › OpenFX | the creative node, with darkroom modes (Zonale, Split grade, Unito): local tone recovery, Texture, Clarity, Dehaze |
+| **Script** | Workspace › Scripts › Log MetaRaw | reads the metadata of every clip in the project and writes it into the Media Pool |
+| **Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
+| **Log MetaRaw Detail** node | Color › OpenFX | the creative node, with darkroom modes (Zonale, Split grade, Unito): local tone recovery, Texture, Clarity, Dehaze |
 
 No file is transcoded and no original file is ever written.
 
@@ -38,7 +38,7 @@ and highlights roll off instead of breaking.
 
 On heavy work, colour science alone is not enough. As soon as you push past what the camera captured, the missing
 information shows: banding in skies, noise in lifted shadows, clipped highlights that stay clipped, and colour that
-comes apart in the compressed channels. Expose well at the camera. S-Log MetaRaw helps you get the most out of what
+comes apart in the compressed channels. Expose well at the camera. Log MetaRaw helps you get the most out of what
 is there. It cannot create what is not there.
 
 ---
@@ -46,7 +46,7 @@ is there. It cannot create what is not there.
 ## Install
 
 1. Download `SLogMetaRaw-3.0.0.dmg` from **Releases** and open it.
-2. Double-click **Installa S-Log MetaRaw.pkg**. It is not signed with an Apple certificate: the first time,
+2. Double-click **Installa Log MetaRaw.pkg**. It is not signed with an Apple certificate: the first time,
    right-click it and choose **Open**. It asks for the Mac password because the plugin goes in a system folder.
 3. Restart DaVinci Resolve.
 
@@ -57,7 +57,7 @@ Without that step Resolve would keep showing the old panel and would not list th
 |---|---|
 | The two nodes (one bundle) | `/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle` |
 | The Python library | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
-| The menu script | `…/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py` |
+| The menu script | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
 While it runs it keeps a small JSON record per clip in `~/Library/Application Support/SLogMetaRaw/cache`. The disk image
 also holds the three-page guides in Italian and English.
@@ -80,16 +80,16 @@ S-Gamut3), **S-Log2** and **S-Log** (S-Gamut). With any other profile they stay 
 
 ## Quick start
 
-1. Import the footage. **Workspace › Scripts › S-Log MetaRaw**: press **1 · Read metadata**, then **2 · Write to Resolve**.
-2. On the Color page, put **S-Log MetaRaw** as the **first node**. It picks up the clip's EI, Kelvin and tint. At those
+1. Import the footage. **Workspace › Scripts › Log MetaRaw**: press **1 · Read metadata**, then **2 · Write to Resolve**.
+2. On the Color page, put **Log MetaRaw** as the **first node**. It picks up the clip's EI, Kelvin and tint. At those
    values it changes nothing.
 3. Fix white balance and exposure in the node. The false colour views help.
-4. Shape the tones with **Toni** (Tones). For local recovery, Texture, Clarity or Dehaze, add **S-Log MetaRaw Detail** as the
+4. Shape the tones with **Toni** (Tones). For local recovery, Texture, Clarity or Dehaze, add **Log MetaRaw Detail** as the
    next node.
 5. Then add your CST, LUT or DRT.
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  the rest of the grade
+Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  the rest of the grade
 ```
 
 ---
@@ -122,7 +122,7 @@ A volume that stops answering is skipped once, with a message, instead of blocki
 
 ---
 
-## The S-Log MetaRaw node
+## The Log MetaRaw node
 
 The node is pointwise: each pixel depends only on itself. It never makes halos, and **Generate LUT** can export it
 (65 points recommended).
@@ -175,7 +175,7 @@ finishes in the background, with a 15-second limit. *Rileggi* answers within abo
 
 ---
 
-## The S-Log MetaRaw Detail node
+## The Log MetaRaw Detail node
 
 This is the creative node. It works **by areas**, over an edge-aware base, and adjusts large areas without flattening
 the fine detail. That is the part of Lightroom's Highlights and Shadows a pointwise node cannot copy.
@@ -201,7 +201,7 @@ the fine detail. That is the part of Lightroom's Highlights and Shadows a pointw
 
 Not tried in Resolve yet and Metal not run. The grade formula, the percentiles and the development limits are this implementation's assumptions, not checked against BTZS or real prints. [docs/DETAIL.md](docs/DETAIL.md)
 
-- Place it **right after** S-Log MetaRaw, before CST, LUT or DRT. It decodes what it receives to linear light and writes it
+- Place it **right after** Log MetaRaw, before CST, LUT or DRT. It decodes what it receives to linear light and writes it
   back in the same encoding, so it must sit before any conversion: keep the main node's Color Space and Gamma on Timeline.
 - It is **spatial**, so Generate LUT leaves it out, together with the rest of its node. Keep it in a node of its own.
 - The radii follow the frame height. The look is the same at full resolution, in proxy and in the viewer. No per-frame
@@ -299,7 +299,7 @@ builds the packages and installs the .deb/.rpm on Rocky 8/9, Ubuntu 20.04-24.04 
 ## Known limits
 
 - Resolve's own Camera Raw panel and gyro stabilisation cannot be unlocked for MP4. Both live inside Resolve's
-  decoders. S-Log MetaRaw rebuilds the colour controls. It does not open a door into Resolve.
+  decoders. Log MetaRaw rebuilds the colour controls. It does not open a door into Resolve.
 - Some cameras (the a6300 among them) do not record a Kelvin value. It is then estimated from the lighting preset and flagged.
 - S-Log2 follows the Sony paper. Resolve's own S-Log2 curve differs by about 0.15 stop.
 - Still to be checked on more files: XAVC HS (HEVC), HLG, S-Cinetone, power zooms.

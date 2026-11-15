@@ -76,7 +76,7 @@ static std::string baseName(const std::string& path)
     std::string n = path.substr(path.find_last_of("/\\") == std::string::npos ? 0 : path.find_last_of("/\\") + 1);
     const size_t dot = n.find_last_of('.');
     if (dot != std::string::npos && dot > 0) n.resize(dot);
-    return n.empty() ? "S-Log MetaRaw" : n;
+    return n.empty() ? "Log MetaRaw" : n;
 }
 
 void DevelopEffect::exportLut(double p_Time)
@@ -100,7 +100,7 @@ void DevelopEffect::exportLut(double p_Time)
     m_LutSize->getValue(sizeIdx);
     if (sizeIdx < 0 || sizeIdx >= kLutSizeCount) sizeIdx = kLutDefaultSize;
 
-    const std::string name = baseName(sourcePath()) + " - S-Log MetaRaw.cube";
+    const std::string name = baseName(sourcePath()) + " - Log MetaRaw.cube";
     std::string path;
     switch (askSavePath(name, path)) {
     case SaveAsk::Failed:

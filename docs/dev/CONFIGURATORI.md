@@ -143,3 +143,9 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
    ancora la curva sulla base (per aree).
 3. Comportamenti successivi: «Scrivi in Resolve», «Copia su clip senza metadata», lettura `--cache` dal plugin.
 4. Estrazione C++ minima (funzioni e chiamate) per collegare i comportamenti del plugin.
+
+- Lettura multi-camera (15/11/2026, non rilasciato): nome visibile Log MetaRaw (id interni invariati), lettori
+  `vendors.py` e `dji.py`, 14 curve e 9 gamut in coda alle tabelle (codici 11+, l'ordine è permanente). Decisioni: una
+  lettura *stimata* senza marca né modello non guida il nodo (`camera_found` 0); D-Log M da fit della comunità finché
+  non arrivano le LUT DJI e una serie con cartoncino grigio (vedi `docs/CAMERAS.md`). Aperto: taratura D-Log M per
+  Action 4 e 5 Pro, prova in Resolve dei nuovi menu, nomi Resolve dell'Input Color Space per V-Log, Apple Log, D-Log M.

@@ -1,4 +1,4 @@
-# False color: come lo fa CineMatch, come lo fa S-Log MetaRaw
+# False color: come lo fa CineMatch, come lo fa Log MetaRaw
 
 Ricerca alla base dei tre toggle *False color* del nodo e dello stadio `sm_false_color`
 (`ofx/SLogMetaRaw/math/FalseColor.h`). Le affermazioni su CineMatch vengono dal **binario installato**
@@ -134,7 +134,7 @@ plugin commerciale con un pannello complesso, spedisce **una sola** immagine (la
 `Reset On Screen Control` — proprio il tipo di comando che sarebbe stato un'icona se si
 fosse potuto.
 
-**Cosa fa S-Log MetaRaw**: chiama `setIcon` con le tre icone (sono nel bundle, in
+**Cosa fa Log MetaRaw**: chiama `setIcon` con le tre icone (sono nel bundle, in
 `Contents/Resources/`), e mette ogni toggle **immediatamente sopra lo slider che serve**.
 Se Resolve disegna l'icona, si vede l'icona; se la ignora, resta l'etichetta, che dice la
 stessa cosa. È esattamente la struttura di CineMatch — booleana + menu sopra lo slider —
@@ -142,7 +142,7 @@ arrivata per la stessa strada.
 
 ---
 
-## 4 · Cosa fa S-Log MetaRaw, e in cosa differisce
+## 4 · Cosa fa Log MetaRaw, e in cosa differisce
 
 Tre viste, una per controllo, mutuamente esclusive.
 
@@ -184,7 +184,7 @@ Per ogni pixel:
    al neutro, 1× sui colori pieni. È il `saturate(v, remap(s, 0, 1, 8, 1))` di CineMatch.
 2. **Luminosità** = il grigio della vista, che sale con gli stop: la scena resta leggibile.
 3. **Asse**: qui sta l'unica differenza. CineMatch decide per *tinta HSL* (un pixel è "caldo" se
-   la sua tinta cade fra −9° e 58°). S-Log MetaRaw misura la deviazione dal bianco in
+   la sua tinta cade fra −9° e 58°). Log MetaRaw misura la deviazione dal bianco in
    **CIE 1960 uv** e la proietta sull'inverso della **risposta reale dei due slider**, misurata
    al valore corrente:
 
@@ -219,7 +219,7 @@ timeline — DaVinci WG/Intermediate, ACEScct, Rec.709. Verificato in `tests/tes
 
 ### Confronto
 
-| | CineMatch | S-Log MetaRaw |
+| | CineMatch | Log MetaRaw |
 |---|---|---|
 | Viste esposizione | 2 (grigio medio, incarnato), un colore ciascuna | 1, sei bande ARRI insieme |
 | Viste bilanciamento | 2, immagine grigia, tinte canoniche, quasi-neutri 8× | uguali |

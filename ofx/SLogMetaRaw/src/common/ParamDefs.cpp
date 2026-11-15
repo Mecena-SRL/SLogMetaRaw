@@ -24,7 +24,7 @@ void resetParamNames() { usedNames().clear(); }
 bool claimName(const std::string& name)
 {
     if (!usedNames().insert(name).second) {
-        fprintf(stderr, "S-Log MetaRaw: parametro duplicato \"%s\", ignorato\n", name.c_str());
+        fprintf(stderr, "Log MetaRaw: parametro duplicato \"%s\", ignorato\n", name.c_str());
         return false;
     }
     return true;
@@ -156,7 +156,7 @@ void describeEffectCommon(ImageEffectDescriptor& d, const char* name, const char
                           SpatialMode mode)
 {
     d.setLabels(name, name, name);
-    d.setPluginGrouping("S-Log MetaRaw");
+    d.setPluginGrouping("Log MetaRaw");
     d.setPluginDescription(description);
     d.getPropertySet().propSetString(kOfxPropIcon, "", 0, false);     // index 0 = SVG (none), 1 = PNG
     d.getPropertySet().propSetString(kOfxPropIcon, icon, 1, false);

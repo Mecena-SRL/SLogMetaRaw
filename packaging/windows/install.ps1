@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Installs S-Log MetaRaw for DaVinci Resolve on Windows.
+# Installs Log MetaRaw for DaVinci Resolve on Windows.
 #   powershell -ExecutionPolicy Bypass -File install.ps1             install (asks for administrator rights)
 #   powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall remove what this script installed
 # Run from the unpacked release (SLogMetaRaw.ofx.bundle, slogmetaraw\, tools\, resolve_script\ next to it) or from
@@ -32,6 +32,7 @@ if ($Uninstall) {
     foreach ($p in @('lib', 'lib_path', 'pycache')) {
         Remove-Item -Recurse -Force -LiteralPath (Join-Path $Support $p) -ErrorAction SilentlyContinue
     }
+    Remove-Item -Force -LiteralPath (Join-Path $Scripts 'Log MetaRaw.py') -ErrorAction SilentlyContinue
     Remove-Item -Force -LiteralPath (Join-Path $Scripts 'S-Log MetaRaw.py') -ErrorAction SilentlyContinue
     Write-Host "Rimosso. Cache e log restano in $Support."
     exit
@@ -46,9 +47,9 @@ Get-ChildItem -Recurse -Directory -Filter '__pycache__' $Lib | Remove-Item -Recu
 # the launcher goes in as is and finds the library through lib_path: no Python needed to install
 # (Resolve 20 and earlier have none of their own). UTF-8 without BOM keeps an accented user folder intact.
 [IO.File]::WriteAllText((Join-Path $Support 'lib_path'), "$Lib`n", (New-Object Text.UTF8Encoding $false))
-Copy-Item -LiteralPath (Join-Path $Root 'resolve_script\SLogMetaRaw.py') -Destination (Join-Path $Scripts 'S-Log MetaRaw.py') -Force
+Copy-Item -LiteralPath (Join-Path $Root 'resolve_script\SLogMetaRaw.py') -Destination (Join-Path $Scripts 'Log MetaRaw.py') -Force
 
 Invoke-Elevated ("New-Item -ItemType Directory -Force -Path '$Plugins' | Out-Null; " +
     "Remove-Item -Recurse -Force -LiteralPath '$PluginTarget' -ErrorAction SilentlyContinue; " +
     "Copy-Item -Recurse -LiteralPath '$Bundle' -Destination '$Plugins'")
-Write-Host 'Fatto. Riavvia DaVinci Resolve: il nodo e in OpenFX, lo script in Workspace > Scripts > S-Log MetaRaw.'
+Write-Host 'Fatto. Riavvia DaVinci Resolve: il nodo e in OpenFX, lo script in Workspace > Scripts > Log MetaRaw.'

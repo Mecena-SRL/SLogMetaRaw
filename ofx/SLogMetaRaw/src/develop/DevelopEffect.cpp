@@ -59,10 +59,10 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_SettingsVersion = fetchIntParam("settingsVersion");
         m_Ready = true;
     } catch (const std::exception& e) {
-        fprintf(stderr, "S-Log MetaRaw: nodo disattivato, parametro mancante (%s)\n", e.what());
+        fprintf(stderr, "Log MetaRaw: nodo disattivato, parametro mancante (%s)\n", e.what());
         return;
     } catch (...) {
-        fprintf(stderr, "S-Log MetaRaw: nodo disattivato, parametro mancante\n");
+        fprintf(stderr, "Log MetaRaw: nodo disattivato, parametro mancante\n");
         return;
     }
     try {

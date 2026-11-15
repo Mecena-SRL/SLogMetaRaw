@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Removes every S-Log MetaRaw installed on this Mac - 2.x, 1.x, the old SonyMeta name, developer installs, the
+# Removes every Log MetaRaw installed on this Mac - 2.x, 1.x, the old SonyMeta name, developer installs, the
 # test probe: plugin, library, menu script, installer receipts, and this user's cache, settings and logs. Clips,
 # projects and the metadata already written into Resolve projects are not touched; CSV exports only if asked.
 #   --dry-run   list what would be removed and remove nothing
@@ -20,11 +20,13 @@ SYSTEM=(
   "$ROOT/Library/OFX/Plugins/SonyMetaRAW.ofx.bundle"
   "$ROOT/Library/Application Support/SLogMetaRaw"
   "$ROOT/Library/Application Support/SonyMeta"
+  "$ROOT/$UTIL/Log MetaRaw.py"
   "$ROOT/$UTIL/S-Log MetaRaw.py"
   "$ROOT/$UTIL/SLogMetaRaw.py"
   "$ROOT/$UTIL/SonyMeta.py"
 )
 USERS=(
+  "$HOME/$UTIL/Log MetaRaw.py"
   "$HOME/$UTIL/S-Log MetaRaw.py"
   "$HOME/$UTIL/SLogMetaRaw.py"
   "$HOME/$UTIL/SonyMeta.py"
@@ -50,7 +52,7 @@ finish() {
   exit "$1"
 }
 
-echo "Disinstallazione di S-Log MetaRaw (tutte le versioni installate su questo Mac)"
+echo "Disinstallazione di Log MetaRaw (tutte le versioni installate su questo Mac)"
 echo
 found_sys=() found_usr=() found_rec=()
 for p in "${SYSTEM[@]}"; do exists "$p" && found_sys+=("$p"); done
@@ -59,7 +61,7 @@ if [[ -z "$ROOT" ]]; then
   for r in "${RECEIPTS[@]}"; do pkgutil --pkg-info "$r" >/dev/null 2>&1 && found_rec+=("$r"); done
 fi
 if (( ${#found_sys[@]} + ${#found_usr[@]} + ${#found_rec[@]} == 0 )); then
-  echo "Non c'è niente da rimuovere: S-Log MetaRaw non risulta installato."
+  echo "Non c'è niente da rimuovere: Log MetaRaw non risulta installato."
   exists "$CSV" && echo "I CSV esportati restano in $CSV."
   finish 0
 fi
@@ -114,7 +116,7 @@ if (( ${#left[@]} > 0 )); then
   for p in "${left[@]}"; do echo "  $p"; done
   finish 1
 fi
-echo "S-Log MetaRaw è stato rimosso del tutto."
+echo "Log MetaRaw è stato rimosso del tutto."
 [[ "$delete_csv" == 0 ]] && exists "$CSV" && echo "I CSV esportati restano in $CSV."
 echo "I metadata già scritti nei progetti di Resolve (campi, keyword, Data Level) fanno parte dei progetti e restano."
 echo "Al prossimo avvio Resolve ricostruisce la lista dei plugin. Ora puoi fare un'installazione pulita."

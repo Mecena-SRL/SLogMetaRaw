@@ -23,9 +23,9 @@ void DevelopFactory::unload()
 
 void DevelopFactory::describe(ImageEffectDescriptor& p_Desc)
 {
-    describeEffectCommon(p_Desc, "S-Log MetaRaw",
+    describeEffectCommon(p_Desc, "Log MetaRaw",
                          "Controlli Camera Raw (Sony Video) per clip Sony MP4: si imposta da solo con i metadata di "
-                         "camera registrati da S-Log MetaRaw. Ivan Mazzone + Claude (@Ivan_94m).",
+                         "camera registrati da Log MetaRaw. Ivan Mazzone + Claude (@Ivan_94m).",
                          "com.slogmetaraw.SLogMetaRaw.png", kPointwiseLutSafe);
 }
 

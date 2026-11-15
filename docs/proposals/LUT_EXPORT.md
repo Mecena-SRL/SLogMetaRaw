@@ -3,7 +3,7 @@
 Stato: proposta + prototipo (`tools/export_lut.py`, test in `tests/test_export_lut.py`). Da decidere: i punti in fondo.
 
 ## Cosa esiste già
-- Il nodo S-Log MetaRaw è dichiarato **puntuale** (`kPointwiseLutSafe`): dentro Resolve, **Generate 3D LUT** lo include già
+- Il nodo Log MetaRaw è dichiarato **puntuale** (`kPointwiseLutSafe`): dentro Resolve, **Generate 3D LUT** lo include già
   (vedi README). Il Detail è spaziale e resta fuori, per costruzione.
 - Tutta la matematica del nodo è per pixel (`sm_develop`, `ofx/SLogMetaRaw/math/Develop.h`): decode → eventuale fix del
   data level → esposizione → bilanciamento del bianco (Bradford) → toni/zone → conversione spazio/gamma. Quindi una LUT 3D

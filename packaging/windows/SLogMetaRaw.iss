@@ -1,7 +1,7 @@
 ; SPDX-License-Identifier: GPL-3.0-or-later
 ; Inno Setup script: iscc /DAppVersion=3.0.0 /DStageDir=<staged folder> /DOutDir=<dist> SLogMetaRaw.iss
 [Setup]
-AppName=S-Log MetaRaw
+AppName=Log MetaRaw
 AppVersion={#AppVersion}
 AppPublisher=Mecena
 DefaultDirName={commonappdata}\SLogMetaRaw\installer
@@ -24,7 +24,11 @@ Source: "{#StageDir}\SLogMetaRaw.ofx.bundle\*"; DestDir: "{commoncf64}\OFX\Plugi
 Source: "{#StageDir}\slogmetaraw\*"; DestDir: "{userappdata}\SLogMetaRaw\lib\slogmetaraw"; Flags: recursesubdirs ignoreversion
 ; the launcher goes in as is: it finds the library through lib_path, so no Python is needed to install it
 ; (Resolve 20 and earlier have none of their own, and python.org leaves its Python off the PATH)
-Source: "{#StageDir}\resolve_script\SLogMetaRaw.py"; DestDir: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility"; DestName: "S-Log MetaRaw.py"; Flags: ignoreversion
+Source: "{#StageDir}\resolve_script\SLogMetaRaw.py"; DestDir: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility"; DestName: "Log MetaRaw.py"; Flags: ignoreversion
+
+[InstallDelete]
+; the launcher name up to 3.0: two menu entries otherwise
+Type: files; Name: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\S-Log MetaRaw.py"
 
 [Code]
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -42,6 +46,7 @@ begin
 end;
 
 [UninstallDelete]
+Type: files; Name: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\Log MetaRaw.py"
 Type: files; Name: "{userappdata}\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\S-Log MetaRaw.py"
 Type: filesandordirs; Name: "{userappdata}\SLogMetaRaw\lib"
 Type: files; Name: "{userappdata}\SLogMetaRaw\lib_path"

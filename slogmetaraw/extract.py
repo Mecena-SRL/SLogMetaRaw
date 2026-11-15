@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Read every Sony metadata source of a clip into one structure.
+"""Read every metadata source of a clip into one structure: Sony rtmd/NRT, other cameras through vendors.py.
 
 read_clip(path) -> {
     'path', 'container', 'meta': {normalised key: value},
@@ -19,7 +19,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-from . import codec, datalevel, mp4, mxf, nrt, rtmd
+from . import codec, datalevel, dji, mp4, mxf, nrt, rtmd, vendors
 
 SF_DATALESS = 0x40000000  # macOS: only a placeholder on disk, the content lives in cloud storage
 
@@ -31,6 +31,11 @@ PARTIAL_READ = 2048  # bytes per sampled rtmd frame (lens + camera sets come fir
 FIRST_READ = 1 << 20  # the first frame is read whole, but a damaged size must not pull in gigabytes
 FULL_SAMPLES = 24    # a record sampled this finely is complete (the script's reading)
 MXF_WINDOWS = 12     # byte-scan windows when an MXF has no usable index
+
+
+PROFILE_SOURCE = {'tarato': 'tarata (camera provata su clip reali)',
+                  'compatibile': 'compatibile (profilo trovato per nome nei metadata)',
+                  'stimato': 'stimata (nessun profilo nei metadata: descrizione colore del codec)'}
 
 
 class DatalessError(Exception):
@@ -92,6 +97,13 @@ def _format_name(container, video_codec, width):
     else:
         fam = 'XAVC HS' if hevc else ('XAVC S-I' if intra else 'XAVC S')
     return (fam + ' ' + res).strip()
+
+
+def _plain_format(meta):
+    """'H.265 4:2:2 10 bit 3840x2160' for files that are not XAVC."""
+    size = '%sx%s' % (meta['v_width'], meta.get('v_height')) if meta.get('v_width') else ''
+    depth = '%s bit' % meta['v_bit_depth'] if meta.get('v_bit_depth') else ''
+    return ' '.join(x for x in (meta.get('v_codec'), meta.get('v_chroma'), depth, size) if x)
 
 
 def _color_space(gamma, primaries):
@@ -218,6 +230,7 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
     if m.items.get('Lens profile'):
         meta['lens_profile_bytes'] = m.items['Lens profile'][1]
     video = m.track(handler=b'vide')
+    info = {}
     if video:
         info = codec.parse_sample_entry(video.sample_entry)
         meta.update({'v_' + k: v for k, v in info.items()})
@@ -237,9 +250,15 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
     audio = m.track(handler=b'soun')
     if audio:
         meta.update(_audio_info(audio))
+    if m.track(handler=b'meta', codec=b'djmd'):
+        _read_djmd(f, m, out, info, interval, max_samples, deadline)
+        return
     track = m.track(handler=b'meta', codec=b'rtmd')
     if not track:
-        _warn(out, 'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
+        if xml:   # a Sony file without per-frame data: the NRT XML still names the curve
+            _warn(out, 'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.')
+        else:
+            vendors.read(m, meta, info)
         return
     n = track.sample_count()
     fps = meta.get('fps')
@@ -257,6 +276,38 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
 
     full = min(_grid(n, fps, interval)[1], FULL_SAMPLES) if n else 0
     _sample(out, order, read_one, deadline, full, n)
+
+
+def _read_djmd(f, m, out, info, interval, max_samples, deadline):
+    """DJI: clip values from the first djmd message, exposure and balance sampled across the clip."""
+    meta = out['meta']
+    vendors.read(m, meta, info)
+    track = m.track(handler=b'meta', codec=b'djmd')
+    n = track.sample_count()
+    order = _sample_indices(n, meta.get('fps'), interval, max_samples)
+    offsets = track.sample_offsets(order)
+
+    def read_one(i):
+        if i not in offsets:
+            return None
+        sample = f.read_at(offsets[i], min(track.sample_size(i), FIRST_READ))
+        if i == 0:
+            meta.update(dji.clip_values(sample))
+            meta.update(dji.profile(sample, meta))
+        values = dji.frame_values(sample)
+        if i == 0:
+            meta.update(values)
+        return values
+
+    meta['manufacturer'] = 'DJI'
+    _sample(out, order, read_one, deadline, min(_grid(n, meta.get('fps'), interval)[1], FULL_SAMPLES) if n else 0, n)
+
+
+def _read_mpeg(f, out):
+    """MPEG program/transport stream (DV camcorders, .MPG/.MTS): the sequence header and the codec's colours."""
+    meta = out['meta']
+    meta.update({'v_' + k: v for k, v in codec.find_mpeg_video(f.read_at(0, mp4.META_PRELOAD)).items()})
+    meta['fps'] = meta.get('v_fps')
 
 
 def _parse_sps(meta, kind, sps):
@@ -389,13 +440,20 @@ def _normalise(out):
             meta['capture_gamma'] = gamma
             if primaries:
                 meta.setdefault('color_primaries', primaries)
+    if not meta.get('capture_gamma') and not meta.get('xml_gamma'):
+        vendors.from_codec(meta)
+        _warn(out, 'Nessun profilo di ripresa nei metadata: uso la descrizione colore del codec (%s).',
+              meta['capture_gamma'])
     attrs = meta.get('camera_attributes', '')
     m = re.search(r'Version\s*([\w.]+)', attrs)
     if m and not meta.get('firmware'):
         meta['firmware'] = m.group(1)
     if not meta.get('model') and attrs:
         meta['model'] = attrs.split()[0]
-    meta.setdefault('manufacturer', 'Sony')
+    sony = bool(out.get('rtmd') or out.get('nrt_source'))
+    if sony:
+        meta.setdefault('manufacturer', 'Sony')
+        meta.setdefault('profile_source', 'tarato')
     cap = _fps_value(meta.get('capture_fps')) if isinstance(meta.get('capture_fps'), str) else None
     if isinstance(meta.get('capture_fps'), (list, tuple)):
         n, d = meta['capture_fps']
@@ -403,8 +461,8 @@ def _normalise(out):
     meta['capture_fps_value'] = cap
     fps = meta.get('fps') or _fps_value(meta.get('format_fps'))
     meta['sq'] = bool(cap and fps and abs(cap - fps) > 0.01)
-    meta['format_name'] = _format_name(out['container'], meta.get('video_codec'),
-                                       meta.get('width') or meta.get('v_width'))
+    meta['format_name'] = (_format_name(out['container'], meta.get('video_codec'), meta.get('width') or meta.get('v_width'))
+                           if sony else _plain_format(meta))
     gamma = meta.get('capture_gamma')
     prim = meta.get('color_primaries')
     meta['color_space'] = _color_space(gamma, prim)
@@ -503,6 +561,7 @@ def _sections(out):
         ('Profile and level', (m.get('v_profile') and '%s@L%s' % (m['v_profile'], m.get('v_level'))) or None),
         ('Color sampling', m.get('v_chroma') and 'YCbCr %s %sbit' % (m['v_chroma'], m.get('v_bit_depth'))),
         ('Color space', g('color_space')),
+        ('Lettura del profilo', PROFILE_SOURCE.get(m.get('profile_source'))),
         ('Luminance code range', g('luminance_code_range')),
         ('Range dichiarato nel codec', g('file_range')),
         ('Data level richiesto dalla gamma', g('level_required_why')),
@@ -591,6 +650,9 @@ def read_clip(path, interval=1.0, max_samples=FULL_SAMPLES, allow_dataless=False
         if mxf.is_mxf(head):
             out['container'] = 'MXF'
             _read_mxf(f, out, interval, max_samples, deadline)
+        elif head[:4] == b'\x00\x00\x01\xba' or b'\x47' in (head[:1], head[4:5]):   # PS, TS, M2TS
+            out['container'] = 'MPEG'
+            _read_mpeg(f, out)
         else:
             out['container'] = 'MP4'
             _read_mp4(f, out, interval, max_samples, deadline, lut)

@@ -1,7 +1,7 @@
-<p align="center"><img src="assets/icon_1024.png" width="140" alt="S-Log MetaRaw"></p>
+<p align="center"><img src="assets/icon_1024.png" width="140" alt="Log MetaRaw"></p>
 
-<h1 align="center">S-Log MetaRaw</h1>
-<p align="center"><b>Metadados de câmeras Sony e controles de revelação em luz de cena para o DaVinci Resolve 20 e 21</b><br>
+<h1 align="center">Log MetaRaw</h1>
+<p align="center"><b>Metadados log de câmeras (Sony, Panasonic, Apple, DJI e outras) e controles de revelação em luz de cena para o DaVinci Resolve 20 e 21</b><br>
 Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-94m</a> · <a href="https://instagram.com/ivan_94m">@ivan_94m</a></p>
 
 <p align="center">
@@ -16,13 +16,13 @@ As câmeras Sony gravam em cada arquivo como o plano foi filmado: balanço de br
 abertura, obturador, perfil de cor. O Resolve usa esses dados nos MXF da FX6 e da FX9, que ganham o painel *Camera Raw*.
 Nos MP4 de uma FX30, FX3, série a7 ou a6000, ignora-os.
 
-O S-Log MetaRaw lê esses dados e usa-os. Tem três partes:
+O Log MetaRaw lê esses dados e usa-os. Tem três partes:
 
 | | Onde | O que faz |
 |---|---|---|
-| **Script** | Workspace › Scripts › S-Log MetaRaw | lê os metadados de todos os clipes do projeto e grava-os no Media Pool |
-| Nó **S-Log MetaRaw** | Color › OpenFX | revela um clipe a partir dos valores de gravação: balanço, exposição, espaço de cor, tons por zonas, falsa cor |
-| Nó **S-Log MetaRaw Detail** | Color › OpenFX | o nó criativo, com os modos do laboratório (Zonale, Split grade, Unito): recuperação local de tons, Texture, Clarity, Dehaze |
+| **Script** | Workspace › Scripts › Log MetaRaw | lê os metadados de todos os clipes do projeto e grava-os no Media Pool |
+| Nó **Log MetaRaw** | Color › OpenFX | revela um clipe a partir dos valores de gravação: balanço, exposição, espaço de cor, tons por zonas, falsa cor |
+| Nó **Log MetaRaw Detail** | Color › OpenFX | o nó criativo, com os modos do laboratório (Zonale, Split grade, Unito): recuperação local de tons, Texture, Clarity, Dehaze |
 
 Nenhum arquivo é transcodificado e nenhum original é alterado.
 
@@ -38,7 +38,7 @@ luz e as altas luzes arredondam em vez de quebrar.
 
 Num trabalho intenso, porém, a ciência de cor sozinha não chega. Assim que os limites da câmera são forçados, a falta de
 informação na imagem aparece: banding nos céus, ruído nas sombras levantadas, altas luzes estouradas que continuam
-estouradas, cor que se desfaz nos canais comprimidos. Exponha bem na gravação. O S-Log MetaRaw ajuda a tirar o melhor do
+estouradas, cor que se desfaz nos canais comprimidos. Exponha bem na gravação. O Log MetaRaw ajuda a tirar o melhor do
 que existe. Não pode criar o que não existe.
 
 ---
@@ -46,7 +46,7 @@ que existe. Não pode criar o que não existe.
 ## Instalação
 
 1. Baixe `SLogMetaRaw-3.0.0.dmg` em **Releases** e abra-o.
-2. Dê um duplo clique em **Installa S-Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
+2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
 
@@ -57,14 +57,14 @@ inicialização. Sem isso, o Resolve continuaria mostrando o painel antigo e nã
 |---|---|
 | Os dois nós (um único bundle) | `/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle` |
 | A biblioteca Python | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
-| O script do menu | `…/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py` |
+| O script do menu | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
 Enquanto funciona, guarda um pequeno registro JSON por clipe em `~/Library/Application Support/SLogMetaRaw/cache`. O
 disco também traz os guias de três páginas, em italiano e inglês.
 
 **Instalação limpa e desinstalação.** Cada instalação começa limpa: o instalador substitui por inteiro o plugin e a
 biblioteca anteriores e remove as instalações de desenvolvimento, então não fica nenhum arquivo de uma versão antiga.
-**Disinstalla S-Log MetaRaw.command**, no disco (na primeira vez: botão direito › Abrir), remove todas as versões
+**Disinstalla Log MetaRaw.command**, no disco (na primeira vez: botão direito › Abrir), remove todas as versões
 instaladas, 1.x e 2.x incluídas, com o cache, as configurações e os logs. Antes de mexer em algo lista tudo, pede para
 fechar o Resolve e pergunta se deve apagar também os CSV exportados. Os metadados já gravados nos projetos do Resolve
 fazem parte dos projetos e ficam.
@@ -80,17 +80,17 @@ precisa de qualquer forma. **Testado apenas no Resolve Studio 21.1 em macOS; Res
 
 ## Em resumo
 
-1. Importe o material. **Workspace › Scripts › S-Log MetaRaw**: clique **1 · Ler metadados** e depois
+1. Importe o material. **Workspace › Scripts › Log MetaRaw**: clique **1 · Ler metadados** e depois
    **2 · Gravar no Resolve**.
-2. Na página Color, coloque o **S-Log MetaRaw** como **primeiro nó**. Ele pega o EI, os Kelvin e o tint do clipe. Nesses
+2. Na página Color, coloque o **Log MetaRaw** como **primeiro nó**. Ele pega o EI, os Kelvin e o tint do clipe. Nesses
    valores não muda nada.
 3. Corrija balanço e exposição no nó. As vistas de falsa cor ajudam.
 4. Molde os tons com **Toni** (Tons). Para recuperação local, Texture, Clarity ou Dehaze, acrescente o
-   **S-Log MetaRaw Detail** como nó seguinte.
+   **Log MetaRaw Detail** como nó seguinte.
 5. Depois, o seu CST, LUT ou DRT.
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  resto da correção
+Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  resto da correção
 ```
 
 ---
@@ -123,7 +123,7 @@ segundo. Um volume que para de responder é pulado uma única vez, com um aviso,
 
 ---
 
-## O nó S-Log MetaRaw
+## O nó Log MetaRaw
 
 O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Generate LUT** pode exportá-lo
 (recomendados 65 pontos).
@@ -176,7 +176,7 @@ termina em segundo plano, com limite de 15 segundos. *Rileggi* responde em cerca
 
 ---
 
-## O nó S-Log MetaRaw Detail
+## O nó Log MetaRaw Detail
 
 É o nó criativo. Trabalha **por áreas**, sobre uma base que respeita as bordas, e ajusta as grandes áreas sem achatar o
 detalhe fino. É a parte de Highlights e Shadows do Lightroom que um nó pontual não consegue copiar.
@@ -202,7 +202,7 @@ detalhe fino. É a parte de Highlights e Shadows do Lightroom que um nó pontual
 
 Ainda não testado no Resolve e Metal não executado. A fórmula do grau, os percentis e os limites da revelação são hipóteses desta implementação, não verificadas com o BTZS nem em cópias reais. [docs/DETAIL.md](docs/DETAIL.md)
 
-- Coloque-o **logo depois** do S-Log MetaRaw, antes de CST, LUT ou DRT. Ele decodifica para luz linear o que recebe e
+- Coloque-o **logo depois** do Log MetaRaw, antes de CST, LUT ou DRT. Ele decodifica para luz linear o que recebe e
   grava de volta na mesma codificação, então vai antes de qualquer conversão: deixe Color Space e Gamma do nó principal em
   Timeline.
 - É **espacial**, por isso o Generate LUT o exclui, junto com o resto do seu nó. Mantenha-o num nó próprio.
@@ -304,7 +304,7 @@ compila os pacotes e instala o .deb/.rpm no Rocky 8/9, Ubuntu 20.04-24.04 e Debi
 ## Limites conhecidos
 
 - O painel Camera Raw do Resolve e a estabilização por giroscópio não podem ser desbloqueados para MP4: vivem dentro dos
-  decodificadores do Resolve. O S-Log MetaRaw reconstrói os controles de cor; não abre uma porta dentro do Resolve.
+  decodificadores do Resolve. O Log MetaRaw reconstrói os controles de cor; não abre uma porta dentro do Resolve.
 - Algumas câmeras (entre elas a a6300) não registram os Kelvin: nesse caso são estimados a partir do preset de luz e
   sinalizados.
 - O S-Log2 segue o documento da Sony. A curva S-Log2 do Resolve difere em cerca de 0,15 stop.

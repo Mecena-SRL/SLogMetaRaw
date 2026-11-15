@@ -1,8 +1,8 @@
 # Toni: esposizione per zone, in stop
 
-Come funzionano i controlli **Toni** e **Zone** del nodo S-Log MetaRaw dalla versione 2.0, e
+Come funzionano i controlli **Toni** e **Zone** del nodo Log MetaRaw dalla versione 2.0, e
 perché sono fatti così. Il recupero locale, che conserva la texture, sta nel nodo separato
-**S-Log MetaRaw Detail**: vedi [DETAIL.md](DETAIL.md).
+**Log MetaRaw Detail**: vedi [DETAIL.md](DETAIL.md).
 
 ![Le curve a confronto](tone_curve.png)
 

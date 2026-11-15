@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atlante della logica · S-Log MetaRaw</title>
+<title>Atlante della logica · Log MetaRaw</title>
 <style>
 :root{--bg:#f6f6f3;--panel:#fff;--ink:#1d1f24;--mute:#6a6f78;--line:#d9dad5;--sel:#2f6fdb;
 --event:#7a4fd1;--function:#2f6fdb;--decision:#b07a00;--data:#0f8a6a;--persistence:#c25b12;--process:#4b5563;
@@ -431,7 +431,7 @@ function wirePanel(id){
 }
 function context(id){
   const it = IDX[id], fn = id.startsWith('fn:') ? F.functions[id.slice(3)] : null;
-  const L = ['[Atlante S-Log MetaRaw] elemento selezionato', 'id: ' + id, 'revisione: ' + (REV.commit||'?') + (REV.dirty.length ? ' (+ modifiche locali)' : '')];
+  const L = ['[Atlante Log MetaRaw] elemento selezionato', 'id: ' + id, 'revisione: ' + (REV.commit||'?') + (REV.dirty.length ? ' (+ modifiche locali)' : '')];
   if (fn) L.push('livello: funzione', 'codice: ' + fn.file + ':' + fn.line + '-' + fn.end, 'chiama: ' + fn.calls.join(', '));
   if (it){
     const el = it.el; L.push('livello: ' + it.type, 'titolo: ' + (el.label||''), 'base: ' + (el.basis||''));
@@ -598,7 +598,7 @@ function wireDraft(id){
   const x = $('#clearDrafts'); if (x) x.onclick = () => { S.drafts = {}; save(); stage(); panel(); };
 }
 function draftsText(){
-  const L = ['[Configuratore interfaccia S-Log MetaRaw] proposte di modifica', 'revisione: ' + (REV.commit||'?'), ''];
+  const L = ['[Configuratore interfaccia Log MetaRaw] proposte di modifica', 'revisione: ' + (REV.commit||'?'), ''];
   for (const [id, d] of Object.entries(S.drafts)){
     const it = IDX[id]; if (!it) continue; const el = it.el;
     L.push('- ' + id + ' (' + it.type + ', ' + (it.surface||'') + ')');

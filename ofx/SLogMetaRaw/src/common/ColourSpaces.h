@@ -3,7 +3,7 @@
 #include <string>
 
 // Sizes of the gamut and transfer tables of DevelopMath.h: codes read from files are checked against them.
-const int kSpaceCount = 11, kGammaCount = 11;
+const int kSpaceCount = 20, kGammaCount = 25;
 extern const char* const kSpaceNames[kSpaceCount];
 extern const char* const kGammaNames[kGammaCount];
 extern const char* const kLevelNames[2];          // index = data level code, shared with datalevel.py

@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<title>S-Log MetaRaw – guida</title>
+<title>Log MetaRaw – guida</title>
 <style>
   @page { size: A4; margin: 0; }
   :root { --ink: #1c1f26; --muted: #5b6270; --warm: #e8893a; --cool: #3d7bff; --line: #e3e5ea; --soft: #f6f7f9; }
@@ -58,7 +58,7 @@
   <header>
     <img src="icon.png" alt="">
     <div>
-      <h1>S-Log MetaRaw</h1>
+      <h1>Log MetaRaw</h1>
       <div class="sub">Metadata Sony e controlli di sviluppo per DaVinci Resolve 21 · guida · v@VERSION@</div>
     </div>
   </header>
@@ -67,7 +67,7 @@
   <div class="premise">
     <p>Le camere Sony scrivono in ogni file come è stata girata l'inquadratura: Kelvin, tinta, EI, obiettivo, diaframma,
     shutter, profilo colore. Resolve usa questi dati solo sugli MXF di FX6 e FX9; sugli MP4 (FX30, FX3, serie a7 e a6000)
-    li ignora. <b>S-Log MetaRaw li legge e li usa</b>: esposizione e bilanciamento partono dai valori di ripresa e lavorano
+    li ignora. <b>Log MetaRaw li legge e li usa</b>: esposizione e bilanciamento partono dai valori di ripresa e lavorano
     in luce lineare, con curve e gamut pubblicati da Sony.</p>
     <p><b>Non è raw.</b> Una scienza colore interpretata in modo scientifico fa comportare l'immagine in un modo che
     ricorda un file RAW: il bilanciamento si sposta pulito, l'esposizione si muove come uno stop di luce. Ma un MP4 log è
@@ -79,13 +79,13 @@
 
   <h2><span class="n">2</span>I tre strumenti</h2>
   <div class="grid3">
-    <div class="card"><h3>Script</h3><div class="where">Workspace › Scripts › S-Log MetaRaw</div>
+    <div class="card"><h3>Script</h3><div class="where">Workspace › Scripts › Log MetaRaw</div>
       Legge i metadata di <b>tutte le clip del progetto</b> e li scrive nel Media Pool: pannello Metadata, colonne,
       keyword per le smart bin, data burn, CSV. Corregge il Data Level delle clip. <i>Pagina 2.</i></div>
-    <div class="card"><h3>Nodo S-Log MetaRaw</h3><div class="where">Color › OpenFX · primo nodo</div>
+    <div class="card"><h3>Nodo Log MetaRaw</h3><div class="where">Color › OpenFX · primo nodo</div>
       Sviluppa una clip dai suoi valori di ripresa: bilanciamento, esposizione, spazio colore, <b>toni per zone</b> e
       false color. Puntuale: Generate LUT lo esporta. <i>Pagine 2-3.</i></div>
-    <div class="card"><h3>Nodo S-Log MetaRaw Detail</h3><div class="where">Color › OpenFX · subito dopo</div>
+    <div class="card"><h3>Nodo Log MetaRaw Detail</h3><div class="where">Color › OpenFX · subito dopo</div>
       Il nodo creativo: recupero di luci e ombre <b>per aree</b>, Texture, Clarity, Dehaze. Spaziale: Generate LUT lo
       esclude. <i>Pagina 3.</i></div>
   </div>
@@ -93,11 +93,11 @@
   <h2><span class="n">3</span>Installazione</h2>
   <div class="grid">
     <ol>
-      <li>Doppio clic su <b>Installa S-Log MetaRaw.pkg</b>. Non è firmato con un certificato Apple: la prima volta tasto
+      <li>Doppio clic su <b>Installa Log MetaRaw.pkg</b>. Non è firmato con un certificato Apple: la prima volta tasto
           destro › <b>Apri</b>. Chiede la password del Mac (il plugin va in una cartella di sistema).</li>
       <li>L'installer cancella la cache dei plugin di Resolve, così compaiono il pannello nuovo e il nodo Detail.</li>
       <li><b>Riavvia DaVinci Resolve.</b> Ogni installazione parte pulita. Per togliere tutte le versioni:
-          <b>Disinstalla S-Log MetaRaw.command</b> (tasto destro › Apri; i CSV esportati restano, se non chiedi il contrario).</li>
+          <b>Disinstalla Log MetaRaw.command</b> (tasto destro › Apri; i CSV esportati restano, se non chiedi il contrario).</li>
     </ol>
     <table class="narrow">
       <tr><td>Nodi</td><td><code>/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle</code></td></tr>
@@ -111,13 +111,13 @@
   <h2><span class="n">4</span>Flusso di lavoro</h2>
   <ol>
     <li><b>Importa</b> il girato, apri lo <b>script</b>: <b>1 · Leggi metadata</b>, poi <b>2 · Scrivi in Resolve</b>.</li>
-    <li>In <b>Color</b> metti <b>S-Log MetaRaw</b> come primo nodo: prende EI, Kelvin e tinta della clip e a quei valori non
+    <li>In <b>Color</b> metti <b>Log MetaRaw</b> come primo nodo: prende EI, Kelvin e tinta della clip e a quei valori non
         cambia niente. Copiato su un'altra clip, si reimposta con i dati di quella.</li>
     <li>Correggi <b>bilanciamento ed esposizione</b> nel nodo, aiutandoti con i false color. Poi i <b>Toni</b>.</li>
-    <li>Se servono recupero locale, Texture, Clarity o Dehaze, aggiungi <b>S-Log MetaRaw Detail</b> subito dopo.</li>
+    <li>Se servono recupero locale, Texture, Clarity o Dehaze, aggiungi <b>Log MetaRaw Detail</b> subito dopo.</li>
     <li>Poi il resto del grade e, <b>per ultimo</b>, il CST, LUT o DRT d'uscita. Fino a lì resta in log o in DWG (pagina 3).</li>
   </ol>
-  <div class="chain">S-Log MetaRaw &nbsp;→&nbsp; S-Log MetaRaw Detail &nbsp;→&nbsp; resto del grade &nbsp;→&nbsp; CST / LUT / DRT d'uscita</div>
+  <div class="chain">Log MetaRaw &nbsp;→&nbsp; Log MetaRaw Detail &nbsp;→&nbsp; resto del grade &nbsp;→&nbsp; CST / LUT / DRT d'uscita</div>
 
   <h2><span class="n">5</span>Da sapere</h2>
   <ul>
@@ -133,7 +133,7 @@
   </ul>
 
   <footer>
-    <span>S-Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · github.com/ivan-94m · @ivan_94m</span>
+    <span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · github.com/ivan-94m · @ivan_94m</span>
     <span>1 / 3 · Non affiliato a Sony né a Blackmagic Design</span>
   </footer>
 </div>
@@ -141,7 +141,7 @@
 <!-- ============ 2 · SCRIPT + NODO (1) ============ -->
 <div class="page">
   <div class="half">
-    <div class="part"><h1>Lo script</h1><span class="where">Workspace › Scripts › S-Log MetaRaw</span></div>
+    <div class="part"><h1>Lo script</h1><span class="where">Workspace › Scripts › Log MetaRaw</span></div>
     <p>Una riga di pulsanti, una di opzioni, l'elenco delle clip e, sotto, tutti i dati della clip selezionata, divisi come
     in Catalyst Browse. Lo script legge i file, non li modifica mai.</p>
     <table>
@@ -169,7 +169,7 @@
   </div>
 
   <div class="half">
-    <div class="part"><h1>Il nodo S-Log MetaRaw</h1><span class="where">Color › OpenFX · primo nodo, prima di CST e LUT</span></div>
+    <div class="part"><h1>Il nodo Log MetaRaw</h1><span class="where">Color › OpenFX · primo nodo, prima di CST e LUT</span></div>
     <p>Mostra la camera in cima e porta Temperatura, Tint ed Esposizione ai valori di ripresa: lì <b>non cambia niente</b>. È un
     punto di partenza, non un look. Le impostazioni si salvano per clip; <b>Rileggi metadata</b> riporta tutto ai valori di
     camera e scrive i metadata di quella clip nel Media Pool.</p>
@@ -210,7 +210,7 @@
   </div>
 
   <footer>
-    <span>S-Log MetaRaw @VERSION@ · lo script e il nodo principale</span>
+    <span>Log MetaRaw @VERSION@ · lo script e il nodo principale</span>
     <span>2 / 3</span>
   </footer>
 </div>
@@ -218,7 +218,7 @@
 <!-- ============ 3 · NODO (2) + DETAIL ============ -->
 <div class="page">
   <div class="half">
-    <div class="part"><h1>Il nodo S-Log MetaRaw</h1><span class="where">Toni, Zone, Senza metadata</span></div>
+    <div class="part"><h1>Il nodo Log MetaRaw</h1><span class="where">Toni, Zone, Senza metadata</span></div>
     <p><b>Toni</b> mostra Highlights, Bianco, Soft Clip e Saturation; <i>Mostra tutti i controlli</i> aggiunge il resto e
     le Zone (compaiono da soli anche quando il nodo li usa). Highlights è una <b>spalla filmica</b>; gli altri sono <b>esposizioni per zona</b>, in stop dal grigio 18%,
     dove l'immagine si sposta come con un'esposizione e la texture resta. Nessuna combinazione può solarizzare.</p>
@@ -247,7 +247,7 @@
   </div>
 
   <div class="half" style="flex-grow: 1.25">
-    <div class="part"><h1>Il nodo S-Log MetaRaw Detail</h1><span class="where">Color › OpenFX · dopo S-Log MetaRaw, prima del CST d'uscita</span></div>
+    <div class="part"><h1>Il nodo Log MetaRaw Detail</h1><span class="where">Color › OpenFX · dopo Log MetaRaw, prima del CST d'uscita</span></div>
     <p>Il nodo creativo: tre metodi della camera oscura, ognuno in tre <b>fasi</b> (<i>Fase</i>), un nodo per fase in serie o
     tutte in uno. La <b>Guida</b> in fondo al pannello dà per ogni fase lo scopo, tre passi e il passo dopo.
     <b>Destinazione (ODT)</b> dichiara la trasformazione dopo il nodo (non converte mai): decide dove cadono la zona 0
@@ -287,7 +287,7 @@
   </div>
 
   <footer>
-    <span>S-Log MetaRaw @VERSION@ · approfondimenti in docs/ su github.com/Mecena-SRL/SLogMetaRaw</span>
+    <span>Log MetaRaw @VERSION@ · approfondimenti in docs/ su github.com/Mecena-SRL/SLogMetaRaw</span>
     <span>3 / 3 · Licenza GNU GPL v3</span>
   </footer>
 </div>
