@@ -9,7 +9,7 @@
 #include "../common/UpdateBadge.h"
 #include "ToneParams.h"
 
-const int kSettingsVersion = 6;   // bump when the meaning of a saved parameter changes
+const int kSettingsVersion = 7;   // bump when the meaning of a saved parameter changes
 const int kWBCustom = 7;
 extern const double kPresetKelvin[];   // index = White Balance choice
 
@@ -41,6 +41,7 @@ private:
     void composeStatus();
     void exportLut(double p_Time);   // DevelopLut.cpp, asks where to save
     void onUnlockChanged();
+    void proposeGamut();         // the Compressione / Mappatura gamut that go with the chosen rendering
     void onReferenceChanged(const std::string& p_Name);
     void rescaleExposure(double p_Ratio);
     // BuildParams.cpp
@@ -68,6 +69,9 @@ private:
     OFX::ChoiceParam* m_Gamma = nullptr;
     OFX::ChoiceParam* m_Rendering = nullptr;
     OFX::DoubleParam* m_HlVib = nullptr;
+    OFX::ChoiceParam* m_GamutCompress = nullptr;
+    OFX::DoubleParam* m_GamutParams[7] = {};   // ACES parametrica, ordered as SM_RGC_REFERENCE
+    OFX::ChoiceParam* m_GamutMapping = nullptr;
     OFX::ChoiceParam* m_LutSize = nullptr;
     OFX::DoubleParam* m_Temp = nullptr;
     OFX::DoubleParam* m_Tint = nullptr;

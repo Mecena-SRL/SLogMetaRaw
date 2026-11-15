@@ -2,7 +2,8 @@
 // Runs gen/DevelopMath.h on the cases read from stdin (one per line) for tests/test_ofx_math.py.
 //   default:     r g b nodeSpace nodeGamma outSpace outGamma shotK shotTint shotEI k tint ei
 //                levelFix levelSpace levelGamma levelGain levelOffset fcMode fcU fcV fcKu fcKv fcTu fcTv TONE
-//                [drt [hlVib]] -> the developed pixel
+//                [drt [hlVib [gamutCompress gamutMap [thrC thrM thrY limC limM limY power]]]] -> the developed pixel
+//                (gamutCompress 1 = reference, 2 = the 7 values; without them the pair the rendering proposes)
 //   --dump-tone: outSpace convert expo TONE -> every tone field sm_set_tone writes
 //   --curve lo hi n: expo TONE -> n + 1 lines "e d hl hw" of sm_t5_curve at e = lo..hi (float32), then "end"
 //   --fma a b c: a*b+c, exactly 0 for the probe values only without contraction
@@ -119,7 +120,8 @@ int main(int argc, char** argv)
             printf("end\n");
             continue;
         }
-        if (v.size() < 25 + kToneValues || v.size() > 27 + kToneValues) continue;
+        const size_t n = v.size(), base = 25 + kToneValues;
+        if (n < base || (n > base + 2 && n != base + 4 && n != base + 11)) continue;
         DevelopParams p = {};
         p.nodeSpace = (int)v[3]; p.nodeGamma = (int)v[4]; p.outSpace = (int)v[5]; p.outGamma = (int)v[6];
         p.convert = (p.outSpace != p.nodeSpace || p.outGamma != p.nodeGamma) ? 1 : 0;
@@ -132,8 +134,13 @@ int main(int argc, char** argv)
         p.fcTu = (float)v[23]; p.fcTv = (float)v[24];
         const SMToneControls c = tone(&v[25]);
         sm_set_tone(&p, &c, p.outSpace, p.convert, p.expo);
-        if (v.size() >= 26 + kToneValues) p.drt = (int)v[25 + kToneValues];
-        if (v.size() == 27 + kToneValues) p.hlVib = (float)v[26 + kToneValues];
+        if (n > base) p.drt = (int)v[base];
+        if (n > base + 1) p.hlVib = (float)v[base + 1];
+        int gc = SM_DRT_GAMUT_COMPRESS[p.drt], gm = SM_DRT_GAMUT_MAP[p.drt];
+        if (n > base + 2) { gc = (int)v[base + 2]; gm = (int)v[base + 3]; }
+        if (gc == 1) sm_set_gamut_compress(&p, SM_RGC_REFERENCE);
+        if (gc == 2) sm_set_gamut_compress(&p, &v[base + 4]);
+        p.gmOn = gm;
         SMf3 o = sm_develop(smf3((float)v[0], (float)v[1], (float)v[2]), p);
         printf("%.9g %.9g %.9g\n", o.x, o.y, o.z);
     }

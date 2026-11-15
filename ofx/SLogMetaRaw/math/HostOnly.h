@@ -182,4 +182,34 @@ static inline void sm_set_level_fix(DevelopParams* p, int space, int gamma, int 
     p->levelGain = hostFull ? 1023.0f / 876.0f : 876.0f / 1023.0f;
     p->levelOffset = hostFull ? -64.0f / 876.0f : 64.0f / 1023.0f;
 }
+
+// A rendering writes display light: only a display gamut (Rec.709, Rec.2020, P3) and a display curve (Gamma 2.2,
+// 2.4, 2.6, sRGB) are meaningful. Rec.709 is the camera OETF: on display light it reads as the BT.1886 display,
+// Gamma 2.4. A scene encoding (DaVinci, S-Gamut, ACES, Linear, log curves) becomes Rec.709 / Gamma 2.4: Resolve
+// would read it as scene values and the picture would be rendered twice. forced says a choice was replaced.
+static inline void sm_display_encoding(int* space, int* gamma, bool* forced) {
+    const bool displaySpace = *space >= 1 && *space <= 5;
+    const bool displayGamma = (*gamma >= 2 && *gamma <= 4) || *gamma == 6;
+    *forced = !displaySpace || (!displayGamma && *gamma != 5);
+    if (!displaySpace) *space = 1;
+    if (!displayGamma) *gamma = 3;
+}
+
+// Up to 3.1.0 each rendering had its gamut steps built in; they are now Compressione gamut (1 = ACES reference) and
+// Mappatura gamut (1 = saturation compression). A node saved before is migrated to these, and choosing a rendering
+// proposes them. Index = rendering (Params.h drt).
+static const int SM_DRT_GAMUT_COMPRESS[6] = { 0, 0, 1, 1, 1, 0 };
+static const int SM_DRT_GAMUT_MAP[6] = { 0, 0, 1, 1, 0, 0 };
+// ACES 1.3 Reference Gamut Compression: thresholds and limits (cyan, magenta, yellow), then the power.
+static const double SM_RGC_REFERENCE[7] = { 0.815, 0.803, 0.880, 1.147, 1.264, 1.312, 1.2 };
+
+// Gamut compression on, with v as in SM_RGC_REFERENCE, kept where the curve exists (threshold < 1 < limit).
+static inline void sm_set_gamut_compress(DevelopParams* p, const double v[7]) {
+    p->gcOn = 1;
+    for (int i = 0; i < 3; ++i) {
+        p->gcThr[i] = (float)fmin(fmax(v[i], 0.0), 0.99);
+        p->gcLim[i] = (float)fmax(v[3 + i], 1.001);
+    }
+    p->gcPwr = (float)fmin(fmax(v[6], 0.5), 4.0);
+}
 #endif

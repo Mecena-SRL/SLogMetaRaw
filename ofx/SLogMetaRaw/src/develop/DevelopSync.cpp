@@ -38,6 +38,7 @@ void DevelopEffect::migrateSettings()
         return;
     }
     if (saved == 1) m_DataLevel->setValue(3);   // the data level correction starts off on a 1.0 grade
+    if (saved >= 1 && saved < 7) proposeGamut();   // 3.1.1: the gamut steps each rendering had built in
     // 2.5 split "Ingresso nodo" in two: the pair it stood for becomes the declared space and gamma
     int list = 0, inSpace = 0, inGamma = 0;
     m_NodeInput->getValue(list);
@@ -249,8 +250,15 @@ void DevelopEffect::updateEnabledness()
     m_DecodeUsing->getValue(decode);
     const bool manual = manualReference();
     const bool on = (decode == 1) && (m_MetaValid->getValue() || (manual && inputKnown()));
-    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Rendering, m_HlVib, m_Temp, m_Tint, m_EI, m_WhitePick };
+    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Rendering, m_HlVib, m_Temp, m_Tint, m_EI,
+                                          m_WhitePick, m_GamutCompress, m_GamutMapping };
     for (OFX::ValueParam* c : controls) c->setEnabled(on);
+    int gc = 0;
+    m_GamutCompress->getValue(gc);
+    for (OFX::DoubleParam* g : m_GamutParams) {
+        g->setEnabled(on);
+        g->setIsSecret(gc != 2);
+    }
     for (const std::string& name : toneParamNames()) getParam(name)->setEnabled(on);
     refreshToneVisibility(*this, m_Tones, m_TonesMore->getValue());
     OFX::DoubleParam* const refs[] = { m_ShotEI, m_ShotTemp, m_ShotTint };
@@ -258,6 +266,15 @@ void DevelopEffect::updateEnabledness()
         r->setIsSecret(!m_Unlock->getValue());
         r->setEnabled(manual);
     }
+}
+
+void DevelopEffect::proposeGamut()
+{
+    int drt = 0;
+    m_Rendering->getValue(drt);
+    if (drt < 0 || drt > 5) return;
+    m_GamutCompress->setValue(SM_DRT_GAMUT_COMPRESS[drt]);
+    m_GamutMapping->setValue(SM_DRT_GAMUT_MAP[drt]);
 }
 
 // Ticked with no metadata: the node starts neutral on the typed references.

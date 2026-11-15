@@ -1,5 +1,31 @@
 # Changelog
 
+## Prossima versione: 3.1.1 (non rilasciata)
+
+**Non provato in Resolve, Metal non eseguito** (parità CPU/modello verificata dai test).
+
+### Uscita: tone mapping e gamut espliciti
+
+- **Tone mapping** (era *Rendering display*, stesso parametro): Nessuno (CST), ACES 2.0, Luminanza (stile DaVinci),
+  Filmico, ACES 1.3, OpenDRT. La compressione del gamut che ognuno aveva incorporata ora è visibile e si sceglie:
+  - **Compressione gamut** (come *Gamut Compress Type* del Color Space Transform): Nessuna, ACES riferimento (RGC di
+    ACES 1.3), ACES parametrica (soglie e limiti per ciano, magenta, giallo e potenza; i default sono il riferimento).
+    In AP1, prima del tone mapping.
+  - **Mappatura gamut** (come *Gamut Mapping Method*): Nessuna, Compressione saturazione: i colori vicini e oltre il
+    bordo del gamut di uscita rientrano con la stessa tinta invece di tagliarsi canale per canale. Funziona anche con
+    Nessuno (CST): su una V-Log verso Rec.709 il 28% dei pixel (non neri) di una clip di prova aveva un canale negativo.
+  - Scegliere un tone mapping propone la coppia che aveva prima (Luminanza e Filmico: RGC + saturazione; ACES 1.3: RGC;
+    gli altri: nessuna). **I nodi salvati restano identici**: al primo caricamento ricevono la coppia del loro
+    rendering (versione delle impostazioni 7).
+- **Correzione: con un tone mapping l'uscita è sempre uno schermo.** Con Gamma = Rec.709 (la curva di camera BT.709)
+  la luce di schermo veniva codificata con l'OETF e il grigio 18% usciva a 0,29 invece di 0,38-0,39: immagine scura.
+  Ora Rec.709 vale Gamma 2.4 (BT.1886); una curva o un gamut di scena (DaVinci, Linear, log, S-Gamut, ACES) diventa
+  Rec.709 / Gamma 2.4 e *Rilevato* lo dice. Cambia l'aspetto dei nodi 3.1.0 che avevano quella scelta.
+- *Rilevato* avvisa quando Resolve gestisce il colore (RCM, ACES) e un tone mapping è attivo: Resolve applica dopo il
+  nodo la sua trasformazione d'uscita e l'immagine verrebbe trasformata due volte.
+- Verificato: il grigio 18% di S-Log3, V-Log, Apple Log, DaVinci Intermediate e ACEScct esce a 0,383 (ACES 2.0,
+  Luminanza, Filmico) e 0,390 (ACES 1.3) in Rec.709 / Gamma 2.4, i valori delle Output Transform ACES.
+
 ## Log MetaRaw 3.1.0
 
 **S-Log MetaRaw diventa Log MetaRaw** e legge le camere oltre a Sony. Nomi interni, id dei nodi e cartelle restano gli

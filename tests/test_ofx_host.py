@@ -116,9 +116,36 @@ class OfxHost(unittest.TestCase):
         """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""
         values = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5')
         self.assertEqual((values['inputSpace'], values['inputGamma']), ('8', '10'))   # S-Gamut3, SLog3, after Automatico
-        self.assertEqual(values['settingsVersion'], '6')
+        self.assertEqual(values['settingsVersion'], '7')
         again = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5', '--set', 'inputSpace=2')
         self.assertEqual(again['inputSpace'], '2', 'a choice already made is not overwritten')
+
+    def test_a_3_1_0_rendering_keeps_its_gamut_steps(self):
+        """Up to 3.1.0 each rendering had its gamut steps built in: a saved node gets them as explicit choices, a new
+        node starts with none, and choosing a rendering proposes its pair."""
+        for drt, (gc, gm) in {0: ('0', '0'), 1: ('0', '0'), 2: ('1', '1'), 3: ('1', '1'), 4: ('1', '0'),
+                              5: ('0', '0')}.items():
+            saved = self.values('--set', 'rendering=%d' % drt, '--set', 'settingsVersion=6')
+            self.assertEqual((saved.get('gamutCompress', '0'), saved.get('gamutMapping', '0'),
+                              saved['settingsVersion']), (gc, gm, '7'), 'rendering %d' % drt)
+        new = self.values('--set', 'rendering=2')
+        self.assertEqual((new.get('gamutCompress', '0'), new.get('gamutMapping', '0')), ('0', '0'),
+                         'a node of this version keeps what it has')
+        chosen = self.values('--change', 'rendering=4')
+        self.assertEqual((chosen['gamutCompress'], chosen.get('gamutMapping', '0')), ('1', '0'))
+        shown = self.host('--plugin', '0', '--no-reload', '--change', 'gamutCompress=2')
+        self.assertIn('secret:gamutPower=0', shown, 'ACES parametrica shows its sliders')
+        self.assertIn('secret:gamutPower=1', self.host('--plugin', '0', '--no-reload'))
+
+    def test_a_rendering_writes_a_display_encoding(self):
+        """Display light encoded with the camera OETF (Rec.709) or a scene curve was too dark or rendered twice."""
+        def info(*args):
+            return self.values('--set', 'inputSpace=9', '--set', 'inputGamma=10', '--set', 'unlockNoMeta=1', *args)
+        for gamma in ('6', '1', '2'):   # Rec.709, DaVinci Intermediate, Linear
+            v = info('--set', 'rendering=4', '--set', 'gamma=' + gamma, '--change', 'inputGamma=10')
+            self.assertIn('Uscita: Rec.709 / Gamma 2.4', v['nodeInfo'], v['nodeInfo'])
+        kept = info('--set', 'rendering=4', '--set', 'colorSpace=4', '--set', 'gamma=7', '--change', 'inputGamma=10')
+        self.assertIn('Uscita: P3 D65 / sRGB', kept['nodeInfo'], kept['nodeInfo'])
 
     def test_the_eyedropper_sets_temperature_and_tint(self):
         """A warm-looking neutral lowers the Kelvin, a cool one raises it, and the balance becomes Custom."""

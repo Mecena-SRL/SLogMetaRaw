@@ -149,3 +149,11 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   lettura *stimata* senza marca né modello non guida il nodo (`camera_found` 0); D-Log M da fit della comunità finché
   non arrivano le LUT DJI e una serie con cartoncino grigio (vedi `docs/CAMERAS.md`). Aperto: taratura D-Log M per
   Action 4 e 5 Pro, prova in Resolve dei nuovi menu, nomi Resolve dell'Input Color Space per V-Log, Apple Log, D-Log M.
+- Uscita del Develop, tone mapping e gamut (15/11/2026, 3.1.1 non rilasciata): *Rendering display* diventa **Tone
+  mapping** (stesso parametro `rendering`), con **Compressione gamut** (`gamutCompress`: Nessuna, ACES riferimento,
+  ACES parametrica con sette cursori `gamut*` visibili solo in parametrica) e **Mappatura gamut** (`gamutMapping`:
+  Nessuna, Compressione saturazione), sul modello del Color Space Transform. Decisioni: la coppia che ogni rendering
+  aveva incorporata è migrata (`settingsVersion` 7) e proposta quando l'utente sceglie un rendering, i nodi nuovi
+  partono senza; con un rendering l'uscita è forzata a una codifica di schermo (Rec.709 = Gamma 2.4). Aperto: provare
+  in Resolve (Metal, visibilità dei cursori), confronto con OpenColorIO da rifare con PyOpenColorIO installato (in CI
+  i test ACES contro OCIO sono saltati), nomi Resolve di *Input Color Space* per V-Log / Apple Log / D-Log M.
