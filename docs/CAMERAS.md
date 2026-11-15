@@ -63,7 +63,7 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 | 15, 16 | ARRI Wide Gamut 3, 4 | ARRI |
 | 17 | REDWideGamutRGB | RED |
 | 18 | Blackmagic Wide Gamut Gen 5 | Blackmagic |
-| 19 | DJI D-Log M Gamut | **ricavato dalla LUT ufficiale DJI** D-Log M → Rec.709 (`tools/lut_gamut.py`, errore medio 0,013 contro 0,032 della stima di Thatcher Freeman); DJI non pubblica il gamut |
+| 19 | DJI D-Log M Gamut | **stimato**: primarie native di Thatcher Freeman, scelte per resa più tenue; DJI non pubblica il gamut |
 
 Il punto di grigio 18% di ogni curva (codifica di 0.18) coincide con i valori pubblicati dai produttori: V-Log 0.423,
 Apple Log 0.488, F-Log 0.459, N-Log 0.364, C-Log2 0.398, C-Log3 0.343, LogC3 0.391, LogC4 0.278, Gen 5 0.384.
@@ -77,8 +77,8 @@ D-Log M nel Color Space Transform. La LUT è usata solo come **riferimento** per
   è quella del fit di Thatcher Freeman, che resta (la LUT aggiunge solo piede e spalla da display);
 - **gamut**: `tools/lut_gamut.py` linearizza la LUT sull'asse neutro e risolve ai minimi quadrati la matrice nativo →
   Rec.709 (righe a somma 1, punti non clippati). Primarie native: R 0.766/0.336, G 0.267/0.971, B 0.147/0.042, D65.
-  Errore medio sui colori della LUT 0,013 (Freeman 0,032, Rec.2020 0,033, P3 0,028). Il gamut ricavato è più saturo di
-  quello di Freeman: la differenza può contenere il "look" DJI della LUT; si riduce con la Saturazione del nodo.
+  Errore medio sui colori della LUT 0,013 (Freeman 0,032, Rec.2020 0,033, P3 0,028). Il gamut ricavato è più saturo e
+  contiene il "look" DJI della LUT: il plugin tiene di proposito le primarie di Freeman (scelta del 15/11/2026).
 
 Resta da verificare: una clip della Osmo Action 4 e una serie di esposizioni di un ColorChecker (o cartoncino grigio) a
 ±1 stop, per fissare grigio e matrice su una misura e non su una LUT. I file LUT non sono nel repository.

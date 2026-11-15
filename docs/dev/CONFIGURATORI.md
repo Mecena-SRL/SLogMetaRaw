@@ -146,8 +146,8 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
 
 - Lettura multi-camera (15/11/2026, non rilasciato): nome visibile Log MetaRaw (id interni invariati), lettori
   `vendors.py` e `dji.py`, 14 curve e 9 gamut in coda alle tabelle (codici 11+, l'ordine è permanente). Decisioni: una
-  lettura *stimata* senza marca né modello non guida il nodo (`camera_found` 0); D-Log M: curva di Freeman confermata e gamut
-  ricavato dalla LUT DJI (`tools/lut_gamut.py`, vedi `docs/CAMERAS.md`). Aperto: clip Action 4 e ColorChecker a ±1 stop, prova in Resolve dei nuovi menu, nomi Resolve dell'Input Color Space per V-Log, Apple Log, D-Log M.
+  lettura *stimata* senza marca né modello non guida il nodo (`camera_found` 0); D-Log M: curva di Freeman confermata dalla LUT DJI,
+  gamut di Freeman tenuto per scelta (`tools/lut_gamut.py`, vedi `docs/CAMERAS.md`). Aperto: clip Action 4 e ColorChecker a ±1 stop, prova in Resolve dei nuovi menu, nomi Resolve dell'Input Color Space per V-Log, Apple Log, D-Log M.
 - Uscita del Develop, tone mapping e gamut (15/11/2026, 3.1.1 non rilasciata): *Rendering display* diventa **Tone
   mapping** (stesso parametro `rendering`), con **Compressione gamut** (`gamutCompress`: Nessuna, ACES riferimento,
   ACES parametrica con sette cursori `gamut*` visibili solo in parametrica) e **Mappatura gamut** (`gamutMapping`:
