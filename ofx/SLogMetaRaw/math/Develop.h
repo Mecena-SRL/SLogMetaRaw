@@ -26,7 +26,7 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     xyz = sm_mul(SM_BRADFORD, 9, lms);
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
 
-    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, p), p);
+    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
 
     if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve

@@ -149,3 +149,9 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   lettura *stimata* senza marca né modello non guida il nodo (`camera_found` 0); D-Log M da fit della comunità finché
   non arrivano le LUT DJI e una serie con cartoncino grigio (vedi `docs/CAMERAS.md`). Aperto: taratura D-Log M per
   Action 4 e 5 Pro, prova in Resolve dei nuovi menu, nomi Resolve dell'Input Color Space per V-Log, Apple Log, D-Log M.
+- False color dopo la prima prova su Mac (15/11/2026): verifica statica del percorso Metal (struttura parametri solo
+  int/float, 336 byte uguali in C++ e Metal; nessun letterale double, nessuna divisione intera, puntatori `constant`
+  con `SM_CPTR`/`SM_CREF`) senza difetti trovati; il kernel resta non eseguito. Corretto il clip della vista
+  esposizione sulle curve corte (`sm_fc_headroom`), visto su un fotogramma reale di C0001 (Rec.709). Aperto: dettagli
+  del problema segnalato in Resolve; toggle false color attivi ma senza effetto con *Camera metadata* o senza
+  metadata (nodo trasparente); vista zone con i valori iniziali quasi tutta tinta (Ombre e Luci coprono ogni stop).

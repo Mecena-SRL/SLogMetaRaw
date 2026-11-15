@@ -48,6 +48,10 @@ vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
   N-Log, C-Log2, C-Log3, LogC3, LogC4, Log3G10, BMD Film Gen5, HLG; V-Gamut, Apple Wide Gamut, D-Gamut, Cinema Gamut,
   ARRI WG3/WG4, RED WG, BMD WG Gen5, DJI D-Log M stimato).
 - Una clip Sony non log (Rec.709 da handycam) ora si sviluppa come video Rec.709 invece di lasciare il nodo neutro.
+- False color esposizione, correzione: sulle curve che finiscono sotto +5,5 stop (Rec.709, sRGB, gamma, HLG, F-Log,
+  D-Log M) un bianco bruciato restava grigio o verde. Ora è rosso un canale in cima alla curva d'ingresso, giallo
+  entro ¼ di stop, a qualunque EI; le viste di temperatura e tinta lo lasciano grigio. S-Log3, V-Log, Apple Log e le
+  altre curve lunghe non cambiano.
 
 ## Log MetaRaw 3.0.0
 
