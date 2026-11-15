@@ -74,7 +74,7 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     m_Gamma->getValueAtTime(p_Time, gm);
     int drt = 0;
     m_Rendering->getValueAtTime(p_Time, drt);
-    p.drt = drt >= 1 && drt <= 3 ? drt : 0;
+    p.drt = drt >= 1 && drt <= 4 ? drt : 0;
     // 0 follows the node; a choice outside the table (a grade from a newer build) does too.
     // A display rendering needs a display: on Timeline it writes Rec.709 / Gamma 2.4.
     p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : p.drt ? 1 : nodeSpace;

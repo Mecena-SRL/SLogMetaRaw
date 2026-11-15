@@ -2,14 +2,18 @@
 """Python reference of the display renderings (math/Display.h).
 
 Every rendering takes the scene XYZ (D65) and returns display-linear RGB in the output gamut, 0..1:
-    1 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim (CTL, ACES 1.x)
+    1 ACES 2.0: Output Transform SDR 100 nit, Rec.709 limiting gamut, D65 (tools/aces2.py, from OCIO 2.6)
     2 Luminanza: max-RGB norm through the tonescale, ratios kept, path to white, display gamut compression
     3 Filmico: per channel on an inset gamut (AgX-like), same tonescale and compressions
-1 is checked against OpenColorIO's built-ins (tests/test_display.py); 2 and 3 are this plugin's own.
+    4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim (CTL, ACES 1.x)
+1 and 4 are checked against OpenColorIO's built-ins (tests/test_display.py); 2 and 3 are this plugin's own.
 """
 import math
 
 from .tone import dm
+import aces2   # tools/, on the path through develop_model
+
+ACES2 = aces2.Aces2()
 
 mul = dm.mul
 AP0_TO_AP1 = [[1.4514393161, -0.2365107469, -0.2149285693], [-0.0765537734, 1.1762296998, -0.0996759264],
@@ -20,7 +24,7 @@ AP1_TO_XYZ = [[0.6624541811, 0.1340042065, 0.1561876870], [0.2722287168, 0.67408
               [-0.0055746495, 0.0040607335, 1.0103391003]]
 XYZ_TO_AP1 = [[1.6410233797, -0.3248032942, -0.2364246952], [-0.6636628587, 1.6153315917, 0.0167563477],
               [0.0117218943, -0.0082844420, 0.9883948585]]
-AP0, AP1 = 9, 10   # gamut codes (math/Gamut.h), Bradford-adapted to D65
+REC709, AP0, AP1 = 1, 9, 10   # gamut codes (math/Gamut.h), Bradford-adapted to D65
 
 C5_LO = [-4.0, -4.0, -3.1573765773, -0.4852499958, 1.8477324706, 1.8477324706]
 C5_HI = [-0.7185482425, 2.0810307172, 3.6681241237, 4.0, 4.0, 4.0]
@@ -179,6 +183,8 @@ def filmic(xyz, space):
 def render(xyz, mode, space):
     """Display-linear RGB in the gamut `space`, clamped to 0..1."""
     if mode == 1:
+        c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], ACES2.output_transform(mul(dm.MATS[AP0][1], xyz))))
+    elif mode == 4:
         c = mul(dm.MATS[space][1], aces(xyz))
     elif mode == 2:
         c = luminance(xyz, space)

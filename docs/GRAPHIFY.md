@@ -62,8 +62,9 @@ common/  (condiviso dai due nodi)
   Zonale in fasi (`zonalPhase`): Sviluppo puntuale (`dt_zonal_curve`), Stampa per aree + `dt_edge_burn`,
   Presenza. Parametri: `math/DetailHost.h::dt_prepare`, per pixel: `math/Detail.h::dt_gain`.
 - **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
-  `drt` ≠ 0 (scelta `rendering` in Uscita): ACES 1.3 (RGC + RRT + ODT, verificato contro OpenColorIO in
-  `tests/test_display.py`), Luminanza (stile DaVinci, approssimato), Filmico (per canale, AgX-like).
+  `drt` ≠ 0 (scelta `rendering` in Uscita): 1 ACES 2.0 (Output Transform SDR 100 nit Rec.709; parametri e tabelle
+  fissi calcolati da `tools/aces2.py` in `gen/Aces2Tables.h`), 2 Luminanza (stile DaVinci, approssimato), 3 Filmico
+  (per canale, AgX-like), 4 ACES 1.3 (RGC + RRT + ODT). ACES verificati contro OpenColorIO in `tests/test_display.py`.
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
   `sm_develop` (lo stesso `math/` del render) sulla griglia size³; `tools/export_lut.py` è il
   prototipo Python equivalente, usato per verificare l'output senza ricompilare il plugin.
@@ -78,7 +79,7 @@ common/  (condiviso dai due nodi)
 packaging/linux/    build_plugin.sh, build_package.sh, build_packages.py (.deb/.rpm/.run/.tar.gz),
                      check_abi.py, install.sh, smoke_in_container.sh
 packaging/windows/  SLogMetaRaw.iss, build_package.ps1, install.ps1
-tools/               check_version.py, build_math.py (genera gen/DevelopMath.h da math/)
+tools/               check_version.py, build_math.py (genera gen/DevelopMath.h da math/), aces2.py
 ```
 
 `tools/atlas/` (Atlante della logica, strumento di sviluppo): estrae dal codice Python funzioni, chiamate,
@@ -97,9 +98,11 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   concettualmente specchiato in `common/` lato C++ per le stesse scale di codice.
 - `paths.py` e le cartelle di `common/Files.cpp` devono restare le stesse per sistema: cache e log
   scritti da un lato devono restare leggibili dall'altro.
-- `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
+- `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py` (con `gen/GamutMatrices.h` e
+  `gen/Aces2Tables.h`): non va mai editato a mano.
 
-_Ultimo aggiornamento: 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
+_Ultimo aggiornamento: 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
+(`tools/aces2.py`, `gen/Aces2Tables.h`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
 dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:
 cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
 `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata

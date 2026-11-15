@@ -110,14 +110,15 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     }
 
     GroupParamDescriptor* output = defineGroup(d, page, "outputGroup", "Uscita", true, space);
-    static const char* drtOpts[] = { "Nessuno (CST)", "ACES 1.3 · Gamut Compress", "Luminanza (stile DaVinci)",
-                                     "Filmico" };
-    defineChoice(d, page, "rendering", "Rendering display", drtOpts, 4, 0,
+    static const char* drtOpts[] = { "Nessuno (CST)", "ACES 2.0", "Luminanza (stile DaVinci)", "Filmico",
+                                     "ACES 1.3 · Gamut Compress" };
+    defineChoice(d, page, "rendering", "Rendering display", drtOpts, 5, 0,
                  "Come la scena diventa immagine per lo schermo. Nessuno: conversione diretta, le luci oltre il bianco "
-                 "tagliano. ACES 1.3: RRT + ODT con Reference Gamut Compress. Luminanza: curva sulla luminanza, tinte "
+                 "tagliano. ACES 2.0: Output Transform SDR 100 nit Rec.709. Luminanza: curva sulla luminanza, tinte "
                  "conservate e saturazione compressa (approssima il tone/gamut mapping DaVinci). Filmico: curva per "
-                 "canale come una pellicola, le luci forti sfumano nel bianco. Con un rendering, Spazio colore e Gamma "
-                 "sono quelli dello schermo (Timeline = Rec.709 / Gamma 2.4)", output);
+                 "canale come una pellicola, le luci forti sfumano nel bianco. ACES 1.3: RRT + ODT con Reference Gamut "
+                 "Compress. Con un rendering, Spazio colore e Gamma sono quelli dello schermo (Timeline = Rec.709 / "
+                 "Gamma 2.4)", output);
     static const char* csOpts[] = { "Timeline", "DaVinci WG", "Rec.709", "Rec.2020", "P3 D65", "P3 D60", "P3 DCI",
                                     "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1" };
     defineChoice(d, page, "colorSpace", "Spazio colore", csOpts, 12, 0,

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Display renderings: scene XYZ (D65) -> display-linear RGB 0..1 in the output gamut (Python: tests/model/display.py).
-//   1 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim surround (ACES CTL 1.x)
+//   1 ACES 2.0: Output Transform SDR 100 nit, Rec.709 limiting gamut, D65 (OpenColorIO 2.6, tools/aces2.py)
 //   2 Luminanza: max-RGB norm through the tonescale, channel ratios kept, path to white near the peak
 //   3 Filmico: the tonescale per channel on an inset gamut (AgX-like): highlights reach white on their own
+//   4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim surround (ACES CTL 1.x)
 // 2 and 3 share the 100 nit tonescale of ACES 2.0 / OpenDRT (Siragusano): grey 0.18 -> 0.1, 128 -> 1.0,
 // and two gamut compressions: ACES RGC in AP1, then into the display gamut (knee 0.9).
 #pragma once
 #include "Gamut.h"
+#include "../gen/Aces2Tables.h"
 
-#define SM_DRT_ACES 1
+#define SM_DRT_ACES2 1
 #define SM_DRT_LUMINANCE 2
 #define SM_DRT_FILMIC 3
+#define SM_DRT_ACES13 4
 
 // ACES native matrices (D60): AP0->AP1, AP1->AP0, AP1->XYZ, XYZ->AP1. The ends use the D65-adapted ones.
 SM_CONST float SM_ACES_M[36] = {
@@ -117,6 +120,111 @@ SM_FN SMf3 sm_aces_odt(SMf3 p) {   // OCES (AP1) -> display-linear AP1, 100 nit 
     return sm_aces_sat(p, 0.93f);
 }
 
+// ---- ACES 2.0: Hellwig 2022 JMh (hue in degrees), tonescale on J, chroma compression, gamut compression to the
+// Rec.709 cusp and upper hull tables of gen/Aces2Tables.h. Same steps and names as OCIO's ACES2/Transform.cpp.
+SM_FN float sm_a2_nl(float v) {   // post-adaptation cone response compression
+    const float f = SM_POW(SM_ABS(v), 0.42f), r = f / (27.13f + f);
+    return v < 0.0f ? -r : r;
+}
+SM_FN float sm_a2_nl_inv(float v) {
+    const float r = SM_MIN(SM_ABS(v), 0.99f), c = SM_POW(27.13f * r / (1.0f - r), 1.0f / 0.42f);
+    return v < 0.0f ? -c : c;
+}
+SM_FN float sm_a2_toe(float x, float limit, float k1, float k2) {
+    if (x > limit) return x;
+    k2 = SM_MAX(k2, 0.001f);
+    k1 = SM_SQRT(k1 * k1 + k2 * k2);
+    const float k3 = (limit + k1) / (limit + k2), b = k3 * x - k1;
+    return 0.5f * (b + SM_SQRT(b * b + 4.0f * k2 * k3 * x));
+}
+SM_FN float sm_a2_j_intersect(float j, float m, float fj, float gain) {
+    const float ms = m / gain, a = ms / fj;
+    if (j < fj) {
+        const float b = 1.0f - ms;
+        return 2.0f * j / (b + SM_SQRT(b * b + 4.0f * a * j));
+    }
+    const float b = -(1.0f + ms + SM_A2_J_MAX * a), c = SM_A2_J_MAX * ms + j;
+    return -2.0f * c / (b - SM_SQRT(b * b - 4.0f * a * c));
+}
+SM_FN float sm_a2_boundary(float ja, float slope, float inv_g, float jm, float mm, float jref) {
+    return jref * SM_POW(ja / jref, inv_g) * mm / (jm - slope * mm);
+}
+
+SM_FN SMf3 sm_aces2(SMf3 ap0) {   // ACES2065-1 -> display-linear Rec.709 0..1
+    const float lim = 1024.0f;    // the AP1 clamp before the transform
+    SMf3 c = sm_mul(SM_ACES_M, 0, ap0);
+    c = sm_mul(SM_ACES_M, 9, smf3(sm_clamp(c.x, 0.0f, lim), sm_clamp(c.y, 0.0f, lim), sm_clamp(c.z, 0.0f, lim)));
+    c = sm_mul(SM_A2_M, 0, c);
+    c = sm_mul(SM_A2_M, 9, smf3(sm_a2_nl(c.x), sm_a2_nl(c.y), sm_a2_nl(c.z)));   // A, a, b
+    if (c.x <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
+    const float jj = 100.0f * SM_POW(c.x, SM_A2_CZ), mm = SM_SQRT(c.y * c.y + c.z * c.z);
+    float h = SM_ATAN2(c.z, c.y) * 57.29577951f;
+    if (h < 0.0f) h += 360.0f;
+    const float ch = mm > 0.0f ? c.y / mm : 1.0f, sh = mm > 0.0f ? c.z / mm : 0.0f;
+    const float c2 = 2.0f * ch * ch - 1.0f, s2 = 2.0f * ch * sh;
+    const float c3 = 4.0f * ch * ch * ch - 3.0f * ch, s3 = 3.0f * sh - 4.0f * sh * sh * sh;
+    const float mnorm = (11.34072f * ch + 16.46899f * c2 + 7.88380f * c3 + 14.66441f * sh - 6.37224f * s2
+                         + 9.19364f * s3 + 77.12896f) * SM_A2_CC_SCALE;
+    const int b = (int)h;
+    const float reach = SM_A2_REACH[b + 1] + (h - (float)b) * (SM_A2_REACH[b + 2] - SM_A2_REACH[b + 1]);
+    // tonescale on Y, from A to J
+    const float y = sm_a2_nl_inv(SM_A2_A_W_J * c.x) / SM_A2_F_L_N;
+    const float f = SM_A2_M_2 * SM_POW(y / (y + SM_A2_S_2), 1.15f);
+    const float yt = SM_MAX(0.0f, f * f / (f + 0.04f)) * 100.0f;
+    float j = 100.0f * SM_POW(sm_a2_nl(yt * SM_A2_F_L_N) / SM_A2_A_W_J, SM_A2_CZ), m = mm;
+    if (m != 0.0f) {   // chroma compression
+        const float nj = j / SM_A2_J_MAX, snj = SM_MAX(0.0f, 1.0f - nj), gi = 1.0f / SM_A2_CZ;
+        const float limit = SM_POW(nj, gi) * reach / mnorm;
+        m = m * SM_POW(j / jj, gi) / mnorm;
+        m = limit - sm_a2_toe(limit - m, limit - 0.001f, snj * 1.3f, SM_SQRT(nj * nj + 0.005f));
+        m = sm_a2_toe(m, limit, nj * 2.4f, snj) * mnorm;
+    }
+    if (j <= 0.0f) { j = 0.0f; m = 0.0f; }
+    else if (m <= 0.0f || j > SM_A2_J_MAX) m = 0.0f;
+    else {   // gamut compression towards the focus, against the cusp of this hue
+        int i = 1 + (int)h;
+        int lo = i + SM_A2_SEARCH_LO, hi = i + SM_A2_SEARCH_HI;
+        lo = lo < 0 ? 0 : lo;
+        hi = hi > 361 ? 361 : hi;
+        while (lo + 1 < hi) {   // the sample interval holding h
+            if (h > SM_A2_HUE[i]) lo = i; else hi = i;
+            i = (lo + hi) / 2;
+        }
+        hi = hi < 1 ? 1 : hi;
+        const float t = (h - SM_A2_HUE[hi - 1]) / (SM_A2_HUE[hi] - SM_A2_HUE[hi - 1]);
+        const int k = 3 * (hi - 1);
+        const float cj = SM_A2_CUSP[k] + t * (SM_A2_CUSP[k + 3] - SM_A2_CUSP[k]);
+        const float cm = SM_A2_CUSP[k + 1] + t * (SM_A2_CUSP[k + 4] - SM_A2_CUSP[k + 1]);
+        const float gt = SM_A2_CUSP[k + 2] + t * (SM_A2_CUSP[k + 5] - SM_A2_CUSP[k + 2]);
+        const float fj = cj + (SM_A2_MID_J - cj) * SM_MIN(1.0f, 1.3f - cj / SM_A2_J_MAX);
+        const float thr = cj + (SM_A2_J_MAX - cj) * 0.3f;
+        float gain = SM_A2_J_MAX * 1.35f;
+        if (j > thr) {
+            const float adj = SM_LOG10((SM_A2_J_MAX - thr) / SM_MAX(0.0001f, SM_A2_J_MAX - j));
+            gain *= adj * adj + 1.0f;
+        }
+        const float ji = sm_a2_j_intersect(j, m, fj, gain), jic = sm_a2_j_intersect(cj, cm, fj, gain);
+        const float slope = (ji < fj ? ji : SM_A2_J_MAX - ji) * (ji - fj) / (fj * gain);
+        const float bl = sm_a2_boundary(ji, slope, 1.0f / 1.14f, cj, cm, jic);
+        const float bu = sm_a2_boundary(SM_A2_J_MAX - ji, -slope, gt, SM_A2_J_MAX - cj, cm, SM_A2_J_MAX - jic);
+        const float sm = 0.12f * cm, w = SM_MAX(sm - SM_ABS(bl - bu), 0.0f) / sm;
+        const float gm = SM_MIN(bl, bu) - w * w * w * sm / 6.0f;   // smooth minimum of the two hulls
+        if (gm <= 0.0f) m = 0.0f;
+        else {
+            const float rm = sm_a2_boundary(ji, slope, 1.0f / SM_A2_CZ, SM_A2_J_MAX, reach, SM_A2_J_MAX);
+            const float prop = SM_MAX(gm / rm, 0.75f), th = prop * gm;
+            if (m > th && prop < 1.0f) {
+                const float sc = (rm - th) / ((rm - th) / (gm - th) - 1.0f), nd = (m - th) / sc;
+                m = th + sc * nd / (1.0f + nd);
+            }
+            j = ji + m * slope;
+        }
+    }
+    c = sm_mul(SM_A2_M, 18, smf3(SM_POW(j * 0.01f, 1.0f / SM_A2_CZ), m * ch, m * sh));
+    c = sm_mul(SM_A2_M, 27, smf3(sm_a2_nl_inv(c.x), sm_a2_nl_inv(c.y), sm_a2_nl_inv(c.z)));
+    return smf3(sm_clamp(c.x, 0.0f, 1.0f), sm_clamp(c.y, 0.0f, 1.0f), sm_clamp(c.z, 0.0f, 1.0f));
+}
+
 // The 100 nit tonescale: m2 (x / (x + s2))^g, then the toe f^2 / (f + t1); constants from the model.
 SM_FN float sm_drt_tonescale(float x) {
     x = SM_MAX(x, 0.0f);
@@ -132,7 +240,9 @@ SM_FN SMf3 sm_drt_into_display(SMf3 xyz, int space) {
 
 SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
     SMf3 c;
-    if (mode == SM_DRT_ACES) {
+    if (mode == SM_DRT_ACES2) {
+        c = sm_from_xyz(sm_to_xyz(sm_aces2(sm_from_xyz(xyz, 9)), 1), space);
+    } else if (mode == SM_DRT_ACES13) {
         const SMf3 a = sm_mul(SM_ACES_M, 9, sm_rgc_ap1(xyz));
         c = sm_from_xyz(sm_to_xyz(sm_aces_odt(sm_aces_rrt(a)), 10), space);
     } else if (mode == SM_DRT_LUMINANCE) {
@@ -142,7 +252,7 @@ SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
         const float nt = sm_drt_tonescale(n), w2 = nt * nt, w4 = w2 * w2, w = w4 * w4;   // path to white: nt^8
         c = smf3(nt * (c.x / n + w * (1.0f - c.x / n)), nt * (c.y / n + w * (1.0f - c.y / n)),
                  nt * (c.z / n + w * (1.0f - c.z / n)));
-    } else {
+    } else {   // SM_DRT_FILMIC
         c = sm_drt_into_display(xyz, space);
         const int o = space * 9 + 3;   // the luminance row of the gamut
         const float y = SM_RGB_TO_XYZ[o] * c.x + SM_RGB_TO_XYZ[o + 1] * c.y + SM_RGB_TO_XYZ[o + 2] * c.z;
