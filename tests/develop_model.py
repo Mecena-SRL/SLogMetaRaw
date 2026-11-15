@@ -247,9 +247,17 @@ def fc_calibration(k, t):
     return u0, v0, e / det, -b / det, -c / det, a / det
 
 
-def fc_exposure(ev):
-    if ev >= 5.5: return [0.96, 0.16, 0.10]
-    if ev >= 4.0: return [1.00, 0.88, 0.12]
+def fc_headroom(lin, node_gamma, expo):
+    """sm_fc_headroom: stops from the largest channel to the top of the input curve (code 1.0), same exposure."""
+    mx = max(lin)
+    if node_gamma == 1 or not mx > 0.0:
+        return math.inf
+    return math.log2(decode1(1.0, node_gamma) * expo / mx)
+
+
+def fc_exposure(ev, head=math.inf):
+    if ev >= 5.5 or head <= 0.02: return [0.96, 0.16, 0.10]
+    if ev >= 4.0 or head <= 0.25: return [1.00, 0.88, 0.12]
     if 0.70 <= ev <= 1.30: return [1.00, 0.56, 0.72]
     if -0.33 <= ev <= 0.33: return [0.13, 0.82, 0.20]
     if ev <= -6.0: return [0.42, 0.12, 0.62]
@@ -278,7 +286,7 @@ def hsl_rgb(h, s, l):
     return [channel(h + 1.0 / 3.0), channel(h), channel(h - 1.0 / 3.0)]
 
 
-def fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono):
+def fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono, head=math.inf):
     """Temperature (2) and tint (3) views: the picture in grey, a pixel coloured only when its cast lies
     on this slider's axis - orange/blue, green/magenta - with its saturation boosted up to 8x near
     neutral as CineMatch does, and faded out where the pixel is too dark or too bright to judge."""
@@ -295,7 +303,7 @@ def fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono):
     hi, lo = 1.0, (mn / mx) ** (1.0 / 2.2)    # display-encoded, normalised: exposure does not matter
     r = (hi - lo) / (hi + lo)
     sat = min(max(r * (8.0 - 7.0 * r), 0.0), 1.0)
-    sat *= min(max((ev + 6.0) / 2.0, 0.0), 1.0) * min(max(5.5 - ev, 0.0), 1.0)
+    sat *= min(max((ev + 6.0) / 2.0, 0.0), 1.0) * min(max(min(5.5 - ev, 4.0 * head), 0.0), 1.0)
     if mode == 2:
         hue = FC_HUE['cool'] if kelvin > 0 else FC_HUE['warm']
     else:
@@ -303,11 +311,11 @@ def fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono):
     return hsl_rgb(hue, sat, mono)
 
 
-def false_color(xyz, mode, u, v, ku, kv, tu, tv):
+def false_color(xyz, mode, u, v, ku, kv, tu, tv, head=math.inf):
     ev = math.log2(max(xyz[1], 1e-9) / 0.18)
-    if mode == 1: return fc_exposure(ev)
+    if mode == 1: return fc_exposure(ev, head)
     mono = min(max((ev + 6.0) / 11.5, 0.06), 0.92)
-    return fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono)
+    return fc_balance(xyz, mode, u, v, ku, kv, tu, tv, ev, mono, head)
 
 
 def fc_emit(c, node_space, node_gamma, out_space, out_gamma):
@@ -321,8 +329,10 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
             temp=None, tint=None, ei=None, wb_mode=0, out_space=None, out_gamma=None,
             tone=None, decode_meta=False,
             level_fix=0, level_space=0, level_gamma=0, level_gain=1.0, level_offset=0.0,
-            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0, drt=0, hl_vib=0.0):
-    """sm_develop. tone: the Toni and Zone panel values by OFX name (tests/model/tone.CONTROLS)."""
+            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0, drt=0, hl_vib=0.0,
+            rgc='rendering', gmap='rendering'):
+    """sm_develop. tone: the Toni and Zone panel values by OFX name (tests/model/tone.CONTROLS). rgc / gmap: Compressione
+    and Mappatura gamut (model/display.render); 'rendering' = the pair the rendering proposes."""
     from model import tone as T   # the tone model imports this module: import it late
     shot_k, shot_t, shot_ei = shot
     temp = shot_k if temp is None else temp
@@ -352,15 +362,23 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
     p['outGamut'] = out_space          # the gamut the node writes: the path to white keeps it non-negative
     if fc_mode:   # measured before the trims, so it answers only to its own controls
         view = (T.false_color_zones(xyz, p) if fc_mode == 4
-                else false_color(xyz, fc_mode, fc_u, fc_v, fc_ku, fc_kv, fc_tu, fc_tv))
+                else false_color(xyz, fc_mode, fc_u, fc_v, fc_ku, fc_kv, fc_tu, fc_tv,
+                                 fc_headroom(lin, node_gamma, ei / shot_ei)))
         return fc_emit(view, node_space, node_gamma, out_space, out_gamma)
     if T.active(p):
         xyz = T.tone5(xyz, p)
+    from model import display
+    if rgc == 'rendering':
+        rgc = display.RECOMMENDED[drt][0]
+    if gmap == 'rendering':
+        gmap = display.RECOMMENDED[drt][1]
+    if rgc:
+        xyz = display.gamut_compress(xyz, rgc)
     if drt:   # display rendering: out_space / out_gamma are the display
-        from model import display
-        c = display.render(xyz, drt, out_space)
+        c = display.render(xyz, drt, out_space, None, gmap)
         if hl_vib > 0:
             c = display.highlight_vibrance(c, hl_vib, out_space)
         return [encode1(v, out_gamma) for v in c]
     space, gamma = (out_space, out_gamma) if convert else (node_space, node_gamma)
-    return [encode1(c, gamma) for c in mul(MATS[space][1], xyz)]
+    o = mul(MATS[space][1], xyz)
+    return [encode1(c, gamma) for c in (display.gamut_map(o) if gmap else o)]

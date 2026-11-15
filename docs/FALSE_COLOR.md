@@ -152,8 +152,8 @@ Bande in **fermate attorno al grigio 18%**, secondo la struttura ARRI:
 
 | Colore | Fermate | Significato |
 |---|---|---|
-| Rosso | ≥ +5,5 | clip |
-| Giallo | +4,0 … +5,5 | vicino al clip |
+| Rosso | ≥ +5,5, o un canale in cima alla curva | clip |
+| Giallo | +4,0 … +5,5, o un canale a meno di ¼ di stop dalla cima | vicino al clip |
 | Rosa | +0,70 … +1,30 | una fermata sopra il grigio (incarnato) |
 | Verde | −0,33 … +0,33 | grigio 18% |
 | Blu | −6,0 … −4,0 | ombra profonda |
@@ -163,6 +163,13 @@ Bande in **fermate attorno al grigio 18%**, secondo la struttura ARRI:
 Le fermate sono misurate sulla **luminanza lineare**, non sul segnale codificato: sono
 quindi indipendenti dalla curva log della clip, e la lettura non cambia passando da
 S-Log2 a S-Log3 o da una timeline all'altra.
+
+**Curve corte.** +5,5 stop vale per S-Log3, che registra oltre +7. Rec.709, sRGB e le curve gamma finiscono a
++2,5 stop sul grigio, D-Log M a +3,7, HLG a +4,4, F-Log a +5,3: lì un bianco bruciato restava grigio o verde e il
+rosso non si accendeva mai. Dalla 3.1.0 (correzione) conta anche la **cima della curva d'ingresso** (codice 1,0):
+un canale che la raggiunge (entro 0,02 stop) è rosso, uno entro ¼ di stop è giallo. La cima è letta prima
+dell'esposizione, quindi un bianco bruciato resta rosso qualunque EI si scelga. In lineare non c'è cima.
+Verificato in `tests/test_falsecolor.py` (`ClipOnShortCurves`).
 
 ### Temperatura e tinta — come CineMatch, sull'asse giusto
 
@@ -200,7 +207,8 @@ Per ogni pixel:
    "fredda" a seconda della tinta HSL. Un errore di sola tinta di 20 unità sbava di meno di
    40 K sull'altro asse, anche a 3200 K (verificato in `tests/test_falsecolor.py`).
 4. **Pixel che non si possono giudicare**: sotto −6 stop e sopra +5,5 stop il colore sfuma nel
-   grigio (rampe di 2 e 1 stop). Lì la tinta è rumore o clipping, non una dominante.
+   grigio (rampe di 2 e 1 stop), e così nell'ultimo ¼ di stop prima della cima della curva d'ingresso.
+   Lì la tinta è rumore o clipping, non una dominante.
 
 Un errore di 100 K su 5600 K si vede appena, come in CineMatch; 300 K si vedono bene, e il colore
 cresce con l'errore. Il numero in Kelvin non si legge dalla vista: la vista dice *da che parte*
@@ -216,6 +224,10 @@ fermate. Così rispondono solo ai tre controlli a cui appartengono.
 La banda viene poi riportata in lineare Rec.709, convertita nel gamut in cui il nodo sta
 scrivendo e ricodificata lì, così esce dello stesso colore qualunque cosa faccia la
 timeline — DaVinci WG/Intermediate, ACEScct, Rec.709. Verificato in `tests/test_falsecolor.py`.
+Vale fino al nodo: se dopo il nodo la timeline passa da un Output Transform con tone mapping o gamut
+mapping (Resolve Color Managed, un CST con tone mapping, una LUT di look), anche le bande vengono
+renderizzate e cambiano un po' di luminosità e saturazione. Con un *Rendering display* nel nodo le bande
+escono già nello spazio dello schermo e il rendering non le tocca.
 
 ### Confronto
 

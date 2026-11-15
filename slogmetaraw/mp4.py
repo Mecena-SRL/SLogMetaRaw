@@ -9,8 +9,9 @@ import struct
 import threading
 
 MAX_BOXES = 4096               # per level: a non-ISO file must not become a long walk
-PRELOAD_MAX = 64 * 1024 * 1024
+MOOV_WINDOW = 1024 * 1024      # moov is read in windows this size: Panasonic reserves 10 MB of 'free' inside it
 META_PRELOAD = 64 * 1024
+XML_MAX = 4 * 1024 * 1024      # an NRT XML is a few KB
 
 
 class CountingFile:
@@ -32,6 +33,7 @@ class CountingFile:
         self.reads = 0
         self._base = 0
         self._window = b''
+        self._ahead = None
 
     def _pread(self, pos, n):
         n = max(0, min(n, self.size - pos))
@@ -61,10 +63,18 @@ class CountingFile:
         if not (rel >= 0 and rel + min(n, self.size - pos) <= len(self._window)):
             self._base, self._window = pos, self._pread(pos, n)
 
+    def readahead(self, start=None, end=None, window=MOOV_WINDOW):
+        """Inside [start, end) a small read past the window loads the next window from there: one read per
+        window instead of one per box header, without loading what the boxes skip. readahead() stops it."""
+        self._ahead = (start, end, window) if start is not None else None
+
     def read_at(self, pos, n):
         rel = pos - self._base
         if rel >= 0 and rel + n <= len(self._window):
             return self._window[rel:rel + n]
+        if self._ahead and n <= self._ahead[2] // 16 and self._ahead[0] <= pos < self._ahead[1]:
+            self._base, self._window = pos, self._pread(pos, min(self._ahead[2], self._ahead[1] - pos))
+            return self._window[:n]
         return self._pread(pos, n)
 
     def close(self):
@@ -228,7 +238,7 @@ class MP4:
         self.meta_xml = None          # NonRealTimeMeta XML (bytes)
         self.items = {}               # item name -> (file offset, length), e.g. 'Look Control data'
         self.keys = {}                # QuickTime moov/meta 'mdta' keys -> value (str, int, float or bytes)
-        self.udta = {}                # moov/udta atoms -> payload bytes (text atoms decoded to str)
+        self.udta = {}                # moov/udta text atoms ('\xa9mod'...) -> str
         self._parse()
 
     def _parse(self):
@@ -236,15 +246,18 @@ class MP4:
         f.preload(0, META_PRELOAD)     # ftyp, uuid and free headers in one read
         for t, p, hl, s in iter_boxes(f, 0, f.size):
             if t == b'moov':
-                if s <= PRELOAD_MAX:
-                    f.preload(p, s + 16)   # + the next top-level header
-                for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):
-                    if t2 == b'trak':
-                        self.tracks.append(_parse_trak(f, (p2, hl2, s2)))
-                    elif t2 == b'meta':
-                        self._parse_keys(p2 + hl2, p2 + s2)
-                    elif t2 == b'udta':
-                        self._parse_udta(p2 + hl2, p2 + s2)
+                f.preload(p, min(s + 16, MOOV_WINDOW))   # + the next top-level header
+                f.readahead(p, p + s + 16)
+                try:
+                    for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):
+                        if t2 == b'trak':
+                            self.tracks.append(_parse_trak(f, (p2, hl2, s2)))
+                        elif t2 == b'meta':
+                            self._parse_keys(p2 + hl2, p2 + s2)
+                        elif t2 == b'udta':
+                            self._parse_udta(p2 + hl2, p2 + s2)
+                finally:
+                    f.readahead()
             elif t == b'meta':
                 f.preload(p, min(s, META_PRELOAD))
                 self._parse_meta(p + hl + 4, p + s)
@@ -269,19 +282,19 @@ class MP4:
                 for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):
                     for t3, p3, hl3, s3 in iter_boxes(f, p2 + hl2, p2 + s2):
                         if t3 == b'data':
-                            values[struct.unpack('>I', t2)[0]] = _data_value(f.read_at(p3 + hl3, s3 - hl3))
+                            values[struct.unpack('>I', t2)[0]] = _data_value(f.read_at(p3 + hl3, min(s3 - hl3, KEYS_MAX)))
                             break
         self.keys.update({names[i]: v for i, v in values.items() if i in names})
 
     def _parse_udta(self, a, b):
-        """moov/udta atoms; '\xa9xxx' text atoms (maker, model, software) as strings."""
+        """moov/udta '\xa9xxx' text atoms (maker, model, software) as strings; the vendor blobs stay on disk."""
         for t, p, hl, s in iter_boxes(self.f, a, b):
+            if t[:1] != b'\xa9':
+                continue   # e.g. Panasonic's 128 KB 'PANA'
             d = self.f.read_at(p + hl, min(s - hl, KEYS_MAX))
-            name = t.decode('latin1')
-            if t[:1] == b'\xa9' and len(d) >= 4:
+            if len(d) >= 4:
                 n = struct.unpack('>H', d[:2])[0]
-                d = d[4:4 + n].decode('utf-8', 'replace').rstrip('\0')
-            self.udta[name] = d
+                self.udta[t.decode('latin1')] = d[4:4 + n].decode('utf-8', 'replace').rstrip('\0')
 
     def _parse_meta(self, a, b):
         """Top-level 'meta' (handler 'nrtm'): xml box + items in idat."""
@@ -291,7 +304,7 @@ class MP4:
         idat_start = None
         for t, p, hl, s in iter_boxes(f, a, b):
             if t == b'xml ':
-                self.meta_xml = f.read_at(p + hl + 4, s - hl - 4)
+                self.meta_xml = f.read_at(p + hl + 4, min(s - hl - 4, XML_MAX))
             elif t == b'iinf':
                 d = f.read_at(p + hl, s - hl)
                 if len(d) < 6:

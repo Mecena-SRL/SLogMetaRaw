@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.0.0. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 3.1.1 (in preparazione); la struttura dei moduli non cambia dalla 3.1.0. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -68,9 +68,14 @@ common/  (condiviso dai due nodi)
 - **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
   `drt` ≠ 0 (scelta `rendering` in Uscita): 1 ACES 2.0 (Output Transform SDR 100 nit Rec.709; parametri e tabelle
   fissi calcolati da `tools/aces2.py` in `gen/Aces2Tables.h`), 2 Luminanza (stile DaVinci, approssimato), 3 Filmico
-  (per canale, AgX-like), 4 ACES 1.3 (RGC + RRT + ODT), 5 OpenDRT v1.1.0 (port del DCTL di Jed Smith, look
-  Standard, modello `tests/model/opendrt.py`). ACES verificati contro OpenColorIO, OpenDRT contro valori del DCTL
-  originale, in `tests/test_display.py`.
+  (per canale, AgX-like), 4 ACES 1.3 (RRT + ODT), 5 OpenDRT v1.1.0 (port del DCTL di Jed Smith, look
+  Standard, modello `tests/model/opendrt.py`). Prima del rendering, scelte in Uscita dalla 3.1.1: `gamutCompress`
+  (`sm_gamut_compress`, ACES RGC in AP1, riferimento o parametrica) e `gamutMapping` (`sm_gamut_map`, compressione
+  saturazione nel gamut d'uscita, vale anche con Nessuno). La coppia che ogni rendering aveva incorporata è in
+  `math/HostOnly.h` (`SM_DRT_GAMUT_*`): migrazione `settingsVersion` 7 e proposta quando si sceglie un rendering.
+  Con un rendering l'uscita è sempre una codifica di schermo (`sm_display_encoding`). ACES confrontati con
+  OpenColorIO (test saltati se PyOpenColorIO manca, anche in CI), grigio 18% fissato analiticamente da log a
+  Gamma 2.4, OpenDRT contro valori del DCTL originale, in `tests/test_display.py`.
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
   `sm_develop` (lo stesso `math/` del render) sulla griglia size³; `tools/export_lut.py` è il
   prototipo Python equivalente, usato per verificare l'output senza ricompilare il plugin.

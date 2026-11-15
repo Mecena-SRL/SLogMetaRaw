@@ -150,6 +150,99 @@ class SaturatedLights(unittest.TestCase):
             self.assertLess(self.sweep(mode, True), 15.0, 'modo %d: salto di tinta fra tinte vicine' % mode)
 
 
+class GamutSteps(unittest.TestCase):
+    """Compressione gamut and Mappatura gamut, now chosen in the panel."""
+    REF = D.RGC_REF
+
+    def test_parametric_at_the_reference_values_is_the_reference(self):
+        rnd = random.Random(2)
+        for _ in range(500):
+            xyz = scene_xyz(rnd)
+            params = ((0.815, 0.803, 0.880), (1.147, 1.264, 1.312), 1.2)
+            self.assertEqual(D.gamut_compress(xyz, params), D.gamut_compress(xyz, self.REF))
+
+    def test_the_renderings_keep_their_3_1_0_gamut_steps(self):
+        """A node saved by 3.1.0 is migrated to the pair its rendering had built in: same picture."""
+        self.assertEqual({m: (bool(c), g) for m, (c, g) in D.RECOMMENDED.items()},
+                         {0: (False, False), 1: (False, False), 2: (True, True), 3: (True, True), 4: (True, False),
+                          5: (False, False)})
+
+    def test_saturation_compression_brings_colours_inside_at_the_same_hue(self):
+        rnd = random.Random(4)
+        for _ in range(2000):
+            c = [rnd.uniform(-0.3, 1.0) for _ in range(3)]
+            m = D.gamut_map(c)
+            self.assertTrue(all(v >= 0.0 for v in m), m)
+            self.assertAlmostEqual(max(m), max(max(c), 0.0), delta=1e-12)   # the largest channel stays
+            if max(c) > 0 and all((max(c) - v) / max(c) <= 0.9 for v in c):
+                for a, b in zip(m, c):
+                    self.assertAlmostEqual(a, b, delta=1e-12, msg='inside the knee nothing moves')
+        sky = [-0.05, 0.4, 0.9]   # V-Gamut blue outside Rec.709: within the limit, so it lands inside, same order
+        m = D.gamut_map(sky)
+        self.assertGreater(m[0], 0.0)
+        self.assertLess(m[0], m[1])
+
+    def test_kernel_matches_model(self):
+        exe = test_bin('ofx_math_test')
+        if not exe:
+            self.skipTest('binari di test non compilabili qui')
+        rnd = random.Random(21)
+        cases = []
+        for i in range(240):
+            rgb = [rnd.uniform(0.05, 0.98) for _ in range(3)]
+            gc, gm = i % 3, (i // 3) % 2
+            par = [rnd.uniform(0.6, 0.95) for _ in range(3)] + [rnd.uniform(1.05, 1.6) for _ in range(3)] + \
+                  [rnd.uniform(1.0, 2.0)]
+            cases.append((rgb, (i // 6) % 6, gc, gm, par))
+        lines = [' '.join(repr(v) for v in rgb + [SGAMUT3CINE, SLOG3, REC709, G24, 5600, 0.0, 800, 5600, 0.0, 800,
+                                                  0, 0, 0, 1.0, 0.0, 0, 0, 0, 0, 0, 0, 0]
+                          + tone_values({}) + [drt, 0.0, gc, gm] + (par if gc == 2 else []))
+                 for rgb, drt, gc, gm, par in cases]
+        out = subprocess.run([exe], input='\n'.join(lines) + '\n', capture_output=True, text=True, check=True).stdout
+        got = [[float(v) for v in l.split()] for l in out.strip().splitlines()]
+        self.assertEqual(len(got), len(cases))
+        for (rgb, drt, gc, gm, par), g in zip(cases, got):
+            rgc = None if gc == 0 else self.REF if gc == 1 else (tuple(par[:3]), tuple(par[3:6]), par[6])
+            exp = dm.develop(rgb, SGAMUT3CINE, SLOG3, out_space=REC709, out_gamma=G24, drt=drt, rgc=rgc, gmap=bool(gm))
+            for a, b in zip(exp, g):
+                self.assertAlmostEqual(a, b, delta=5e-4, msg='modo %d gc %d gm %d, %s -> C++ %s, modello %s'
+                                       % (drt, gc, gm, rgb, g, exp))
+
+
+class MidGrey(unittest.TestCase):
+    """End to end, log code value in -> Rec.709 / Gamma 2.4 code value out: 18% grey of every camera curve lands
+    where the ACES Output Transforms put it. ACES 1.3: the RRT spline maps 0.18 to 4.8 nit (of 48), the ODT spline keeps
+    it, (4.8 - 0.02) / 47.98 = 0.0996, dim surround Y^0.9811 = 0.1041, Gamma 2.4 -> 0.3897. ACES 2.0 and the
+    renderings sharing its tonescale: 0.18 -> 10 nit, 0.1^(1/2.4) = 0.3831."""
+    CURVES = ((SGAMUT3CINE, SLOG3), (11, 11), (12, 12), (0, 0), (10, 10))   # S-Log3, V-Log, Apple Log, DI, ACEScct
+
+    def test_grey_lands_at_the_aces_value(self):
+        want = {1: 0.3831, 2: 0.3831, 3: 0.3831, 4: 0.3897}
+        for space, gamma in self.CURVES:
+            code = dm.encode1(0.18, gamma)
+            for drt, ref in want.items():
+                out = dm.develop([code] * 3, space, gamma, out_space=REC709, out_gamma=G24, drt=drt)
+                for v in out:
+                    self.assertAlmostEqual(v, ref, delta=1.5e-3, msg='curva %d, modo %d: %s' % (gamma, drt, out))
+
+    def test_kernel_grey(self):
+        exe = test_bin('ofx_math_test')
+        if not exe:
+            self.skipTest('binari di test non compilabili qui')
+        lines, want = [], []
+        for space, gamma in self.CURVES:
+            code = dm.encode1(0.18, gamma)
+            for drt, ref in ((1, 0.3831), (4, 0.3897)):
+                lines.append(' '.join(repr(v) for v in [code] * 3 + [space, gamma, REC709, G24, 5600, 0.0, 800, 5600,
+                                                                     0.0, 800, 0, 0, 0, 1.0, 0.0, 0, 0, 0, 0, 0, 0, 0]
+                                      + tone_values({}) + [drt]))
+                want.append(ref)
+        out = subprocess.run([exe], input='\n'.join(lines) + '\n', capture_output=True, text=True, check=True).stdout
+        for ref, l in zip(want, out.strip().splitlines()):
+            for v in l.split():
+                self.assertAlmostEqual(float(v), ref, delta=1.5e-3)
+
+
 class HighlightVibrance(unittest.TestCase):
     def y(self, c):
         return sum(dm.MATS[REC709][0][1][i] * c[i] for i in range(3))

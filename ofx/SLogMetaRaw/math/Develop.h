@@ -26,16 +26,18 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     xyz = sm_mul(SM_BRADFORD, 9, lms);
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
 
-    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, p), p);
+    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
 
+    if (p.gcOn != 0) xyz = sm_gamut_compress(xyz, p);
     if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve
-        SMf3 d = sm_display(xyz, p.drt, p.outSpace);
+        SMf3 d = sm_display(xyz, p.drt, p.outSpace, p.gmOn);
         if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, p.outSpace);
         return smf3(sm_encode(d.x, p.outGamma), sm_encode(d.y, p.outGamma), sm_encode(d.z, p.outGamma));
     }
     const int space = p.convert != 0 ? p.outSpace : p.nodeSpace;
     const int gamma = p.convert != 0 ? p.outGamma : p.nodeGamma;
     SMf3 o = sm_from_xyz(xyz, space);
+    if (p.gmOn != 0) o = sm_gamut_map(o);
     return smf3(sm_encode(o.x, gamma), sm_encode(o.y, gamma), sm_encode(o.z, gamma));
 }

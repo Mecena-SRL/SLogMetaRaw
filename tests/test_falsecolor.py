@@ -81,6 +81,71 @@ class ExposureView(unittest.TestCase):
         self.assertEqual(view(grey_card(5600, 0, 5600, 0), 1, 5600, 0), GREEN)
 
 
+def node_view(codes, space, gamma, mode, ei=800, temp=5600, tint=0):
+    """What the node shows for one pixel as it comes from Resolve, back in display Rec.709 (gamma 2.2)."""
+    kw = dict(fc_mode=mode, ei=ei, temp=temp, tint=tint)
+    if mode in (2, 3):
+        kw.update(zip(('fc_u', 'fc_v', 'fc_ku', 'fc_kv', 'fc_tu', 'fc_tv'), dm.fc_calibration(temp, tint)))
+    out = dm.develop(codes, space, gamma, shot=(5600, 0, 800), **kw)
+    lin = dm.mul(dm.MATS[1][1], dm.mul(dm.MATS[space][0], [dm.decode1(c, gamma) for c in out]))
+    return [round(dm.encode1(max(c, 0.0), 2), 4) for c in lin]
+
+
+class ClipOnShortCurves(unittest.TestCase):
+    """The bands were drawn for S-Log3, which records more than +5.5 stops. Rec.709, sRGB and the gamma curves end at
+    +2.5 stops over grey, D-Log M at +3.7, HLG at +4.4, F-Log at +5.3: a clipped white there read grey or green and the
+    red band never lit (v3.1.0 develops non-log Sony video as Rec.709 and reads those cameras)."""
+    SHORT = ((1, 5, 'Rec.709'), (1, 6, 'sRGB'), (1, 3, 'Gamma 2.4'), (2, 24, 'HLG'), (19, 13, 'D-Log M'),
+             (2, 15, 'F-Log'))
+
+    def assertBand(self, got, want, msg):
+        for a, b in zip(got, want):
+            self.assertAlmostEqual(a, b, places=3, msg='%s: %s' % (msg, got))
+
+    def test_the_top_of_the_curve_reads_clipped(self):
+        for space, gamma, name in self.SHORT:
+            self.assertBand(node_view([1.0] * 3, space, gamma, 1), RED, name + ' white')
+            self.assertBand(node_view([1.0, 0.4, 0.3], space, gamma, 1), RED, name + ' one channel at the top')
+            self.assertBand(node_view([1.08] * 3, space, gamma, 1), RED, name + ' super-white')
+
+    def test_clipped_stays_clipped_whatever_the_ei(self):
+        """Lowering EI moves the reading, not what the camera lost."""
+        for space, gamma, name in self.SHORT:
+            for ei in (400, 1600):
+                self.assertBand(node_view([1.0] * 3, space, gamma, 1, ei=ei), RED, '%s at EI %d' % (name, ei))
+
+    def test_just_under_the_top_is_near_clip(self):
+        lin = 2 ** -0.15   # 0.15 stop under Rec.709's top
+        self.assertBand(node_view([dm.encode1(lin, 5)] * 3, 1, 5, 1), YELLOW, 'Rec.709 0.15 stop under white')
+
+    def test_grey_and_skin_are_unchanged_on_rec709(self):
+        self.assertBand(node_view([dm.encode1(0.18, 5)] * 3, 1, 5, 1), GREEN, '18% grey')
+        self.assertBand(node_view([dm.encode1(0.36, 5)] * 3, 1, 5, 1), PINK, 'a stop over grey')
+        g = node_view([dm.encode1(0.6, 5)] * 3, 1, 5, 1)
+        self.assertTrue(g[0] == g[1] == g[2], 'Rec.709 0.74 stop under white is still grey: %s' % g)
+
+    def test_log_curves_that_reach_far_keep_their_bands(self):
+        """S-Log3, V-Log, Apple Log: the top is beyond +5.5 stops, nothing changes."""
+        for space, gamma in ((SG3C, SLOG3), (11, 11), (12, 12)):
+            for stops, want in ((4.5, YELLOW), (3.5, None), (0.0, GREEN)):
+                got = node_view([dm.encode1(0.18 * 2 ** stops, gamma)] * 3, space, gamma, 1)
+                if want:
+                    self.assertBand(got, want, 'gamma %d at %+g' % (gamma, stops))
+                else:
+                    self.assertTrue(got[0] == got[1] == got[2], 'gamma %d at %+g: %s' % (gamma, stops, got))
+
+    def test_linear_has_no_top(self):
+        self.assertTrue(len(set(node_view([1.0] * 3, 1, 1, 1))) == 1, 'linear 1.0 is +2.5 stops, not a clip')
+
+    def test_a_clipped_white_carries_no_cast_in_the_balance_views(self):
+        """Clipped channels have lost the cast: the white-balance views fade it to grey, as they do over +5.5."""
+        for mode, temp, tint in ((2, 4000, 0), (3, 5600, -15)):
+            got = node_view([1.0] * 3, 1, 5, mode, temp=temp, tint=tint)
+            self.assertLess(colourfulness(got), 1e-6, 'mode %d: %s' % (mode, got))
+            below = node_view([dm.encode1(0.5, 5)] * 3, 1, 5, mode, temp=temp, tint=tint)
+            self.assertGreater(colourfulness(below), 0.05, 'mode %d one stop under white keeps its cast' % mode)
+
+
 def colourfulness(c):
     return max(c) - min(c)
 

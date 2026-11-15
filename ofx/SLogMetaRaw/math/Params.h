@@ -66,4 +66,9 @@ struct DevelopParams {
     float hlVib;       // Vibrance luci after the rendering, 0..1
     int drt;           // display rendering (math/Display.h): 0 none (CST), 1 ACES 2.0, 2 Luminanza, 3 Filmico, 4 ACES 1.3,
                        // 5 OpenDRT
+    int gcOn;          // Compressione gamut: 1 = ACES gamut compression in AP1 before the rendering
+    float gcThr[3];    // its threshold per channel (cyan, magenta, yellow)
+    float gcLim[3];    // its distance limit per channel
+    float gcPwr;       // its power
+    int gmOn;          // Mappatura gamut: 1 = saturation compression into the output gamut before the rendering
 };

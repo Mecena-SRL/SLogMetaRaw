@@ -75,16 +75,36 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     int drt = 0;
     m_Rendering->getValueAtTime(p_Time, drt);
     p.drt = drt >= 1 && drt <= 5 ? drt : 0;
+    int gc = 0, gmap = 0;
+    m_GamutCompress->getValue(gc);
+    m_GamutMapping->getValue(gmap);
+    if (gc == 1) sm_set_gamut_compress(&p, SM_RGC_REFERENCE);
+    else if (gc == 2) {
+        double v[7];
+        for (int i = 0; i < 7; ++i) v[i] = m_GamutParams[i]->getValueAtTime(p_Time);
+        sm_set_gamut_compress(&p, v);
+    }
+    p.gmOn = gmap == 1 ? 1 : 0;
     p.hlVib = p.drt ? (float)sm_clamp(m_HlVib->getValueAtTime(p_Time) / 100.0, 0.0, 1.0) : 0.0f;
     // 0 follows the node; a choice outside the table (a grade from a newer build) does too.
     // A display rendering needs a display: on Timeline it writes Rec.709 / Gamma 2.4.
     p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : p.drt ? 1 : nodeSpace;
     p.outGamma = gm >= 1 && gm <= kGammaCount ? gm - 1 : p.drt ? 3 : nodeGamma;
+    bool forced = false;
+    if (p.drt) sm_display_encoding(&p.outSpace, &p.outGamma, &forced);
     p.convert = (p.drt || p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
     // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)
         *p_NodeInfo += std::string(" · Uscita: ") + kSpaceNames[p.outSpace] + " / " + kGammaNames[p.outGamma]
-                     + " (Log MetaRaw Detail va messo prima di questa conversione)";
+                     + (forced ? " (il rendering scrive luce di schermo: Spazio colore / Gamma di scena sostituiti)" : "")
+                     + " (Log MetaRaw Detail va messo prima di questa conversione)"
+                     + (p.drt && !hostCs.empty() && hostCs.compare(0, 3, "g24") && hostCs.compare(0, 4, "rec1")
+                            && hostCs.compare(0, 4, "srgb") && hostCs.compare(0, 3, "g22")
+                        ? " · ATTENZIONE: Resolve gestisce il colore (" + hostCs + ") e dopo il nodo applica la sua "
+                          "trasformazione d'uscita: con un rendering l'immagine viene trasformata due volte (scura). "
+                          "Usa una timeline DaVinci YRGB non gestita, oppure Rendering display = Nessuno e il tone "
+                          "mapping di Resolve"
+                        : "");
 
     const double shotEI = m_ShotEI->getValue();
     const double ei = m_EI->getValueAtTime(p_Time);
@@ -98,7 +118,7 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     else if (m_FcTint->getValue()) fc = 3;
     else if (m_FcZones->getValue()) fc = 4;
     p.fcMode = fc;
-    if (fc >= 2 && !sm_fc_calibrate(&p, m_Temp->getValueAtTime(p_Time), m_Tint->getValueAtTime(p_Time)))
+    if ((fc == 2 || fc == 3) && !sm_fc_calibrate(&p, m_Temp->getValueAtTime(p_Time), m_Tint->getValueAtTime(p_Time)))
         p.fcMode = 0;   // degenerate basis: show the picture rather than a lie
     if (p_NodeInfo && p.fcMode != 0)
         *p_NodeInfo = std::string("FALSE COLOR ATTIVO (")

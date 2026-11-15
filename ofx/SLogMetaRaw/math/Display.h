@@ -3,11 +3,13 @@
 //   1 ACES 2.0: Output Transform SDR 100 nit, Rec.709 limiting gamut, D65 (OpenColorIO 2.6, tools/aces2.py)
 //   2 Luminanza: max-RGB norm through the tonescale, channel ratios kept, path to white near the peak
 //   3 Filmico: the tonescale per channel on an inset gamut (AgX-like): highlights reach white on their own
-//   4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim surround (ACES CTL 1.x)
+//   4 ACES 1.3: RRT, ODT Rec.709 100 nit dim surround (ACES CTL 1.x)
 //   5 OpenDRT v1.1.0 (Jed Smith, GPL-3.0): look Standard, Rec.1886 preset (Rec.709, dim surround), 100 nit
-// 2 and 3 share the 100 nit tonescale of ACES 2.0 / OpenDRT (Siragusano): grey 0.18 -> 0.1, 128 -> 1.0,
-// and two gamut compressions: ACES RGC in AP1, then into the display gamut (knee 0.9).
+// 2 and 3 share the 100 nit tonescale of ACES 2.0 / OpenDRT (Siragusano): grey 0.18 -> 0.1, 128 -> 1.0.
+// Two steps of their own, chosen in the panel (Compressione gamut, Mappatura gamut) and run before any rendering:
+// the ACES gamut compression in AP1 (reference or parametric), then the saturation compression into the output gamut.
 #pragma once
+#include "Params.h"
 #include "Gamut.h"
 #include "../gen/Aces2Tables.h"
 
@@ -64,21 +66,32 @@ SM_FN SMf3 sm_aces_sat(SMf3 c, float s) {
     return smf3((1.0f - s) * y + s * c.x, (1.0f - s) * y + s * c.y, (1.0f - s) * y + s * c.z);
 }
 
-// ACES RGC distance compression towards the largest channel: thr and lim per channel, power 1.2.
-SM_FN float sm_rgc_dist(float d, float t, float l) {
+// ACES gamut compression: the distance of each channel from the largest, compressed past thr towards lim (per
+// channel: cyan, magenta, yellow), power pw. The reference (ACES 1.3 RGC) is thr 0.815 0.803 0.880, lim 1.147
+// 1.264 1.312, pw 1.2.
+SM_FN float sm_rgc_dist(float d, float t, float l, float pw) {
     if (d <= t) return d;
-    const float s = (l - t) / SM_POW(SM_POW((1.0f - t) / (l - t), -1.2f) - 1.0f, 1.0f / 1.2f);
+    const float s = (l - t) / SM_POW(SM_POW((1.0f - t) / (l - t), -pw) - 1.0f, 1.0f / pw);
     const float n = (d - t) / s;
-    return t + s * n / SM_POW(1.0f + SM_POW(n, 1.2f), 1.0f / 1.2f);
+    return t + s * n / SM_POW(1.0f + SM_POW(n, pw), 1.0f / pw);
 }
-SM_FN SMf3 sm_rgc(SMf3 c, float tr, float tg, float tb, float lr, float lg, float lb) {
+SM_FN SMf3 sm_rgc(SMf3 c, SMf3 thr, SMf3 lim, float pw) {
     const float a = SM_MAX(c.x, SM_MAX(c.y, c.z));
     if (a <= 0.0f) return c;
-    return smf3(a - sm_rgc_dist((a - c.x) / a, tr, lr) * a, a - sm_rgc_dist((a - c.y) / a, tg, lg) * a,
-                a - sm_rgc_dist((a - c.z) / a, tb, lb) * a);
+    return smf3(a - sm_rgc_dist((a - c.x) / a, thr.x, lim.x, pw) * a, a - sm_rgc_dist((a - c.y) / a, thr.y, lim.y, pw) * a,
+                a - sm_rgc_dist((a - c.z) / a, thr.z, lim.z, pw) * a);
 }
-SM_FN SMf3 sm_rgc_ap1(SMf3 xyz) {   // ACES 1.3 Reference Gamut Compression, returned in AP1
-    return sm_rgc(sm_from_xyz(xyz, 10), 0.815f, 0.803f, 0.880f, 1.147f, 1.264f, 1.312f);
+// Compressione gamut: in ACES AP1, on scene XYZ.
+SM_FN SMf3 sm_gamut_compress(SMf3 xyz, SM_CREF(DevelopParams) p) {
+    const SMf3 c = sm_rgc(sm_from_xyz(xyz, 10), smf3(p.gcThr[0], p.gcThr[1], p.gcThr[2]),
+                          smf3(p.gcLim[0], p.gcLim[1], p.gcLim[2]), p.gcPwr);
+    return sm_to_xyz(c, 10);
+}
+// Mappatura gamut, compressione saturazione: the colours near and past the edge of the gamut c is written in come
+// inside it at the same hue (knee 0.9, distance 1.2 lands on the edge), what is still outside is clipped at 0.
+SM_FN SMf3 sm_gamut_map(SMf3 c) {
+    c = sm_rgc(c, smf3(0.9f, 0.9f, 0.9f), smf3(1.2f, 1.2f, 1.2f), 1.2f);
+    return smf3(SM_MAX(c.x, 0.0f), SM_MAX(c.y, 0.0f), SM_MAX(c.z, 0.0f));
 }
 
 SM_FN SMf3 sm_aces_rrt(SMf3 a) {   // ACES2065-1 -> OCES, returned in AP1 as the ODT reads it
@@ -234,12 +247,6 @@ SM_FN float sm_drt_tonescale(float x) {
     return SM_MIN(f * f / (f + 0.04f), 1.0f);
 }
 
-SM_FN SMf3 sm_drt_into_display(SMf3 xyz, int space) {
-    SMf3 c = sm_from_xyz(sm_to_xyz(sm_rgc_ap1(xyz), 10), space);
-    c = sm_rgc(c, 0.9f, 0.9f, 0.9f, 1.2f, 1.2f, 1.2f);
-    return smf3(SM_MAX(c.x, 0.0f), SM_MAX(c.y, 0.0f), SM_MAX(c.z, 0.0f));
-}
-
 // ---- OpenDRT v1.1.0 by Jed Smith, https://github.com/jedypod/open-display-transform, GPL-3.0-or-later.
 // Port of display-transforms/opendrt/OpenDRT.dctl, tag v1.1.0, commit 8804747def7cdc9089f2b2ea5011596792134304,
 // fixed to its defaults: look Standard (its tonescale, creative white D65), display encoding Rec.1886 (Rec.709,
@@ -321,24 +328,30 @@ SM_FN SMf3 sm_opendrt(SMf3 xyz) {   // CIE XYZ D65 -> display-linear Rec.709 0..
     return smf3(sm_clamp(c.x, 0.0f, 1.0f), sm_clamp(c.y, 0.0f, 1.0f), sm_clamp(c.z, 0.0f, 1.0f));
 }
 
-SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
-    SMf3 c;
+// map: 1 = Mappatura gamut into `space` first. Luminanza and Filmico read the scene in the display gamut and need
+// no negative channel: without the mapping they clip at 0.
+SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space, int map) {
+    SMf3 c = xyz;
+    if (mode == SM_DRT_LUMINANCE || mode == SM_DRT_FILMIC) {
+        c = sm_from_xyz(xyz, space);
+        c = map != 0 ? sm_gamut_map(c) : smf3(SM_MAX(c.x, 0.0f), SM_MAX(c.y, 0.0f), SM_MAX(c.z, 0.0f));
+    } else if (map != 0) {
+        xyz = sm_to_xyz(sm_gamut_map(sm_from_xyz(xyz, space)), space);
+    }
     if (mode == SM_DRT_ACES2) {
         c = sm_from_xyz(sm_to_xyz(sm_aces2(sm_from_xyz(xyz, 9)), 1), space);
     } else if (mode == SM_DRT_ACES13) {
-        const SMf3 a = sm_mul(SM_ACES_M, 9, sm_rgc_ap1(xyz));
+        const SMf3 a = sm_mul(SM_ACES_M, 9, sm_from_xyz(xyz, 10));
         c = sm_from_xyz(sm_to_xyz(sm_aces_odt(sm_aces_rrt(a)), 10), space);
     } else if (mode == SM_DRT_OPENDRT) {
         c = sm_from_xyz(sm_to_xyz(sm_opendrt(xyz), 1), space);
     } else if (mode == SM_DRT_LUMINANCE) {
-        c = sm_drt_into_display(xyz, space);
         const float n = SM_MAX(c.x, SM_MAX(c.y, c.z));
         if (n <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
         const float nt = sm_drt_tonescale(n), w2 = nt * nt, w4 = w2 * w2, w = w4 * w4;   // path to white: nt^8
         c = smf3(nt * (c.x / n + w * (1.0f - c.x / n)), nt * (c.y / n + w * (1.0f - c.y / n)),
                  nt * (c.z / n + w * (1.0f - c.z / n)));
     } else {   // SM_DRT_FILMIC
-        c = sm_drt_into_display(xyz, space);
         const int o = space * 9 + 3;   // the luminance row of the gamut
         const float y = SM_RGB_TO_XYZ[o] * c.x + SM_RGB_TO_XYZ[o + 1] * c.y + SM_RGB_TO_XYZ[o + 2] * c.z;
         c = smf3(sm_drt_tonescale(0.8f * c.x + 0.2f * y), sm_drt_tonescale(0.8f * c.y + 0.2f * y),
