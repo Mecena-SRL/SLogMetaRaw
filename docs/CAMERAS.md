@@ -78,6 +78,22 @@ coerente), **non misurato**. Per tarare curva e matrice sulle Action 4 e 5 Pro s
 
 Con le LUT si ricava la curva dall'asse dei neutri e la matrice dai colori saturi; con il cartoncino si fissa il grigio.
 
+## Verifica su clip reali (3.1.1)
+
+Un fotogramma per camera decodificato fuori da Resolve (code value del file, matrice YCbCr dichiarata) e passato per la
+matematica del nodo:
+
+| Camera | Range del file | Nero misurato | Esito |
+|---|---|---|---|
+| Panasonic DC-S5, V-Log, H.264 4:2:2 | Full (flag VUI) | Y min 136 (V-Log: 128) | curva e matrice V-Gamut uguali al reference manual Panasonic (0.423 / 128 / 602; matrice a 6 cifre); WB di ripresa 4000 K sotto luce diurna: muri a xy 0.295, 0.331 (≈ 7700 K rispetto a D65), immagine fredda per scelta di ripresa, non per la decodifica |
+| iPhone, Apple Log | Video | Y min 119 | neutri e incarnati plausibili |
+| DJI Osmo Action 5 Pro, D-Log M | Video | Y min 46 | muro grigio a xy 0.320, 0.336, Y 0.18 |
+
+Con la S5 conta il Data Level: il file è Full; se Resolve lo decodifica Video il bianco 90% sale di +0,37 stop, il nero
+va sotto zero e la saturazione cresce. Lo script imposta Data Level = Full; con Data Level su Auto il nodo non corregge.
+Lo script non imposta ancora *Input Color Space* per le camere non Sony (in RCM la clip resta Rec.709 per Resolve):
+i nomi Resolve di V-Log, Apple Log e D-Log M non sono stati verificati.
+
 ## Aggiungere una camera
 
 1. Un lettore in `slogmetaraw/vendors.py` (chiavi QuickTime/XML) o un modulo come `dji.py` (tracce per fotogramma) che

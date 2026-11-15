@@ -28,6 +28,11 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_Gamma = fetchChoiceParam("gamma");
         m_Rendering = fetchChoiceParam("rendering");
         m_HlVib = fetchDoubleParam("highlightVibrance");
+        m_GamutCompress = fetchChoiceParam("gamutCompress");
+        static const char* const gamutNames[7] = { "gamutThrCyan", "gamutThrMagenta", "gamutThrYellow", "gamutLimCyan",
+                                                   "gamutLimMagenta", "gamutLimYellow", "gamutPower" };
+        for (int i = 0; i < 7; ++i) m_GamutParams[i] = fetchDoubleParam(gamutNames[i]);
+        m_GamutMapping = fetchChoiceParam("gamutMapping");
         m_LutSize = fetchChoiceParam("lutSize");
         m_Temp = fetchDoubleParam("colorTemp");
         m_Tint = fetchDoubleParam("tint");
@@ -130,6 +135,12 @@ void DevelopEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const s
         m_DataLevel->setValue(0);
         updateEnabledness();
         refreshNodeInfo();
+    } else if (p_ParamName == "rendering" && user) {
+        proposeGamut();
+        updateEnabledness();
+        refreshNodeInfo();
+    } else if (p_ParamName == "gamutCompress") {
+        updateEnabledness();
     } else if (p_ParamName == "tonesMore") {
         updateEnabledness();
     } else if (p_ParamName == "decodeUsing") {
@@ -189,7 +200,7 @@ bool DevelopEffect::isIdentity(const OFX::IsIdentityArguments& p_Args, OFX::Clip
                          && (p.bypass || (p.convert == 0 && std::fabs(p.expo - 1.0f) < 1e-6f
                          && std::fabs(p.ratioL - 1.0f) < 1e-6f && std::fabs(p.ratioM - 1.0f) < 1e-6f
                          && std::fabs(p.ratioS - 1.0f) < 1e-6f
-                         && p.toneOn == 0 && p.colorOn == 0 && p.curve.roofOn == 0));
+                         && p.toneOn == 0 && p.colorOn == 0 && p.curve.roofOn == 0 && p.gcOn == 0 && p.gmOn == 0));
     if (neutral) {
         p_IdentityClip = m_SrcClip;
         p_IdentityTime = p_Args.time;

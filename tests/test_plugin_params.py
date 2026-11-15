@@ -98,7 +98,7 @@ class PluginParams(unittest.TestCase):
         self.assertIn('"settingsVersion"', self.src)
         self.assertIn('fetchIntParam("settingsVersion")', self.src)
         self.assertIn('migrateSettings()', self.src)
-        self.assertEqual(int(re.search(r'kSettingsVersion = (\d+)', self.src).group(1)), 6)
+        self.assertEqual(int(re.search(r'kSettingsVersion = (\d+)', self.src).group(1)), 7)
 
     def test_data_level_sits_in_the_input_group(self):
         """defineChoice sets no parent by itself: without one the control would land at the top."""

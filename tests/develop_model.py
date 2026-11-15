@@ -321,8 +321,10 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
             temp=None, tint=None, ei=None, wb_mode=0, out_space=None, out_gamma=None,
             tone=None, decode_meta=False,
             level_fix=0, level_space=0, level_gamma=0, level_gain=1.0, level_offset=0.0,
-            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0, drt=0, hl_vib=0.0):
-    """sm_develop. tone: the Toni and Zone panel values by OFX name (tests/model/tone.CONTROLS)."""
+            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0, drt=0, hl_vib=0.0,
+            rgc='rendering', gmap='rendering'):
+    """sm_develop. tone: the Toni and Zone panel values by OFX name (tests/model/tone.CONTROLS). rgc / gmap: Compressione
+    and Mappatura gamut (model/display.render); 'rendering' = the pair the rendering proposes."""
     from model import tone as T   # the tone model imports this module: import it late
     shot_k, shot_t, shot_ei = shot
     temp = shot_k if temp is None else temp
@@ -356,11 +358,18 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
         return fc_emit(view, node_space, node_gamma, out_space, out_gamma)
     if T.active(p):
         xyz = T.tone5(xyz, p)
+    from model import display
+    if rgc == 'rendering':
+        rgc = display.RECOMMENDED[drt][0]
+    if gmap == 'rendering':
+        gmap = display.RECOMMENDED[drt][1]
+    if rgc:
+        xyz = display.gamut_compress(xyz, rgc)
     if drt:   # display rendering: out_space / out_gamma are the display
-        from model import display
-        c = display.render(xyz, drt, out_space)
+        c = display.render(xyz, drt, out_space, None, gmap)
         if hl_vib > 0:
             c = display.highlight_vibrance(c, hl_vib, out_space)
         return [encode1(v, out_gamma) for v in c]
     space, gamma = (out_space, out_gamma) if convert else (node_space, node_gamma)
-    return [encode1(c, gamma) for c in mul(MATS[space][1], xyz)]
+    o = mul(MATS[space][1], xyz)
+    return [encode1(c, gamma) for c in (display.gamut_map(o) if gmap else o)]

@@ -5,10 +5,13 @@ Every rendering takes the scene XYZ (D65) and returns display-linear RGB in the 
     1 ACES 2.0: Output Transform SDR 100 nit, Rec.709 limiting gamut, D65 (tools/aces2.py, from OCIO 2.6)
     2 Luminanza: max-RGB norm through the tonescale, ratios kept, path to white, display gamut compression
     3 Filmico: per channel on an inset gamut (AgX-like), same tonescale and compressions
-    4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim (CTL, ACES 1.x)
+    4 ACES 1.3: RRT, ODT Rec.709 100 nit dim (CTL, ACES 1.x)
     5 OpenDRT v1.1.0, look Standard, Rec.1886 preset (model/opendrt.py, a port of Jed Smith's DCTL)
 1 and 4 are checked against OpenColorIO's built-ins (tests/test_display.py), 5 against values of the original DCTL;
 2 and 3 are this plugin's own.
+Before any rendering, chosen in the panel: Compressione gamut (ACES gamut compression in AP1, reference or parametric)
+and Mappatura gamut (saturation compression into the output gamut). Each rendering has the pair it had built in up to
+3.1.0 (RECOMMENDED); render() uses it unless told otherwise.
 """
 import math
 
@@ -43,7 +46,11 @@ HALF_MIN = 5.96046448e-08
 RGC_THR = (0.815, 0.803, 0.880)    # ACES 1.3 Reference Gamut Compression: cyan, magenta, yellow
 RGC_LIM = (1.147, 1.264, 1.312)
 RGC_PWR = 1.2
+RGC_REF = (RGC_THR, RGC_LIM, RGC_PWR)
 DISP_THR, DISP_LIM = 0.9, 1.2      # into the display gamut, every channel
+# rendering -> (Compressione gamut, Mappatura gamut) as math/HostOnly.h SM_DRT_GAMUT_COMPRESS / SM_DRT_GAMUT_MAP
+RECOMMENDED = {0: (None, False), 1: (None, False), 2: (RGC_REF, True), 3: (RGC_REF, True), 4: (RGC_REF, False),
+               5: (None, False)}
 
 # Tonescale (Siragusano, as in ACES 2.0 and OpenDRT), 100 nit: grey 0.18 -> 0.1, 128 -> 1.0
 TS_G, TS_T1, TS_C, TS_CD, TS_RHIT = 1.15, 0.04, 0.18, 10.013, 128.0
@@ -73,7 +80,7 @@ def sat_mat(c, s):
     return [(1 - s) * y + s * v for v in c]
 
 
-def compress(c, thr, lim):
+def compress(c, thr, lim, pwr=RGC_PWR):
     """ACES RGC distance compression towards the max channel, per channel."""
     ach = max(c)
     if ach <= 0.0:
@@ -82,10 +89,10 @@ def compress(c, thr, lim):
     for i in range(3):
         d = (ach - c[i]) / ach
         t, l = thr[i], lim[i]
-        s = (l - t) / (((1 - t) / (l - t)) ** -RGC_PWR - 1) ** (1 / RGC_PWR)
+        s = (l - t) / (((1 - t) / (l - t)) ** -pwr - 1) ** (1 / pwr)
         if d > t:
             n = (d - t) / s
-            d = t + s * n / (1 + n ** RGC_PWR) ** (1 / RGC_PWR)
+            d = t + s * n / (1 + n ** pwr) ** (1 / pwr)
         out.append(ach - d * ach)
     return out
 
@@ -129,8 +136,18 @@ def odt(p):
 
 
 def aces(xyz):
-    a = compress(mul(dm.MATS[AP1][1], xyz), RGC_THR, RGC_LIM)
-    return mul(dm.MATS[AP1][0], odt(rrt(mul(AP1_TO_AP0, a))))
+    return mul(dm.MATS[AP1][0], odt(rrt(mul(AP1_TO_AP0, mul(dm.MATS[AP1][1], xyz)))))
+
+
+def gamut_compress(xyz, rgc):
+    """Compressione gamut: rgc = (thresholds, limits, power), in AP1."""
+    thr, lim, pwr = rgc
+    return mul(dm.MATS[AP1][0], compress(mul(dm.MATS[AP1][1], xyz), thr, lim, pwr))
+
+
+def gamut_map(c):
+    """Mappatura gamut, compressione saturazione, on RGB in the gamut it is written in."""
+    return [max(v, 0.0) for v in compress(c, (DISP_THR,) * 3, (DISP_LIM,) * 3)]
 
 
 def ts_constants():
@@ -159,13 +176,8 @@ def tonescale(x):
     return min(f * f / (f + TS_T1), 1.0)
 
 
-def into_display(xyz, space):
-    c = mul(dm.MATS[space][1], mul(dm.MATS[AP1][0], compress(mul(dm.MATS[AP1][1], xyz), RGC_THR, RGC_LIM)))
-    return [max(v, 0.0) for v in compress(c, (DISP_THR,) * 3, (DISP_LIM,) * 3)]
-
-
-def luminance(xyz, space):
-    c = into_display(xyz, space)
+def luminance(c):
+    """c: scene RGB in the display gamut, no negative channel."""
     n = max(c)
     if n <= 0.0:
         return [0.0, 0.0, 0.0]
@@ -174,8 +186,7 @@ def luminance(xyz, space):
     return [nt * (v / n + w * (1 - v / n)) for v in c]
 
 
-def filmic(xyz, space):
-    c = into_display(xyz, space)
+def filmic(c, space):
     ly = dm.MATS[space][0][1]
     y = sum(ly[i] * c[i] for i in range(3))
     c = [tonescale((1 - INSET) * v + INSET * y) for v in c]
@@ -203,16 +214,26 @@ def highlight_vibrance(c, a, space):
     return [y + m * v for v in d]
 
 
-def render(xyz, mode, space):
-    """Display-linear RGB in the gamut `space`, clamped to 0..1."""
+def render(xyz, mode, space, rgc='rendering', gmap='rendering'):
+    """Display-linear RGB in the gamut `space`, clamped to 0..1. rgc: None or (thresholds, limits, power); gmap: bool;
+    'rendering' takes the pair the rendering had built in (RECOMMENDED)."""
+    if rgc == 'rendering':
+        rgc = RECOMMENDED[mode][0]
+    if gmap == 'rendering':
+        gmap = RECOMMENDED[mode][1]
+    if rgc:
+        xyz = gamut_compress(xyz, rgc)
+    if mode in (2, 3):
+        c = mul(dm.MATS[space][1], xyz)
+        c = gamut_map(c) if gmap else [max(v, 0.0) for v in c]
+        c = luminance(c) if mode == 2 else filmic(c, space)
+        return [min(max(v, 0.0), 1.0) for v in c]
+    if gmap:
+        xyz = mul(dm.MATS[space][0], gamut_map(mul(dm.MATS[space][1], xyz)))
     if mode == 1:
         c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], ACES2.output_transform(mul(dm.MATS[AP0][1], xyz))))
     elif mode == 4:
         c = mul(dm.MATS[space][1], aces(xyz))
-    elif mode == 5:
-        c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], opendrt(xyz)))
-    elif mode == 2:
-        c = luminance(xyz, space)
     else:
-        c = filmic(xyz, space)
+        c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], opendrt(xyz)))
     return [min(max(v, 0.0), 1.0) for v in c]

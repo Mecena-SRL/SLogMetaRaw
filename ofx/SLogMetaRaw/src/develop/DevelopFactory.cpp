@@ -110,19 +110,45 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     }
 
     GroupParamDescriptor* output = defineGroup(d, page, "outputGroup", "Uscita", true, space);
-    static const char* drtOpts[] = { "Nessuno (CST)", "ACES 2.0", "Luminanza (stile DaVinci)", "Filmico",
-                                     "ACES 1.3 · Gamut Compress", "OpenDRT" };
-    defineChoice(d, page, "rendering", "Rendering display", drtOpts, 6, 0,
-                 "Come la scena diventa immagine per lo schermo. Nessuno: conversione diretta, le luci oltre il bianco "
-                 "tagliano. ACES 2.0: Output Transform SDR 100 nit Rec.709. Luminanza: curva sulla luminanza, tinte "
-                 "conservate e saturazione compressa (approssima il tone/gamut mapping DaVinci). Filmico: curva per "
-                 "canale come una pellicola, le luci forti sfumano nel bianco. ACES 1.3: RRT + ODT con Reference Gamut "
-                 "Compress. OpenDRT: v1.1.0 di Jed Smith, look Standard, Rec.1886 100 nit. Con un rendering, Spazio "
-                 "colore e Gamma sono quelli dello schermo (Timeline = Rec.709 / Gamma 2.4)", output);
+    static const char* drtOpts[] = { "Nessuno (CST)", "ACES 2.0", "Luminanza (stile DaVinci)", "Filmico", "ACES 1.3",
+                                     "OpenDRT" };
+    defineChoice(d, page, "rendering", "Tone mapping", drtOpts, 6, 0,
+                 "Come la scena diventa immagine per lo schermo (Rendering display). Nessuno: conversione diretta, le "
+                 "luci oltre il bianco tagliano. ACES 2.0: Output Transform SDR 100 nit Rec.709. Luminanza: curva sulla "
+                 "luminanza, tinte conservate (approssima il tone mapping DaVinci). Filmico: curva per canale come una "
+                 "pellicola, le luci forti sfumano nel bianco. ACES 1.3: RRT + ODT Rec.709 100 nit. OpenDRT: v1.1.0 di "
+                 "Jed Smith, look Standard, Rec.1886 100 nit. Sceglierlo imposta Compressione e Mappatura gamut "
+                 "consigliate, che puoi cambiare. Con un rendering l'uscita e uno schermo: Timeline = Rec.709 / Gamma "
+                 "2.4, una curva di scena diventa Gamma 2.4", output);
+    static const char* gcOpts[] = { "Nessuna", "ACES riferimento (RGC)", "ACES parametrica" };
+    defineChoice(d, page, "gamutCompress", "Compressione gamut", gcOpts, 3, 0,
+                 "Come Gamut Compress Type del Color Space Transform: riporta in ACES AP1 i colori della camera fuori "
+                 "gamut (LED, luci sature), prima del tone mapping. ACES riferimento: Reference Gamut Compression di "
+                 "ACES 1.3. ACES parametrica: soglie, limiti e potenza qui sotto", output);
+    const char* gcHint = "ACES parametrica: soglia = distanza dall'acromatico da cui si comprime (per canale: rosso "
+                         "verso ciano, verde verso magenta, blu verso giallo), limite = distanza riportata sul bordo "
+                         "del gamut, potenza = durezza della curva. Default = riferimento ACES 1.3";
+    static const char* const gcNames[7] = { "gamutThrCyan", "gamutThrMagenta", "gamutThrYellow", "gamutLimCyan",
+                                            "gamutLimMagenta", "gamutLimYellow", "gamutPower" };
+    static const char* const gcLabels[7] = { "Soglia ciano", "Soglia magenta", "Soglia giallo", "Limite ciano",
+                                             "Limite magenta", "Limite giallo", "Potenza" };
+    for (int i = 0; i < 7; ++i) {
+        const bool lim = i >= 3 && i < 6, thr = i < 3;
+        DoubleParamDescriptor* s = defineSlider(d, page, gcNames[i], gcLabels[i], SM_RGC_REFERENCE[i],
+                                                thr ? 0.0 : lim ? 1.001 : 0.5, thr ? 0.99 : lim ? 2.0 : 4.0,
+                                                thr ? 0.5 : lim ? 1.001 : 1.0, thr ? 0.99 : lim ? 1.6 : 2.0, 0.001,
+                                                gcHint, output);
+        if (s) s->setIsSecret(true);   // shown with ACES parametrica
+    }
+    static const char* mapOpts[] = { "Nessuna", "Compressione saturazione" };
+    defineChoice(d, page, "gamutMapping", "Mappatura gamut", mapOpts, 2, 0,
+                 "Come Gamut Mapping Method del Color Space Transform: i colori vicini e oltre il bordo del gamut di "
+                 "uscita vi rientrano con la stessa tinta invece di tagliarsi canale per canale (prima del tone "
+                 "mapping, ginocchio al 90%). Utile anche con Nessuno (CST) verso Rec.709", output);
     defineSlider(d, page, "highlightVibrance", "Vibrance luci", 0, 0, 100, 0, 100, 1,
                  "Dopo il rendering: ridà colore alle luci chiare e poco sature (un cielo sovraesposto) senza toccare "
                  "quelle già sature (LED, insegne). Luminosità invariata, nessun canale oltre il bianco. Solo con un "
-                 "Rendering display", output);
+                 "Tone mapping", output);
     static const char* csOpts[] = { "Timeline", "DaVinci WG", "Rec.709", "Rec.2020", "P3 D65", "P3 D60", "P3 DCI",
                                     "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1" };
     defineChoice(d, page, "colorSpace", "Spazio colore", csOpts, 12, 0,
