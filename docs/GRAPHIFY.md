@@ -90,7 +90,8 @@ common/  (condiviso dai due nodi)
 packaging/linux/    build_plugin.sh, build_package.sh, build_packages.py (.deb/.rpm/.run/.tar.gz),
                      check_abi.py, install.sh, smoke_in_container.sh
 packaging/windows/  SLogMetaRaw.iss, build_package.ps1, install.ps1
-tools/               check_version.py, build_math.py (genera gen/DevelopMath.h da math/), aces2.py
+tools/               check_version.py, build_math.py (genera gen/DevelopMath.h da math/), aces2.py,
+                    lut_gamut.py (primarie native di una curva log da una LUT log → Rec.709)
 ```
 
 `tools/atlas/` (Atlante della logica, strumento di sviluppo): estrae dal codice Python funzioni, chiamate,

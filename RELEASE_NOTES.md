@@ -1,5 +1,11 @@
 # Changelog
 
+## Non rilasciato
+
+- **DJI D-Log M**: curva di Thatcher Freeman confermata dall'asse neutro della LUT ufficiale DJI (usata come
+  riferimento, non applicata). Nuovo `tools/lut_gamut.py` per ricavare le primarie da una LUT log → Rec.709; il gamut
+  resta la stima di Freeman, più tenue di quello ricavato dalla LUT.
+
 ## Log MetaRaw 3.1.1
 
 **Non provato in Resolve, Metal non eseguito** (parità CPU/modello verificata dai test).
