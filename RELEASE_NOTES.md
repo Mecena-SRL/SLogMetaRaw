@@ -1,6 +1,6 @@
 # Changelog
 
-## Log MetaRaw (prossima versione)
+## Log MetaRaw 3.1.0
 
 **S-Log MetaRaw diventa Log MetaRaw** e legge le camere oltre a Sony. Nomi interni, id dei nodi e cartelle restano gli
 stessi: i progetti salvati si aprono uguali. Lo script di menu si chiama ora *Log MetaRaw*; gli installer tolgono quello
