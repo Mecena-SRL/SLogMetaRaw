@@ -903,9 +903,21 @@ SM_FN SMf3 sm_tone5(SMf3 xyz, SM_CREF(DevelopParams) p) {
 // Measuring views, taken after exposure and white balance and before every trim, so each
 // answers only to its own control (docs/FALSE_COLOR.md).
 
-SM_FN SMf3 sm_fc_exposure(float ev) {
-    if (ev >= 5.5f) return smf3(0.96f, 0.16f, 0.10f);                    // clipped
-    if (ev >= 4.0f) return smf3(1.00f, 0.88f, 0.12f);                    // a stop from clip
+// Stops between a pixel's largest channel and the top of the curve it came in with (code value 1.0, through the same
+// exposure). The bands below assume S-Log3, which records +5.5 stops and more; Rec.709, sRGB and the gamma curves end
+// at +2.5, D-Log M at +3.7, HLG at +4.4, F-Log at +5.3, so there a clipped white would read grey or green. Linear has
+// no top.
+SM_FN float sm_fc_headroom(SMf3 lin, SM_CREF(DevelopParams) p) {
+    float mx = SM_MAX(lin.x, SM_MAX(lin.y, lin.z));
+    if (p.nodeGamma == 1 || !(mx > 0.0f)) return 1e30f;
+    return SM_LOG2(sm_decode(1.0f, p.nodeGamma) * p.expo / mx);
+}
+
+// ev: stops of luminance over 18% grey; head: sm_fc_headroom. Clip is +5.5 stops or the top of the curve (within
+// 0.02 stop), near clip +4 stops or a quarter stop under the top.
+SM_FN SMf3 sm_fc_exposure(float ev, float head) {
+    if (ev >= 5.5f || head <= 0.02f) return smf3(0.96f, 0.16f, 0.10f);   // clipped
+    if (ev >= 4.0f || head <= 0.25f) return smf3(1.00f, 0.88f, 0.12f);   // a stop from clip
     if (ev >= 0.70f && ev <= 1.30f) return smf3(1.00f, 0.56f, 0.72f);    // skin, one stop over grey
     if (ev >= -0.33f && ev <= 0.33f) return smf3(0.13f, 0.82f, 0.20f);   // 18% grey
     if (ev <= -6.0f) return smf3(0.42f, 0.12f, 0.62f);                   // black clip
@@ -932,7 +944,7 @@ SM_FN SMf3 sm_hsl_rgb(float h, float s, float l) {
 // slider's axis (orange/blue, green/magenta), with its saturation boosted up to 8x near neutral as
 // CineMatch does, faded out where the pixel is too dark or too bright to carry a hue. The axis comes
 // from the sliders' own response (sm_fc_calibrate), so grey means "this slider is right here".
-SM_FN SMf3 sm_fc_balance(SMf3 xyz, SM_CREF(DevelopParams) p, float ev, float mono) {
+SM_FN SMf3 sm_fc_balance(SMf3 xyz, SM_CREF(DevelopParams) p, float ev, float head, float mono) {
     float d = xyz.x + 15.0f * xyz.y + 3.0f * xyz.z;
     SMf3 rgb = sm_from_xyz(xyz, 1);
     rgb = smf3(SM_MAX(rgb.x, 0.0f), SM_MAX(rgb.y, 0.0f), SM_MAX(rgb.z, 0.0f));
@@ -945,7 +957,7 @@ SM_FN SMf3 sm_fc_balance(SMf3 xyz, SM_CREF(DevelopParams) p, float ev, float mon
     float lo = SM_POW(mn / mx, 1.0f / 2.2f);   // display-encoded and normalised: exposure does not matter
     float r = (1.0f - lo) / (1.0f + lo);
     float sat = sm_clamp(r * (8.0f - 7.0f * r), 0.0f, 1.0f)
-              * sm_clamp((ev + 6.0f) / 2.0f, 0.0f, 1.0f) * sm_clamp(5.5f - ev, 0.0f, 1.0f);
+              * sm_clamp((ev + 6.0f) / 2.0f, 0.0f, 1.0f) * sm_clamp(SM_MIN(5.5f - ev, 4.0f * head), 0.0f, 1.0f);
     float hue = p.fcMode == 2 ? (kelvin > 0.0f ? 0.586f : 0.08f) : (tint > 0.0f ? 0.30f : 0.85f);
     return sm_hsl_rgb(hue, sat, mono);
 }
@@ -971,12 +983,13 @@ SM_FN SMf3 sm_fc_zones(SMf3 xyz, SM_CREF(DevelopParams) p) {
     return smf3(out.x + mono, out.y + mono, out.z + mono);
 }
 
-SM_FN SMf3 sm_false_color(SMf3 xyz, SM_CREF(DevelopParams) p) {
+// xyz: the pixel after exposure and white balance; head: sm_fc_headroom, taken before the white balance.
+SM_FN SMf3 sm_false_color(SMf3 xyz, float head, SM_CREF(DevelopParams) p) {
     if (p.fcMode == 4) return sm_fc_zones(xyz, p);
     float y = xyz.y > 1e-9f ? xyz.y : 1e-9f;
     float ev = SM_LOG2(y / 0.18f);
-    if (p.fcMode == 1) return sm_fc_exposure(ev);
-    return sm_fc_balance(xyz, p, ev, sm_clamp((ev + 6.0f) / 11.5f, 0.06f, 0.92f));
+    if (p.fcMode == 1) return sm_fc_exposure(ev, head);
+    return sm_fc_balance(xyz, p, ev, head, sm_clamp((ev + 6.0f) / 11.5f, 0.06f, 0.92f));
 }
 
 // The palette is a display colour: take it back to linear Rec.709 and re-encode it in the
@@ -1389,7 +1402,7 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     xyz = sm_mul(SM_BRADFORD, 9, lms);
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
 
-    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, p), p);
+    if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
 
     if (p.gcOn != 0) xyz = sm_gamut_compress(xyz, p);

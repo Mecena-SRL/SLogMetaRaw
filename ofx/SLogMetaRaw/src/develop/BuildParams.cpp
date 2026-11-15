@@ -118,7 +118,7 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     else if (m_FcTint->getValue()) fc = 3;
     else if (m_FcZones->getValue()) fc = 4;
     p.fcMode = fc;
-    if (fc >= 2 && !sm_fc_calibrate(&p, m_Temp->getValueAtTime(p_Time), m_Tint->getValueAtTime(p_Time)))
+    if ((fc == 2 || fc == 3) && !sm_fc_calibrate(&p, m_Temp->getValueAtTime(p_Time), m_Tint->getValueAtTime(p_Time)))
         p.fcMode = 0;   // degenerate basis: show the picture rather than a lie
     if (p_NodeInfo && p.fcMode != 0)
         *p_NodeInfo = std::string("FALSE COLOR ATTIVO (")

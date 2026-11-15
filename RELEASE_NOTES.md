@@ -26,6 +26,15 @@
 - Verificato: il grigio 18% di S-Log3, V-Log, Apple Log, DaVinci Intermediate e ACEScct esce a 0,383 (ACES 2.0,
   Luminanza, Filmico) e 0,390 (ACES 1.3) in Rec.709 / Gamma 2.4, i valori delle Output Transform ACES.
 
+### Correzioni
+
+- False color esposizione, correzione: sulle curve che finiscono sotto +5,5 stop (Rec.709, sRGB, gamma, HLG, F-Log,
+  D-Log M) un bianco bruciato restava grigio o verde. Ora è rosso un canale in cima alla curva d'ingresso, giallo
+  entro ¼ di stop, a qualunque EI; le viste di temperatura e tinta lo lasciano grigio. S-Log3, V-Log, Apple Log e le
+  altre curve lunghe non cambiano.
+- *Rileggi metadata* non sgancia più la clip: una rilettura lenta (oltre 2 s) o non riuscita lascia il nodo con i
+  valori che aveva, invece di renderlo neutro.
+
 ## Log MetaRaw 3.1.0
 
 **S-Log MetaRaw diventa Log MetaRaw** e legge le camere oltre a Sony. Nomi interni, id dei nodi e cartelle restano gli

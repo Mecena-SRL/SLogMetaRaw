@@ -157,3 +157,9 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   partono senza; con un rendering l'uscita è forzata a una codifica di schermo (Rec.709 = Gamma 2.4). Aperto: provare
   in Resolve (Metal, visibilità dei cursori), confronto con OpenColorIO da rifare con PyOpenColorIO installato (in CI
   i test ACES contro OCIO sono saltati), nomi Resolve di *Input Color Space* per V-Log / Apple Log / D-Log M.
+- False color dopo la prima prova su Mac (15/11/2026): verifica statica del percorso Metal (struttura parametri solo
+  int/float, 336 byte uguali in C++ e Metal; nessun letterale double, nessuna divisione intera, puntatori `constant`
+  con `SM_CPTR`/`SM_CREF`) senza difetti trovati; il kernel resta non eseguito. Corretto il clip della vista
+  esposizione sulle curve corte (`sm_fc_headroom`), visto su un fotogramma reale di C0001 (Rec.709). Aperto: dettagli
+  del problema segnalato in Resolve; toggle false color attivi ma senza effetto con *Camera metadata* o senza
+  metadata (nodo trasparente); vista zone con i valori iniziali quasi tutta tinta (Ombre e Luci coprono ogni stop).
