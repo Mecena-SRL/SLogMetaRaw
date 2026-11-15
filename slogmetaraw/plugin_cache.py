@@ -130,7 +130,7 @@ def _record(r):
                        + (' (%s)' % short if short and short != model else ''),
         'lens': m.get('lens') or '—',
         'focal': focal or '—',
-        'iris': ('f/%.1f' % m['iris_fnumber']) if m.get('iris_fnumber') else '—',
+        'iris': ('f/%.1f' % m['iris_fnumber']) if isinstance(m.get('iris_fnumber'), (int, float)) and m['iris_fnumber'] else '—',
         'focus': resolve_io.distance_text(m) or '—',
         'shutter': shutter or '—',
         'exposure': exposure or '—',

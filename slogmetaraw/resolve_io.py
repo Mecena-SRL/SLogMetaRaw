@@ -91,6 +91,7 @@ def _short_model(model):
     """ILME-FX30 -> FX30, ILCE-7SM3 -> A7SM3, ILCE-6300 -> A6300."""
     if not model:
         return ''
+    model = str(model)
     m = model.split('-', 1)[-1] if '-' in model else model
     if model.upper().startswith('ILCE-'):
         m = 'A' + m
@@ -121,7 +122,7 @@ def summary_line(r):
     parts = [_short_model(m.get('model'))]
     if m.get('lens'):
         parts.append(m['lens'])
-    if m.get('focal_length_mm'):
+    if isinstance(m.get('focal_length_mm'), (int, float)) and m['focal_length_mm']:
         parts.append('%gmm' % round(m['focal_length_mm'], 1))
     if aperture_text(m):
         parts.append('f/%.1f' % m['iris_fnumber'])
@@ -132,13 +133,13 @@ def summary_line(r):
     ei = m.get('exposure_index')
     if iso:
         parts.append('ISO %s' % iso + (' / EI %s' % ei if ei and ei != iso else ''))
-    if m.get('white_balance_k'):
+    if isinstance(m.get('white_balance_k'), (int, float)) and m['white_balance_k']:
         parts.append('%dK' % m['white_balance_k'] + (' tint %s' % m['tint'] if m.get('tint') else ''))
     if m.get('color_space'):
         parts.append(m['color_space'])
     if m.get('sq'):
         parts.append('S&Q %gp' % m['capture_fps_value'])
-    return ' · '.join(p for p in parts if p)
+    return ' · '.join(str(p) for p in parts if p)
 
 
 def notes_block(r):

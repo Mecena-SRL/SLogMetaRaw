@@ -3,6 +3,7 @@
 
 Codes match ofx/SLogMetaRaw/DevelopMath.h (gamut and transfer tables).
 """
+import math
 import re
 
 from . import vendors
@@ -62,13 +63,24 @@ def camera_space(meta):
     return gamut or 'Rec.709', gamma
 
 
+def _finite(v):
+    """v as a finite float, None when it is not a number (a value another camera's schema put there)."""
+    if isinstance(v, bool) or not isinstance(v, (int, float, str)):
+        return None
+    try:
+        x = float(v)
+    except (ValueError, OverflowError):
+        return None
+    return x if math.isfinite(x) else None
+
+
 def shot_values(meta):
     """As-shot (Kelvin, tint, EI, estimated_wb) from the clip metadata."""
-    k = meta.get('white_balance_k')
+    k = _finite(meta.get('white_balance_k'))
     estimated = False
-    if not k:
+    if not k or not 1000 <= k <= 50000:
         k = PRESET_KELVIN.get(meta.get('lighting_preset'), 5600)
         estimated = True
-    tint = max(-99.0, min(99.0, float(meta.get('tint') or 0)))   # the camera's own range
-    ei = meta.get('exposure_index') or meta.get('iso') or 800
-    return int(k), float(tint), int(ei), estimated
+    tint = max(-99.0, min(99.0, _finite(meta.get('tint')) or 0.0))   # the camera's own range
+    ei = next((x for x in (_finite(meta.get('exposure_index')), _finite(meta.get('iso'))) if x and 0 < x <= 1e6), 800)
+    return int(round(k)), float(tint), int(round(ei)), estimated

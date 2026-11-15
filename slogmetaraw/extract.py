@@ -290,7 +290,7 @@ def _read_djmd(f, m, out, info, interval, max_samples, deadline):
     def read_one(i):
         if i not in offsets:
             return None
-        sample = f.read_at(offsets[i], min(track.sample_size(i), FIRST_READ))
+        sample = f.read_at(offsets[i], min(track.sample_size(i), dji.SAMPLE_MAX))
         if i == 0:
             meta.update(dji.clip_values(sample))
             meta.update(dji.profile(sample, meta))
@@ -643,7 +643,7 @@ def read_clip(path, interval=1.0, max_samples=FULL_SAMPLES, allow_dataless=False
     if side:
         out['sidecar'] = side
         with open(side, 'rb') as fh:
-            out['_sidecar_xml'] = fh.read()
+            out['_sidecar_xml'] = fh.read(mp4.XML_MAX)   # a few KB; a bigger file is cut and refused
     with mp4.CountingFile(path) as f:
         f.preload(0, mp4.META_PRELOAD)
         head = f.read_at(0, 16)

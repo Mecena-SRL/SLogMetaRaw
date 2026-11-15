@@ -10,8 +10,10 @@ says how much the reading can be trusted in meta['profile_source']:
   'compatibile'  the profile was found by name somewhere in the metadata (any camera, any vendor key);
   'stimato'      nothing names a profile: the codec's colour description (VUI / colr) decides, Rec.709 if silent.
 """
+import math
 import re
-import xml.etree.ElementTree as ET
+
+from . import nrt
 
 # Profile names as cameras write them -> (gamma, gamut) as camera.py names them. Most specific first:
 # "D-Log M" before "D-Log", "F-Log2" before "F-Log". The gamut is None when the curve alone does not fix it.
@@ -54,9 +56,20 @@ def find_log(text):
     return gamma[0], gamut or gamma[1]
 
 
+def _text(v):
+    """A metadata value as printable text (bytes of an unknown QuickTime type decoded), None for numbers."""
+    if isinstance(v, bytes):
+        v = v.decode('utf-8', 'replace')
+    if not isinstance(v, str):
+        return None
+    v = ''.join(ch for ch in v[:256] if ch.isprintable()).strip()
+    return v or None
+
+
 def _number(text):
-    m = re.search(r'-?\d+(?:\.\d+)?', str(text or ''))
-    return float(m.group()) if m else None
+    m = re.search(r'-?\d{1,15}(?:\.\d{1,15})?', str(text or ''))
+    x = float(m.group()) if m else None
+    return x if x is not None and math.isfinite(x) else None
 
 
 def _int(text):
@@ -72,8 +85,8 @@ def _xml_values(xml):
     """{element local name: text} of every leaf element, the first occurrence of each name."""
     out = {}
     try:
-        root = ET.fromstring(xml.encode('utf-8') if isinstance(xml, str) else xml)
-    except ET.ParseError:
+        root = nrt.parse_xml(xml.encode('utf-8') if isinstance(xml, str) else xml)
+    except nrt.XMLError:
         return out
     for el in root.iter():
         if len(el) == 0 and el.text and el.text.strip():
@@ -103,23 +116,23 @@ def _blackmagic(keys, meta):
         return
     put = {'iso': _int(k.get('iso')), 'white_balance_k': _int(k.get('whiteBalanceKelvin')),
            'tint': _number(k.get('whiteBalanceTint')), 'shutter_angle': _number(k.get('shutterAngle')),
-           'iris_fnumber': _number(k.get('aperture')), 'lens': k.get('lensType'),
-           'capture_fps': k.get('sensorFPS')}
+           'iris_fnumber': _number(k.get('aperture')), 'lens': _text(k.get('lensType')),
+           'capture_fps': _text(k.get('sensorFPS'))}
     meta.update({key: x for key, x in put.items() if x not in (None, '')})
 
 
 def _apple(keys, meta):
-    model = keys.get('com.apple.quicktime.model') or ''
-    make = keys.get('com.apple.quicktime.make') or keys.get('com.apple.proapps.manufacturer')
+    model = _text(keys.get('com.apple.quicktime.model'))
+    make = _text(keys.get('com.apple.quicktime.make')) or _text(keys.get('com.apple.proapps.manufacturer'))
     if make:
-        meta['manufacturer'] = re.sub(r'\s+Inc\.?$', '', str(make))
+        meta['manufacturer'] = re.sub(r'\s+Inc\.?$', '', make)
     if model:
         # "Apple iPhone 17 Pro 13mm": the lens rides along in the model name
-        meta['model'] = re.sub(r'^Apple\s+', '', str(model))
-    if keys.get('com.apple.quicktime.software'):
-        meta['firmware'] = keys['com.apple.quicktime.software']
-    if keys.get('com.apple.quicktime.creationdate'):
-        meta.setdefault('creation_date', keys['com.apple.quicktime.creationdate'])
+        meta['model'] = re.sub(r'^Apple\s+', '', model)
+    if _text(keys.get('com.apple.quicktime.software')):
+        meta['firmware'] = _text(keys['com.apple.quicktime.software'])
+    if _text(keys.get('com.apple.quicktime.creationdate')):
+        meta.setdefault('creation_date', _text(keys['com.apple.quicktime.creationdate']))
 
 
 def _apple_logs(name, meta):
@@ -137,8 +150,8 @@ def _apple_logs(name, meta):
 def _udta(udta, meta):
     """QuickTime user data: maker and model as text atoms."""
     for atom, key in (('\xa9mak', 'manufacturer'), ('\xa9mod', 'model'), ('\xa9swr', 'firmware')):
-        if isinstance(udta.get(atom), str) and udta[atom].strip():
-            meta.setdefault(key, udta[atom].strip())
+        if _text(udta.get(atom)):
+            meta.setdefault(key, _text(udta[atom]))
 
 
 def read(m, meta, entry_info):
