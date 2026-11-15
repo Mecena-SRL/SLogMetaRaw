@@ -34,6 +34,12 @@
   altre curve lunghe non cambiano.
 - *Rileggi metadata* non sgancia più la clip: una rilettura lenta (oltre 2 s) o non riuscita lascia il nodo con i
   valori che aveva, invece di renderlo neutro.
+- **File danneggiati o di altri modelli DJI:** un campo `djmd` di tipo o valore inatteso (modello numerico, numero
+  troncato, NaN, ISO o Kelvin fuori scala) perde solo quel valore invece di dare *errore* sulla clip; un messaggio
+  danneggiato costa millisecondi, non secondi. Una chiave QuickTime non testuale o un XML con DTD (entità) vengono
+  ignorati. Una riga che lo script non sa comporre conta come errore di quella clip, senza fermare la lettura.
+- **Panasonic più leggera:** il DC-S5 riserva 10 MB vuoti dentro `moov`; la lettura li salta (1,3 MB invece di 10,5
+  MB per clip).
 
 ## Log MetaRaw 3.1.0
 
@@ -76,12 +82,6 @@ vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
 - **Script in Resolve** per tutte le camere: produttore, modello, seriale, firmware, ISO, Kelvin, tint, shutter,
   diaframma, lente, Gamma Notes e Color Space Notes, parole chiave e note di camera. Un file senza camera non viene più
   segnato come Sony e non riceve Data Level né Input Color Space; HLG imposta *Rec.2100 HLG* quando è chiesto.
-- **File danneggiati o di altri modelli DJI:** un campo `djmd` di tipo o valore inatteso (modello numerico, numero
-  troncato, NaN, ISO o Kelvin fuori scala) perde solo quel valore invece di dare *errore* sulla clip; un messaggio
-  danneggiato costa millisecondi, non secondi. Una chiave QuickTime non testuale o un XML con DTD (entità) vengono
-  ignorati. Una riga che lo script non sa comporre conta come errore di quella clip, senza fermare la lettura.
-- **Panasonic più leggera:** il DC-S5 riserva 10 MB vuoti dentro `moov`; la lettura li salta (1,3 MB invece di 10,5
-  MB per clip).
 
 ### Plugin
 
