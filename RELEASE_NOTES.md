@@ -1,6 +1,6 @@
 # Changelog
 
-## Prossima versione: 3.1.1 (non rilasciata)
+## Log MetaRaw 3.1.1
 
 **Non provato in Resolve, Metal non eseguito** (parità CPU/modello verificata dai test).
 
