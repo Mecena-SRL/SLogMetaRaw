@@ -22,6 +22,9 @@ vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
     Il nodo Detail va messo prima.
   - **ACES 1.3 · Gamut Compress**: Reference Gamut Compression, RRT e ODT Rec.709 100 nit (stessi valori di OpenColorIO
     entro 1e-5, verificato dai test).
+  - **OpenDRT**: OpenDRT v1.1.0 di Jed Smith (GPL-3), look Standard, Rec.1886 100 nit, surround dim, parametri fissi.
+    È un port del DCTL: stessi valori del DCTL originale compilato in C++ entro 5e-6, verificato dai test; non
+    confrontato in Resolve.
 
 ### Lettura
 

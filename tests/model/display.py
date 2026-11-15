@@ -6,10 +6,13 @@ Every rendering takes the scene XYZ (D65) and returns display-linear RGB in the 
     2 Luminanza: max-RGB norm through the tonescale, ratios kept, path to white, display gamut compression
     3 Filmico: per channel on an inset gamut (AgX-like), same tonescale and compressions
     4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim (CTL, ACES 1.x)
-1 and 4 are checked against OpenColorIO's built-ins (tests/test_display.py); 2 and 3 are this plugin's own.
+    5 OpenDRT v1.1.0, look Standard, Rec.1886 preset (model/opendrt.py, a port of Jed Smith's DCTL)
+1 and 4 are checked against OpenColorIO's built-ins (tests/test_display.py), 5 against values of the original DCTL;
+2 and 3 are this plugin's own.
 """
 import math
 
+from .opendrt import opendrt
 from .tone import dm
 import aces2   # tools/, on the path through develop_model
 
@@ -186,6 +189,8 @@ def render(xyz, mode, space):
         c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], ACES2.output_transform(mul(dm.MATS[AP0][1], xyz))))
     elif mode == 4:
         c = mul(dm.MATS[space][1], aces(xyz))
+    elif mode == 5:
+        c = mul(dm.MATS[space][1], mul(dm.MATS[REC709][0], opendrt(xyz)))
     elif mode == 2:
         c = luminance(xyz, space)
     else:

@@ -113,7 +113,8 @@ struct DevelopParams {
     float zSat[4];     // zone Sat, and the nominal edges / 1/falloffs its weights use (Black, Shadow, Light, Specular)
     float zNomEdge[4];
     float zNomInvF[4];
-    int drt;           // display rendering (math/Display.h): 0 none (CST), 1 ACES 2.0, 2 Luminanza, 3 Filmico, 4 ACES 1.3
+    int drt;           // display rendering (math/Display.h): 0 none (CST), 1 ACES 2.0, 2 Luminanza, 3 Filmico, 4 ACES 1.3,
+                       // 5 OpenDRT
 };
 
 // ---- math/Transfer.h
@@ -989,6 +990,7 @@ SM_FN SMf3 sm_fc_emit(SMf3 c, SM_CREF(DevelopParams) p) {
 //   2 Luminanza: max-RGB norm through the tonescale, channel ratios kept, path to white near the peak
 //   3 Filmico: the tonescale per channel on an inset gamut (AgX-like): highlights reach white on their own
 //   4 ACES 1.3: Reference Gamut Compression, RRT, ODT Rec.709 100 nit dim surround (ACES CTL 1.x)
+//   5 OpenDRT v1.1.0 (Jed Smith, GPL-3.0): look Standard, Rec.1886 preset (Rec.709, dim surround), 100 nit
 // 2 and 3 share the 100 nit tonescale of ACES 2.0 / OpenDRT (Siragusano): grey 0.18 -> 0.1, 128 -> 1.0,
 // and two gamut compressions: ACES RGC in AP1, then into the display gamut (knee 0.9).
 
@@ -996,6 +998,7 @@ SM_FN SMf3 sm_fc_emit(SMf3 c, SM_CREF(DevelopParams) p) {
 #define SM_DRT_LUMINANCE 2
 #define SM_DRT_FILMIC 3
 #define SM_DRT_ACES13 4
+#define SM_DRT_OPENDRT 5
 
 // ACES native matrices (D60): AP0->AP1, AP1->AP0, AP1->XYZ, XYZ->AP1. The ends use the D65-adapted ones.
 SM_CONST float SM_ACES_M[36] = {
@@ -1220,6 +1223,87 @@ SM_FN SMf3 sm_drt_into_display(SMf3 xyz, int space) {
     return smf3(SM_MAX(c.x, 0.0f), SM_MAX(c.y, 0.0f), SM_MAX(c.z, 0.0f));
 }
 
+// ---- OpenDRT v1.1.0 by Jed Smith, https://github.com/jedypod/open-display-transform, GPL-3.0-or-later.
+// Port of display-transforms/opendrt/OpenDRT.dctl, tag v1.1.0, commit 8804747def7cdc9089f2b2ea5011596792134304,
+// fixed to its defaults: look Standard (its tonescale, creative white D65), display encoding Rec.1886 (Rec.709,
+// dim surround), peak 100 nit, grey 10 nit, clamp. Modules off in the preset, HDR terms (zero at 100 nit) and the
+// D65 creative white (identity) are left out. Model and constants: tests/model/opendrt.py.
+SM_CONST float SM_ODRT_M[18] = {   // XYZ D65 -> P3-D65, P3-D65 -> Rec.709 (the DCTL's matrices)
+    2.4934969119f, -0.9313836179f, -0.4027107845f, -0.8294889696f, 1.7626640603f, 0.0236246858f,
+    0.0358458302f, -0.0761723893f, 0.9568845240f,
+    1.2249401763f, -0.2249401763f, 0.0f, -0.0420569547f, 1.0420569547f, 0.0f,
+    -0.0196375546f, -0.0786360456f, 1.0982736001f };
+
+SM_FN float sm_odrt_spow(float a, float b) { return a <= 0.0f ? a : SM_POW(a, b); }
+SM_FN float sm_odrt_toe(float x) { return sm_odrt_spow(x, 2.0f) / (x + 0.003f); }
+SM_FN float sm_odrt_hyp(float x, float s) { return sm_odrt_spow(x / (x + s), 1.58095238f); }   // con 1.66 / 1.05
+SM_FN float sm_odrt_softplus(float x, float s) { return x > 10.0f * s ? x : s * SM_LOG(1.0f + SM_EXP(x / s)); }
+SM_FN float sm_odrt_win(float h, float o, float w) {   // gauss_window(hue_offset(h, o), w); C fmod for x > -2 pi
+    float x = h - o + 3.14159265f;
+    if (x >= 6.28318531f) x -= 6.28318531f;
+    x -= 3.14159265f;
+    return SM_EXP(-x * x / w);
+}
+
+SM_FN SMf3 sm_opendrt(SMf3 xyz) {   // CIE XYZ D65 -> display-linear Rec.709 0..1
+    SMf3 c = sm_mul(SM_ODRT_M, 0, xyz);
+    float l = 0.25f * c.x + 0.2f * c.y + 0.55f * c.z;   // render space, then the offset
+    c = smf3(0.35f * l + 0.65f * c.x + 0.005f, 0.35f * l + 0.65f * c.y + 0.005f, 0.35f * l + 0.65f * c.z + 0.005f);
+    float tsn = SM_SQRT(c.x * c.x + c.y * c.y + c.z * c.z) / 1.73205081f;
+    c = tsn != 0.0f ? smf3(c.x / tsn, c.y / tsn, c.z / tsn) : smf3(0.0f, 0.0f, 0.0f);   // RGB ratios
+    float ox = c.x - c.z, oy = c.y - 0.5f * (c.x + c.z);
+    float ach = 0.5f * SM_SQRT(ox * ox + oy * oy);
+    ach = 1.25f * ach * ach / (ach + 0.25f);
+    float hue = SM_ATAN2(ox, oy) + 3.14159265f + 1.10714931f;
+    if (hue >= 6.28318531f) hue -= 6.28318531f;
+    const float hr = sm_odrt_win(hue, 0.1f, 0.66f), hg = sm_odrt_win(hue, 4.3f, 0.66f);
+    const float hb = sm_odrt_win(hue, 2.3f, 0.66f), hsr = sm_odrt_win(hue, -0.4f, 0.66f);
+    const float hsb = sm_odrt_win(hue, 2.5f, 0.66f), hc = sm_odrt_win(hue, 3.3f, 0.5f);
+
+    // brilliance
+    const float btf = SM_SQRT(tsn / (tsn + 1.0f));
+    const float bex = (-2.5f * hr - 1.5f * hg - 1.5f * hb) * SM_POW(ach, 1.0f / 0.35f);
+    tsn *= SM_EXP2(bex * (bex < 0.0f ? btf : 1.0f - btf));
+    // hyperbolic compression: the purity tonescale (= the 100 nit one) and the display one
+    const float tpt = sm_odrt_hyp(tsn, 0.555596008f);
+    tsn = sm_odrt_hyp(tsn, 0.547281427f);
+
+    // hue contrast R
+    float hts = 1.0f - tpt;
+    const float hcc = (hts * (1.0f - ach) + ach * (1.0f - hts)) * ach * hr;
+    hts = SM_POW(hts, 1.0f / 0.3f);
+    const float hf = hcc - 2.0f * hcc * hts + 1.0f;
+    c.y *= hf;
+    c.z *= hf;
+    // hue shift RGB, then CMY (only C)
+    const float sr = 0.6f * hsr * ach * SM_POW(tpt, 1.0f / 0.6f), sg = -0.35f * hg * ach * tpt;
+    const float sb = -0.66f * hsb * ach * tpt, sc = -0.25f * hc * ach * (1.0f - tpt);
+    c = smf3(c.x + sb - sg, c.y + sr - sb + sc, c.z + sg - sr - sc);
+
+    // purity compression: limits low and high, mid-range purity
+    float ptf = 1.0f - SM_POW(tpt, 1.0f + 4.0f * (1.0f - tpt) * (0.25f + 0.5f * hsr + 0.1f * hsb));
+    ptf = SM_POW(ptf, (1.0f - 0.5f * ach * hsr) * (1.0f - 0.25f * ach));
+    const float ul = 1.0f - tpt, ul2 = ul * ul;
+    ptf *= (1.0f + 0.4f * SM_EXP(-4.0f * ach * ach) * ul2 * ul2)
+         * (1.0f - 0.8f * SM_EXP(-5.0f * ach * ach) * SM_POW(tpt, 1.0f / 1.4f));
+    c = smf3(c.x * ptf + 1.0f - ptf, c.y * ptf + 1.0f - ptf, c.z * ptf + 1.0f - ptf);
+
+    // inverse render space, into Rec.709
+    l = 0.35f * (0.25f * c.x + 0.2f * c.y + 0.55f * c.z);
+    c = sm_mul(SM_ODRT_M, 9, smf3((c.x - l) / 0.65f, (c.y - l) / 0.65f, (c.z - l) / 0.65f));
+    // post brilliance
+    ox = c.x - c.z;
+    oy = c.y - 0.5f * (c.x + c.z);
+    float bd = 0.25f * SM_SQRT(ox * ox + oy * oy);
+    bd = 1.1f * bd * bd / (bd + 0.1f);
+    const float bp = SM_EXP2((-0.5f - ach * (1.25f * hr + 1.25f * hg + 0.25f * hb)) * bd * tsn);
+    // purity softclip, final tonescale, back from the ratios
+    tsn = sm_odrt_toe(tsn * 1.01004153f);
+    c = smf3(sm_odrt_softplus(c.x * bp, 0.06f) * tsn, sm_odrt_softplus(c.y * bp, 0.08f) * tsn,
+             sm_odrt_softplus(c.z * bp, 0.06f) * tsn);
+    return smf3(sm_clamp(c.x, 0.0f, 1.0f), sm_clamp(c.y, 0.0f, 1.0f), sm_clamp(c.z, 0.0f, 1.0f));
+}
+
 SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
     SMf3 c;
     if (mode == SM_DRT_ACES2) {
@@ -1227,6 +1311,8 @@ SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
     } else if (mode == SM_DRT_ACES13) {
         const SMf3 a = sm_mul(SM_ACES_M, 9, sm_rgc_ap1(xyz));
         c = sm_from_xyz(sm_to_xyz(sm_aces_odt(sm_aces_rrt(a)), 10), space);
+    } else if (mode == SM_DRT_OPENDRT) {
+        c = sm_from_xyz(sm_to_xyz(sm_opendrt(xyz), 1), space);
     } else if (mode == SM_DRT_LUMINANCE) {
         c = sm_drt_into_display(xyz, space);
         const float n = SM_MAX(c.x, SM_MAX(c.y, c.z));

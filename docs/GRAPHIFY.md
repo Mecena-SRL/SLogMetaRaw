@@ -68,7 +68,9 @@ common/  (condiviso dai due nodi)
 - **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
   `drt` ≠ 0 (scelta `rendering` in Uscita): 1 ACES 2.0 (Output Transform SDR 100 nit Rec.709; parametri e tabelle
   fissi calcolati da `tools/aces2.py` in `gen/Aces2Tables.h`), 2 Luminanza (stile DaVinci, approssimato), 3 Filmico
-  (per canale, AgX-like), 4 ACES 1.3 (RGC + RRT + ODT). ACES verificati contro OpenColorIO in `tests/test_display.py`.
+  (per canale, AgX-like), 4 ACES 1.3 (RGC + RRT + ODT), 5 OpenDRT v1.1.0 (port del DCTL di Jed Smith, look
+  Standard, modello `tests/model/opendrt.py`). ACES verificati contro OpenColorIO, OpenDRT contro valori del DCTL
+  originale, in `tests/test_display.py`.
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
   `sm_develop` (lo stesso `math/` del render) sulla griglia size³; `tools/export_lut.py` è il
   prototipo Python equivalente, usato per verificare l'output senza ricompilare il plugin.
@@ -106,7 +108,7 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   `gen/Aces2Tables.h`): non va mai editato a mano.
 
 _Ultimo aggiornamento: 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
-(`tools/aces2.py`, `gen/Aces2Tables.h`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
+(`tools/aces2.py`, `gen/Aces2Tables.h`) e OpenDRT (`tests/model/opendrt.py`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
 dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:
 cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
 `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata

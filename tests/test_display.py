@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Display renderings (math/Display.h): the model against OpenColorIO's ACES built-ins (2.0 and 1.3), the C++
-kernel against the model, and the properties the two own renderings promise (grey, white, black, range)."""
+"""Display renderings (math/Display.h): the model against OpenColorIO's ACES built-ins (2.0 and 1.3) and against
+values of the original OpenDRT DCTL, the C++ kernel against the model, and the properties the two own renderings promise (grey, white, black, range)."""
 import colorsys
 import math
 import os
@@ -64,14 +64,38 @@ class DisplayModel(unittest.TestCase):
             for r, g in zip(ref, got):
                 self.assertAlmostEqual(r, g, delta=5e-5, msg='XYZ %s' % xyz)
 
+    # OpenDRT v1.1.0 (tag commit 8804747), OpenDRT.dctl compiled unchanged as C++ (float) with a small shim for the
+    # DCTL built-ins, Input Gamut XYZ, Input Transfer Function Linear, every other control at its default; output
+    # decoded from its 2.4 power. XYZ D65 -> display-linear Rec.709.
+    OPENDRT_DCTL = [
+        ((0.171083, 0.18, 0.196031), (0.11181695, 0.111814819, 0.111815751)),
+        ((0.0, 0.0, 0.0), (9.83255304e-05, 9.83255304e-05, 9.83255304e-05)),
+        ((0.0095, 0.01, 0.0109), (0.00171161036, 0.00171543052, 0.00171620306)),
+        ((2.0, 2.1, 2.3), (0.698590577, 0.698087394, 0.698960185)),
+        ((0.4, 0.2, 0.05), (0.388397425, 0.00849359855, 0.0125116408)),
+        ((0.05, 0.3, 0.1), (0.0, 0.208444685, 0.0388759859)),
+        ((0.2, 0.1, 1.5), (1.02093027e-05, 0.115276121, 0.626655996)),
+        ((1.2, 0.5, -0.05), (0.669524312, 0.0106040146, 0.00402327813)),
+        ((8.0, 12.0, 1.0), (0.888096571, 1.0, 0.72787863)),
+        ((0.02, 0.01, 0.3), (1.6039392e-08, 0.00656010164, 0.138018742)),
+        ((30.0, 10.0, 2.0), (1.0, 0.60643369, 0.538013577)),
+        ((-0.1, 0.2, 0.05), (0.0, 0.147458687, 0.0325788632)),
+    ]
+
+    def test_opendrt_matches_dctl(self):
+        for xyz, ref in self.OPENDRT_DCTL:
+            for r, g in zip(ref, D.opendrt(xyz)):
+                self.assertAlmostEqual(r, g, delta=2e-6, msg='XYZ %s' % (xyz,))
+
     def test_grey_white_black(self):
         grey = [0.18 * w for w in (0.95046, 1.0, 1.08906)]
-        for mode in (1, 2, 3, 4):
+        for mode in (1, 2, 3, 4, 5):
             for space in (REC709, REC2020, P3D65):
                 g = D.render(grey, mode, space)
                 self.assertTrue(all(abs(v - g[0]) < 2e-3 for v in g), 'grigio neutro: %s' % g)
                 self.assertTrue(0.08 < g[0] < 0.12, 'grigio 18%% vicino a 10 nit: %s' % g)
-                self.assertLess(max(D.render([0.0, 0.0, 0.0], mode, space)), 1e-6)
+                # OpenDRT's Standard look adds a scene offset of 0.005: black reaches 1e-4 (0.01 nit), by design
+                self.assertLess(max(D.render([0.0, 0.0, 0.0], mode, space)), 2e-4 if mode == 5 else 1e-6)
                 hot = D.render([1e4 * w for w in (0.95046, 1.0, 1.08906)], mode, space)
                 self.assertTrue(all(v > 0.97 for v in hot), 'il bianco arriva al picco: %s' % hot)
 
@@ -121,7 +145,7 @@ class SaturatedLights(unittest.TestCase):
         return worst
 
     def test_no_hue_jumps(self):
-        for mode in (1, 2, 3):
+        for mode in (1, 2, 3, 5):
             self.assertLess(self.sweep(mode, False), 4.0, 'modo %d: salto di tinta lungo l\'esposizione' % mode)
             self.assertLess(self.sweep(mode, True), 15.0, 'modo %d: salto di tinta fra tinte vicine' % mode)
 
@@ -133,12 +157,12 @@ class DisplayKernel(unittest.TestCase):
             self.skipTest('binari di test non compilabili qui')
         rnd = random.Random(11)
         cases = []
-        for i in range(240):
+        for i in range(300):
             rgb = [rnd.uniform(0.1, 0.95) for _ in range(3)]
             out = rnd.choice([(REC709, G24), (REC709, 5), (P3D65, G24), (REC2020, 6)])
             shot = (rnd.choice([3200, 5600]), 0.0, 800)
             panel = random_panel(rnd, rnd.choice([0.0, 0.3]))
-            cases.append((rgb, out, shot, rnd.uniform(400, 3200), panel, 1 + i % 4))
+            cases.append((rgb, out, shot, rnd.uniform(400, 3200), panel, 1 + i % 5))
         lines = [' '.join(repr(v) for v in rgb + [SGAMUT3CINE, SLOG3, out[0], out[1], *shot, shot[0], 0.0, ei,
                                                   0, 0, 0, 1.0, 0.0, 0, 0, 0, 0, 0, 0, 0]
                           + tone_values(panel) + [drt])
