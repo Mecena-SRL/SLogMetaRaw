@@ -38,7 +38,9 @@ SPACES = [  # order = DCTL codes = order of the "Color Space" menu
     ('AWG4',  (0.7347, 0.2653), (0.1424, 0.8576), (0.0991, -0.0308), D65),
     ('RWG',   (0.780308, 0.304253), (0.121595, 1.493994), (0.095612, -0.084589), D65),
     ('BMDWG5', (0.7177215, 0.3171181), (0.2280410, 0.8615690), (0.1005841, -0.0820452), D65),
-    ('DJIDLogM', (0.75140627, 0.2764833), (0.23449975, 0.69717594), (0.16272975, -0.01574311), D65),  # estimated
+    # DJI D-Log M: fitted on DJI's 'D-Log M to Rec.709' LUT with tools/lut_gamut.py (mean error 0.013; the community
+    # estimate of Thatcher Freeman was 0.032). Includes whatever look DJI put in the LUT.
+    ('DJIDLogM', (0.766007, 0.336122), (0.266897, 0.971353), (0.147200, 0.041697), D65),
 ]
 def matrices():
     out = []

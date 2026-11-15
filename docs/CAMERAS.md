@@ -43,7 +43,7 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 |---|---|---|---|
 | 11 | V-Log | Full | Panasonic V-Log/V-Gamut reference manual (via colour-science) |
 | 12 | Apple Log | Video | Apple Log Profile white paper, 2023; Apple Log 2 usa la stessa curva |
-| 13 | D-Log M | Video | **nessuna formula DJI**: fit di Thatcher Freeman (`dwg-transforms`, Mini 4 Pro, grigio 18% vicino a 0.40) |
+| 13 | D-Log M | Video | **nessuna formula DJI**: fit di Thatcher Freeman (`dwg-transforms`, Mini 4 Pro, grigio 18% vicino a 0.40); pendenza dei toni medi uguale all'asse neutro della LUT ufficiale DJI |
 | 14 | D-Log | Full | DJI D-Log/D-Gamut white paper, 2017 |
 | 15, 16 | F-Log, F-Log2 | Full | Fujifilm F-Log/F-Log2 data sheet |
 | 17 | N-Log | Full | Nikon N-Log specification, 2018 |
@@ -63,23 +63,25 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 | 15, 16 | ARRI Wide Gamut 3, 4 | ARRI |
 | 17 | REDWideGamutRGB | RED |
 | 18 | Blackmagic Wide Gamut Gen 5 | Blackmagic |
-| 19 | DJI D-Log M Gamut | **stimato**: primarie native di Thatcher Freeman; DJI non pubblica il gamut |
+| 19 | DJI D-Log M Gamut | **ricavato dalla LUT ufficiale DJI** D-Log M → Rec.709 (`tools/lut_gamut.py`, errore medio 0,013 contro 0,032 della stima di Thatcher Freeman); DJI non pubblica il gamut |
 
 Il punto di grigio 18% di ogni curva (codifica di 0.18) coincide con i valori pubblicati dai produttori: V-Log 0.423,
 Apple Log 0.488, F-Log 0.459, N-Log 0.364, C-Log2 0.398, C-Log3 0.343, LogC3 0.391, LogC4 0.278, Gen 5 0.384.
 
 ## D-Log M: stato e prossimo passo
 
-DJI distribuisce solo LUT D-Log M → Rec.709 (pagine *Downloads* di Osmo Action 4 e 5 Pro); la curva e il gamut non sono
-pubblicati e DaVinci Resolve 21.1 non ha D-Log M nel Color Space Transform (ha D-Log2 / D-Gamut2). La curva attuale è un
-fit della comunità; sulla clip della Action 5 Pro il risultato è plausibile a occhio (neutri neutri, esposizione
-coerente), **non misurato**. Per tarare curva e matrice sulle Action 4 e 5 Pro servono:
+DJI distribuisce solo LUT D-Log M → Rec.709; la curva e il gamut non sono pubblicati e DaVinci Resolve 21.1 non ha
+D-Log M nel Color Space Transform. La LUT è usata solo come **riferimento** per capire la codifica, mai applicata:
 
-1. le LUT ufficiali `DJI OSMO Action 4 D-Log M to Rec.709 V1.cube` e `DJI OSMO Action 5 Pro D-Log M to Rec.709 V1.cube`
-   (il proxy di questo ambiente non raggiunge il CDN di DJI);
-2. una serie di esposizioni di un ColorChecker (o almeno di un cartoncino grigio) in D-Log M, a ±1 stop.
+- **curva**: l'asse neutro della LUT ufficiale DJI e quello di una LUT CineMatch coincidono; la pendenza dei toni medi
+  è quella del fit di Thatcher Freeman, che resta (la LUT aggiunge solo piede e spalla da display);
+- **gamut**: `tools/lut_gamut.py` linearizza la LUT sull'asse neutro e risolve ai minimi quadrati la matrice nativo →
+  Rec.709 (righe a somma 1, punti non clippati). Primarie native: R 0.766/0.336, G 0.267/0.971, B 0.147/0.042, D65.
+  Errore medio sui colori della LUT 0,013 (Freeman 0,032, Rec.2020 0,033, P3 0,028). Il gamut ricavato è più saturo di
+  quello di Freeman: la differenza può contenere il "look" DJI della LUT; si riduce con la Saturazione del nodo.
 
-Con le LUT si ricava la curva dall'asse dei neutri e la matrice dai colori saturi; con il cartoncino si fissa il grigio.
+Resta da verificare: una clip della Osmo Action 4 e una serie di esposizioni di un ColorChecker (o cartoncino grigio) a
+±1 stop, per fissare grigio e matrice su una misura e non su una LUT. I file LUT non sono nel repository.
 
 ## Verifica su clip reali (3.1.1)
 

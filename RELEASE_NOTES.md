@@ -1,5 +1,11 @@
 # Changelog
 
+## Non rilasciato
+
+- **DJI D-Log M**: gamut 19 ricavato dalla LUT ufficiale DJI D-Log M → Rec.709 (usata come riferimento, non
+  applicata) con il nuovo `tools/lut_gamut.py`; colori più fedeli alla resa DJI rispetto alla stima della comunità.
+  La curva resta quella di Thatcher Freeman, confermata dall'asse neutro della LUT.
+
 ## Log MetaRaw 3.1.1
 
 **Non provato in Resolve, Metal non eseguito** (parità CPU/modello verificata dai test).
