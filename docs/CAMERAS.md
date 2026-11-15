@@ -30,6 +30,9 @@ la via *Spazio colore › Senza metadata › Sblocca controlli*, e lo script non
 
 L'Osmo Action 4 (`dvtm_ac203.proto`) ha gli stessi percorsi secondo le tabelle DJI di exiftool: non provata su una clip.
 Il percorso del modo colore (2-4-1) è stato letto sulla clip della Action 5 Pro; DJI non lo documenta.
+Un altro modello DJI con la traccia `djmd` ma uno schema diverso perde solo i campi che non tornano: un valore di tipo
+inatteso (testo al posto di un numero e viceversa) o fuori scala (ISO oltre 1 000 000, Kelvin fuori da 1000-50000) viene
+scartato, il resto della clip si legge (`tests/test_fuzz_cameras.py`). Ogni messaggio è letto fino a 64 KB.
 
 ## Curve e gamut del plugin
 

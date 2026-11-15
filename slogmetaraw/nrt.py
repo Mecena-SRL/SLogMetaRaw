@@ -2,6 +2,18 @@
 """Parser for Sony NonRealTimeMeta XML (sidecar *M01.XML or embedded copy)."""
 import xml.etree.ElementTree as ET
 
+XMLError = ET.ParseError
+
+
+def parse_xml(data):
+    """ET.fromstring for XML that comes from a clip: no DTD, so no entity can expand or point at a file.
+
+    Cameras write UTF-8 without a DOCTYPE; a UTF-16/32 document is refused too, since the check reads bytes.
+    """
+    if b'<!DOCTYPE' in data or b'<!ENTITY' in data or b'\0' in data[:4] or data[:2] in (b'\xff\xfe', b'\xfe\xff'):
+        raise XMLError('XML con DTD o codifica non UTF-8: ignorato')
+    return ET.fromstring(data)
+
 
 def _local(tag):
     return tag.rsplit('}', 1)[-1]
@@ -55,7 +67,7 @@ def parse(xml_bytes):
     end = xml_bytes.rfind(b'</NonRealTimeMeta>')
     if end >= 0:
         xml_bytes = xml_bytes[:end + len(b'</NonRealTimeMeta>')]
-    root = ET.fromstring(xml_bytes)
+    root = parse_xml(xml_bytes)
     out = {'nrt_version': root.tag.split('}')[0].strip('{').rsplit(':', 1)[-1],
            'last_update': root.get('lastUpdate')}
     el = _find(root, 'TargetMaterial')

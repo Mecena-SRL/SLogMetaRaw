@@ -610,12 +610,21 @@ def main(resolve, fusion, bmd, selftest=False):
                 elif msg.get('ok'):
                     r = msg['result']
                     try:
-                        plugin_cache.write_cache(r)
-                    except OSError as exc:   # disk full or unwritable folder
-                        cache_error = str(exc)
-                    state['results'][uid] = r
-                    row['values'] = _row_values(name, r)
-                    ok += 1
+                        row['values'] = _row_values(name, r)
+                    except Exception as exc:   # values this code does not expect: this clip only, not the scan
+                        _log_exception('Clip %s' % name)
+                        row['values'] = [name] + [''] * 9 + [t('errore: %s') % exc]
+                        errors += 1
+                    else:
+                        try:
+                            plugin_cache.write_cache(r)
+                        except OSError as exc:   # disk full or unwritable folder
+                            cache_error = str(exc)
+                        except Exception as exc:
+                            _log_exception('Plugin record %s' % name)
+                            cache_error = str(exc)
+                        state['results'][uid] = r
+                        ok += 1
                 elif msg.get('kind') == 'dataless':
                     row['values'] = [name] + [''] * 9 + [t('saltata: file non presente in locale')]
                     skipped += 1
