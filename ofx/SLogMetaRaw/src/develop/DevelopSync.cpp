@@ -130,6 +130,12 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
         m_Outcome = MetaOutcome::Missing;
         m_Detail = "Nessun metadata di camera nel file (" + meta.colorSpace + " solo dal codec)";
     }
+    if (m_Outcome != MetaOutcome::Found && sameClip && m_MetaValid->getValue()) {
+        // a slow or failed re-read never unhooks the clip: its values stay until a new record arrives
+        updateEnabledness();
+        refreshNodeInfo();
+        return;
+    }
     if (m_Outcome != MetaOutcome::Found) {
         setIfDifferent(m_MetaValid, false);
         m_CameraName.clear();
@@ -214,6 +220,9 @@ void DevelopEffect::composeStatus()
     std::string camera;
     if (manual && !inputKnown()) camera = "Ingresso non noto · Spazio colore › Ingresso";
     else if (m_FoundWhileManual) camera = m_CameraName + " · Metadata trovati: Rileggi li adotta";
+    else if (m_Outcome != MetaOutcome::Found && m_MetaValid->getValue())
+        camera = (m_CameraName.empty() ? std::string("Metadata precedenti") : m_CameraName)
+               + (m_Outcome == MetaOutcome::Pending ? " · rilettura in corso" : " · rilettura non riuscita, valori invariati");
     else if (m_Outcome == MetaOutcome::Pending) camera = "Lettura metadata in corso…";
     else if (m_NotLog) camera = m_CameraName + " · profilo non log: nodo neutro";
     else if (m_Outcome != MetaOutcome::Found && manual) camera = "Metadata non trovati · sbloccato";

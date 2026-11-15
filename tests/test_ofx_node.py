@@ -139,6 +139,33 @@ class Node(unittest.TestCase):
         self.run_host(self.clip('a.MP4'))
         self.assertLess(self.elapsed, 3.0)
 
+    def bound_node(self, clip):
+        """A node already developing this clip, as saved in a project."""
+        return ('--set', 'boundPath=' + clip, '--set', 'metaValid=1', '--set', 'refSource=1',
+                '--set', 'camSpace=11', '--set', 'camGamma=11')
+
+    def test_a_slow_reload_keeps_the_clip_hooked(self):
+        """Rileggi metadata slower than two seconds: the node keeps developing with the values it has."""
+        self.fake_library('time.sleep(5)\n')
+        clip = self.clip('a.MOV')
+        v = self.run_host(clip, *self.bound_node(clip))
+        self.assertEqual(v['metaValid'], '1')
+        self.assertEqual(v['camSpace'], '11')
+        self.assertIn('rilettura in corso', v['camera'])
+
+    def test_a_failed_reload_keeps_the_clip_hooked(self):
+        self.fake_library('print(json.dumps({"cache": 0, "error": "disco staccato"}))\nsys.exit(1)\n')
+        clip = self.clip('a.MOV')
+        v = self.run_host(clip, *self.bound_node(clip))
+        self.assertEqual(v['metaValid'], '1')
+        self.assertIn('valori invariati', v['camera'])
+        self.assertIn('disco staccato', v['status'])
+
+    def test_a_node_moved_to_a_clip_without_metadata_goes_neutral(self):
+        self.fake_library('print(json.dumps({"cache": 0, "error": "nessun metadata"}))\nsys.exit(1)\n')
+        v = self.run_host(self.clip('b.MOV'), *self.bound_node(self.clip('a.MOV')))
+        self.assertEqual(v['metaValid'], '0')
+
     def test_reload_during_a_cache_read_still_writes_into_resolve(self):
         self.fake_library('if sys.argv[1] == "--cache":\n    time.sleep(1)\n')
         self.run_host(self.clip('a.MP4'), '--begin-edit')
