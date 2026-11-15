@@ -61,6 +61,9 @@ common/  (condiviso dai due nodi)
   in ingresso (`DetailPasses`, GPU Metal + fallback CPU). Modalità Zonale e Split grade (Standard e Cinematografico eliminati); la
   Zonale in fasi (`zonalPhase`): Sviluppo puntuale (`dt_zonal_curve`), Stampa per aree + `dt_edge_burn`,
   Presenza. Parametri: `math/DetailHost.h::dt_prepare`, per pixel: `math/Detail.h::dt_gain`.
+- **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
+  `drt` ≠ 0 (scelta `rendering` in Uscita): ACES 1.3 (RGC + RRT + ODT, verificato contro OpenColorIO in
+  `tests/test_display.py`), Luminanza (stile DaVinci, approssimato), Filmico (per canale, AgX-like).
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
   `sm_develop` (lo stesso `math/` del render) sulla griglia size³; `tools/export_lut.py` è il
   prototipo Python equivalente, usato per verificare l'output senza ricompilare il plugin.
@@ -96,7 +99,7 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
   scritti da un lato devono restare leggibili dall'altro.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py`: non va mai editato a mano.
 
-_Ultimo aggiornamento: 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
+_Ultimo aggiornamento: 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
 dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:
 cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
 `tools/atlas/`. La freschezza di questa mappa (versione e moduli citati) è controllata

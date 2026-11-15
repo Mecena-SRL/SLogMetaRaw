@@ -1,5 +1,22 @@
 # Changelog
 
+## Non rilasciato
+
+### Plugin
+
+- **Rendering display** (gruppo Uscita del Develop): come la scena diventa immagine per lo schermo, al posto del
+  taglio netto della conversione diretta. *Nessuno (CST)* resta il default: i nodi salvati non cambiano.
+  - **ACES 1.3 · Gamut Compress**: Reference Gamut Compression, RRT e ODT Rec.709 100 nit (stessi valori di OpenColorIO
+    entro 1e-5, verificato dai test).
+  - **Luminanza (stile DaVinci)**: curva sulla luminanza con tinte conservate, compressione della saturazione nel gamut
+    dello schermo e passaggio al bianco nelle luci. Approssima il tone mapping e gamut mapping *DaVinci* del Color Space
+    Transform: la formula di Resolve non è pubblica, il risultato non è identico.
+  - **Filmico**: curva per canale su un gamut ristretto, come una pellicola (idea di AgX, curva di ACES 2.0 /
+    OpenDRT): le luci sature sfumano nel bianco senza bande, grigio 18% a 10 nit.
+  - Con un rendering, Spazio colore e Gamma sono quelli dello schermo; su Timeline il nodo scrive Rec.709 / Gamma 2.4.
+    Il nodo Detail va messo prima.
+- **Non provato in Resolve, Metal non eseguito** (parità CPU verificata dai test).
+
 ## S-Log MetaRaw 3.0.0
 
 Versione maggiore: il nodo Detail diventa un laboratorio con tre metodi della camera oscura (**Zonale**, **Split

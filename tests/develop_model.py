@@ -237,7 +237,7 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
             temp=None, tint=None, ei=None, wb_mode=0, out_space=None, out_gamma=None,
             tone=None, decode_meta=False,
             level_fix=0, level_space=0, level_gamma=0, level_gain=1.0, level_offset=0.0,
-            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0):
+            fc_mode=0, fc_u=0.0, fc_v=0.0, fc_ku=0.0, fc_kv=0.0, fc_tu=0.0, fc_tv=0.0, drt=0):
     """sm_develop. tone: the Toni and Zone panel values by OFX name (tests/model/tone.CONTROLS)."""
     from model import tone as T   # the tone model imports this module: import it late
     shot_k, shot_t, shot_ei = shot
@@ -272,5 +272,8 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
         return fc_emit(view, node_space, node_gamma, out_space, out_gamma)
     if T.active(p):
         xyz = T.tone5(xyz, p)
+    if drt:   # display rendering: out_space / out_gamma are the display
+        from model import display
+        return [encode1(c, out_gamma) for c in display.render(xyz, drt, out_space)]
     space, gamma = (out_space, out_gamma) if convert else (node_space, node_gamma)
     return [encode1(c, gamma) for c in mul(MATS[space][1], xyz)]

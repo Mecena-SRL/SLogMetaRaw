@@ -16,7 +16,7 @@ OFX_DIR = os.path.join(os.path.dirname(HERE), 'ofx', 'SLogMetaRaw')
 GEN = os.path.join(OFX_DIR, 'gen')
 
 MODULES = ['math/Common.h', 'math/Params.h', 'math/Transfer.h', 'gen/GamutMatrices.h', 'math/Gamut.h',
-           'math/Levels.h', 'math/Tone.h', 'math/Color.h', 'math/FalseColor.h', 'math/Develop.h',
+           'math/Levels.h', 'math/Tone.h', 'math/Color.h', 'math/FalseColor.h', 'math/Display.h', 'math/Develop.h',
            'math/Detail.h', 'math/HostOnly.h', 'math/ToneHost.h', 'math/DetailHost.h']
 KERNELS = [('kMetalDevelop', 'metal/kernels/Develop.metal'), ('kMetalDetail', 'metal/kernels/Detail.metal')]
 # Metal contracts a*b+c into an FMA by default and the CPU build does not: parity needs it off.
