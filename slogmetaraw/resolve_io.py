@@ -31,6 +31,7 @@ RESOLVE_COLOR_SPACES = {
     'HLG Mild (S-Log3 OOTF)': 'Rec.2100 HLG',
     'S-Cinetone': 'Rec.709 (Scene)',
     'ITU-R BT.709-5': 'Rec.709 (Scene)',
+    'HLG': 'Rec.2100 HLG',   # DJI, other cameras and the codec's ARIB STD-B67 flag
 }
 
 
@@ -187,7 +188,7 @@ def keywords(r):
     kw = [_short_model(m.get('model')), m.get('gamma_name') or '', m.get('color_primaries') or '']
     if m.get('sq'):
         kw.append('S&Q')
-    return [k for k in kw if k]
+    return list(dict.fromkeys(k for k in kw if k))   # Rec.709/Rec.709 is one keyword
 
 
 def merge_keywords(existing, new):
@@ -211,7 +212,7 @@ def build_fields(r):
     if m.get('breathing_comp_enabled') is not None:
         lens_notes.append('Breathing comp. %s' % ('On' if m['breathing_comp_enabled'] else 'Off'))
     fields = {
-        'Camera Manufacturer': m.get('manufacturer') or 'Sony',
+        'Camera Manufacturer': m.get('manufacturer') or '',
         'Camera Type': m.get('model') or '',
         'Camera TC Type': m.get('model') or '',   # Resolve itself puts the model here for FX6
         'Camera Serial #': m.get('serial') or '',
@@ -255,7 +256,8 @@ def apply_to_clip(clip, r, set_color_space=False, overwrite=True, add_tags=True,
     """Write metadata to a MediaPoolItem. Returns dict with written/failed keys."""
     m = r['meta']
     if m.get('profile_source') == 'stimato' and not (m.get('manufacturer') or m.get('model')):
-        set_data_level = False   # a recorder or DV file: the codec's range says nothing of the camera's curve
+        # a recorder or DV file: the codec's colours say nothing of the camera's curve
+        set_data_level = set_color_space = False
     # first, so that the notes, the cache record and the node all see the final state
     data_level = sync_data_level(clip, r, apply_fix=set_data_level)
     fields = build_fields(r)
