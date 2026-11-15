@@ -10,7 +10,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from slogmetaraw import camera, extract, plugin_cache, vendors  # noqa: E402
+from slogmetaraw import camera, extract, plugin_cache, resolve_io, vendors  # noqa: E402
 from clip_fixtures import _box, _full  # noqa: E402
 
 PANASONIC_XML = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -144,6 +144,16 @@ class Cameras(unittest.TestCase):
         self.assertEqual((camera.camera_space(m), m['profile_source']), (('Rec.2020', 'HLG'), 'stimato'))
         self.assertEqual(plugin_cache._record(r)['camera_found'], 0)
         self.assertTrue(any('descrizione colore del codec' in w for w in r['warnings']))
+
+    def test_what_the_script_writes_in_resolve(self):
+        r = extract.read_clip(self.mov('DJI_0003.MP4', samples=[djmd_sample(i) for i in range(5)]))
+        f = resolve_io.build_fields(r)
+        self.assertEqual((f['Camera Manufacturer'], f['Camera Type'], f['ISO'], f['White Point (Kelvin)']),
+                         ('DJI', 'OsmoAction5 Pro', '1600', '5600'))
+        self.assertEqual((f['Gamma Notes'], f['Shutter Speed']), ('D-Log M', '1/50'))
+        r = extract.read_clip(self.mov('REC.MOV'))
+        self.assertNotIn('Camera Manufacturer', resolve_io.build_fields(r))   # no camera: not written as Sony
+        self.assertEqual(resolve_io.keywords(r), ['Rec.709'])
 
     def test_mpeg_program_stream(self):
         seq = b'\0\0\1\xb3' + bytes([720 >> 4, ((720 & 15) << 4) | (576 >> 8), 576 & 255, 0x23]) + b'\0' * 8

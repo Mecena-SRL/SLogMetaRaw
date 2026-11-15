@@ -17,6 +17,9 @@ vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
   nodo dicono quale lettura è stata usata (tarata, compatibile, stimata).
 - File **MOV, MPG, MTS/M2TS** accettati da script e nodo. Un file senza camera né profilo (registratore esterno, DV)
   lascia al nodo la via *Senza metadata*.
+- **Script in Resolve** per tutte le camere: produttore, modello, seriale, firmware, ISO, Kelvin, tint, shutter,
+  diaframma, lente, Gamma Notes e Color Space Notes, parole chiave e note di camera. Un file senza camera non viene più
+  segnato come Sony e non riceve Data Level né Input Color Space; HLG imposta *Rec.2100 HLG* quando è chiesto.
 
 ### Plugin
 
