@@ -102,6 +102,23 @@ def iter_boxes(f, start, end):
         pos += size
 
 
+KEYS_MAX = 256 * 1024             # one metadata value (Panasonic's clip XML is ~2 KB)
+DATA_TYPES = {1: lambda v: v.decode('utf-8', 'replace'), 21: lambda v: int.from_bytes(v, 'big', signed=True),
+              22: lambda v: int.from_bytes(v, 'big'), 23: lambda v: struct.unpack('>f', v)[0],
+              24: lambda v: struct.unpack('>d', v)[0]}
+
+
+def _data_value(d):
+    """Value of an ilst 'data' box: type indicator, locale, payload."""
+    if len(d) < 8:
+        return None
+    v = d[8:]
+    try:
+        return DATA_TYPES[struct.unpack('>I', d[:4])[0] & 0xFFFFFF](v)
+    except (KeyError, struct.error):
+        return v
+
+
 class Track:
     def __init__(self):
         self.handler = None
@@ -210,6 +227,8 @@ class MP4:
         self.tracks = []
         self.meta_xml = None          # NonRealTimeMeta XML (bytes)
         self.items = {}               # item name -> (file offset, length), e.g. 'Look Control data'
+        self.keys = {}                # QuickTime moov/meta 'mdta' keys -> value (str, int, float or bytes)
+        self.udta = {}                # moov/udta atoms -> payload bytes (text atoms decoded to str)
         self._parse()
 
     def _parse(self):
@@ -222,9 +241,47 @@ class MP4:
                 for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):
                     if t2 == b'trak':
                         self.tracks.append(_parse_trak(f, (p2, hl2, s2)))
+                    elif t2 == b'meta':
+                        self._parse_keys(p2 + hl2, p2 + s2)
+                    elif t2 == b'udta':
+                        self._parse_udta(p2 + hl2, p2 + s2)
             elif t == b'meta':
                 f.preload(p, min(s, META_PRELOAD))
                 self._parse_meta(p + hl + 4, p + s)
+
+    def _parse_keys(self, a, b):
+        """moov/meta as QuickTime writes it (handler 'mdta'): 'keys' names, 'ilst' values by 1-based index."""
+        f = self.f
+        if f.read_at(a + 4, 4) != b'hdlr':
+            a += 4                     # the ISO form is a full box: version and flags first
+        names, values = {}, {}
+        for t, p, hl, s in iter_boxes(f, a, b):
+            d = f.read_at(p + hl, min(s - hl, KEYS_MAX))
+            if t == b'keys' and len(d) >= 8:
+                q = 8
+                for i in range(1, struct.unpack('>I', d[4:8])[0] + 1):
+                    size = struct.unpack('>I', d[q:q + 4])[0] if q + 8 <= len(d) else 0
+                    if size < 8:
+                        break
+                    names[i] = d[q + 8:q + size].decode('utf-8', 'replace')
+                    q += size
+            elif t == b'ilst':
+                for t2, p2, hl2, s2 in iter_boxes(f, p + hl, p + s):
+                    for t3, p3, hl3, s3 in iter_boxes(f, p2 + hl2, p2 + s2):
+                        if t3 == b'data':
+                            values[struct.unpack('>I', t2)[0]] = _data_value(f.read_at(p3 + hl3, s3 - hl3))
+                            break
+        self.keys.update({names[i]: v for i, v in values.items() if i in names})
+
+    def _parse_udta(self, a, b):
+        """moov/udta atoms; '\xa9xxx' text atoms (maker, model, software) as strings."""
+        for t, p, hl, s in iter_boxes(self.f, a, b):
+            d = self.f.read_at(p + hl, min(s - hl, KEYS_MAX))
+            name = t.decode('latin1')
+            if t[:1] == b'\xa9' and len(d) >= 4:
+                n = struct.unpack('>H', d[:2])[0]
+                d = d[4:4 + n].decode('utf-8', 'replace').rstrip('\0')
+            self.udta[name] = d
 
     def _parse_meta(self, a, b):
         """Top-level 'meta' (handler 'nrtm'): xml box + items in idat."""

@@ -22,7 +22,7 @@ static std::string hint(const Update::Snapshot& n)
 {
     switch (n.kind) {
     case Update::Available:
-        return n.opened ? "Download di S-Log MetaRaw " + n.latest + " avviato. Installa a Resolve chiuso."
+        return n.opened ? "Download di Log MetaRaw " + n.latest + " avviato. Installa a Resolve chiuso."
                         : "Disponibile la " + n.latest + ": clicca per scaricare"
                               + (n.title.empty() ? "" : " \xC2\xB7 " + n.title);
     case Update::Installed: return "La " + n.latest + " e installata: riavvia Resolve per usarla";

@@ -33,6 +33,90 @@ def slog_dec(x):
         else (y - 0.030001222851889303) / 5
 
 
+LC4_A, LC4_B, LC4_C = (2 ** 18 - 16) / 117.45, (1023 - 95) / 1023, 95 / 1023
+LC4_S = 7 * math.log(2) * 2 ** (7 - 14 * LC4_C / LC4_B) / (LC4_A * LC4_B)
+LC4_T = (2 ** (14 * (-LC4_C / LC4_B) + 6) - 64) / LC4_A
+HLG_A, HLG_B, HLG_C = 0.17883277, 0.28466892, 0.55991073
+HLG_GREY = 0.18 / (0.38 * 0.38 / 3)          # BT.2408: 38% HLG signal = 18% grey
+CINE = {15: (0.555556, 0.009468, 0.344676, 0.790453, 8.735631, 0.092864, 0.00089),     # F-Log
+        16: (5.555556, 0.064829, 0.245281, 0.384316, 8.799461, 0.092864, 0.000889),    # F-Log2
+        20: (5.555556, 0.052272, 0.247190, 0.385537, 5.367655, 0.092809, 0.010591)}    # LogC3 EI 800
+DLM = (5.403507709503174, 0.9523495435714722, 2.4300594329833984, 0.5263257622718811, 0.9165859222412109,
+       0.44757312536239624, 1.7669587135314941, 0.016361355781555176)
+
+
+def clog3_enc(x):
+    if x < -0.014: return -0.36726845 * math.log10(-x * 14.98325 + 1) + 0.12783901
+    if x <= 0.014: return 1.9754798 * x + 0.12512219
+    return 0.36726845 * math.log10(x * 14.98325 + 1) + 0.12240537
+
+
+def clog3_dec(y):
+    if y < 0.097465473: return -(10 ** ((0.12783901 - y) / 0.36726845) - 1) / 14.98325
+    if y <= 0.15277891: return (y - 0.12512219) / 1.9754798
+    return (10 ** ((y - 0.12240537) / 0.36726845) - 1) / 14.98325
+
+
+def encode_camera(y, g):
+    """Codes 11+: the other cameras' log curves (Transfer.h)."""
+    if g == 11: return 5.6 * y + 0.125 if y < 0.01 else 0.241514 * math.log10(y + 0.00873) + 0.598206
+    if g == 12:
+        if y >= 0.01: return 0.08550479 * math.log2(y + 0.00964052) + 0.69336945
+        return 47.28711236 * (y + 0.05641088) ** 2 if y >= -0.05641088 else 0.0
+    if g == 13:
+        a, b, c, cut, k1, k0, k2, sc = DLM
+        o = y / sc
+        t = (o - k0) / k1 if o < 0.9299839 else o / k2
+        return (math.log2(max(t + c, 1e-6)) - b) / a
+    if g == 14: return 6.025 * y + 0.0929 if y <= 0.0078 else math.log10(y * 0.9892 + 0.0108) * 0.256663 + 0.584555
+    if g in CINE:
+        a, b, c, d, e, f, cut = CINE[g]
+        return c * math.log10(a * y + b) + d if y >= cut else e * y + f
+    if g == 17: return 650 * spow(y + 0.0075, 1 / 3) / 1023 if y < 0.328 else (150 * math.log(y) + 619) / 1023
+    if g == 18:
+        x = y / 0.9
+        return math.copysign(0.24136077 * math.log10(abs(x) * 87.09937546 + 1), x) + 0.092864125
+    if g == 19: return clog3_enc(y / 0.9)
+    if g == 21: return (math.log2(LC4_A * y + 64) - 6) / 14 * LC4_B + LC4_C if y >= LC4_T else (y - LC4_T) / LC4_S
+    if g == 22: return (y + 0.01) * 15.1927 if y + 0.01 < 0 else 0.224282 * math.log10((y + 0.01) * 155.975327 + 1)
+    if g == 23: return 8.283605932402494 * y + 0.09246575342465753 if y < 0.005 \
+        else 0.08692876065491224 * math.log(y + 0.005494072432257808) + 0.5300133392291939
+    if g == 24:
+        e = max(y, 0.0) / HLG_GREY
+        return math.sqrt(3 * e) if e <= 1 / 12 else HLG_A * math.log(12 * e - HLG_B) + HLG_C
+    return y
+
+
+def decode_camera(x, g):
+    if g == 11: return (x - 0.125) / 5.6 if x < 0.181 else 10 ** ((x - 0.598206) / 0.241514) - 0.00873
+    if g == 12:
+        if x >= 0.20855532: return 2 ** ((x - 0.69336945) / 0.08550479) - 0.00964052
+        return math.sqrt(x / 47.28711236) - 0.05641088 if x > 0 else -0.05641088
+    if g == 13:
+        a, b, c, cut, k1, k0, k2, sc = DLM
+        t = 2 ** (x * a + b) - c
+        return (t * k1 + k0 if t < cut else t * k2) * sc
+    if g == 14: return (x - 0.0929) / 6.025 if x <= 0.14 else (10 ** (3.89616 * x - 2.27752) - 0.0108) / 0.9892
+    if g in CINE:
+        a, b, c, d, e, f, cut = CINE[g]
+        return (10 ** ((x - d) / c) - b) / a if x >= e * cut + f else (x - f) / e
+    if g == 17:
+        v = x * 1023
+        return (v / 650) ** 3 - 0.0075 if v < 452 else math.exp((v - 619) / 150)
+    if g == 18:
+        o = 0.092864125
+        return math.copysign((10 ** (abs(x - o) / 0.24136077) - 1) / 87.09937546, x - o) * 0.9
+    if g == 19: return clog3_dec(x) * 0.9
+    if g == 21: return (2 ** (14 * (x - LC4_C) / LC4_B + 6) - 64) / LC4_A if x >= 0 else x * LC4_S + LC4_T
+    if g == 22: return x / 15.1927 - 0.01 if x < 0 else (10 ** (x / 0.224282) - 1) / 155.975327 - 0.01
+    if g == 23: return (x - 0.09246575342465753) / 8.283605932402494 if x < 0.13388378308667 \
+        else math.exp((x - 0.5300133392291939) / 0.08692876065491224) - 0.005494072432257808
+    if g == 24:
+        e = x * x / 3 if x <= 0.5 else (math.exp((x - HLG_C) / HLG_A) + HLG_B) / 12
+        return e * HLG_GREY
+    return x
+
+
 def encode1(y, g):
     if g == 0: return y * 10.44426855 if y <= 0.00262409 else (math.log2(y + 0.0075) + 7) * 0.07329248
     if g == 2: return spow(y, 1 / 2.2)
@@ -45,7 +129,7 @@ def encode1(y, g):
     if g == 9: return (420 + math.log10((y + 0.01) / 0.19) * 261.5) / 1023 if y >= 0.01125 \
         else (y * (171.2102946929 - 95) / 0.01125 + 95) / 1023
     if g == 10: return 10.5402377416545 * y + 0.0729055341958355 if y <= 0.0078125 else (math.log2(y) + 9.72) / 17.52
-    return y
+    return encode_camera(y, g)
 
 
 def decode1(x, g):
@@ -60,7 +144,7 @@ def decode1(x, g):
     if g == 9: return 10 ** ((x * 1023 - 420) / 261.5) * 0.19 - 0.01 if x >= 171.2102946929 / 1023 \
         else (x * 1023 - 95) * 0.01125 / (171.2102946929 - 95)
     if g == 10: return (x - 0.0729055341958355) / 10.5402377416545 if x <= 0.155251141552511 else 2 ** (x * 17.52 - 9.72)
-    return x
+    return decode_camera(x, g)
 
 
 def xy_uv(x, y):

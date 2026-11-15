@@ -1,11 +1,11 @@
-# S-Log MetaRaw — Guía de usuario
+# Log MetaRaw — Guía de usuario
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · **Español** · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-es)
 
 > Versión **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Probado solo en DaVinci Resolve Studio 21.1 en macOS.
 
-S-Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archivo (Kelvin, tinte, EI, objetivo, diafragma, obturador, perfil de color) y los usa dentro de DaVinci Resolve. Resolve hace esto solo con los MXF de FX6/FX9; en los MP4 de FX30, FX3, serie a7 y a6000 los ignora.
+Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archivo (Kelvin, tinte, EI, objetivo, diafragma, obturador, perfil de color) y los usa dentro de DaVinci Resolve. Resolve hace esto solo con los MXF de FX6/FX9; en los MP4 de FX30, FX3, serie a7 y a6000 los ignora.
 
 **Contenido**
 
@@ -13,10 +13,10 @@ S-Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada arc
 2. [Instalación](#2-instalación)
 3. [Inicio rápido](#3-inicio-rápido)
 4. [El script](#4-el-script)
-5. [El nodo S-Log MetaRaw](#5-el-nodo-s-log-metaraw)
+5. [El nodo Log MetaRaw](#5-el-nodo-s-log-metaraw)
 6. [Falso color](#6-falso-color)
 7. [Tonos y Zonas](#7-tonos-y-zonas)
-8. [El nodo S-Log MetaRaw Detail](#8-el-nodo-s-log-metaraw-detail)
+8. [El nodo Log MetaRaw Detail](#8-el-nodo-s-log-metaraw-detail)
 9. [Flujos de trabajo: dónde va cada nodo](#9-flujos-de-trabajo-dónde-va-cada-nodo)
 10. [Recetas](#10-recetas)
 11. [Casos especiales](#11-casos-especiales)
@@ -34,9 +34,9 @@ Tres herramientas, una sola instalación:
 
 | Herramienta | Dónde en Resolve | Qué hace |
 |---|---|---|
-| **Script** | Workspace › Scripts › S-Log MetaRaw | Lee los metadatos de todos los clips y los escribe en el Media Pool. Corrige el Data Level de cada clip. |
-| Nodo **S-Log MetaRaw** | Color › OpenFX — **primer nodo** | Revela un clip a partir de sus valores de rodaje: balance de blancos, exposición, espacio de color, tonos por zonas, falso color. |
-| Nodo **S-Log MetaRaw Detail** | Color › OpenFX — **justo después** | El nodo creativo, con los modos del cuarto oscuro (Zonale, Split grade, Unito): recuperación local de altas luces/sombras, Texture, Clarity, Dehaze. |
+| **Script** | Workspace › Scripts › Log MetaRaw | Lee los metadatos de todos los clips y los escribe en el Media Pool. Corrige el Data Level de cada clip. |
+| Nodo **Log MetaRaw** | Color › OpenFX — **primer nodo** | Revela un clip a partir de sus valores de rodaje: balance de blancos, exposición, espacio de color, tonos por zonas, falso color. |
+| Nodo **Log MetaRaw Detail** | Color › OpenFX — **justo después** | El nodo creativo, con los modos del cuarto oscuro (Zonale, Split grade, Unito): recuperación local de altas luces/sombras, Texture, Clarity, Dehaze. |
 
 Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapping.
 
@@ -50,7 +50,7 @@ Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapp
 
    ![La ventana del DMG](images/01-dmg.png)
 
-2. Haz doble clic en **Installa S-Log MetaRaw.pkg**. El paquete no está firmado con un certificado de Apple: la primera vez, **clic derecho › Abrir**. Pide la contraseña de tu Mac porque el plugin va en una carpeta del sistema.
+2. Haz doble clic en **Installa Log MetaRaw.pkg**. El paquete no está firmado con un certificado de Apple: la primera vez, **clic derecho › Abrir**. Pide la contraseña de tu Mac porque el plugin va en una carpeta del sistema.
 
    ![Clic derecho › Abrir en el paquete sin firmar](images/02-gatekeeper.png)
 
@@ -66,7 +66,7 @@ Cada instalación empieza limpia: el plugin y la biblioteca anteriores se sustit
 |---|---|
 | Los dos nodos (un solo bundle) | `/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle` |
 | Biblioteca Python | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
-| Script del menú | `…/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py` |
+| Script del menú | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 | Caché por clip (JSON) | `~/Library/Application Support/SLogMetaRaw/cache` |
 
 **Requisitos:** macOS 12 o posterior, Apple silicon o Intel, DaVinci Resolve 21 o 20 (Resolve 20: instala Python 3 desde python.org, no trae uno propio).
@@ -76,14 +76,14 @@ Cada instalación empieza limpia: el plugin y la biblioteca anteriores se sustit
 
 ## 3. Inicio rápido
 
-1. Importa el material. Abre **Workspace › Scripts › S-Log MetaRaw**, pulsa **1 · Leer metadatos** y luego **2 · Escribir en Resolve**.
-2. En la página Color, añade **S-Log MetaRaw** como **primer nodo**. Toma el EI, los Kelvin y el tinte del clip: con esos valores no cambia nada.
+1. Importa el material. Abre **Workspace › Scripts › Log MetaRaw**, pulsa **1 · Leer metadatos** y luego **2 · Escribir en Resolve**.
+2. En la página Color, añade **Log MetaRaw** como **primer nodo**. Toma el EI, los Kelvin y el tinte del clip: con esos valores no cambia nada.
 3. Corrige el balance de blancos y la exposición en el nodo, con ayuda de las vistas de falso color.
-4. Da forma a los tonos con **Toni**. Para recuperación local, Texture, Clarity o Dehaze, añade **S-Log MetaRaw Detail** como nodo siguiente.
+4. Da forma a los tonos con **Toni**. Para recuperación local, Texture, Clarity o Dehaze, añade **Log MetaRaw Detail** como nodo siguiente.
 5. Después, el resto del etalonaje y, al final, tu CST / LUT / DRT de salida.
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  resto del etalonaje  →  CST / LUT / DRT de salida
+Log MetaRaw  →  Log MetaRaw Detail  →  resto del etalonaje  →  CST / LUT / DRT de salida
 ```
 
 ![Árbol de nodos recomendado](images/08-node-tree.png)
@@ -94,7 +94,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  resto del etalonaje  →  CST / L
 
 ## 4. El script
 
-**Workspace › Scripts › S-Log MetaRaw**
+**Workspace › Scripts › Log MetaRaw**
 
 ![Menú Workspace › Scripts](images/03-scripts-menu.png)
 
@@ -131,9 +131,9 @@ Después de **2 · Escribir en Resolve**, los datos aparecen en el Media Pool:
 
 ---
 
-## 5. El nodo S-Log MetaRaw
+## 5. El nodo Log MetaRaw
 
-**Color › OpenFX › S-Log MetaRaw** — primer nodo, antes de cualquier CST o LUT.
+**Color › OpenFX › Log MetaRaw** — primer nodo, antes de cualquier CST o LUT.
 
 ![Biblioteca OpenFX con los dos nodos](images/07-openfx-library.png)
 
@@ -259,9 +259,9 @@ Para profundizar (en italiano): [docs/TONE_MAPPING.md](https://github.com/Mecena
 
 ---
 
-## 8. El nodo S-Log MetaRaw Detail
+## 8. El nodo Log MetaRaw Detail
 
-**Color › OpenFX › S-Log MetaRaw Detail** — justo después de S-Log MetaRaw, antes de cualquier CST / LUT / DRT.
+**Color › OpenFX › Log MetaRaw Detail** — justo después de Log MetaRaw, antes de cualquier CST / LUT / DRT.
 
 Trabaja **por áreas**, sobre una base que respeta los bordes: mueve grandes áreas de luz sin aplanar el detalle fino — la parte de Highlights/Shadows de Lightroom que un nodo puntual no puede hacer.
 
@@ -317,7 +317,7 @@ Para profundizar (en italiano): [docs/DETAIL.md](https://github.com/Mecena-SRL/S
 ### A — Etalonar en DaVinci Wide Gamut (recomendado)
 
 ```
-S-Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
+Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
   → Detail             Ingresso nodo: DaVinci WG/Intermediate
   → tu etalonaje (DWG)
   → CST de salida       DaVinci WG/Intermediate → Rec.709 · Gamma 2.4, tone mapping de DaVinci
@@ -328,7 +328,7 @@ Con un tone mapping después, pon **Bianco en 4–5 en ambos nodos**. En una tim
 ### B — Todo en log
 
 ```
-S-Log MetaRaw          Color Space/Gamma: Timeline
+Log MetaRaw          Color Space/Gamma: Timeline
   → Detail             Ingresso nodo: Automatico (usa el S-Log3 del clip)
   → tu etalonaje
   → CST / LUT          S-Gamut3.Cine/S-Log3 → tu salida
@@ -388,7 +388,7 @@ touch ~/Library/Application\ Support/SLogMetaRaw/no_update_check
 
 ## 13. Desinstalar
 
-Haz doble clic en **Disinstalla S-Log MetaRaw.command**, en el DMG (la primera vez: clic derecho › Abrir). Hace esto:
+Haz doble clic en **Disinstalla Log MetaRaw.command**, en el DMG (la primera vez: clic derecho › Abrir). Hace esto:
 
 1. enumera todo lo que va a eliminar (todas las versiones 1.x y 2.x, el nombre antiguo *SonyMeta*, las instalaciones de desarrollo, la caché, los ajustes, los registros);
 2. te pide que cierres Resolve;
@@ -458,7 +458,7 @@ todavía falta (aceleración por GPU, un pipeline de imagen probado y equivalent
 
 ## 16. Límites conocidos
 
-- El panel Camera Raw de Resolve y la estabilización por giroscopio no se pueden desbloquear para MP4: viven dentro de los decodificadores de Resolve. S-Log MetaRaw reconstruye los controles de color; no abre una puerta dentro de Resolve.
+- El panel Camera Raw de Resolve y la estabilización por giroscopio no se pueden desbloquear para MP4: viven dentro de los decodificadores de Resolve. Log MetaRaw reconstruye los controles de color; no abre una puerta dentro de Resolve.
 - S-Log2 sigue el documento de Sony; la curva S-Log2 de Resolve difiere en unos 0,15 pasos.
 - Pendiente de comprobar con más archivos: XAVC HS (HEVC), HLG, S-Cinetone, zooms motorizados.
 - Probado solo en Resolve Studio 21.1 en macOS. Las builds de Linux y Windows son solo por CPU y no se han probado dentro de Resolve (ver [§15](#15-linux-y-windows-experimental)).

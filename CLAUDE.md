@@ -1,4 +1,4 @@
-# Istruzioni permanenti per gli agenti (S-Log MetaRaw)
+# Istruzioni permanenti per gli agenti (Log MetaRaw)
 
 Letto da Claude Code a ogni sessione in questo repository. L'orchestratore trasmette agli agenti le parti pertinenti.
 

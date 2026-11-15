@@ -7,7 +7,7 @@
 set -eu
 KIND="${1:?deb or rpm}"
 PLUGIN=/usr/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Linux-x86-64/SLogMetaRaw.ofx
-MENU="/opt/resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+MENU="/opt/resolve/Fusion/Scripts/Utility/Log MetaRaw.py"
 
 mkdir -p /opt/resolve    # as if DaVinci Resolve were installed: the package then puts its menu script there
 case "$KIND" in
@@ -55,7 +55,7 @@ print('menu script ok')
 PY
 # a user can also put it in their own folder
 HOME=/tmp/smokehome slogmetaraw-setup
-test -f "/tmp/smokehome/.local/share/DaVinciResolve/Fusion/Scripts/Utility/S-Log MetaRaw.py" || { echo "FAIL: user setup"; exit 1; }
+test -f "/tmp/smokehome/.local/share/DaVinciResolve/Fusion/Scripts/Utility/Log MetaRaw.py" || { echo "FAIL: user setup"; exit 1; }
 
 case "$KIND" in
   deb) apt-get remove -y -qq slogmetaraw ;;

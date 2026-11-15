@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// S-Log MetaRaw - Copyright (C) 2026 Ivan Mazzone
+// Log MetaRaw - Copyright (C) 2026 Ivan Mazzone
 // Free software under the GNU General Public License v3 or later; no warranty.
 #include "ofxsImageEffect.h"
 

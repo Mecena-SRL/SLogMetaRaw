@@ -1,4 +1,4 @@
-# S-Log MetaRaw OpenFX plugins for DaVinci Resolve (macOS, Metal + CPU).
+# Log MetaRaw OpenFX plugins for DaVinci Resolve (macOS, Metal + CPU).
 #   make            build SLogMetaRaw.ofx.bundle (universal arm64 + x86_64, ad-hoc signed)
 #   make test-bins  build the test binaries with the same flags as the shipped plugin
 #   make install    copy the bundle to /Library/OFX/Plugins (needs sudo)

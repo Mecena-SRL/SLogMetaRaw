@@ -1,4 +1,4 @@
-# S-Log MetaRaw OpenFX plugins for DaVinci Resolve: Linux and Windows (CPU render) build.
+# Log MetaRaw OpenFX plugins for DaVinci Resolve: Linux and Windows (CPU render) build.
 # macOS releases keep using the Makefile (universal binary against Resolve's own SDK); this file builds the same
 # sources everywhere, Metal included on macOS, so that CI can compile and test them on all three systems.
 #

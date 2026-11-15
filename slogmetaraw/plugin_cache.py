@@ -104,7 +104,7 @@ def _record(r):
 
     stab = {'enabled': 'attivo', 'disabled': 'spento'}.get(m.get('image_stabilizer'), m.get('image_stabilizer'))
     model = m.get('model') or ''
-    short = resolve_io._short_model(model)
+    short = resolve_io._short_model(model) if m.get('manufacturer') == 'Sony' else ''
 
     canonical = canonical_path(r['path'])
     file_size, file_mtime_ns = _file_identity(canonical)
@@ -115,6 +115,8 @@ def _record(r):
         'file_size': file_size,
         'file_mtime_ns': file_mtime_ns,
         'supported': supported,
+        # 0: nothing names the camera or its profile (recorders, DV): the node keeps its manual route
+        'camera_found': 0 if m.get('profile_source') == 'stimato' and not (m.get('manufacturer') or m.get('model')) else 1,
         'shot_temp': k,
         'shot_tint': tint,
         'shot_ei': ei,
@@ -124,7 +126,7 @@ def _record(r):
         'model': m.get('model') or '',
         'color_space': m.get('color_space') or '',
         # shown by the plugin (read-only fields)
-        'camera_name': ('%s %s' % (m.get('manufacturer') or 'Sony', model)).strip()
+        'camera_name': ('%s %s' % (m.get('manufacturer') or '', model)).strip()
                        + (' (%s)' % short if short and short != model else ''),
         'lens': m.get('lens') or '—',
         'focal': focal or '—',
@@ -133,7 +135,7 @@ def _record(r):
         'shutter': shutter or '—',
         'exposure': exposure or '—',
         'white_balance': wb,
-        'color': _join(m.get('color_space'),
+        'color': _join(m.get('color_space'), 'lettura %s' % m['profile_source'] if m.get('profile_source') else '',
                        'Data level %s' % m['data_level'] if m.get('data_level') else ''),
         # data level: everything the node needs to put the image on the scale the
         # capture gamma is defined on. Codes: -1 unknown, 0 Video (64-940), 1 Full.

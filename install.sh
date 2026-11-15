@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Installs S-Log MetaRaw into DaVinci Resolve (current user).
+# Installs Log MetaRaw into DaVinci Resolve (current user).
 #   ./install.sh         copy the library to ~/Library/Application Support/SLogMetaRaw
 #   ./install.sh --dev   point Resolve at this working copy (for development)
 #   ./install.sh --dev --script-only   update the script without touching OpenFX
@@ -48,8 +48,8 @@ fi
 mkdir -p "$SCRIPTS"
 # menu entry name in Workspace > Scripts
 "$PYTHON_BIN" "$HERE/tools/render_launcher.py" "$HERE/resolve_script/SLogMetaRaw.py" \
-  "$LIB" "$SCRIPTS/S-Log MetaRaw.py"
-rm -f "$SCRIPTS/SonyMeta.py" "$SCRIPTS/SLogMetaRaw.py"   # older names, avoid duplicate menu entries
+  "$LIB" "$SCRIPTS/Log MetaRaw.py"
+rm -f "$SCRIPTS/SonyMeta.py" "$SCRIPTS/SLogMetaRaw.py" "$SCRIPTS/S-Log MetaRaw.py"   # older names, avoid duplicate menu entries
 # where the SLogMetaRaw plugin finds the library when it has to read a clip by itself
 mkdir -p "$HOME/Library/Application Support/SLogMetaRaw/cache"
 printf '%s\n' "$LIB" > "$HOME/Library/Application Support/SLogMetaRaw/lib_path"
@@ -79,9 +79,9 @@ elif [[ -d "$BUNDLE" ]]; then
   else
     sudo cp -R "$BUNDLE" /Library/OFX/Plugins/
   fi
-  echo "Plugin installato: riavvia DaVinci Resolve per vederlo in OpenFX > S-Log MetaRaw"
+  echo "Plugin installato: riavvia DaVinci Resolve per vederlo in OpenFX > Log MetaRaw"
 else
   echo "ATTENZIONE: plugin non compilato ($BUNDLE mancante): esegui 'make' in ofx/SLogMetaRaw"
 fi
-echo "Installato: $SCRIPTS/S-Log MetaRaw.py  (libreria: $LIB)"
-echo "In Resolve: Workspace > Scripts > S-Log MetaRaw  (riavvia Resolve se non compare)"
+echo "Installato: $SCRIPTS/Log MetaRaw.py  (libreria: $LIB)"
+echo "In Resolve: Workspace > Scripts > Log MetaRaw  (riavvia Resolve se non compare)"

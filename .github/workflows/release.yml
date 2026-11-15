@@ -94,8 +94,8 @@ jobs:
           VERSION="${TAG#v}"
           grep -q "^__version__ = '${VERSION}'$" slogmetaraw/__init__.py \
             || { echo "::error::$TAG is not slogmetaraw.__version__"; exit 1; }
-          # the "## S-Log MetaRaw X.Y.Z" section of RELEASE_NOTES.md, without its heading
-          awk -v h="## S-Log MetaRaw ${VERSION}" '$0 == h {on = 1; next} on && /^## / {exit} on' RELEASE_NOTES.md \
+          # the "## Log MetaRaw X.Y.Z" section of RELEASE_NOTES.md, without its heading
+          awk -v h="## Log MetaRaw ${VERSION}" '$0 == h {on = 1; next} on && /^## / {exit} on' RELEASE_NOTES.md \
             > "$RUNNER_TEMP/notes.md"
           [ -s "$RUNNER_TEMP/notes.md" ] || { echo "::error::no section for ${VERSION} in RELEASE_NOTES.md"; exit 1; }
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -109,7 +109,7 @@ jobs:
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: S-Log MetaRaw ${{ steps.meta.outputs.version }}
+          name: Log MetaRaw ${{ steps.meta.outputs.version }}
           body_path: ${{ runner.temp }}/notes.md
           # a pushed tag keeps making a draft; Run workflow publishes unless "draft" is ticked
           draft: ${{ inputs.version == '' || inputs.draft }}

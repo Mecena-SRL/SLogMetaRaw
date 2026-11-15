@@ -467,7 +467,7 @@ static void buildHost()
     g_hostProps = newProps();
     OfxPropertySetHandle h = handleOf(g_hostProps);
     propSetString(h, kOfxPropName, 0, "fake.host.for.tests");
-    propSetString(h, kOfxPropLabel, 0, "S-Log MetaRaw test host");
+    propSetString(h, kOfxPropLabel, 0, "Log MetaRaw test host");
     propSetString(h, kOfxPropAPIVersion, 0, "1");
     propSetInt(h, kOfxPropAPIVersion, 1, 4);
     propSetString(h, kOfxPropVersion, 0, "1");

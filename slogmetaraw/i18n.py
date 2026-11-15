@@ -98,7 +98,7 @@ TABLES = {
         '2 · Scrivi in Resolve': '2 · Write to Resolve',
         'Esporta CSV': 'Export CSV',
         'Chiudi': 'Close',
-        'Chiude la finestra S-Log MetaRaw': 'Closes the S-Log MetaRaw window',
+        'Chiude la finestra Log MetaRaw': 'Closes the Log MetaRaw window',
         'CSV con i campi custom, da importare in Resolve': 'CSV with the custom fields, to import in Resolve',
         'Tag per camera': 'Camera tag',
         'Sovrascrivi metadata': 'Overwrite metadata',
@@ -148,11 +148,11 @@ TABLES = {
         ' %d campi rifiutati da Resolve (vedi console).': ' %d fields rejected by Resolve (see console).',
         ' Input Color Space impostato su %d clip.': ' Input Color Space set on %d clips.',
         ' %d clip non scritte (vedi console).': ' %d clips not written (see console).',
-        'S-Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
-            'S-Log MetaRaw v%s — update checking is coming in a future version.',
+        'Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
+            'Log MetaRaw v%s — update checking is coming in a future version.',
         'Controllo aggiornamenti: in arrivo': 'Update check: coming soon',
-        'S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
-            'S-Log MetaRaw %s – Sony metadata in the Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
+        'Log MetaRaw %s – metadata camera nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
+            'Log MetaRaw %s – camera metadata in the Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
         'letto': 'read',
         ' · varia: ': ' · changed: ',
         'saltata: file non presente in locale': 'skipped: file not present locally',
@@ -169,6 +169,9 @@ TABLES = {
         'VARIAZIONI DURANTE LA CLIP': 'CHANGES DURING THE CLIP',
         'TAG NON DECODIFICATI (raw)': 'UNDECODED TAGS (raw)',
         'Range dichiarato nel codec': 'Range declared in the codec',
+        'Nessun profilo di ripresa nei metadata: uso la descrizione colore del codec (%s).':
+            "No capture profile in the metadata: using the codec's colour description (%s).",
+        'Lettura del profilo': 'Profile reading',
         'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.':
             'No rtmd track: the camera does not record per-frame capture data.',
         'Metadata di acquisizione non trovati nell\'MXF.':
@@ -183,7 +186,7 @@ TABLES = {
         'Disponibile la %s: clicca per scaricare': 'Version %s available: click to download',
         'Nessuna versione più recente (sei alla %s).': 'No newer version (you are on %s).',
         'Controllo non riuscito: %s': 'Update check failed: %s',
-        'Download di S-Log MetaRaw %s avviato.': 'Download of S-Log MetaRaw %s started.',
+        'Download di Log MetaRaw %s avviato.': 'Download of Log MetaRaw %s started.',
     },
     'es': {
         'Tutto il Media Pool': 'Todo el Media Pool',
@@ -214,7 +217,7 @@ TABLES = {
         '2 · Scrivi in Resolve': '2 · Escribir en Resolve',
         'Esporta CSV': 'Exportar CSV',
         'Chiudi': 'Cerrar',
-        'Chiude la finestra S-Log MetaRaw': 'Cierra la ventana de S-Log MetaRaw',
+        'Chiude la finestra Log MetaRaw': 'Cierra la ventana de Log MetaRaw',
         'CSV con i campi custom, da importare in Resolve':
             'CSV con los campos personalizados, para importar en Resolve',
         'Tag per camera': 'Etiqueta por cámara',
@@ -262,11 +265,11 @@ TABLES = {
         ' %d campi rifiutati da Resolve (vedi console).': ' %d campos rechazados por Resolve (ver consola).',
         ' Input Color Space impostato su %d clip.': ' Input Color Space establecido en %d clips.',
         ' %d clip non scritte (vedi console).': ' %d clips no escritos (ver consola).',
-        'S-Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
-            'S-Log MetaRaw v%s — la comprobación de actualizaciones llegará en una próxima versión.',
+        'Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
+            'Log MetaRaw v%s — la comprobación de actualizaciones llegará en una próxima versión.',
         'Controllo aggiornamenti: in arrivo': 'Comprobación de actualizaciones: próximamente',
-        'S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
-            'S-Log MetaRaw %s – metadatos Sony en el Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
+        'Log MetaRaw %s – metadata camera nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
+            'Log MetaRaw %s – metadatos de cámara en el Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
         'letto': 'leído',
         ' · varia: ': ' · varía: ',
         'saltata: file non presente in locale': 'omitido: archivo no presente localmente',
@@ -285,6 +288,9 @@ TABLES = {
         'VARIAZIONI DURANTE LA CLIP': 'CAMBIOS DURANTE EL CLIP',
         'TAG NON DECODIFICATI (raw)': 'ETIQUETAS SIN DECODIFICAR (raw)',
         'Range dichiarato nel codec': 'Rango declarado en el códec',
+        'Nessun profilo di ripresa nei metadata: uso la descrizione colore del codec (%s).':
+            'No hay perfil de captura en los metadatos: uso la descripción de color del códec (%s).',
+        'Lettura del profilo': 'Lectura del perfil',
         'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.':
             'No hay pista rtmd: la cámara no graba datos de captura por fotograma.',
         'Metadata di acquisizione non trovati nell\'MXF.':
@@ -323,7 +329,7 @@ TABLES = {
         'Disponibile la %s: clicca per scaricare': 'Disponible la %s: haz clic para descargar',
         'Nessuna versione più recente (sei alla %s).': 'No hay una versión más reciente (estás en la %s).',
         'Controllo non riuscito: %s': 'Comprobación fallida: %s',
-        'Download di S-Log MetaRaw %s avviato.': 'Descarga de S-Log MetaRaw %s iniciada.',
+        'Download di Log MetaRaw %s avviato.': 'Descarga de Log MetaRaw %s iniciada.',
         'Camera': 'Cámara',
         'Clip': 'Clip',
         'Shutter': 'Obturador',
@@ -376,7 +382,7 @@ TABLES = {
         '2 · Scrivi in Resolve': '2 · Gravar no Resolve',
         'Esporta CSV': 'Exportar CSV',
         'Chiudi': 'Fechar',
-        'Chiude la finestra S-Log MetaRaw': 'Fecha a janela S-Log MetaRaw',
+        'Chiude la finestra Log MetaRaw': 'Fecha a janela Log MetaRaw',
         'CSV con i campi custom, da importare in Resolve':
             'CSV com os campos personalizados, para importar no Resolve',
         'Tag per camera': 'Tag por câmera',
@@ -424,11 +430,11 @@ TABLES = {
         ' %d campi rifiutati da Resolve (vedi console).': ' %d campos recusados pelo Resolve (ver console).',
         ' Input Color Space impostato su %d clip.': ' Input Color Space definido em %d clipes.',
         ' %d clip non scritte (vedi console).': ' %d clipes não gravados (ver console).',
-        'S-Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
-            'S-Log MetaRaw v%s — a verificação de atualizações chegará em uma próxima versão.',
+        'Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
+            'Log MetaRaw v%s — a verificação de atualizações chegará em uma próxima versão.',
         'Controllo aggiornamenti: in arrivo': 'Verificação de atualizações: em breve',
-        'S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
-            'S-Log MetaRaw %s – metadados Sony no Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
+        'Log MetaRaw %s – metadata camera nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
+            'Log MetaRaw %s – metadados de câmera no Media Pool · Ivan Mazzone + Claude (@Ivan_94m)',
         'letto': 'lido',
         ' · varia: ': ' · varia: ',
         'saltata: file non presente in locale': 'ignorado: arquivo não presente localmente',
@@ -447,6 +453,9 @@ TABLES = {
         'VARIAZIONI DURANTE LA CLIP': 'MUDANÇAS DURANTE O CLIPE',
         'TAG NON DECODIFICATI (raw)': 'TAGS NÃO DECODIFICADOS (raw)',
         'Range dichiarato nel codec': 'Faixa declarada no codec',
+        'Nessun profilo di ripresa nei metadata: uso la descrizione colore del codec (%s).':
+            'Sem perfil de captura nos metadados: uso a descrição de cor do codec (%s).',
+        'Lettura del profilo': 'Leitura do perfil',
         'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.':
             'Sem trilha rtmd: a câmera não grava dados de captura por quadro.',
         'Metadata di acquisizione non trovati nell\'MXF.':
@@ -485,7 +494,7 @@ TABLES = {
         'Disponibile la %s: clicca per scaricare': 'Disponível a %s: clique para baixar',
         'Nessuna versione più recente (sei alla %s).': 'Nenhuma versão mais recente (você está na %s).',
         'Controllo non riuscito: %s': 'Verificação falhou: %s',
-        'Download di S-Log MetaRaw %s avviato.': 'Download do S-Log MetaRaw %s iniciado.',
+        'Download di Log MetaRaw %s avviato.': 'Download do Log MetaRaw %s iniciado.',
         'Camera': 'Câmera',
         'Clip': 'Clipe',
         'Shutter': 'Obturador',
@@ -538,7 +547,7 @@ TABLES = {
         '2 · Scrivi in Resolve': '2 · 写入 Resolve',
         'Esporta CSV': '导出 CSV',
         'Chiudi': '关闭',
-        'Chiude la finestra S-Log MetaRaw': '关闭 S-Log MetaRaw 窗口',
+        'Chiude la finestra Log MetaRaw': '关闭 Log MetaRaw 窗口',
         'CSV con i campi custom, da importare in Resolve': '包含自定义字段的 CSV，可导入 Resolve',
         'Tag per camera': '相机标签',
         'Sovrascrivi metadata': '覆盖元数据',
@@ -586,11 +595,11 @@ TABLES = {
         ' %d campi rifiutati da Resolve (vedi console).': ' %d 个字段被 Resolve 拒绝（见控制台）。',
         ' Input Color Space impostato su %d clip.': ' 已为 %d 个片段设置 Input Color Space。',
         ' %d clip non scritte (vedi console).': ' %d 个片段未写入（见控制台）。',
-        'S-Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
-            'S-Log MetaRaw v%s — 更新检查将在未来版本中推出。',
+        'Log MetaRaw v%s — il controllo aggiornamenti arriverà in una prossima versione.':
+            'Log MetaRaw v%s — 更新检查将在未来版本中推出。',
         'Controllo aggiornamenti: in arrivo': '更新检查：即将推出',
-        'S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
-            'S-Log MetaRaw %s – Media Pool 中的 Sony 元数据 · Ivan Mazzone + Claude (@Ivan_94m)',
+        'Log MetaRaw %s – metadata camera nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)':
+            'Log MetaRaw %s – Media Pool 中的摄影机元数据 · Ivan Mazzone + Claude (@Ivan_94m)',
         'letto': '已读取',
         ' · varia: ': ' · 变化：',
         'saltata: file non presente in locale': '跳过：文件不在本地',
@@ -612,6 +621,9 @@ TABLES = {
         'VARIAZIONI DURANTE LA CLIP': '片段期间的变化',
         'TAG NON DECODIFICATI (raw)': '未解码标签（raw）',
         'Range dichiarato nel codec': '编解码器声明范围',
+        'Nessun profilo di ripresa nei metadata: uso la descrizione colore del codec (%s).':
+            '元数据中没有拍摄配置文件：使用编解码器的色彩描述（%s）。',
+        'Lettura del profilo': '配置文件读取方式',
         'Nessuna traccia rtmd: la camera non registra i dati di ripresa per-frame.':
             '没有 rtmd 轨道：相机未记录逐帧拍摄数据。',
         'Metadata di acquisizione non trovati nell\'MXF.': 'MXF 中未找到采集元数据。',
@@ -661,7 +673,7 @@ TABLES = {
         'Disponibile la %s: clicca per scaricare': '新版本 %s 可用：点击下载',
         'Nessuna versione più recente (sei alla %s).': '没有更新的版本（当前为 %s）。',
         'Controllo non riuscito: %s': '检查失败：%s',
-        'Download di S-Log MetaRaw %s avviato.': 'S-Log MetaRaw %s 下载已开始。',
+        'Download di Log MetaRaw %s avviato.': 'Log MetaRaw %s 下载已开始。',
         'NRT metadata': 'NRT 元数据',
         'Frame rate': '帧率',
         'Capture FPS': '拍摄帧率',

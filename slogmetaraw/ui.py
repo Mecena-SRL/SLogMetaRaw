@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""S-Log MetaRaw window for DaVinci Resolve (Workspace > Scripts > S-Log MetaRaw).
+"""Log MetaRaw window for DaVinci Resolve (Workspace > Scripts > Log MetaRaw).
 
 Layout, top to bottom: buttons, options, live progress, clip list + details,
 status bar with the clickable version. The window opens centered on the
@@ -353,14 +353,14 @@ def main(resolve, fusion, bmd, selftest=False):
 
     win = disp.AddWindow({
         'ID': 'SLogMetaRawWin',
-        'WindowTitle': t('S-Log MetaRaw %s – metadata Sony nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)') % __version__,
+        'WindowTitle': t('Log MetaRaw %s – metadata camera nel Media Pool · Ivan Mazzone + Claude (@Ivan_94m)') % __version__,
         'Geometry': [x, y, w, h],
         # No 'Events': {'Close': True}: on Resolve 21.1 (macOS) it swallows the
         # title-bar close without forwarding it, and the window cannot be closed.
     }, ui.VGroup({'Spacing': 4}, [
         # the version doubles as the update action: green and clickable when newer
         ui.HGroup({'Weight': 0}, [
-            ui.Label({'Text': 'S-Log MetaRaw', 'Weight': 1}),
+            ui.Label({'Text': 'Log MetaRaw', 'Weight': 1}),
             ui.Label({'ID': 'UpdateIcon', 'Weight': 0, 'Text': ''}),
             ui.Button({'ID': 'Version', 'Text': 'v' + __version__, 'Weight': 0,
                        'StyleSheet': VERSION_STYLE,
@@ -376,7 +376,7 @@ def main(resolve, fusion, bmd, selftest=False):
             # Do not call this widget Close: that name is reserved by the
             # window-level event namespace in Resolve's UIDispatcher.
             ui.Button({'ID': 'CloseButton', 'Text': t('Chiudi'), 'Weight': 0,
-                       'ToolTip': t('Chiude la finestra S-Log MetaRaw')}),
+                       'ToolTip': t('Chiude la finestra Log MetaRaw')}),
         ]),
         ui.HGroup({'Weight': 0}, [
             ui.CheckBox({'ID': 'Tags', 'Weight': 0, 'Text': t('Tag per camera'),
@@ -822,7 +822,7 @@ def main(resolve, fusion, bmd, selftest=False):
             path = resolve_io.any_clip_path(target)
             if r is None:
                 states[i] = t('originale non letto')
-            elif path.lower().endswith(resolve_io.VIDEO_EXTS):
+            elif path.lower().endswith(resolve_io.SONY_EXTS):
                 states[i] = t('saltata: è una clip Sony')
             elif not path:
                 states[i] = t('saltata: file non trovato')
@@ -1022,7 +1022,7 @@ def main(resolve, fusion, bmd, selftest=False):
             # the program only starts the download, nothing else
             try:
                 webbrowser.open(state['update_url'])
-                status(t('Download di S-Log MetaRaw %s avviato.') % state['update_latest'])
+                status(t('Download di Log MetaRaw %s avviato.') % state['update_latest'])
             except Exception:
                 status(t('Controllo non riuscito: %s') % 'browser')
             return

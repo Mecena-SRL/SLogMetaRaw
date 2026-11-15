@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Prototype for #13: sample the S-Log MetaRaw node into a 3D .cube LUT.
+"""Prototype for #13: sample the Log MetaRaw node into a 3D .cube LUT.
 
 The develop maths (ofx/SLogMetaRaw/math, one pixel at a time) is the single source of
 truth, so the LUT is sampled by the same compiled code the node runs on the CPU:
@@ -106,7 +106,7 @@ def main(argv=None):
     rows = sample(exe, a.size, (camera.SPACE_CODE[a.node_space], camera.GAMMA_CODE[a.node_gamma]),
                   (camera.SPACE_CODE[a.out_space], camera.GAMMA_CODE[a.out_gamma]),
                   (a.shot_k, a.shot_tint, a.shot_ei), chosen, tone)
-    write_cube(a.output, 'S-Log MetaRaw %s/%s to %s/%s' % (a.node_space, a.node_gamma, a.out_space, a.out_gamma),
+    write_cube(a.output, 'Log MetaRaw %s/%s to %s/%s' % (a.node_space, a.node_gamma, a.out_space, a.out_gamma),
                a.size, rows)
     print('%s: %d punti, %d^3' % (a.output, len(rows), a.size))
     return 0

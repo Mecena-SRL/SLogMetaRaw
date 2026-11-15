@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Draws the S-Log MetaRaw icons (installer, disk image, SLogMetaRaw OpenFX effect).
+// Draws the Log MetaRaw icons (installer, disk image, SLogMetaRaw OpenFX effect).
 // Usage: swift tools/make_icons.swift <output dir>
 // Writes icon_1024.png (app/installer icon), effect_256.png and detail_256.png (OpenFX node icons).
 import AppKit

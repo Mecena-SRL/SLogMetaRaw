@@ -16,7 +16,7 @@ void DetailFactory::unload() { Update::pluginUnloaded(); }
 
 void DetailFactory::describe(ImageEffectDescriptor& p_Desc)
 {
-    describeEffectCommon(p_Desc, "S-Log MetaRaw Detail",
+    describeEffectCommon(p_Desc, "Log MetaRaw Detail",
                          "Recupero locale di luci e ombre, Texture, Clarity e Dehaze in luce di scena, dopo S-Log "
                          "MetaRaw. Spaziale: escluso da Generate LUT. Ivan Mazzone + Claude (@Ivan_94m).",
                          "com.slogmetaraw.SLogMetaRawDetail.png", kSpatial);
@@ -81,7 +81,7 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
         p->setIsSecret(true);   // shown in Split grade
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede "
-                 "a Resolve, poi alla clip. Va dopo S-Log MetaRaw e prima di CST/LUT", mode);
+                 "a Resolve, poi alla clip. Va dopo Log MetaRaw e prima di CST/LUT", mode);
     defineChoice(d, page, "destination", "Destinazione (ODT)", kDetailDestNames, kDetailDestCount, 0,
                  "La trasformazione dopo il nodo: decide dove arrivano il bianco (zona X) e il nero (zona 0). Dal "
                  "Bianco usa Avanzate › Bianco; le altre lo fissano: CST 2,5 stop sopra il grigio e 4,5 sotto (7 stop "

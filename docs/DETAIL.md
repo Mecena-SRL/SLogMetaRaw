@@ -1,4 +1,4 @@
-# S-Log MetaRaw Detail: recupero locale, Texture, Clarity, Dehaze
+# Log MetaRaw Detail: recupero locale, Texture, Clarity, Dehaze
 
 Il secondo nodo del bundle. Fa quello che un nodo puntuale non può fare: **recuperare luci e
 ombre per aree, conservando la texture**. È la parte "alla Lightroom" dei toni. Lavora in luce
@@ -8,7 +8,7 @@ guadagno per pixel (uguale su R, G e B, quindi la tinta non cambia).
 ## Dove metterlo, e in che spazio colore
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  resto del grade  →  CST / LUT / DRT d'uscita
+Log MetaRaw  →  Log MetaRaw Detail  →  resto del grade  →  CST / LUT / DRT d'uscita
 ```
 
 **In e Out sono lo stesso spazio.** Il nodo decodifica in luce lineare quello che riceve e lo
@@ -37,7 +37,7 @@ al bianco, e non resta niente da recuperare.
   saltano tutto il nodo). Se esporti LUT, tienilo in un **nodo dedicato**.
 - Ingresso **Automatico**: chiede lo spazio colore a Resolve. In una timeline YRGB senza gestione
   del colore Resolve non lo dice: il nodo usa allora la codifica di camera della clip (dal
-  record di S-Log MetaRaw), o in mancanza S-Gamut3.Cine/S-Log3 "presunto". La riga in cima dice
+  record di Log MetaRaw), o in mancanza S-Gamut3.Cine/S-Log3 "presunto". La riga in cima dice
   sempre quale ha scelto e perché: se il nodo principale converte, controllala.
 
 ## I controlli
@@ -107,12 +107,12 @@ Come in camera oscura il lavoro è diviso in fasi, una per nodo. Scegli Modalit�
 **Guida**, in fondo al pannello, cambia con la fase: lo scopo, tre passi e cosa fare dopo.
 
 ```
-S-Log MetaRaw → Detail · 1 Sviluppo → Detail · 2 Stampa → Detail · 3 Presenza → CST / DRT d'uscita
+Log MetaRaw → Detail · 1 Sviluppo → Detail · 2 Stampa → Detail · 3 Presenza → CST / DRT d'uscita
 ```
 
 **Guida rapida**
 
-1. Aggiungi un Detail dopo S-Log MetaRaw, Modalità Zonale: un nodo nuovo parte da **1 · Sviluppo**. Imposta la
+1. Aggiungi un Detail dopo Log MetaRaw, Modalità Zonale: un nodo nuovo parte da **1 · Sviluppo**. Imposta la
    Destinazione (decide le zone).
 2. Metti **Ombra** e **Luce** sul viewer, premi **Misura zone**, poi scegli **Ombra sulla zona** (esposizione, di
    solito III) e **Luci sulla zona** (sviluppo, di solito VIII). Vista zone ti mostra dove cade ogni area.

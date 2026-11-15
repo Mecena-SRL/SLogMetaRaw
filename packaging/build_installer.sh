@@ -46,11 +46,11 @@ if [[ -z "$CHROME" ]]; then
   exit 1
 fi
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
-    --print-to-pdf="$BUILD/dmg/Guida S-Log MetaRaw (italiano).pdf" "file://$GUIDE/guida.html" 2>/dev/null
+    --print-to-pdf="$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "file://$GUIDE/guida.html" 2>/dev/null
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
-    --print-to-pdf="$BUILD/dmg/S-Log MetaRaw Guide (english).pdf" "file://$GUIDE/guide-en.html" 2>/dev/null
+    --print-to-pdf="$BUILD/dmg/Log MetaRaw Guide (english).pdf" "file://$GUIDE/guide-en.html" 2>/dev/null
 # each guide must stay within three pages
-for g in "$BUILD/dmg/Guida S-Log MetaRaw (italiano).pdf" "$BUILD/dmg/S-Log MetaRaw Guide (english).pdf"; do
+for g in "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf"; do
   python3 - "$g" <<'EOF'
 import sys
 d = open(sys.argv[1], 'rb').read()
@@ -68,7 +68,7 @@ cp -R "$ROOT/ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle" "$R/Library/OFX/Plugins/"
 rsync -a --exclude "__pycache__" "$ROOT/slogmetaraw" "$R/Library/Application Support/SLogMetaRaw/lib/"
 python3 "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" \
     "/Library/Application Support/SLogMetaRaw/lib" \
-    "$R/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+    "$R/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py"
 find "$R" -name ".DS_Store" -delete
 xattr -rc "$R"
 
@@ -88,20 +88,20 @@ sips -z 190 190 "$ROOT/assets/icon_1024.png" --out "$BUILD/resources/background.
 # keeping a second copy in distribution.xml that can drift out of step
 sed "s/@VERSION@/$VERSION/g" "$PKG_DIR/distribution.xml" > "$BUILD/distribution.xml"
 productbuild --distribution "$BUILD/distribution.xml" --resources "$BUILD/resources" \
-             --package-path "$BUILD" "$BUILD/dmg/Installa S-Log MetaRaw.pkg" > "$BUILD/productbuild.log" 2>&1
-swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/dmg/Installa S-Log MetaRaw.pkg"
+             --package-path "$BUILD" "$BUILD/dmg/Installa Log MetaRaw.pkg" > "$BUILD/productbuild.log" 2>&1
+swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/dmg/Installa Log MetaRaw.pkg"
 
 echo "5/6 disinstallatore"
-cp "$PKG_DIR/Disinstalla S-Log MetaRaw.command" "$BUILD/dmg/"
-chmod +x "$BUILD/dmg/Disinstalla S-Log MetaRaw.command"   # Finder opens it only if executable
+cp "$PKG_DIR/Disinstalla Log MetaRaw.command" "$BUILD/dmg/"
+chmod +x "$BUILD/dmg/Disinstalla Log MetaRaw.command"   # Finder opens it only if executable
 cp "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/dmg/.VolumeIcon.icns"
-xattr -c "$BUILD/dmg/Guida S-Log MetaRaw (italiano).pdf" "$BUILD/dmg/S-Log MetaRaw Guide (english).pdf" \
-         "$BUILD/dmg/Disinstalla S-Log MetaRaw.command" "$BUILD/dmg/.VolumeIcon.icns"
+xattr -c "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf" \
+         "$BUILD/dmg/Disinstalla Log MetaRaw.command" "$BUILD/dmg/.VolumeIcon.icns"
 
 echo "6/6 disco"
 DMG="$DIST/SLogMetaRaw-$VERSION.dmg"
 rm -f "$DMG" "$BUILD/rw.dmg"
-hdiutil create -quiet -volname "S-Log MetaRaw $VERSION" -srcfolder "$BUILD/dmg" -fs HFS+ -format UDRW "$BUILD/rw.dmg"
+hdiutil create -quiet -volname "Log MetaRaw $VERSION" -srcfolder "$BUILD/dmg" -fs HFS+ -format UDRW "$BUILD/rw.dmg"
 MNT="$(hdiutil attach -nobrowse -noverify -noautoopen "$BUILD/rw.dmg" | awk -F'\t' '/\/Volumes\//{print $NF}')"
 xcrun SetFile -a C "$MNT" 2>/dev/null || true   # show .VolumeIcon.icns as the disk icon
 hdiutil detach -quiet "$MNT"

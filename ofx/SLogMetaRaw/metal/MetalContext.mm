@@ -50,7 +50,7 @@ id<MTLComputePipelineState> metalPipeline(id<MTLDevice> device, const char* sour
         if (fn) pipeline = [device newComputePipelineStateWithFunction:fn error:&err];
     }
     if (!pipeline) {
-        fprintf(stderr, "S-Log MetaRaw: kernel Metal %s non compilato: %.2000s\n", function,
+        fprintf(stderr, "Log MetaRaw: kernel Metal %s non compilato: %.2000s\n", function,
                 err ? err.localizedDescription.UTF8String : "funzione mancante");
         failed.insert(key);
         return nil;

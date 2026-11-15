@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Map S-Log MetaRaw results to DaVinci Resolve media pool metadata.
+"""Map Log MetaRaw results to DaVinci Resolve media pool metadata.
 
 Standard Resolve metadata fields are written with MediaPoolItem.SetMetadata.
 Resolve's API cannot create custom metadata fields, so everything else goes
-into a [S-Log MetaRaw] block inside "Camera Notes" (user text outside the block is
+into a [Log MetaRaw] block inside "Camera Notes" (user text outside the block is
 kept) and into a CSV/ALE that Resolve can import with "create custom fields".
 """
 import copy
@@ -14,9 +14,10 @@ import re
 
 from . import datalevel
 
-NOTES_START = '[S-Log MetaRaw]'
-NOTES_END = '[/S-Log MetaRaw]'
-VIDEO_EXTS = ('.mp4', '.mxf')
+NOTES_START = '[Log MetaRaw]'
+NOTES_END = '[/Log MetaRaw]'
+VIDEO_EXTS = ('.mp4', '.mov', '.mxf', '.mpg', '.mpeg', '.mts', '.m2ts')   # files the reader opens
+SONY_EXTS = ('.mp4', '.mxf')   # Sony originals: the source side of a copy to recorder clips
 LEVEL_KEYS = ('data_level', 'luminance_code_range', 'file_range')
 
 # Resolve Input Color Space names verified on 21.1 (SetClipProperty accepts them)
@@ -252,6 +253,9 @@ def build_fields(r):
 def apply_to_clip(clip, r, set_color_space=False, overwrite=True, add_tags=True,
                   set_data_level=False):
     """Write metadata to a MediaPoolItem. Returns dict with written/failed keys."""
+    m = r['meta']
+    if m.get('profile_source') == 'stimato' and not (m.get('manufacturer') or m.get('model')):
+        set_data_level = False   # a recorder or DV file: the codec's range says nothing of the camera's curve
     # first, so that the notes, the cache record and the node all see the final state
     data_level = sync_data_level(clip, r, apply_fix=set_data_level)
     fields = build_fields(r)

@@ -1,4 +1,4 @@
-# S-Log MetaRaw 百科
+# Log MetaRaw 百科
 
 [English](Home) · [Italiano](Home-it) · [Español](Home-es) · [Português](Home-pt) · **简体中文**
 

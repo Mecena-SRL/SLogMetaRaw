@@ -1,11 +1,11 @@
-# S-Log MetaRaw — 用户指南
+# Log MetaRaw — 用户指南
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
 > 版本 **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
-S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
+Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
 
 **目录**
 
@@ -13,10 +13,10 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 2. [安装](#2-安装)
 3. [快速上手](#3-快速上手)
 4. [脚本](#4-脚本)
-5. [S-Log MetaRaw 节点](#5-s-log-metaraw-节点)
+5. [Log MetaRaw 节点](#5-s-log-metaraw-节点)
 6. [伪色](#6-伪色)
 7. [影调与分区](#7-影调与分区)
-8. [S-Log MetaRaw Detail 节点](#8-s-log-metaraw-detail-节点)
+8. [Log MetaRaw Detail 节点](#8-s-log-metaraw-detail-节点)
 9. [工作流程：每个节点放在哪里](#9-工作流程每个节点放在哪里)
 10. [配方](#10-配方)
 11. [特殊情况](#11-特殊情况)
@@ -34,9 +34,9 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 
 | 工具 | 在 Resolve 中的位置 | 作用 |
 |---|---|---|
-| **脚本** | Workspace › Scripts › S-Log MetaRaw | 读取每个片段的元数据并写入媒体池。修正每个片段的 Data Level。 |
-| **S-Log MetaRaw** 节点 | Color › OpenFX —— **第一个节点** | 以拍摄时的数值为起点显影片段：白平衡、曝光、色彩空间、分区影调、伪色。 |
-| **S-Log MetaRaw Detail** 节点 | Color › OpenFX —— **紧随其后** | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部高光/阴影恢复、Texture、Clarity、Dehaze。 |
+| **脚本** | Workspace › Scripts › Log MetaRaw | 读取每个片段的元数据并写入媒体池。修正每个片段的 Data Level。 |
+| **Log MetaRaw** 节点 | Color › OpenFX —— **第一个节点** | 以拍摄时的数值为起点显影片段：白平衡、曝光、色彩空间、分区影调、伪色。 |
+| **Log MetaRaw Detail** 节点 | Color › OpenFX —— **紧随其后** | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部高光/阴影恢复、Texture、Clarity、Dehaze。 |
 
 原始文件**绝不会被修改**：不转码，不重新封装。
 
@@ -50,7 +50,7 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 
    ![DMG 窗口](images/01-dmg.png)
 
-2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请**右键点击 › 打开**。因为插件要放入系统文件夹，它会要求输入你的 Mac 密码。
+2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请**右键点击 › 打开**。因为插件要放入系统文件夹，它会要求输入你的 Mac 密码。
 
    ![在未签名的安装包上右键 › 打开](images/02-gatekeeper.png)
 
@@ -66,7 +66,7 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 |---|---|
 | 两个节点（同一个 bundle） | `/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle` |
 | Python 库 | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
-| 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py` |
+| 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 | 每个片段的缓存（JSON） | `~/Library/Application Support/SLogMetaRaw/cache` |
 
 **系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，DaVinci Resolve 21 或 20（Resolve 20：请从 python.org 安装 Python 3，它自身不带 Python）。
@@ -76,14 +76,14 @@ S-Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文
 
 ## 3. 快速上手
 
-1. 导入素材。打开 **Workspace › Scripts › S-Log MetaRaw**，点击 **1 · 读取元数据**，再点击 **2 · 写入 Resolve**。
-2. 在 Color 页面，把 **S-Log MetaRaw** 添加为**第一个节点**。它会取得片段的 EI、开尔文值和色调：在这些数值下画面不变。
+1. 导入素材。打开 **Workspace › Scripts › Log MetaRaw**，点击 **1 · 读取元数据**，再点击 **2 · 写入 Resolve**。
+2. 在 Color 页面，把 **Log MetaRaw** 添加为**第一个节点**。它会取得片段的 EI、开尔文值和色调：在这些数值下画面不变。
 3. 借助伪色视图，在节点中校正白平衡和曝光。
-4. 用 **Toni** 塑造影调。需要局部恢复、Texture、Clarity 或 Dehaze 时，在其后添加 **S-Log MetaRaw Detail** 节点。
+4. 用 **Toni** 塑造影调。需要局部恢复、Texture、Clarity 或 Dehaze 时，在其后添加 **Log MetaRaw Detail** 节点。
 5. 然后接入其余的调色，最后是你的输出 CST / LUT / DRT。
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT / DRT
+Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT / DRT
 ```
 
 ![推荐的节点树](images/08-node-tree.png)
@@ -94,7 +94,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 ## 4. 脚本
 
-**Workspace › Scripts › S-Log MetaRaw**
+**Workspace › Scripts › Log MetaRaw**
 
 ![Workspace › Scripts 菜单](images/03-scripts-menu.png)
 
@@ -131,9 +131,9 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 ---
 
-## 5. S-Log MetaRaw 节点
+## 5. Log MetaRaw 节点
 
-**Color › OpenFX › S-Log MetaRaw**——第一个节点，放在任何 CST 或 LUT 之前。
+**Color › OpenFX › Log MetaRaw**——第一个节点，放在任何 CST 或 LUT 之前。
 
 ![同时包含两个节点的 OpenFX 库](images/07-openfx-library.png)
 
@@ -259,9 +259,9 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 
 ---
 
-## 8. S-Log MetaRaw Detail 节点
+## 8. Log MetaRaw Detail 节点
 
-**Color › OpenFX › S-Log MetaRaw Detail**——紧接在 S-Log MetaRaw 之后，放在任何 CST / LUT / DRT 之前。
+**Color › OpenFX › Log MetaRaw Detail**——紧接在 Log MetaRaw 之后，放在任何 CST / LUT / DRT 之前。
 
 它在一个保留边缘的基础层上**按区域**工作：移动大面积的明暗区域而不压平细节——这正是逐点节点无法复制的、Lightroom 中 Highlights/Shadows 的那部分能力。
 
@@ -317,7 +317,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  其余调色  →  输出 CST / L
 ### A——在 DaVinci Wide Gamut 中调色（推荐）
 
 ```
-S-Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
+Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
   → Detail             Ingresso nodo: DaVinci WG/Intermediate
   → 你的调色（DWG）
   → 输出 CST           DaVinci WG/Intermediate → Rec.709 · Gamma 2.4，DaVinci 色调映射
@@ -328,7 +328,7 @@ S-Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
 ### B——全程以 log 方式工作
 
 ```
-S-Log MetaRaw          Color Space/Gamma: Timeline
+Log MetaRaw          Color Space/Gamma: Timeline
   → Detail             Ingresso nodo: Automatico（使用片段自身的 S-Log3）
   → 你的调色
   → CST / LUT          S-Gamut3.Cine/S-Log3 → 你的输出
@@ -388,7 +388,7 @@ touch ~/Library/Application\ Support/SLogMetaRaw/no_update_check
 
 ## 13. 卸载
 
-在 DMG 中双击 **Disinstalla S-Log MetaRaw.command**（第一次请右键 › 打开）。它会：
+在 DMG 中双击 **Disinstalla Log MetaRaw.command**（第一次请右键 › 打开）。它会：
 
 1. 列出将要移除的全部内容（所有 1.x 和 2.x 版本、旧名称 *SonyMeta*、开发版安装、缓存、设置、日志）；
 2. 要求你先退出 Resolve；
@@ -457,7 +457,7 @@ Release——目前仍缺少的内容（GPU 加速、与 macOS 等效的、经�
 
 ## 16. 已知限制
 
-- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁：它们位于 Resolve 的解码器内部。S-Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
+- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁：它们位于 Resolve 的解码器内部。Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
 - S-Log2 按照索尼文档实现；Resolve 自带的 S-Log2 曲线与之相差约 0.15 档。
 - 尚需在更多文件上验证：XAVC HS（HEVC）、HLG、S-Cinetone、电动变焦。
 - 仅在 macOS 上的 Resolve Studio 21.1 中测试过。Linux 和 Windows 版本仅支持 CPU 渲染，且尚未在 Resolve 内部测试过（见[第 15 节](#15-linux-与-windows实验性)）。

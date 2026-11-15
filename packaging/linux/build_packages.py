@@ -33,18 +33,18 @@ from render_launcher import render_launcher  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIB_DIR = '/usr/lib/slogmetaraw'
 EPOCH = int(os.environ.get('SOURCE_DATE_EPOCH', '1767225600'))   # fixed mtime: the same input gives the same bytes
-MENU_NAME = 'S-Log MetaRaw.py'
+MENU_NAME = 'Log MetaRaw.py'
 MAINTAINER = 'Mecena SRL <noreply@github.com>'
 HOMEPAGE = 'https://github.com/Mecena-SRL/SLogMetaRaw'
 
 SETUP_SCRIPT = r'''#!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Puts the S-Log MetaRaw menu script (Workspace > Scripts) where DaVinci Resolve looks for it.
+# Puts the Log MetaRaw menu script (Workspace > Scripts) where DaVinci Resolve looks for it.
 #   slogmetaraw-setup            for this user: ~/.local/share/DaVinciResolve/Fusion/Scripts/Utility
 #   slogmetaraw-setup --system   for everyone, in /opt/resolve (needs root)
 #   slogmetaraw-setup --remove   remove the user's copy (--system --remove: the system one)
 set -eu
-SRC="/usr/share/slogmetaraw/launcher/S-Log MetaRaw.py"
+SRC="/usr/share/slogmetaraw/launcher/Log MetaRaw.py"
 SYSTEM=0
 REMOVE=0
 for arg in "$@"; do
@@ -61,27 +61,29 @@ else
   DEST="${XDG_DATA_HOME:-$HOME/.local/share}/DaVinciResolve/Fusion/Scripts/Utility"
 fi
 if [ "$REMOVE" = 1 ]; then
-  rm -f "${DEST:?}/S-Log MetaRaw.py"
-  echo "Removed $DEST/S-Log MetaRaw.py"
+  rm -f "${DEST:?}/Log MetaRaw.py" "${DEST:?}/S-Log MetaRaw.py"
+  echo "Removed $DEST/Log MetaRaw.py"
   exit 0
 fi
 mkdir -p "$DEST"
-cp "$SRC" "$DEST/S-Log MetaRaw.py"
-echo "Installed $DEST/S-Log MetaRaw.py - restart DaVinci Resolve."
+rm -f "$DEST/S-Log MetaRaw.py"   # launcher name up to 3.0
+cp "$SRC" "$DEST/Log MetaRaw.py"
+echo "Installed $DEST/Log MetaRaw.py - restart DaVinci Resolve."
 '''
 
 POSTINST_BODY = r'''if [ -d /opt/resolve ]; then
   mkdir -p /opt/resolve/Fusion/Scripts/Utility
-  cp "/usr/share/slogmetaraw/launcher/S-Log MetaRaw.py" "/opt/resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+  rm -f "/opt/resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+  cp "/usr/share/slogmetaraw/launcher/Log MetaRaw.py" "/opt/resolve/Fusion/Scripts/Utility/Log MetaRaw.py"
 fi
 '''
 
-PRERM_BODY = r'''rm -f "/opt/resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
+PRERM_BODY = r'''rm -f "/opt/resolve/Fusion/Scripts/Utility/Log MetaRaw.py" "/opt/resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py"
 '''
 
 RUN_STUB = r'''#!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# S-Log MetaRaw %(version)s for DaVinci Resolve - self-extracting installer.
+# Log MetaRaw %(version)s for DaVinci Resolve - self-extracting installer.
 #   sh %(name)s              install: plugin in /usr/OFX/Plugins (asks for sudo), menu script for this user
 #   sh %(name)s --user       plugin in ~/.local/share/OFX/Plugins instead (no sudo)
 #   sh %(name)s --uninstall  remove what it installed
@@ -221,7 +223,7 @@ def build_deb(bundle, out):
             'Maintainer: %s' % MAINTAINER,
             'Homepage: %s' % HOMEPAGE,
             'Description: Sony camera metadata and RAW-style controls for DaVinci Resolve',
-            ' OpenFX nodes (S-Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
+            ' OpenFX nodes (Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
             ' acquisition metadata of Sony XAVC clips into the Media Pool. CPU rendering.',
             ''])
         debian = os.path.join(stage, 'DEBIAN')
@@ -266,7 +268,7 @@ def build_rpm(bundle, out):
             '%define _build_id_links none',
             '%define __os_install_post %{nil}',
             '%description',
-            'OpenFX nodes (S-Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
+            'OpenFX nodes (Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
             'acquisition metadata of Sony XAVC clips into the Media Pool. CPU rendering.',
             '%install',
             'mkdir -p %{buildroot}',

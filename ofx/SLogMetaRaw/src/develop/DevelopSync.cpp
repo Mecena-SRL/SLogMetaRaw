@@ -33,7 +33,7 @@ void DevelopEffect::migrateSettings()
     const int saved = m_SettingsVersion->getValue();
     if (saved == kSettingsVersion) return;
     if (saved > kSettingsVersion) {   // saved by a newer plugin: keep the values as they are
-        fprintf(stderr, "S-Log MetaRaw: nodo salvato con impostazioni v%d, questo plugin arriva alla v%d\n",
+        fprintf(stderr, "Log MetaRaw: nodo salvato con impostazioni v%d, questo plugin arriva alla v%d\n",
                 saved, kSettingsVersion);
         return;
     }
@@ -125,6 +125,11 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
 
     ClipMeta meta;
     m_Outcome = acquireMeta(path, p_Mode, meta, m_Detail);
+    if (m_Outcome == MetaOutcome::Found && !meta.cameraFound) {
+        // an external recorder or a DV file: the codec's colours say nothing of the camera, the manual route stays
+        m_Outcome = MetaOutcome::Missing;
+        m_Detail = "Nessun metadata di camera nel file (" + meta.colorSpace + " solo dal codec)";
+    }
     if (m_Outcome != MetaOutcome::Found) {
         setIfDifferent(m_MetaValid, false);
         m_CameraName.clear();

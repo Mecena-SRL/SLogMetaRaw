@@ -224,7 +224,7 @@ vuole scavalcarla.
 
 ---
 
-## 8 · Cosa fa S-Log MetaRaw
+## 8 · Cosa fa Log MetaRaw
 
 1. **Lo script** legge `Data Level` di ogni clip e, con la casella *Correggi il Data Level*
    attiva, lo imposta esplicitamente a Full o Video secondo la gamma di ripresa. È la

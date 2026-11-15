@@ -49,6 +49,9 @@ FULL_SCALE_GAMMAS = {
     'ACESproxy',
     'ACEScct',
     'Scene Linear',
+    # other cameras whose formula is written on full code values (black at code 95 to 128 of 1023);
+    # Apple Log, C-Log2/3, D-Log M and HLG are legal-anchored and stay VIDEO
+    'V-Log', 'D-Log', 'F-Log', 'F-Log2', 'N-Log', 'LogC3', 'LogC4', 'Log3G10', 'BMD Film Gen5',
 }
 # Sony NRT XML <Item name="CaptureGammaEquation"> values (lower case in the file).
 FULL_SCALE_XML_GAMMAS = {'s-log', 's-log2', 's-log3', 's-log3-cine', 'slog', 'slog2', 'slog3',
@@ -87,8 +90,8 @@ def required_level(meta):
     level = gamma_scale(gamma, xml_gamma)
     name = gamma or xml_gamma or '?'
     if level == FULL:
-        return FULL, ('%s: curva definita su code value non scalati '
-                      '(nero al codice 95 per S-Log3, 90 per S-Log2/S-Log)' % name)
+        return FULL, ('%s: curva definita su code value non scalati' % name
+                      + (' (nero al codice 95 per S-Log3, 90 per S-Log2/S-Log)' if 'S-Log' in name else ''))
     if level == VIDEO:
         sw = SUPER_WHITE_GAMMAS.get(gamma)
         why = '%s: curva ancorata al range legale (0 IRE = codice 64)' % name
@@ -210,8 +213,8 @@ def decide(meta, host=AUTO, override_required=None):
     bits.append('Resolve %s' % host)
     out['detail'] = ' · '.join(bits)
     if required and declared and required != declared:
-        out['conflict'] = ('il file dichiara %s ma %s -> vale la gamma: Sony scrive '
-                           'il flag in modo incoerente sui corpi consumer.' % (declared, why))
+        out['conflict'] = 'il file dichiara %s ma %s -> vale la gamma' % (declared, why) + (
+            ': Sony scrive il flag in modo incoerente sui corpi consumer.' if meta.get('manufacturer') == 'Sony' else '.')
     return out
 
 

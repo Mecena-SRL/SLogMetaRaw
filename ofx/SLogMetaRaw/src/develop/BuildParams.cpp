@@ -83,7 +83,7 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)
         *p_NodeInfo += std::string(" · Uscita: ") + kSpaceNames[p.outSpace] + " / " + kGammaNames[p.outGamma]
-                     + " (S-Log MetaRaw Detail va messo prima di questa conversione)";
+                     + " (Log MetaRaw Detail va messo prima di questa conversione)";
 
     const double shotEI = m_ShotEI->getValue();
     const double ei = m_EI->getValueAtTime(p_Time);

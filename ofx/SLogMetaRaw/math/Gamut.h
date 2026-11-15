@@ -4,7 +4,9 @@
 #include "../gen/GamutMatrices.h"
 
 // codes: 0 DaVinci WG, 1 Rec.709, 2 Rec.2020, 3 P3 D65, 4 P3 D60, 5 P3 DCI, 6 S-Gamut,
-//        7 S-Gamut3, 8 S-Gamut3.Cine, 9 ACES AP0, 10 ACES AP1 (all adapted to D65)
+//        7 S-Gamut3, 8 S-Gamut3.Cine, 9 ACES AP0, 10 ACES AP1, 11 V-Gamut, 12 Apple Wide Gamut, 13 D-Gamut,
+//        14 Cinema Gamut, 15 ARRI WG3, 16 ARRI WG4, 17 RED WG, 18 BMD WG Gen5, 19 DJI D-Log M (estimated)
+//        (all adapted to D65)
 
 SM_FN SMf3 sm_mul(SM_CPTR m, int o, SMf3 c) {
     return smf3(m[o] * c.x + m[o + 1] * c.y + m[o + 2] * c.z,

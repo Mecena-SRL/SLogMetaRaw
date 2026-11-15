@@ -26,7 +26,7 @@ def library_in_launcher(path):
 class LauncherRendering(unittest.TestCase):
     def test_special_characters_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / 'S-Log MetaRaw.py'
+            output = Path(directory) / 'Log MetaRaw.py'
             library = str(Path(directory) / 'libreria d\'Ivan & altri | "è" \\ cartella\nnuova')
             result = subprocess.run([sys.executable, str(ROOT / 'tools/render_launcher.py'),
                                      str(ROOT / 'resolve_script/SLogMetaRaw.py'), library, str(output)],
@@ -86,7 +86,7 @@ class ScriptOnlyInstall(unittest.TestCase):
             with self.subTest(arguments=arguments):
                 result = self.install(*arguments)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                launcher = self.user_directory / SCRIPT_FOLDER / 'S-Log MetaRaw.py'
+                launcher = self.user_directory / SCRIPT_FOLDER / 'Log MetaRaw.py'
                 self.assertEqual(library_in_launcher(launcher), str(self.checkout))
                 pointer = self.user_directory / SUPPORT_FOLDER / 'lib_path'
                 self.assertEqual(pointer.read_text(encoding='utf-8').strip(), str(self.checkout))
@@ -100,7 +100,7 @@ class ScriptOnlyInstall(unittest.TestCase):
         result = self.install('--script-only')
         self.assertEqual(result.returncode, 0, result.stderr)
         installed_library = self.user_directory / SUPPORT_FOLDER / 'lib'
-        self.assertEqual(library_in_launcher(scripts / 'S-Log MetaRaw.py'), str(installed_library))
+        self.assertEqual(library_in_launcher(scripts / 'Log MetaRaw.py'), str(installed_library))
         self.assertEqual((installed_library / 'slogmetaraw/__init__.py').read_text(encoding='utf-8'),
                          "VERSION = 'test'\n")
         self.assertFalse((scripts / 'SonyMeta.py').exists())
