@@ -249,7 +249,7 @@ void DevelopEffect::updateEnabledness()
     m_DecodeUsing->getValue(decode);
     const bool manual = manualReference();
     const bool on = (decode == 1) && (m_MetaValid->getValue() || (manual && inputKnown()));
-    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Temp, m_Tint, m_EI, m_WhitePick };
+    OFX::ValueParam* const controls[] = { m_WBMode, m_ColorSpace, m_Gamma, m_Rendering, m_HlVib, m_Temp, m_Tint, m_EI, m_WhitePick };
     for (OFX::ValueParam* c : controls) c->setEnabled(on);
     for (const std::string& name : toneParamNames()) getParam(name)->setEnabled(on);
     refreshToneVisibility(*this, m_Tones, m_TonesMore->getValue());

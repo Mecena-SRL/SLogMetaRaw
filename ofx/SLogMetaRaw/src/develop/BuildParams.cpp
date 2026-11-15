@@ -72,10 +72,15 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     int cs = 0, gm = 0;
     m_ColorSpace->getValueAtTime(p_Time, cs);
     m_Gamma->getValueAtTime(p_Time, gm);
-    // 0 follows the node; a choice outside the table (a grade from a newer build) does too
-    p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : nodeSpace;
-    p.outGamma = gm >= 1 && gm <= kGammaCount ? gm - 1 : nodeGamma;
-    p.convert = (p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
+    int drt = 0;
+    m_Rendering->getValueAtTime(p_Time, drt);
+    p.drt = drt >= 1 && drt <= 5 ? drt : 0;
+    p.hlVib = p.drt ? (float)sm_clamp(m_HlVib->getValueAtTime(p_Time) / 100.0, 0.0, 1.0) : 0.0f;
+    // 0 follows the node; a choice outside the table (a grade from a newer build) does too.
+    // A display rendering needs a display: on Timeline it writes Rec.709 / Gamma 2.4.
+    p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : p.drt ? 1 : nodeSpace;
+    p.outGamma = gm >= 1 && gm <= kGammaCount ? gm - 1 : p.drt ? 3 : nodeGamma;
+    p.convert = (p.drt || p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
     // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)
         *p_NodeInfo += std::string(" · Uscita: ") + kSpaceNames[p.outSpace] + " / " + kGammaNames[p.outGamma]

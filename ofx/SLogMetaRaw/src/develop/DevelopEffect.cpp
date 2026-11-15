@@ -26,6 +26,8 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_WBMode = fetchChoiceParam("whiteBalance");
         m_ColorSpace = fetchChoiceParam("colorSpace");
         m_Gamma = fetchChoiceParam("gamma");
+        m_Rendering = fetchChoiceParam("rendering");
+        m_HlVib = fetchDoubleParam("highlightVibrance");
         m_LutSize = fetchChoiceParam("lutSize");
         m_Temp = fetchDoubleParam("colorTemp");
         m_Tint = fetchDoubleParam("tint");

@@ -66,6 +66,8 @@ private:
     OFX::ChoiceParam* m_WBMode = nullptr;
     OFX::ChoiceParam* m_ColorSpace = nullptr;
     OFX::ChoiceParam* m_Gamma = nullptr;
+    OFX::ChoiceParam* m_Rendering = nullptr;
+    OFX::DoubleParam* m_HlVib = nullptr;
     OFX::ChoiceParam* m_LutSize = nullptr;
     OFX::DoubleParam* m_Temp = nullptr;
     OFX::DoubleParam* m_Tint = nullptr;

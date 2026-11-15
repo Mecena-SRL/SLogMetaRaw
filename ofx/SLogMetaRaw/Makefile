@@ -28,8 +28,8 @@ SUPPORT_SRCS = ofxsCore ofxsImageEffect ofxsInteract ofxsLog ofxsMultiThread ofx
 CPP_SRCS = $(wildcard src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
 MM_SRCS = $(wildcard metal/*.mm)
 OBJS = $(CPP_SRCS:%.cpp=$(BUILD)/%.o) $(MM_SRCS:%.mm=$(BUILD)/%.o) $(SUPPORT_SRCS:%=$(BUILD)/support/%.o)
-GEN = gen/DevelopMath.h gen/MetalSource.inc gen/GamutMatrices.h
-MATH = $(wildcard math/*.h) $(wildcard metal/kernels/*.metal) ../../tools/build_math.py ../../tools/gamut_matrices.py
+GEN = gen/DevelopMath.h gen/MetalSource.inc gen/GamutMatrices.h gen/Aces2Tables.h
+MATH = $(wildcard math/*.h) $(wildcard metal/kernels/*.metal) ../../tools/build_math.py ../../tools/gamut_matrices.py ../../tools/aces2.py
 
 all: $(BUNDLE)
 

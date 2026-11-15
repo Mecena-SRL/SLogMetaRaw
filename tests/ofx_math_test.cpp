@@ -2,7 +2,7 @@
 // Runs gen/DevelopMath.h on the cases read from stdin (one per line) for tests/test_ofx_math.py.
 //   default:     r g b nodeSpace nodeGamma outSpace outGamma shotK shotTint shotEI k tint ei
 //                levelFix levelSpace levelGamma levelGain levelOffset fcMode fcU fcV fcKu fcKv fcTu fcTv TONE
-//                -> the developed pixel
+//                [drt [hlVib]] -> the developed pixel
 //   --dump-tone: outSpace convert expo TONE -> every tone field sm_set_tone writes
 //   --curve lo hi n: expo TONE -> n + 1 lines "e d hl hw" of sm_t5_curve at e = lo..hi (float32), then "end"
 //   --fma a b c: a*b+c, exactly 0 for the probe values only without contraction
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
             printf("end\n");
             continue;
         }
-        if (v.size() != 25 + kToneValues) continue;
+        if (v.size() < 25 + kToneValues || v.size() > 27 + kToneValues) continue;
         DevelopParams p = {};
         p.nodeSpace = (int)v[3]; p.nodeGamma = (int)v[4]; p.outSpace = (int)v[5]; p.outGamma = (int)v[6];
         p.convert = (p.outSpace != p.nodeSpace || p.outGamma != p.nodeGamma) ? 1 : 0;
@@ -132,6 +132,8 @@ int main(int argc, char** argv)
         p.fcTu = (float)v[23]; p.fcTv = (float)v[24];
         const SMToneControls c = tone(&v[25]);
         sm_set_tone(&p, &c, p.outSpace, p.convert, p.expo);
+        if (v.size() >= 26 + kToneValues) p.drt = (int)v[25 + kToneValues];
+        if (v.size() == 27 + kToneValues) p.hlVib = (float)v[26 + kToneValues];
         SMf3 o = sm_develop(smf3((float)v[0], (float)v[1], (float)v[2]), p);
         printf("%.9g %.9g %.9g\n", o.x, o.y, o.z);
     }
