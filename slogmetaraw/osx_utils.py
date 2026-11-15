@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Small helpers for the S-Log MetaRaw window (window geometry is macOS only, the sound also works on
+"""Small helpers for the Log MetaRaw window (window geometry is macOS only, the sound also works on
 Windows): None / no-op on failure, never required."""
 import ctypes
 import ctypes.util

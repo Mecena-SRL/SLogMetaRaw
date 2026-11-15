@@ -1,6 +1,31 @@
 # Changelog
 
-## S-Log MetaRaw 3.0.0
+## Log MetaRaw (prossima versione)
+
+**S-Log MetaRaw diventa Log MetaRaw** e legge le camere oltre a Sony. Nomi interni, id dei nodi e cartelle restano gli
+stessi: i progetti salvati si aprono uguali. Lo script di menu si chiama ora *Log MetaRaw*; gli installer tolgono quello
+vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
+**Non provato in Resolve, Metal non eseguito.** La curva D-Log M è un fit della comunità, non una formula DJI.
+
+### Lettura
+
+- **Camere tarate su clip reali:** Panasonic DC-S5 (V-Log/V-Gamut, ISO, Kelvin), iPhone 17 Pro con Blackmagic Camera
+  (Apple Log 2, ISO, Kelvin, tint, shutter, diaframma), DJI Osmo Action 5 Pro (D-Log M dal modo colore della traccia
+  `djmd`, ISO, shutter e Kelvin fotogramma per fotogramma, con le variazioni durante la clip).
+- **Lettura compatibile** per le camere non tarate: il nome del profilo (V-Log, F-Log/F-Log2, N-Log, C-Log2/3, LogC3/4,
+  Log3G10, Film Gen 5, D-Log, HLG) cercato nei metadata; altrimenti la descrizione colore del codec. Lo script e il
+  nodo dicono quale lettura è stata usata (tarata, compatibile, stimata).
+- File **MOV, MPG, MTS/M2TS** accettati da script e nodo. Un file senza camera né profilo (registratore esterno, DV)
+  lascia al nodo la via *Senza metadata*.
+
+### Plugin
+
+- Ingresso: 14 curve e 9 gamut nuovi nei menu Spazio colore / Gamma (V-Log, Apple Log, D-Log M, D-Log, F-Log, F-Log2,
+  N-Log, C-Log2, C-Log3, LogC3, LogC4, Log3G10, BMD Film Gen5, HLG; V-Gamut, Apple Wide Gamut, D-Gamut, Cinema Gamut,
+  ARRI WG3/WG4, RED WG, BMD WG Gen5, DJI D-Log M stimato).
+- Una clip Sony non log (Rec.709 da handycam) ora si sviluppa come video Rec.709 invece di lasciare il nodo neutro.
+
+## Log MetaRaw 3.0.0
 
 Versione maggiore: il nodo Detail diventa un laboratorio con tre metodi della camera oscura (**Zonale**, **Split
 grade**, **Unito**), ognuno in tre fasi, e il pannello del nodo S-Log MetaRaw (Develop) è riorganizzato.
@@ -70,7 +95,7 @@ stampe vere. Le schermate del wiki (`09`, `14`, `16`) mostrano ancora i pannelli
   default, intervallo e opzioni solo in coda; test del Punto bianco sul render, di migrazione, dei controlli nascosti e
   della clip ricollegata. L'host di prova capisce i parametri colore.
 
-## S-Log MetaRaw 2.4.0
+## Log MetaRaw 2.4.0
 
 Nuove modalità del nodo Detail (Cinematografico e Zonale), Ingresso e Destinazione, vista zone. Contiene anche la
 2.3.4, mai pubblicata da sola. I nodi salvati restano identici. Da verificare in Resolve: comparsa dei controlli per
@@ -102,14 +127,14 @@ modalità, punti nel viewer, Misura e vista zone su Metal.
 - Atlante, vista Interfaccia: finestra dello script e pannelli Develop e Detail ricostruiti dalle fonti, catalogo
   dei componenti, proposte di modifica esportabili; nuovo percorso «Detail: colore e passi».
 
-## S-Log MetaRaw 2.3.4
+## Log MetaRaw 2.3.4
 
 ### Plugin
 
 - Detail su Metal: senza Dehaze, o con Dehaze e mix diverso da zero, le griglie di trasmissione `at`/`bt` non si
   allocano più (come già su CPU dalla 2.3.2). L'immagine non cambia.
 
-## S-Log MetaRaw 2.3.3
+## Log MetaRaw 2.3.3
 
 Interventi rimandati dalla manutenzione del 7 ottobre (#66) e CI Windows di nuovo verde (#70). Contiene anche la
 2.3.2, mai pubblicata da sola. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica (render
@@ -148,7 +173,7 @@ CPU del Detail verificato bit per bit con la 2.3.2).
 - La release si pubblica anche da **Actions › Release packages › Run workflow** con la versione: il tag viene creato
   da GitHub su `main` e le note sono la sezione di questo file.
 
-## S-Log MetaRaw 2.3.2
+## Log MetaRaw 2.3.2
 
 Manutenzione del 7 ottobre: stabilità del plugin e dello script, meno memoria nel Detail. Nessun controllo cambia,
 nessun valore salvato cambia, l'immagine resta identica.
@@ -181,7 +206,7 @@ nessun valore salvato cambia, l'immagine resta identica.
 - **Meno memoria con le clip MP4 lunghe**: il bitrate si somma senza creare una tupla di un intero per fotogramma
   (circa 22 MB in meno per una clip di 3 ore a 60p).
 
-## S-Log MetaRaw 2.3.1
+## Log MetaRaw 2.3.1
 
 Correzioni rimandate dall'audit del 5 ottobre (#57): processi figli, connessione a Resolve su Windows e Linux, memoria
 dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
@@ -203,7 +228,7 @@ dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine 
 - **Meno memoria con le clip MP4 lunghe**: gli offset dei chunk si leggono direttamente dalla tabella `stco`/`co64`
   invece di copiarli tutti in una lista (circa 20 MB in meno per una clip di 3 ore a 60p).
 
-## S-Log MetaRaw 2.3.0
+## Log MetaRaw 2.3.0
 
 **DaVinci Resolve 20.** Il plugin e lo script funzionano anche con Resolve 20, che a differenza della 21 non ha un
 Python suo: usano il Python 3 installato da python.org (lo stesso che serve al menu Workspace › Scripts di Resolve 20).
@@ -238,7 +263,7 @@ nessun valore salvato cambia, l'immagine resta identica. **Resolve 20 non è anc
 - Nuovi test: dove il plugin cerca Python su ogni sistema, launcher non renderizzato con `lib_path` (anche con BOM o
   non UTF-8), `xdg-open` che fallisce o resta in primo piano.
 
-## S-Log MetaRaw 2.2.3
+## Log MetaRaw 2.2.3
 
 Correzioni di stabilità del plugin, soprattutto su Windows e Linux. Nessun controllo cambia, nessun valore salvato
 cambia, l'immagine resta identica.
@@ -287,7 +312,7 @@ cambia, l'immagine resta identica.
 - Nuovi test: percorsi e variabili d'ambiente con accenti, "Rileggi" durante una lettura, unload durante un controllo
   aggiornamenti, stesso nome di scheda tra plugin e script, JSON troncato, scrittura con il file occupato su Windows.
 
-## S-Log MetaRaw 2.2.2
+## Log MetaRaw 2.2.2
 
 Correzioni di stabilità e memoria del plugin, e dello script su Windows e Linux. Nessun controllo cambia, nessun valore
 salvato cambia, l'immagine resta identica.
@@ -324,7 +349,7 @@ salvato cambia, l'immagine resta identica.
   usano ora i fotogrammi (29,97), invece di dimezzare la durata e raddoppiare il bitrate.
 - Tolto codice non più usato.
 
-## S-Log MetaRaw 2.2.1
+## Log MetaRaw 2.2.1
 
 Prima versione per **Linux** e **Windows** (sperimentali, render su CPU) e correzione del controllo aggiornamenti.
 Su macOS nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
@@ -380,7 +405,7 @@ Su macOS nessun controllo cambia, nessun valore salvato cambia, l'immagine resta
 - Su Linux e Windows il render è solo su CPU: niente CUDA, OpenCL né Metal.
 - Su Linux e Windows il pulsante della versione controlla le release ma non propone ancora l'installer per quel sistema.
 
-## S-Log MetaRaw 2.2.0
+## Log MetaRaw 2.2.0
 
 Due funzioni nuove. Nessun valore salvato cambia, l'immagine resta identica.
 
@@ -395,7 +420,7 @@ Due funzioni nuove. Nessun valore salvato cambia, l'immagine resta identica.
   lette e quelle di un registratore esterno (per esempio ProRes) si abbinano in sequenza per nome, e "Copia sulle clip"
   scrive white balance, EI, lente e il blocco in Camera Notes. Copia una tantum; il data level resta neutro.
 
-## S-Log MetaRaw 2.1.2
+## Log MetaRaw 2.1.2
 
 Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
 
@@ -413,7 +438,7 @@ Correzioni dello script. Nessun controllo cambia, nessun valore salvato cambia, 
   timecode della clip ha il flag DF, invece di contare non-drop (18 frame di errore ogni 10 minuti). Il timecode DF
   si mostra con il `;` prima dei frame, come in Resolve (#24).
 
-## S-Log MetaRaw 2.1.1
+## Log MetaRaw 2.1.1
 
 Correzioni di stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta
 identica.
@@ -476,7 +501,7 @@ identica.
   di luce, frame rate…).
 - Il disinstallatore non resta più in attesa all'infinito se viene eseguito senza terminale mentre Resolve è aperto.
 
-## S-Log MetaRaw 2.1.0
+## Log MetaRaw 2.1.0
 
 Correzioni di stabilità e prestazioni, raccolte in una minor release. Nessun controllo cambia, nessun valore salvato
 cambia, l'immagine resta identica al bit (verificato sulla pipeline CPU del Detail).
@@ -511,7 +536,7 @@ cambia, l'immagine resta identica al bit (verificato sulla pipeline CPU del Deta
 - Il messaggio "Prima premi Leggi metadata" dell'esportazione CSV ora è tradotto.
 - Tolto codice non più usato.
 
-## S-Log MetaRaw 2.0.1
+## Log MetaRaw 2.0.1
 
 Stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia, l'immagine resta identica.
 
@@ -547,7 +572,7 @@ Stabilità e prestazioni. Nessun controllo cambia, nessun valore salvato cambia,
   `.gitignore`.
 - Nuovi test su clip troncate e corrotte; tolto un test della matematica dei toni 1.x che non esiste più.
 
-## S-Log MetaRaw 2.0.0
+## Log MetaRaw 2.0.0
 
 Una versione maggiore, perché cambiano insieme la matematica, i controlli e il codice:
 
@@ -815,7 +840,7 @@ Da 193 a **322 test**. Nuove verifiche:
 
 ---
 
-## S-Log MetaRaw 1.1.0
+## Log MetaRaw 1.1.0
 
 Questa versione tocca tutte e due le metà del programma. Lo script ha una finestra
 nuova, parla cinque lingue e sa scrivere in Resolve una clip alla volta. Il nodo
@@ -986,7 +1011,7 @@ kernel Metal e un modello Python di riferimento.
 
 ---
 
-## S-Log MetaRaw 1.0.1
+## Log MetaRaw 1.0.1
 
 Versione di stabilità: dopo i blocchi e le chiusure improvvise di DaVinci Resolve segnalati sulla 1.0.
 
@@ -1008,7 +1033,7 @@ mantengono i valori impostati.
 
 ---
 
-## S-Log MetaRaw 1.0
+## Log MetaRaw 1.0
 
 Prima versione pubblica. Ivan Mazzone + Claude — github.com/ivan-94m · @ivan_94m.
 

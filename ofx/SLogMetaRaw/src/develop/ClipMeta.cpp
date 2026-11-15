@@ -34,6 +34,7 @@ bool parseClipRecord(const std::map<std::string, std::string>& record, ClipMeta&
     std::map<std::string, std::string> j = record;
     auto num = [&](const char* k, int def) { return j.count(k) ? atoi(j[k].c_str()) : def; };
     m.supported = num("supported", 0) != 0;
+    m.cameraFound = num("camera_found", 1) != 0;   // records up to 3.0 came from Sony files only
     m.wbEstimated = num("wb_estimated", 0) != 0;
     m.shotTemp = atof(j["shot_temp"].c_str());
     m.shotTint = atof(j["shot_tint"].c_str());
@@ -62,13 +63,15 @@ static bool readRecord(const std::string& path, ClipMeta& m)
     return readClipRecord(path, record) && parseClipRecord(record, m);
 }
 
-// Only Sony XAVC files carry the metadata: anything else must not start Python at all.
-static bool isSonyContainer(const std::string& path)
+// Camera containers the reader knows (slogmetaraw/__main__.py EXTS): anything else must not start Python at all.
+static bool isCameraContainer(const std::string& path)
 {
     const size_t dot = path.find_last_of('.');
     std::string ext = dot == std::string::npos ? "" : path.substr(dot + 1);
     for (char& c : ext) c = (char)tolower((unsigned char)c);
-    return ext == "mp4" || ext == "mxf";
+    for (const char* known : { "mp4", "mov", "mxf", "mpg", "mpeg", "mts", "m2ts" })
+        if (ext == known) return true;
+    return false;
 }
 
 // The outcome of the Media Pool write, left by the detached writer of "Rileggi".
@@ -107,7 +110,7 @@ static MetaOutcome settle(const std::string& path, Read& r, ClipMeta& m, std::st
     const std::map<std::string, std::string> out = parseFlatJson(r.child.out);
     if (readRecord(path, m)) {
         status = r.reload ? "Metadata letti dal file"
-                          : "Metadata letti dal file: lancia lo script S-Log MetaRaw per registrarli in Resolve";
+                          : "Metadata letti dal file: lancia lo script Log MetaRaw per registrarli in Resolve";
         r.failure.clear();
         return MetaOutcome::Found;
     }
@@ -165,15 +168,15 @@ MetaOutcome acquireMeta(const std::string& path, MetaMode mode, ClipMeta& m, std
     }
     if (mode != MetaMode::Reload && readRecord(path, m)) {
         m.resolveNote = takeResolveNote(path);
-        status = "Metadata letti (registrati da S-Log MetaRaw)";
+        status = "Metadata letti (registrati da Log MetaRaw)";
         return MetaOutcome::Found;
     }
     if (mode == MetaMode::CacheOnly) {
         status = "Metadata non ancora letti: apri il pannello del nodo";
         return MetaOutcome::Missing;
     }
-    if (!isSonyContainer(path)) {
-        status = "Formato non Sony (" + path.substr(path.find_last_of("/\\") + 1) + "): nessun metadata di camera";
+    if (!isCameraContainer(path)) {
+        status = "Formato non supportato (" + path.substr(path.find_last_of("/\\") + 1) + "): nessun metadata di camera";
         return MetaOutcome::Missing;
     }
     std::string why;

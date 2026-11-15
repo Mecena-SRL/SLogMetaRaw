@@ -105,11 +105,11 @@ class Node(unittest.TestCase):
 
     # ---- the reader
 
-    def test_formats_that_carry_no_sony_metadata_never_start_python(self):
+    def test_formats_the_reader_does_not_know_never_start_python(self):
         self.fake_library('')
-        for name in ('a.mov', 'b.MOV', 'c.braw', 'd.r3d'):
+        for name in ('c.braw', 'd.r3d', 'e.ari', 'f.dng'):
             v = self.run_host(self.clip(name), '--begin-edit')
-            self.assertIn('non Sony', v['status'])
+            self.assertIn('non supportato', v['status'])
         self.assertEqual(self.launches(), [])
 
     def test_creating_the_node_never_starts_the_reader(self):
@@ -151,7 +151,7 @@ class Node(unittest.TestCase):
         self.fake_library(
             'if sys.argv[1] == "--update-check":\n'
             '    print(json.dumps({"ok": 1, "newer": 1, "latest": %r, "dmg_url": %r, "lib_version": %r,'
-            ' "title": "S-Log MetaRaw %s", "error": ""}))\n' % (latest, url, lib or release(), latest))
+            ' "title": "Log MetaRaw %s", "error": ""}))\n' % (latest, url, lib or release(), latest))
 
     def test_the_version_is_the_first_row_and_reads_the_release(self):
         v = self.run_host('--no-reload')

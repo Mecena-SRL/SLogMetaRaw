@@ -21,7 +21,7 @@ import time
 from . import paths as _paths
 from .extract import read_clip, DatalessError, FULL_SAMPLES
 
-EXTS = ('.mp4', '.mxf')
+EXTS = ('.mp4', '.mov', '.mxf', '.mpg', '.mpeg', '.mts', '.m2ts')   # ClipMeta.cpp isCameraContainer
 CACHE_SAMPLES = 8
 CACHE_DEADLINE = 15.0
 CLIP_BUDGET = 1.0         # seconds of sampling per clip for the script and --to-resolve

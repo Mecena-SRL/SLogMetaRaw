@@ -2,8 +2,8 @@
  "schema": "slogmetaraw-atlas/1",
  "program": {
   "id": "prog",
-  "label": "S-Log MetaRaw",
-  "text": "Legge i metadata di ripresa delle clip Sony XAVC (MP4/MXF) e li porta in DaVinci Resolve: finestra di script per Media Pool e due nodi OFX (Develop, Detail).",
+  "label": "Log MetaRaw",
+  "text": "Legge i metadata di ripresa delle clip (Sony XAVC MP4/MXF, Panasonic, Apple, DJI e altre camere in MOV/MP4/MPEG) e li porta in DaVinci Resolve: finestra di script per Media Pool e due nodi OFX (Develop, Detail).",
   "basis": "intenzione"
  },
  "lanes": {
@@ -37,8 +37,8 @@
   },
   {
    "id": "sub.read",
-   "label": "Lettura metadata Sony",
-   "text": "Parser MP4/MXF/NRT e RTMD; normalizzazione dei risultati; modalità a riga di comando.",
+   "label": "Lettura metadata camere",
+   "text": "Parser MP4/MOV/MXF/MPEG; Sony da NRT e RTMD, DJI dalla traccia djmd, Panasonic e Blackmagic/Apple dalle chiavi QuickTime, ogni altra camera con la lettura compatibile (profilo per nome, poi descrizione colore del codec); normalizzazione dei risultati; modalità a riga di comando.",
    "basis": "intenzione",
    "modules": [
     "slogmetaraw/__init__.py",
@@ -48,6 +48,8 @@
     "slogmetaraw/mxf.py",
     "slogmetaraw/nrt.py",
     "slogmetaraw/rtmd.py",
+    "slogmetaraw/vendors.py",
+    "slogmetaraw/dji.py",
     "slogmetaraw/codec.py",
     "slogmetaraw/camera.py",
     "slogmetaraw/datalevel.py"
@@ -292,8 +294,8 @@
     {
      "id": "read.parse",
      "kind": "function",
-     "label": "Analisi MP4/MXF",
-     "text": "Lettura dei metadata Sony dal file (sottosistema Lettura metadata).",
+     "label": "Analisi MP4/MOV/MXF/MPEG",
+     "text": "Lettura dei metadata della camera dal file (sottosistema Lettura metadata camere); la lettura del profilo è tarata, compatibile o stimata.",
      "basis": "dedotto",
      "refs": [
       {
@@ -899,7 +901,7 @@
      "id": "dc.choose",
      "kind": "decision",
      "label": "Quale codifica entra?",
-     "text": "In ordine: 1) Sviluppo e spazio colore › Ingresso (IDT), se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di S-Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
+     "text": "In ordine: 1) Sviluppo e spazio colore › Ingresso (IDT), se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1527,7 +1529,7 @@
  "fingerprints": {
   "beh:ui.read": {
    "slogmetaraw/__main__.py::_helper": "be4948598901",
-   "slogmetaraw/extract.py::read_clip": "5b0fa524f133",
+   "slogmetaraw/extract.py::read_clip": "56a7dfc0ab47",
    "slogmetaraw/plugin_cache.py::write_cache": "4d0ecc333510",
    "slogmetaraw/resolve_io.py::clip_path": "194973a11e5a",
    "slogmetaraw/resolve_io.py::iter_media_pool_clips": "3a32ee6fb47d",

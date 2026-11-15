@@ -66,7 +66,7 @@ DetailEffect::DetailEffect(OfxImageEffectHandle p_Handle)
         m_SettingsVersion = fetchIntParam("settingsVersion");
         m_Ready = true;
     } catch (...) {
-        fprintf(stderr, "S-Log MetaRaw Detail: nodo disattivato, parametro mancante\n");
+        fprintf(stderr, "Log MetaRaw Detail: nodo disattivato, parametro mancante\n");
         return;
     }
     // fetched on the main thread (a first fetch while rendering races with the UI); a missing one reads its default

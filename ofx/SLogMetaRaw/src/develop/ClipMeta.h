@@ -6,6 +6,7 @@
 struct ClipMeta
 {
     bool supported = false;
+    bool cameraFound = true;  // false: no camera metadata, only the codec's colour description (recorders, DV)
     bool wbEstimated = false;
     double shotTemp = 5600.0, shotTint = 0.0, shotEI = 800.0;
     int camSpace = -1, camGamma = -1;

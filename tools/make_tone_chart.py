@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Render the reference chart of the tone stage of the S-Log MetaRaw node (v5).
+"""Render the reference chart of the tone stage of the Log MetaRaw node (v5).
 
 Usage: python3 tools/make_tone_chart.py [output png]
        (default: docs/tone_curve.png)

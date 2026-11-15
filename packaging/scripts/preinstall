@@ -10,7 +10,7 @@ UTIL="Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scrip
 rm -rf "$ROOT/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle" "$ROOT/Library/OFX/Plugins/SLogMetaRawProbe.ofx.bundle" \
        "$ROOT/Library/OFX/Plugins/SonyMetaRAW.ofx.bundle" \
        "$ROOT/Library/Application Support/SLogMetaRaw/lib" "$ROOT/Library/Application Support/SonyMeta" \
-       "$ROOT/$UTIL/S-Log MetaRaw.py" "$ROOT/$UTIL/SLogMetaRaw.py" "$ROOT/$UTIL/SonyMeta.py"
+       "$ROOT/$UTIL/Log MetaRaw.py" "$ROOT/$UTIL/S-Log MetaRaw.py" "$ROOT/$UTIL/SLogMetaRaw.py" "$ROOT/$UTIL/SonyMeta.py"
 [[ -z "$ROOT" ]] && pkgutil --forget com.sonymeta.pkg >/dev/null 2>&1
 HOME_DIR="${SLOGMETARAW_HOME:-}"
 if [[ -z "$HOME_DIR" ]]; then
@@ -21,7 +21,7 @@ if [[ -z "$HOME_DIR" ]]; then
 fi
 if [[ -n "$HOME_DIR" ]]; then
   SUPPORT="$HOME_DIR/Library/Application Support/SLogMetaRaw"
-  rm -f "$HOME_DIR/$UTIL/S-Log MetaRaw.py" "$HOME_DIR/$UTIL/SLogMetaRaw.py" "$HOME_DIR/$UTIL/SonyMeta.py"
+  rm -f "$HOME_DIR/$UTIL/Log MetaRaw.py" "$HOME_DIR/$UTIL/S-Log MetaRaw.py" "$HOME_DIR/$UTIL/SLogMetaRaw.py" "$HOME_DIR/$UTIL/SonyMeta.py"
   # the OpenFX reader prefers lib_path and a per-user library over the system one: both would shadow this install
   rm -rf "$SUPPORT/lib_path" "$SUPPORT/lib" "$SUPPORT/pycache" "$HOME_DIR/Library/Application Support/SonyMeta"
   # Resolve caches every plugin's panel: a stale cache shows the old panel and hides new nodes until rebuilt

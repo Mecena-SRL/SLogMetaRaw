@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Where S-Log MetaRaw keeps its state on each system. The OpenFX plugin (src/common/Files.cpp) uses the
+"""Where Log MetaRaw keeps its state on each system. The OpenFX plugin (src/common/Files.cpp) uses the
 same folders: the cache written here is the one it reads.
 
   macOS    ~/Library/Application Support/SLogMetaRaw      logs in ~/Library/Logs/SLogMetaRaw

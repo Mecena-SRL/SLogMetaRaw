@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Installs S-Log MetaRaw for DaVinci Resolve on Linux.
+# Installs Log MetaRaw for DaVinci Resolve on Linux.
 #   ./install.sh                 plugin in /usr/OFX/Plugins (sudo), script + library for this user
 #   ./install.sh --user          plugin in ~/.local/share/OFX/Plugins instead of /usr/OFX/Plugins (no sudo)
 #   ./install.sh --uninstall     remove everything this script installed
@@ -35,7 +35,7 @@ fi
 
 if [[ "$UNINSTALL" == 1 ]]; then
   $SUDO rm -rf "${PLUGINS:?}/SLogMetaRaw.ofx.bundle"
-  rm -rf "${SUPPORT:?}/lib" "${SUPPORT:?}/lib_path" "${SUPPORT:?}/pycache" "${SCRIPTS:?}/S-Log MetaRaw.py"
+  rm -rf "${SUPPORT:?}/lib" "${SUPPORT:?}/lib_path" "${SUPPORT:?}/pycache" "${SCRIPTS:?}/Log MetaRaw.py" "${SCRIPTS:?}/S-Log MetaRaw.py"
   echo "Rimosso. Cache e log restano in $SUPPORT (cancellali a mano se vuoi)."
   exit 0
 fi
@@ -49,7 +49,7 @@ mkdir -p "$LIB" "$SCRIPTS" "$SUPPORT/cache"
 rm -rf "${LIB:?}/slogmetaraw"
 cp -R "$ROOT/slogmetaraw" "$LIB/"
 find "$LIB/slogmetaraw" -name '__pycache__' -prune -exec rm -rf {} +
-"$PYTHON_BIN" "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" "$LIB" "$SCRIPTS/S-Log MetaRaw.py"
+"$PYTHON_BIN" "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" "$LIB" "$SCRIPTS/Log MetaRaw.py"
 printf '%s\n' "$LIB" > "$SUPPORT/lib_path"
 
 echo "Installo il plugin in $PLUGINS ${SUDO:+(serve la password di amministratore)}..."
@@ -57,4 +57,4 @@ $SUDO mkdir -p "$PLUGINS"
 $SUDO rm -rf "${PLUGINS:?}/SLogMetaRaw.ofx.bundle"
 $SUDO cp -R "$BUNDLE" "$PLUGINS/"
 [[ "$USER_PLUGIN" == 1 ]] && echo "Nota: Resolve legge ~/.local/share/OFX/Plugins solo se OFX_PLUGIN_PATH lo include."
-echo "Fatto. Riavvia DaVinci Resolve: il nodo e in OpenFX, lo script in Workspace > Scripts > S-Log MetaRaw."
+echo "Fatto. Riavvia DaVinci Resolve: il nodo e in OpenFX, lo script in Workspace > Scripts > Log MetaRaw."

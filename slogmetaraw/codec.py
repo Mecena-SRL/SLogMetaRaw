@@ -282,13 +282,41 @@ def parse_sample_entry(entry):
                         if ntype == 33 and 'profile' not in info:
                             info.update(parse_hevc_sps(body[q + 2:q + 2 + ln]))
                         q += 2 + ln
-            elif typ == b'colr' and body[:4] == b'nclx':
+            elif typ == b'colr' and body[:4] in (b'nclx', b'nclc'):   # nclc: QuickTime, without the range bit
                 p, t, m = struct.unpack('>HHH', body[4:10])
                 info['colr_primaries'] = PRIMARIES.get(p, str(p))
                 info['colr_transfer'] = TRANSFER.get(t, str(t))
                 info['colr_matrix'] = MATRIX.get(m, str(m))
-                info['colr_full_range'] = bool(body[10] >> 7)
+                if body[:4] == b'nclx':
+                    info['colr_full_range'] = bool(body[10] >> 7)
+            elif typ == b'logs':   # Apple: the log profile by name, e.g. com.apple.apple-wide-gamut.apple-log
+                info['log_profile'] = body.split(b'\0')[0].decode('ascii', 'replace')
         except (IndexError, ValueError, struct.error) as exc:
             info['parse_error'] = '%s: %s' % (typ.decode('latin1'), exc)
         pos += size
+    return info
+
+
+MPEG2_FPS = {1: 24000 / 1001, 2: 24.0, 3: 25.0, 4: 30000 / 1001, 5: 30.0, 6: 50.0, 7: 60000 / 1001, 8: 60.0}
+
+
+def find_mpeg_video(data):
+    """MPEG-1/2 sequence header (00 00 01 B3) and its sequence display extension, from the first bytes of a stream."""
+    i = data.find(b'\x00\x00\x01\xb3')
+    if i < 0 or i + 8 > len(data):
+        return {}
+    w = (data[i + 4] << 4) | (data[i + 5] >> 4)
+    h = ((data[i + 5] & 15) << 8) | data[i + 6]
+    info = {'codec': 'MPEG-2 Video', 'width': w, 'height': h, 'chroma': '4:2:0', 'bit_depth': 8,
+            'fps': MPEG2_FPS.get(data[i + 7] & 15)}
+    j = data.find(b'\x00\x00\x01\xb5', i)
+    while 0 <= j < len(data) - 8:   # extension: id 2 = sequence display, with an optional colour description
+        if data[j + 4] >> 4 == 2 and data[j + 4] & 1:
+            info['vui_primaries'] = PRIMARIES.get(data[j + 5], str(data[j + 5]))
+            info['vui_transfer'] = TRANSFER.get(data[j + 6], str(data[j + 6]))
+            info['vui_matrix'] = MATRIX.get(data[j + 7], str(data[j + 7]))
+            break
+        if data[j + 4] >> 4 == 1:   # sequence extension: progressive_sequence bit
+            info['interlaced'] = not (data[j + 5] >> 3) & 1
+        j = data.find(b'\x00\x00\x01\xb5', j + 4)
     return info

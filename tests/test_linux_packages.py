@@ -79,7 +79,7 @@ class Packages(unittest.TestCase):
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         plugin = os.path.join(home, '.local/share/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Linux-x86-64/SLogMetaRaw.ofx')
         self.assertTrue(os.path.exists(plugin))
-        launcher = os.path.join(home, '.local/share/DaVinciResolve/Fusion/Scripts/Utility/S-Log MetaRaw.py')
+        launcher = os.path.join(home, '.local/share/DaVinciResolve/Fusion/Scripts/Utility/Log MetaRaw.py')
         self.assertTrue(os.path.exists(launcher))
         out = subprocess.run(['sh', run, '--uninstall', '--user'], env=env, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, universal_newlines=True)
@@ -104,7 +104,7 @@ class Packages(unittest.TestCase):
         listing = subprocess.run(['dpkg-deb', '-c', path], stdout=subprocess.PIPE, universal_newlines=True).stdout
         for need in ('./usr/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Linux-x86-64/SLogMetaRaw.ofx',
                      './usr/lib/slogmetaraw/slogmetaraw/__init__.py', './usr/bin/slogmetaraw-setup',
-                     './usr/share/slogmetaraw/launcher/S-Log MetaRaw.py'):
+                     './usr/share/slogmetaraw/launcher/Log MetaRaw.py'):
             self.assertIn(need, listing)
         self.assertIn('root/root', listing)          # not owned by whoever built it
 

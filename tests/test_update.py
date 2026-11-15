@@ -21,7 +21,7 @@ TMP = tempfile.gettempdir()   # /tmp does not exist on Windows
 
 EXT = update.installer_exts()[0]
 DMG = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9' + EXT
-DETAILS = {'notes': 'lunghe note\ncon a capo', 'title': 'S-Log MetaRaw  9.9.9\n', 'page': 'p',
+DETAILS = {'notes': 'lunghe note\ncon a capo', 'title': 'Log MetaRaw  9.9.9\n', 'page': 'p',
            'dmg_url': DMG, 'dmg_name': 'SLogMetaRaw-9.9.9' + EXT, 'size': 1234}
 NO_NETWORK = AssertionError('rete non permessa')
 
@@ -182,7 +182,7 @@ class PluginCli(unittest.TestCase):
             out = self.run_cli()
         self.assertNotIn('notes', out)
         self.assertEqual(out['current'], cli_version())
-        self.assertEqual(out['title'], 'S-Log MetaRaw 9.9.9')
+        self.assertEqual(out['title'], 'Log MetaRaw 9.9.9')
         for key, value in out.items():
             self.assertIsInstance(value, (str, int), key)
             self.assertNotIsInstance(value, bool, key)

@@ -23,7 +23,7 @@ bool writeCubeLut(const DevelopParams& params, int size, const std::string& titl
     for (char& c : t)
         if (c == '"' || c == '\n' || c == '\r') c = ' ';
     fprintf(f, "TITLE \"%s\"\n", t.c_str());
-    fprintf(f, "# S-Log MetaRaw: ingresso = segnale del nodo, uscita = Color Space / Gamma scelti\n");
+    fprintf(f, "# Log MetaRaw: ingresso = segnale del nodo, uscita = Color Space / Gamma scelti\n");
     fprintf(f, "LUT_3D_SIZE %d\nDOMAIN_MIN 0.0 0.0 0.0\nDOMAIN_MAX 1.0 1.0 1.0\n", size);
     const float step = 1.0f / (float)(size - 1);
     bool ok = true;

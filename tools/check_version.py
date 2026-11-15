@@ -31,7 +31,7 @@ def main():
                 errors.append('%s: nessuna corrispondenza per %s' % (name, pattern))
             elif found != {__version__}:
                 errors.append('%s: %s invece di %s' % (name, sorted(found), __version__))
-    top = re.search(r'^## S-Log MetaRaw (\d+\.\d+\.\d+)', read('RELEASE_NOTES.md'), re.M)
+    top = re.search(r'^## Log MetaRaw (\d+\.\d+\.\d+)', read('RELEASE_NOTES.md'), re.M)
     if not top or top.group(1) != __version__:
         errors.append('RELEASE_NOTES.md: ultima sezione %s invece di %s'
                       % (top.group(1) if top else None, __version__))

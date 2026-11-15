@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UNINSTALL = os.path.join(ROOT, 'packaging', 'Disinstalla S-Log MetaRaw.command')
+UNINSTALL = os.path.join(ROOT, 'packaging', 'Disinstalla Log MetaRaw.command')
 PREINSTALL = os.path.join(ROOT, 'packaging', 'scripts', 'preinstall')
 UTIL = 'Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility'
 OFX_CACHE = 'Library/Application Support/Blackmagic Design/DaVinci Resolve/OFXPluginCacheV2.xml'
@@ -20,8 +20,8 @@ SYSTEM = ['Library/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/MacOS/SLogMetaRaw
           'Library/OFX/Plugins/SonyMetaRAW.ofx.bundle/Contents/Info.plist',
           'Library/Application Support/SLogMetaRaw/lib/slogmetaraw/__init__.py',
           'Library/Application Support/SonyMeta/lib/sonymeta.py',
-          UTIL + '/S-Log MetaRaw.py', UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py']
-USER = [UTIL + '/S-Log MetaRaw.py', UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py',
+          UTIL + '/Log MetaRaw.py', UTIL + '/S-Log MetaRaw.py', UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py']
+USER = [UTIL + '/Log MetaRaw.py', UTIL + '/S-Log MetaRaw.py', UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py',
         'Library/Application Support/SLogMetaRaw/cache/0123456789abcdef.json',
         'Library/Application Support/SLogMetaRaw/update.json',
         'Library/Application Support/SLogMetaRaw/no_update_check',
@@ -140,11 +140,11 @@ class Preinstall(unittest.TestCase):
         self.assertFalse(os.path.exists(stale))
         gone = ['Library/OFX/Plugins/SLogMetaRaw.ofx.bundle', 'Library/OFX/Plugins/SLogMetaRawProbe.ofx.bundle',
                 'Library/OFX/Plugins/SonyMetaRAW.ofx.bundle', 'Library/Application Support/SLogMetaRaw/lib',
-                UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py', UTIL + '/S-Log MetaRaw.py']
+                UTIL + '/SLogMetaRaw.py', UTIL + '/SonyMeta.py', UTIL + '/Log MetaRaw.py']
         for rel in gone:
             self.assertFalse(os.path.lexists(os.path.join(self.mac.root, rel)), rel)
         for rel in ('Library/Application Support/SLogMetaRaw/lib_path', 'Library/Application Support/SLogMetaRaw/lib',
-                    'Library/Application Support/SLogMetaRaw/pycache', UTIL + '/S-Log MetaRaw.py', OFX_CACHE):
+                    'Library/Application Support/SLogMetaRaw/pycache', UTIL + '/Log MetaRaw.py', OFX_CACHE):
             self.assertFalse(os.path.lexists(os.path.join(self.mac.home, rel)), rel)
         # what is worth keeping across an update: the metadata records and the update settings
         for rel in ('Library/Application Support/SLogMetaRaw/cache/0123456789abcdef.json',

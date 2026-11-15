@@ -1,7 +1,7 @@
-<p align="center"><img src="assets/icon_1024.png" width="140" alt="S-Log MetaRaw"></p>
+<p align="center"><img src="assets/icon_1024.png" width="140" alt="Log MetaRaw"></p>
 
-<h1 align="center">S-Log MetaRaw</h1>
-<p align="center"><b>为 DaVinci Resolve 20 和 21 提供索尼摄影机元数据与场景线性显影控制</b><br>
+<h1 align="center">Log MetaRaw</h1>
+<p align="center"><b>为 DaVinci Resolve 20 和 21 提供索尼、松下、苹果、大疆等摄影机的 Log 元数据与场景线性显影控制</b><br>
 Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-94m</a> · <a href="https://instagram.com/ivan_94m">@ivan_94m</a></p>
 
 <p align="center">
@@ -16,13 +16,13 @@ Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-9
 会读取 FX6、FX9 的 MXF 文件中的这些数据，并为其提供 *Camera Raw* 面板；但对于 FX30、FX3、a7 或 a6000 系列的 MP4
 文件，它会忽略这些数据。
 
-S-Log MetaRaw 读取并使用这些数据，由三部分组成：
+Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 | | 位置 | 作用 |
 |---|---|---|
-| **脚本** | Workspace › Scripts › S-Log MetaRaw | 读取项目中所有片段的元数据并写入媒体池 |
-| **S-Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
-| **S-Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
+| **脚本** | Workspace › Scripts › Log MetaRaw | 读取项目中所有片段的元数据并写入媒体池 |
+| **Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
+| **Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
 
 不转码任何文件，也从不写入任何原始文件。
 
@@ -32,14 +32,14 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 节点所做的，是严谨地应用色彩科学。曝光和白平衡在线性光中工作，以摄影机记录的数值为起点，遵循公开的曲线和色域；影调以档（stop）为单位移动画面。这样处理后，Log 画面**的表现会让人联想到 RAW 文件**：白平衡移动干净，曝光像一档光那样变化，高光平滑过渡而不是断裂。
 
-但在大幅度调整时，仅靠色彩科学是不够的。一旦超出摄影机的极限，画面中缺失的信息就会显现：天空出现色带，提亮的阴影出现噪点，过曝的高光依然过曝，颜色在压缩通道中崩散。请在拍摄时正确曝光。S-Log MetaRaw 帮你充分利用已有的信息，但无法创造不存在的信息。
+但在大幅度调整时，仅靠色彩科学是不够的。一旦超出摄影机的极限，画面中缺失的信息就会显现：天空出现色带，提亮的阴影出现噪点，过曝的高光依然过曝，颜色在压缩通道中崩散。请在拍摄时正确曝光。Log MetaRaw 帮你充分利用已有的信息，但无法创造不存在的信息。
 
 ---
 
 ## 安装
 
 1. 从 **Releases** 下载 `SLogMetaRaw-3.0.0.dmg` 并打开。
-2. 双击 **Installa S-Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
+2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
 安装程序还会删除 Resolve 的插件缓存（`OFXPluginCacheV2.xml`），Resolve 会在下次启动时重建。否则 Resolve 会继续显示旧面板，也看不到 Detail 节点。
@@ -48,11 +48,11 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 |---|---|
 | 两个节点（同一个 bundle） | `/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle` |
 | Python 库 | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
-| 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/S-Log MetaRaw.py` |
+| 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
 运行时，它会在 `~/Library/Application Support/SLogMetaRaw/cache` 中为每个片段保存一个小的 JSON 记录。磁盘映像中还有三页的意大利语和英语指南。
 
-**干净安装与卸载。** 每次安装都从干净状态开始：安装程序会完整替换之前的插件和库，并移除开发版安装，不会留下旧版本的任何文件。磁盘映像中的 **Disinstalla S-Log MetaRaw.command**（第一次请右键 › 打开）会移除所有已安装的版本（包括 1.x 和 2.x）以及缓存、设置和日志。它在动手之前会列出全部内容，要求你关闭 Resolve，并询问是否同时删除导出的 CSV。已经写入 Resolve 项目的元数据属于项目本身，会保留。
+**干净安装与卸载。** 每次安装都从干净状态开始：安装程序会完整替换之前的插件和库，并移除开发版安装，不会留下旧版本的任何文件。磁盘映像中的 **Disinstalla Log MetaRaw.command**（第一次请右键 › 打开）会移除所有已安装的版本（包括 1.x 和 2.x）以及缓存、设置和日志。它在动手之前会列出全部内容，要求你关闭 Resolve，并询问是否同时删除导出的 CSV。已经写入 Resolve 项目的元数据属于项目本身，会保留。
 
 **系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，以及 DaVinci Resolve 21 或 20。Resolve 20 不自带 Python：请从 [python.org](https://www.python.org/downloads/) 安装 Python 3（其 Workspace › Scripts 菜单本来也需要）。**仅在 macOS 上的 Resolve Studio 21.1 中测试过；Resolve 20 尚未测试。**
 
@@ -62,14 +62,14 @@ S-Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 快速上手
 
-1. 导入素材。**Workspace › Scripts › S-Log MetaRaw**：先点 **1 · 读取元数据**，再点 **2 · 写入 Resolve**。
-2. 在 Color 页面把 **S-Log MetaRaw** 放在**第一个节点**。它会取得片段的 EI、开尔文值和色调，在这些数值下画面不变。
+1. 导入素材。**Workspace › Scripts › Log MetaRaw**：先点 **1 · 读取元数据**，再点 **2 · 写入 Resolve**。
+2. 在 Color 页面把 **Log MetaRaw** 放在**第一个节点**。它会取得片段的 EI、开尔文值和色调，在这些数值下画面不变。
 3. 在节点中校正白平衡和曝光，伪色视图会有帮助。
-4. 用 **Toni**（影调）塑造影调。需要局部恢复、Texture、Clarity 或 Dehaze 时，在其后添加 **S-Log MetaRaw Detail** 节点。
+4. 用 **Toni**（影调）塑造影调。需要局部恢复、Texture、Clarity 或 Dehaze 时，在其后添加 **Log MetaRaw Detail** 节点。
 5. 然后再接你的 CST、LUT 或 DRT。
 
 ```
-S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
+Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 ```
 
 ---
@@ -93,7 +93,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ---
 
-## S-Log MetaRaw 节点
+## Log MetaRaw 节点
 
 该节点是逐点处理的：每个像素只取决于它自身。它不会产生光晕，**Generate LUT** 可以导出它（建议 65 点）。
 
@@ -128,7 +128,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 ---
 
-## S-Log MetaRaw Detail 节点
+## Log MetaRaw Detail 节点
 
 这是创意节点。它在保留边缘的基础层上**按区域**工作，调整大块区域而不压平细节。这正是 Lightroom 的 Highlights 和 Shadows 中逐点节点无法复制的部分。
 
@@ -153,7 +153,7 @@ S-Log MetaRaw  →  S-Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调�
 
 尚未在 Resolve 中试用，Metal 未运行。号数公式、百分位和显影限制是本实现的假设，未经 BTZS 或真实照片验证。[docs/DETAIL.md](docs/DETAIL.md)
 
-- 把它放在 S-Log MetaRaw **之后**、CST、LUT 或 DRT 之前。它把接收到的画面解码为线性光，再按相同编码写回，因此必须放在任何转换之前：请让主节点的 Color Space 和 Gamma 保持为 Timeline。
+- 把它放在 Log MetaRaw **之后**、CST、LUT 或 DRT 之前。它把接收到的画面解码为线性光，再按相同编码写回，因此必须放在任何转换之前：请让主节点的 Color Space 和 Gamma 保持为 Timeline。
 - 它是**空间**处理的，因此 Generate LUT 会排除它及其所在节点的其余调整。请把它放在单独的节点中。
 - 半径随画面高度缩放。全分辨率、代理和检视器中的效果一致。不做逐帧统计，因此不会闪烁。
 - 在 Metal 上处理一帧 UHD 约需 6–18 毫秒（在 Apple 芯片上测得）。CPU 备用路径要慢得多。
@@ -236,7 +236,7 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 
 ## 已知限制
 
-- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁：它们位于 Resolve 的解码器内部。S-Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
+- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁：它们位于 Resolve 的解码器内部。Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
 - 部分摄影机（包括 a6300）不记录开尔文值：此时根据光源预设估算，并加以标注。
 - S-Log2 按照索尼文档实现。Resolve 自带的 S-Log2 曲线与之相差约 0.15 档。
 - 尚需在更多文件上验证：XAVC HS（HEVC）、HLG、S-Cinetone、电动变焦。

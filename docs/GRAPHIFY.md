@@ -9,6 +9,8 @@ ogni commit.
 ```
 __main__.py ──> extract.py ──> codec.py
    │                 ├──────> datalevel.py
+   │                 ├──────> dji.py       (traccia djmd, protobuf per fotogramma)
+   │                 ├──────> vendors.py   (chiavi QuickTime, XML Panasonic, Blackmagic/Apple, lettura compatibile)
    │                 ├──────> mp4.py
    │                 ├──────> mxf.py
    │                 ├──────> nrt.py
@@ -32,7 +34,9 @@ resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui
 - **Entry point CLI/plugin**: `__main__.py` — modalità `--cache`, `--to-resolve`,
   `--update-check`, `--helper` (contratto con il plugin OFX C++, vedi sotto).
 - **Entry point GUI**: `resolve_script/SLogMetaRaw.py` → `slogmetaraw.ui`.
-- `extract.py` è l'hub di lettura: instrada MP4/MXF ai parser di formato e normalizza l'output.
+- `extract.py` è l'hub di lettura: instrada MP4/MOV/MXF/MPEG ai parser di formato e normalizza l'output; le camere
+  non Sony passano da `vendors.py` e `dji.py`, `camera.py` traduce curva e gamut nei codici del plugin
+  (`camera.py ──> vendors.py`). Camere, curve e fonti: `docs/CAMERAS.md`.
 - `plugin_cache.py` e `resolve_io.py` sono il ponte verso il nodo OFX (cache su disco, scrittura
   CSV per il fusion/script panel).
 - `paths.py` è la sola fonte delle cartelle di stato per sistema (supporto/log); il plugin C++
