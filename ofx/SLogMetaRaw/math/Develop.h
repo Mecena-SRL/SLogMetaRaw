@@ -31,6 +31,7 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
 
     if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve
         SMf3 d = sm_display(xyz, p.drt, p.outSpace);
+        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, p.outSpace);
         return smf3(sm_encode(d.x, p.outGamma), sm_encode(d.y, p.outGamma), sm_encode(d.z, p.outGamma));
     }
     const int space = p.convert != 0 ? p.outSpace : p.nodeSpace;

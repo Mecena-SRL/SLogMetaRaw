@@ -18,6 +18,8 @@ vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
     Transform: la formula di Resolve non è pubblica, il risultato non è identico.
   - **Filmico**: curva per canale su un gamut ristretto, come una pellicola (idea di AgX, curva di ACES 2.0 /
     OpenDRT): le luci sature sfumano nel bianco senza bande, grigio 18% a 10 nit.
+  - **Vibrance luci** (0-100, default 0): dopo il rendering ridà colore alle luci chiare e poco sature (cieli
+    sovraesposti) senza spingere quelle già sature (LED); luminosità invariata, nessun canale oltre il bianco.
   - Con un rendering, Spazio colore e Gamma sono quelli dello schermo; su Timeline il nodo scrive Rec.709 / Gamma 2.4.
     Il nodo Detail va messo prima.
   - **ACES 1.3 · Gamut Compress**: Reference Gamut Compression, RRT e ODT Rec.709 100 nit (stessi valori di OpenColorIO

@@ -183,6 +183,26 @@ def filmic(xyz, space):
     return [(v - OUTSET * y) / (1 - OUTSET) for v in c]
 
 
+def highlight_vibrance(c, a, space):
+    """Vibrance luci (sm_highlight_vibrance): more chroma where bright and little saturated, Y kept, 0..1 kept."""
+    ly = dm.MATS[space][0][1]
+    y = sum(ly[i] * c[i] for i in range(3))
+    mx, mn = max(c), min(c)
+    if a <= 0 or mx <= 0:
+        return list(c)
+    u = 1 - (mx - mn) / mx
+    h = min(max((y - 0.25) / 0.6, 0.0), 1.0)
+    m = 1 + 2 * a * u * u * h * h * (3 - 2 * h)
+    d = [v - y for v in c]
+    for v in d:
+        if v > 0:
+            m = min(m, (1 - y) / v)
+        elif v < 0:
+            m = min(m, y / -v)
+    m = max(m, 1.0)
+    return [y + m * v for v in d]
+
+
 def render(xyz, mode, space):
     """Display-linear RGB in the gamut `space`, clamped to 0..1."""
     if mode == 1:

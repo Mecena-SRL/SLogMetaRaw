@@ -113,6 +113,7 @@ struct DevelopParams {
     float zSat[4];     // zone Sat, and the nominal edges / 1/falloffs its weights use (Black, Shadow, Light, Specular)
     float zNomEdge[4];
     float zNomInvF[4];
+    float hlVib;       // Vibrance luci after the rendering, 0..1
     int drt;           // display rendering (math/Display.h): 0 none (CST), 1 ACES 2.0, 2 Luminanza, 3 Filmico, 4 ACES 1.3,
                        // 5 OpenDRT
 };
@@ -1332,6 +1333,25 @@ SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
     return smf3(sm_clamp(c.x, 0.0f, 1.0f), sm_clamp(c.y, 0.0f, 1.0f), sm_clamp(c.z, 0.0f, 1.0f));
 }
 
+// Vibrance luci, after the rendering: the chroma of display-linear c grows where it is bright and little
+// saturated (an overexposed sky), not where it is already saturated (an LED). Luminance stays; every channel
+// stays in 0..1. a = 0..1, up to 3x the chroma.
+SM_FN SMf3 sm_highlight_vibrance(SMf3 c, float a, int space) {
+    const int o = space * 9 + 3;
+    const float y = SM_RGB_TO_XYZ[o] * c.x + SM_RGB_TO_XYZ[o + 1] * c.y + SM_RGB_TO_XYZ[o + 2] * c.z;
+    const float mx = SM_MAX(c.x, SM_MAX(c.y, c.z)), mn = SM_MIN(c.x, SM_MIN(c.y, c.z));
+    if (a <= 0.0f || mx <= 0.0f) return c;
+    const float u = 1.0f - (mx - mn) / mx, h = sm_clamp((y - 0.25f) / 0.6f, 0.0f, 1.0f);
+    float m = 1.0f + 2.0f * a * u * u * h * h * (3.0f - 2.0f * h);
+    const float d[3] = { c.x - y, c.y - y, c.z - y };   // the largest m keeping y + m d inside 0..1
+    for (int i = 0; i < 3; ++i) {
+        if (d[i] > 0.0f) m = SM_MIN(m, (1.0f - y) / d[i]);
+        else if (d[i] < 0.0f) m = SM_MIN(m, y / -d[i]);
+    }
+    m = SM_MAX(m, 1.0f);
+    return smf3(y + m * d[0], y + m * d[1], y + m * d[2]);
+}
+
 // ---- math/Develop.h
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -1357,6 +1377,7 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
 
     if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve
         SMf3 d = sm_display(xyz, p.drt, p.outSpace);
+        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, p.outSpace);
         return smf3(sm_encode(d.x, p.outGamma), sm_encode(d.y, p.outGamma), sm_encode(d.z, p.outGamma));
     }
     const int space = p.convert != 0 ? p.outSpace : p.nodeSpace;

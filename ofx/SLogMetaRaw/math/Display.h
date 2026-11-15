@@ -348,3 +348,22 @@ SM_FN SMf3 sm_display(SMf3 xyz, int mode, int space) {
     }
     return smf3(sm_clamp(c.x, 0.0f, 1.0f), sm_clamp(c.y, 0.0f, 1.0f), sm_clamp(c.z, 0.0f, 1.0f));
 }
+
+// Vibrance luci, after the rendering: the chroma of display-linear c grows where it is bright and little
+// saturated (an overexposed sky), not where it is already saturated (an LED). Luminance stays; every channel
+// stays in 0..1. a = 0..1, up to 3x the chroma.
+SM_FN SMf3 sm_highlight_vibrance(SMf3 c, float a, int space) {
+    const int o = space * 9 + 3;
+    const float y = SM_RGB_TO_XYZ[o] * c.x + SM_RGB_TO_XYZ[o + 1] * c.y + SM_RGB_TO_XYZ[o + 2] * c.z;
+    const float mx = SM_MAX(c.x, SM_MAX(c.y, c.z)), mn = SM_MIN(c.x, SM_MIN(c.y, c.z));
+    if (a <= 0.0f || mx <= 0.0f) return c;
+    const float u = 1.0f - (mx - mn) / mx, h = sm_clamp((y - 0.25f) / 0.6f, 0.0f, 1.0f);
+    float m = 1.0f + 2.0f * a * u * u * h * h * (3.0f - 2.0f * h);
+    const float d[3] = { c.x - y, c.y - y, c.z - y };   // the largest m keeping y + m d inside 0..1
+    for (int i = 0; i < 3; ++i) {
+        if (d[i] > 0.0f) m = SM_MIN(m, (1.0f - y) / d[i]);
+        else if (d[i] < 0.0f) m = SM_MIN(m, y / -d[i]);
+    }
+    m = SM_MAX(m, 1.0f);
+    return smf3(y + m * d[0], y + m * d[1], y + m * d[2]);
+}

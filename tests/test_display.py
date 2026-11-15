@@ -150,6 +150,35 @@ class SaturatedLights(unittest.TestCase):
             self.assertLess(self.sweep(mode, True), 15.0, 'modo %d: salto di tinta fra tinte vicine' % mode)
 
 
+class HighlightVibrance(unittest.TestCase):
+    def y(self, c):
+        return sum(dm.MATS[REC709][0][1][i] * c[i] for i in range(3))
+
+    def chroma(self, c):
+        return max(c) - min(c)
+
+    def test_a_pale_bright_sky_gains_colour_a_saturated_led_does_not(self):
+        sky = [0.78, 0.86, 0.95]   # display linear: bright, little saturated blue
+        led = [0.05, 0.25, 0.98]   # bright, saturated blue
+        dark = [0.08, 0.10, 0.13]  # pale but dark: untouched
+        v = D.highlight_vibrance
+        # near white the room left under 1.0 caps the gain: here 1.5x, more on a less bright sky
+        self.assertGreater(self.chroma(v(sky, 1.0, REC709)), 1.4 * self.chroma(sky))
+        self.assertGreater(self.chroma(v([0.6, 0.7, 0.85], 1.0, REC709)), 1.7 * 0.25)
+        self.assertLess(self.chroma(v(led, 1.0, REC709)), 1.01 * self.chroma(led))
+        self.assertEqual(v(dark, 1.0, REC709), dark)
+        self.assertEqual(v(sky, 0.0, REC709), sky)
+        self.assertEqual(v([0.9, 0.9, 0.9], 1.0, REC709), [0.9, 0.9, 0.9])
+
+    def test_luminance_and_range_are_kept(self):
+        rnd = random.Random(5)
+        for _ in range(3000):
+            c = [rnd.random() for _ in range(3)]
+            out = D.highlight_vibrance(c, rnd.random(), REC709)
+            self.assertAlmostEqual(self.y(out), self.y(c), delta=1e-9)
+            self.assertTrue(all(-1e-9 <= x <= 1 + 1e-9 for x in out), out)
+
+
 class DisplayKernel(unittest.TestCase):
     def test_matches_model(self):
         exe = test_bin('ofx_math_test')
@@ -162,17 +191,17 @@ class DisplayKernel(unittest.TestCase):
             out = rnd.choice([(REC709, G24), (REC709, 5), (P3D65, G24), (REC2020, 6)])
             shot = (rnd.choice([3200, 5600]), 0.0, 800)
             panel = random_panel(rnd, rnd.choice([0.0, 0.3]))
-            cases.append((rgb, out, shot, rnd.uniform(400, 3200), panel, 1 + i % 5))
+            cases.append((rgb, out, shot, rnd.uniform(400, 3200), panel, 1 + i % 5, rnd.choice([0.0, 0.5, 1.0])))
         lines = [' '.join(repr(v) for v in rgb + [SGAMUT3CINE, SLOG3, out[0], out[1], *shot, shot[0], 0.0, ei,
                                                   0, 0, 0, 1.0, 0.0, 0, 0, 0, 0, 0, 0, 0]
-                          + tone_values(panel) + [drt])
-                 for rgb, out, shot, ei, panel, drt in cases]
+                          + tone_values(panel) + [drt, vib])
+                 for rgb, out, shot, ei, panel, drt, vib in cases]
         out = subprocess.run([exe], input='\n'.join(lines) + '\n', capture_output=True, text=True, check=True).stdout
         got = [[float(v) for v in l.split()] for l in out.strip().splitlines()]
         self.assertEqual(len(got), len(cases))
-        for (rgb, out, shot, ei, panel, drt), g in zip(cases, got):
+        for (rgb, out, shot, ei, panel, drt, vib), g in zip(cases, got):
             exp = dm.develop(rgb, SGAMUT3CINE, SLOG3, shot=shot, ei=ei, out_space=out[0], out_gamma=out[1],
-                             tone=panel, drt=drt)
+                             tone=panel, drt=drt, hl_vib=vib)
             for a, b in zip(exp, g):
                 self.assertAlmostEqual(a, b, delta=5e-4, msg='modo %d, %s -> C++ %s, modello %s' % (drt, rgb, g, exp))
 

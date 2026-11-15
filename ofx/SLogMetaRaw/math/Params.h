@@ -63,6 +63,7 @@ struct DevelopParams {
     float zSat[4];     // zone Sat, and the nominal edges / 1/falloffs its weights use (Black, Shadow, Light, Specular)
     float zNomEdge[4];
     float zNomInvF[4];
+    float hlVib;       // Vibrance luci after the rendering, 0..1
     int drt;           // display rendering (math/Display.h): 0 none (CST), 1 ACES 2.0, 2 Luminanza, 3 Filmico, 4 ACES 1.3,
                        // 5 OpenDRT
 };

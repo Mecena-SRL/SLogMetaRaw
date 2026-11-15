@@ -119,6 +119,10 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "canale come una pellicola, le luci forti sfumano nel bianco. ACES 1.3: RRT + ODT con Reference Gamut "
                  "Compress. OpenDRT: v1.1.0 di Jed Smith, look Standard, Rec.1886 100 nit. Con un rendering, Spazio "
                  "colore e Gamma sono quelli dello schermo (Timeline = Rec.709 / Gamma 2.4)", output);
+    defineSlider(d, page, "highlightVibrance", "Vibrance luci", 0, 0, 100, 0, 100, 1,
+                 "Dopo il rendering: ridà colore alle luci chiare e poco sature (un cielo sovraesposto) senza toccare "
+                 "quelle già sature (LED, insegne). Luminosità invariata, nessun canale oltre il bianco. Solo con un "
+                 "Rendering display", output);
     static const char* csOpts[] = { "Timeline", "DaVinci WG", "Rec.709", "Rec.2020", "P3 D65", "P3 D60", "P3 DCI",
                                     "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1" };
     defineChoice(d, page, "colorSpace", "Spazio colore", csOpts, 12, 0,
