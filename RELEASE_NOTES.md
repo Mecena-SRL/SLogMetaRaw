@@ -1,11 +1,32 @@
 # Changelog
 
-## Log MetaRaw (prossima versione)
+## Log MetaRaw 3.1.0
 
 **S-Log MetaRaw diventa Log MetaRaw** e legge le camere oltre a Sony. Nomi interni, id dei nodi e cartelle restano gli
 stessi: i progetti salvati si aprono uguali. Lo script di menu si chiama ora *Log MetaRaw*; gli installer tolgono quello
 vecchio. Dettagli e fonti: `docs/CAMERAS.md`.
 **Non provato in Resolve, Metal non eseguito.** La curva D-Log M è un fit della comunità, non una formula DJI.
+
+### Uscita
+
+- **Rendering display** (gruppo Uscita del Develop): come la scena diventa immagine per lo schermo, al posto del
+  taglio netto della conversione diretta. *Nessuno (CST)* resta il default: i nodi salvati non cambiano.
+  - **ACES 2.0**: Output Transform SDR 100 nit, gamut limite Rec.709, bianco D65 (stessi valori del built-in di
+    OpenColorIO 2.6 entro 1e-4, verificato dai test anche su luci molto forti e colori fuori gamut).
+  - **Luminanza (stile DaVinci)**: curva sulla luminanza con tinte conservate, compressione della saturazione nel gamut
+    dello schermo e passaggio al bianco nelle luci. Approssima il tone mapping e gamut mapping *DaVinci* del Color Space
+    Transform: la formula di Resolve non è pubblica, il risultato non è identico.
+  - **Filmico**: curva per canale su un gamut ristretto, come una pellicola (idea di AgX, curva di ACES 2.0 /
+    OpenDRT): le luci sature sfumano nel bianco senza bande, grigio 18% a 10 nit.
+  - **Vibrance luci** (0-100, default 0): dopo il rendering ridà colore alle luci chiare e poco sature (cieli
+    sovraesposti) senza spingere quelle già sature (LED); luminosità invariata, nessun canale oltre il bianco.
+  - Con un rendering, Spazio colore e Gamma sono quelli dello schermo; su Timeline il nodo scrive Rec.709 / Gamma 2.4.
+    Il nodo Detail va messo prima.
+  - **ACES 1.3 · Gamut Compress**: Reference Gamut Compression, RRT e ODT Rec.709 100 nit (stessi valori di OpenColorIO
+    entro 1e-5, verificato dai test).
+  - **OpenDRT**: OpenDRT v1.1.0 di Jed Smith (GPL-3), look Standard, Rec.1886 100 nit, surround dim, parametri fissi.
+    È un port del DCTL: stessi valori del DCTL originale compilato in C++ entro 5e-6, verificato dai test; non
+    confrontato in Resolve.
 
 ### Lettura
 

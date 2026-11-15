@@ -73,12 +73,14 @@ file(GLOB MATH_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}/math/*.h" "${CMAKE_CURRENT_SO
 set(GEN_OUT
   "${CMAKE_CURRENT_SOURCE_DIR}/gen/DevelopMath.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/gen/MetalSource.inc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gen/GamutMatrices.h")
+  "${CMAKE_CURRENT_SOURCE_DIR}/gen/GamutMatrices.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/gen/Aces2Tables.h")
 add_custom_command(
   OUTPUT ${GEN_OUT}
   COMMAND ${Python3_EXECUTABLE} build_math.py
   WORKING_DIRECTORY "${REPO_ROOT}/tools"
   DEPENDS ${MATH_INPUTS} "${REPO_ROOT}/tools/build_math.py" "${REPO_ROOT}/tools/gamut_matrices.py"
+          "${REPO_ROOT}/tools/aces2.py"
   COMMENT "Generating gen/*.h")
 add_custom_target(slogmetaraw_gen DEPENDS ${GEN_OUT})
 
