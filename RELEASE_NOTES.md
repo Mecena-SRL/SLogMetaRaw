@@ -1,5 +1,27 @@
 # Changelog
 
+## Final Cut Pro (beta, in sviluppo, non rilasciata)
+
+**Provata su Final Cut Pro 13 / macOS 27, solo Develop, libreria SDR Rec.709.** Installazione: `fcp/install.sh`
+(Xcode, componente Metal Toolchain e FxPlug SDK di Apple).
+
+- **Effetto Log MetaRaw** (FxPlug 4, Metal): stessa matematica del nodo Resolve (`gen/DevelopMath.h`), pannello con le
+  stesse etichette: Camera e *Leggi metadata*, Ripresa (Bilanciamento con i preset del nodo, Temperatura, Tint, EI,
+  ciascuno col suo false color, uno solo alla volta), Toni (Highlights, Bianco, Soft Clip, Saturation, *Mostra tutti
+  i controlli*), Spazio colore (Ingresso, Uscita) e Senza metadata. Mancano zone, data level ed effetto Detail.
+- Final Cut elenca un effetto FxPlug solo attraverso un Motion Template: `fcp/make_motion_template.py` lo genera
+  (`fcp/Resources/MotionTemplate.moef.in`) e lo installa nella cartella Motion Templates dell'utente.
+- **Pixel**: Final Cut passa all'effetto i codici della clip elevati a 1,961 (misurato con rampe di grigio ProRes 10
+  bit). Lo shader ricostruisce i codici, sviluppa come in Resolve e restituisce `o^1,961`: Final Cut mostra ed esporta
+  i codici che scriverebbe il nodo. Uscita di default *Progetto* (Rec.709 / Gamma 2.4): in Final Cut dopo l'effetto
+  non c'è un CST.
+- **Metadata come in Resolve**: un FxPlug non vede il file della clip ma ne conosce timecode d'inizio, durata e fps.
+  `slogmetaraw/fcp_catalog.py` indicizza i file delle librerie (cartelle Original Media) con quei valori e i valori di
+  ripresa; l'effetto ancora *Nessun metadata* trova la sua clip e si imposta da solo. Clip senza timecode: riconosciute
+  solo se durata e fps bastano a distinguerle.
+- `slogmetaraw/fcp_io.py`: FCPXML per importare clip con metadata (campi personalizzati, nota, keyword) e l'effetto
+  già impostato; `--apply` aggiunge l'effetto alle clip di un XML esportato da Final Cut.
+
 ## Log MetaRaw 3.1.2
 
 - **DJI D-Log M**: curva di Thatcher Freeman confermata dall'asse neutro della LUT ufficiale DJI (usata come
