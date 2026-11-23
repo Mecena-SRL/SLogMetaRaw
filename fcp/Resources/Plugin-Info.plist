@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
+	<key>CFBundleDisplayName</key><string>Log MetaRaw FxPlug</string>
+	<key>CFBundleExecutable</key><string>LogMetaRawPlugin</string>
+	<key>CFBundleIdentifier</key><string>com.slogmetaraw.fcp.LogMetaRaw.Plugin</string>
+	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+	<key>CFBundleName</key><string>LogMetaRawPlugin</string>
+	<key>CFBundlePackageType</key><string>XPC!</string>
+	<key>CFBundleShortVersionString</key><string>0.1.0</string>
+	<key>CFBundleVersion</key><string>1</string>
+	<key>NSHumanReadableCopyright</key><string>GPL-3.0-or-later</string>
+	<key>PlugInKit</key>
+	<dict>
+		<key>Attributes</key>
+		<dict>
+			<key>com.apple.protocol</key><string>FxPlug</string>
+			<key>com.apple.version</key><string>1.1</string>
+		</dict>
+		<key>PrincipalClass</key><string>FxPrincipal</string>
+		<key>Protocol</key><string>PROXPCProtocol</string>
+		<key>Subsystems</key>
+		<array><string>NSViewService_PKSubsystem</string></array>
+	</dict>
+	<key>ProPlugDictionaryVersion</key><string>1.0</string>
+	<key>ProPlugDynamicRegistration</key><false/>
+	<key>ProPlugPlugInGroupList</key>
+	<array>
+		<dict>
+			<key>groupName</key><string>Log MetaRaw</string>
+			<key>uuid</key><string>99E922EF-1C34-4053-BE58-BAB8409420B4</string>
+		</dict>
+	</array>
+	<key>ProPlugPlugInList</key>
+	<array>
+		<dict>
+			<key>className</key><string>LogMetaRawDevelopPlugIn</string>
+			<key>displayName</key><string>Log MetaRaw</string>
+			<key>group</key><string>99E922EF-1C34-4053-BE58-BAB8409420B4</string>
+			<key>infoString</key><string>Sviluppo scene-referred di clip log: bilanciamento del bianco, esposizione, toni, tone mapping e gamut.</string>
+			<key>protocolNames</key>
+			<array><string>FxFilter</string></array>
+			<key>uuid</key><string>9C9C048B-AA0B-4C51-A48D-EC36D211984F</string>
+			<key>version</key><string>1.0</string>
+		</dict>
+	</array>
+	<key>XPCService</key>
+	<dict>
+		<key>ServiceType</key><string>Application</string>
+		<key>JoinExistingSession</key><true/>
+		<key>RunLoopType</key><string>_NSApplicationMain</string>
+		<key>_AdditionalSubServices</key>
+		<dict><key>viewbridge</key><true/></dict>
+	</dict>
+</dict>
+</plist>
