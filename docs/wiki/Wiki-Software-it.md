@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · **Italiano** · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-it)
 
-> Versione **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versione **3.1.2** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testato solo su DaVinci Resolve Studio 21.1 su macOS.
 
 Log MetaRaw legge i dati di ripresa che le camere Sony scrivono in ogni file (Kelvin, tinta, EI, obiettivo, diaframma, shutter, profilo colore) e li usa dentro DaVinci Resolve. Resolve lo fa solo per i file MXF di FX6/FX9; per gli MP4 di FX30, FX3, serie a7 e a6000 ignora questi dati.
@@ -46,7 +46,7 @@ I file originali non vengono **mai modificati**: nessuna transcodifica, nessun r
 
 ## 2. Installazione
 
-1. Scarica `SLogMetaRaw-3.0.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
+1. Scarica `SLogMetaRaw-3.1.2.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
 
    ![La finestra del DMG](images/01-dmg.png)
 
@@ -143,7 +143,7 @@ Il nodo è **puntuale**: ogni pixel dipende solo da sé stesso. Non crea mai alo
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | Mostra `v3.0.0`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v3.0.0 → 3.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
+| **Versione** (in cima) | Mostra `v3.1.2`. Una volta al giorno chiede a GitHub l'ultima release; se ce n'è una legge **🟢 v3.1.2 → 3.x.y** e un clic apre il download dell'installer per il tuo sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai nulla da solo. |
 | **Camera** · **Rileggi metadata** | La camera che è stata letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool. Risponde in circa 2 s. |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -368,7 +368,7 @@ Lascia Color Space/Gamma su **Timeline** nel nodo principale. Attiva l'opzione d
 
 ## 12. Aggiornamenti e privacy
 
-- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/3.0.0`).
+- I **nodi** chiedono a GitHub l'ultima release al massimo una volta al giorno, in background. La richiesta porta solo la versione (`User-Agent: SLogMetaRaw/3.1.2`).
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre solo un link di download dalle release GitHub di questo progetto. Niente viene installato senza di te.
 
