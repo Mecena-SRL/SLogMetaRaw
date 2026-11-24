@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo (non pubblicato)
+## Log MetaRaw 4.0.0
 
 - **Log MetaRaw Noise**, terzo nodo: riduzione rumore con il profilo della camera e del formato (Sony FX6, FX30,
   iPhone 17 Pro, DJI Osmo Action 4 e 5 Pro, più le curve delle altre camere). Temporale con compensazione del
@@ -10,6 +10,10 @@
   MetaRaw. Su Mac gira tutto su GPU Metal (temporale e spaziale), altrove su CPU. Soglia sul vicinato dei
   coefficienti: più rumore tolto e più dettaglio tenuto della soglia sul singolo coefficiente. Non ancora provato
   in Resolve. Dettagli: `docs/DENOISE.md`.
+- **Maschera rumore rimossa** dal nodo Develop (gruppo, controlli e calcolo): anche come nodo maschera (3.2.1) in Resolve
+  l'immagine restava strana. Il modello del rumore per camera (ISO nativi, EI, codec) passa al nodo
+  Noise. I progetti salvati con la maschera accesa dovrebbero riaprirsi con il nodo che sviluppa (non provato).
+- Guide: tolta la pagina della maschera (9 pagine).
 
 ## Log MetaRaw 3.2.1
 

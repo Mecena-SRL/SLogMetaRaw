@@ -7,7 +7,7 @@ Metadatos log de cámaras (Sony, Panasonic, Apple, DJI y otras) y controles de d
 - **[Guía de usuario](Wiki-Software-es)** — instalación, script, nodos, falso color, tonos, Detail, flujos de trabajo, recetas, FAQ
 - [Descarga la última versión](https://github.com/Mecena-SRL/SLogMetaRaw/releases)
 - [Notas de la versión](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/RELEASE_NOTES.md)
-- Documentos técnicos (en italiano): [Tone mapping](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md) · [Detail](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DETAIL.md) · [Falso color](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md) · [Data levels](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md) · [Máscara de ruido](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/NOISE.md) · [Cámaras](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md)
+- Documentos técnicos (en italiano): [Tone mapping](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md) · [Detail](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DETAIL.md) · [Falso color](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md) · [Data levels](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md) · [Cámaras](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md)
 - [Reportar un problema](https://github.com/Mecena-SRL/SLogMetaRaw/issues)
 
 **Guía de usuario en tu idioma:** [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh)

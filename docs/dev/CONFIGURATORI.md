@@ -169,6 +169,8 @@ Maschera rumore (24/11/2026): gruppo nuovo del Develop, alpha con le zone rumoro
 EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`); RGB invariato, verificato dai test. Da provare in Resolve:
 alpha del nodo come key del nodo Neat Video, Metal non eseguito. Aperto: tarare le costanti stimate (C70, Z8,
 X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.
+Rimossa nella 4.0.0 su richiesta di Ivan (in Resolve l'immagine restava strana anche col nodo maschera della 3.2.1,
+causa non diagnosticata): tabella, modello e fonti passano al plugin Noise. Resta `noise_codec` nel record della clip.
 Plugin Noise (24/11/2026): nodo `noise/` su CPU e GPU Metal (`docs/DENOISE.md`, proposta iniziale in
 `docs/proposals/NOISE_PLUGIN.md`), verificato su fotogrammi sintetici (`tests/test_noise.py`) e GPU contro CPU
 (`tests/noise_metal_test.mm`, CI macOS). Spaziale con soglia sul vicinato 3×3 (NeighShrink). Provato e scartato:

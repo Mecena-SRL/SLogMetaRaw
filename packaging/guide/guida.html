@@ -105,25 +105,24 @@
     <tr><td class="k">Vibrance luci</td><td>Ridà colore alle luci chiare e poco sature dopo il tone mapping</td><td class="pg">7</td></tr>
     <tr><td class="k">Uscita › Spazio colore · Gamma</td><td>Come un CST; anche di scena: DaVinci WG / Intermediate <span class="new">3.2</span></td><td class="pg">7</td></tr>
     <tr><td class="k">Dimensione LUT · Esporta LUT (.cube)</td><td>LUT 3D 17/33/65 punti con tutto il nodo</td><td class="pg">5</td></tr>
-    <tr><td class="k">Maschera rumore <span class="new">3.2</span></td><td>Maschera, Inizio, Sfumatura, Vedi maschera, Soglia: nodo maschera, immagine invariata, rumore nell'alpha</td><td class="pg">8</td></tr>
     <tr><td class="k">Toni</td><td>Highlights (spalla filmica), Bianco (stop), Soft Clip, Saturation</td><td class="pg">6</td></tr>
     <tr><td class="k">Mostra tutti i controlli</td><td>Contrast, Shadows, Whites, Blacks, Vibrance, Azzera toni</td><td class="pg">6</td></tr>
     <tr><td class="k">Zone</td><td>Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; False color: zone</td><td class="pg">6</td></tr>
     <tr><td class="k">Dati di ripresa</td><td>Obiettivo, focale, diaframma, fuoco, shutter, ISO/EI, WB, fps, ND, LUT camera</td><td class="pg">4</td></tr>
     <tr class="grp"><td colspan="3">Nodo Log MetaRaw Detail <span>· subito dopo · spaziale, escluso da Generate LUT</span></td></tr>
-    <tr><td class="k">Modalità · Fase</td><td>Zonale, Split grade, Unito; tre fasi, un nodo ciascuna o tutte in uno</td><td class="pg">9</td></tr>
-    <tr><td class="k">Ingresso (IDT) · Destinazione (ODT)</td><td>Codifica che entra; dove cadono nero (zona 0) e bianco (zona X)</td><td class="pg">9</td></tr>
-    <tr><td class="k">Misura</td><td>Ombra, Luce, Misura zone, Misura automatica, Ombra sulla zona, Luci sulla zona</td><td class="pg">9</td></tr>
-    <tr><td class="k">Split grade · Provino</td><td>Luci morbide, Ombre dure, Grado, Unione; provino e Usa la cella</td><td class="pg">9</td></tr>
-    <tr><td class="k">Gamma dinamica</td><td>Local Contrast, Local Highlights, Local Shadows, Brucia i bordi; viste</td><td class="pg">9</td></tr>
-    <tr><td class="k">Presenza · Avanzate · Velo</td><td>Texture, Clarity, Dehaze; raggio, soglie, Bianco; livello e colore del velo</td><td class="pg">9</td></tr>
-    <tr><td class="k">Guida</td><td>Per la fase scelta: scopo, tre passi, passo dopo</td><td class="pg">9</td></tr>
+    <tr><td class="k">Modalità · Fase</td><td>Zonale, Split grade, Unito; tre fasi, un nodo ciascuna o tutte in uno</td><td class="pg">8</td></tr>
+    <tr><td class="k">Ingresso (IDT) · Destinazione (ODT)</td><td>Codifica che entra; dove cadono nero (zona 0) e bianco (zona X)</td><td class="pg">8</td></tr>
+    <tr><td class="k">Misura</td><td>Ombra, Luce, Misura zone, Misura automatica, Ombra sulla zona, Luci sulla zona</td><td class="pg">8</td></tr>
+    <tr><td class="k">Split grade · Provino</td><td>Luci morbide, Ombre dure, Grado, Unione; provino e Usa la cella</td><td class="pg">8</td></tr>
+    <tr><td class="k">Gamma dinamica</td><td>Local Contrast, Local Highlights, Local Shadows, Brucia i bordi; viste</td><td class="pg">8</td></tr>
+    <tr><td class="k">Presenza · Avanzate · Velo</td><td>Texture, Clarity, Dehaze; raggio, soglie, Bianco; livello e colore del velo</td><td class="pg">8</td></tr>
+    <tr><td class="k">Guida</td><td>Per la fase scelta: scopo, tre passi, passo dopo</td><td class="pg">8</td></tr>
   </table>
   <div class="premise"><b>Non è raw.</b> Un MP4 log è già compresso, a 8 o 10 bit, con la riduzione rumore della camera:
   in luce lineare si comporta in un modo che ricorda un RAW, ma ciò che la camera non ha registrato non torna. Esporre bene
   resta la cosa più importante. I file originali non vengono mai modificati.</div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 10 · Sintesi di tutte le funzioni</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 9 · Sintesi di tutte le funzioni</span></footer>
 </section>
 
 <!-- ======================= 2 · INSTALLAZIONE ======================= -->
@@ -197,7 +196,7 @@
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · installazione</span><span>2 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · installazione</span><span>2 / 9</span></footer>
 </section>
 
 <!-- ======================= 3 · SCRIPT ======================= -->
@@ -235,7 +234,7 @@
       <code>rtmd</code>, pacchetti MXF ST 436), XML NonRealTimeMeta di Sony, SPS H.264/HEVC e descrittore MXF; per le altre
       marche le chiavi QuickTime, la traccia DJI <code>djmd</code>, il nome del profilo o la descrizione colore del codec.
       Lo script e il nodo dicono quale lettura è stata usata: <b>tarata</b>, <b>compatibile</b> o <b>stimata</b>
-      (pagina 10).</p>
+      (pagina 9).</p>
       <p>Legge al massimo <b>24 campioni</b> della traccia metadata per clip, con un budget di un secondo, senza decodificare
       niente: un file di molti GB costa circa <b>100 KB</b> di lettura. Un volume che non risponde viene saltato una volta,
       con un avviso, invece di bloccare l'elenco.</p>
@@ -262,7 +261,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · lo script</span><span>3 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · lo script</span><span>3 / 9</span></footer>
 </section>
 
 <!-- ======================= 4 · DEVELOP: DECODIFICA, EI, BILANCIAMENTO ======================= -->
@@ -312,7 +311,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (1)</span><span>4 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (1)</span><span>4 / 9</span></footer>
 </section>
 
 <!-- ======================= 5 · DEVELOP: FALSE COLOR, SPAZIO COLORE ======================= -->
@@ -376,7 +375,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (2)</span><span>5 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (2)</span><span>5 / 9</span></footer>
 </section>
 
 <!-- ======================= 6 · DEVELOP: TONI E ZONE ======================= -->
@@ -437,14 +436,14 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <tr><td class="k">Luci che bruciano</td><td>Highlights −50…−100 (con un DRT dopo, Bianco 4-5)</td></tr>
         <tr><td class="k">Controluce</td><td>Shadows +30…+60, Blacks −20…−40</td></tr>
         <tr><td class="k">Look pellicola</td><td>Contrast +20…+30, Highlights −60</td></tr>
-        <tr><td class="k">Ombre rumorose</td><td>Shadow Sat −30…−50 (o un nodo Maschera rumore, pag. 8)</td></tr>
+        <tr><td class="k">Ombre rumorose</td><td>Shadow Sat −30…−50</td></tr>
       </table>
       <div class="warn"><b>Costo fisico</b>: alzare le ombre di 1,5 stop in modo puntuale richiede una transizione di circa
       3 stop. Niente "auto" sull'immagine: darebbe flicker. Formule: <code>docs/TONE_MAPPING.md</code>.</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (3)</span><span>6 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (3)</span><span>6 / 9</span></footer>
 </section>
 
 <!-- ======================= 7 · DEVELOP: TONE MAPPING E GAMUT ======================= -->
@@ -507,70 +506,10 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (4)</span><span>7 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (4)</span><span>7 / 9</span></footer>
 </section>
 
-<!-- ======================= 8 · DEVELOP: MASCHERA RUMORE ======================= -->
-<section class="page"><div class="content">
-  <div class="part"><h1>Maschera rumore <span class="new">3.2</span></h1><span class="where">nodo Log MetaRaw · gruppo Maschera rumore · per Neat Video e altri denoiser</span></div>
-  <p>Con Maschera accesa il nodo diventa un <b>nodo maschera</b>: non sviluppa, passa identica l'immagine che
-  riceve e scrive solo l'<b>alpha</b>: 1 dove la camera, all'EI scelto, ha rumore visibile, 0 dove è pulita, sfumando
-  (Resolve usa l'alpha di un plugin come key del suo nodo). <b>Uso</b>: un secondo nodo Log MetaRaw, copia di quello che
-  sviluppa (stesso EI), messo prima di lui; la sua uscita alpha va all'ingresso key del nodo con Neat Video. Quello che
-  sviluppa resta con Maschera Spenta.</p>
-  <div class="cols">
-    <div>
-      <figure><img src="img/noise_snr_it.svg" alt="">
-        <figcaption><b>Da dove viene il rumore</b> (modello illustrativo, lettura 3 e⁻, tarato sulla tabella ARRI).
-        Uno stop di EI in più = uno stop di luce in meno per lo stesso grigio: il pavimento (SNR = 1) si avvicina di uno stop. ARRI misura 6,9 / 5,9 / 4,9 stop a EI
-        800 / 1600 / 3200.</figcaption></figure>
-    </div>
-    <div>
-      <figure><img src="img/noise_mask_it.svg" alt="">
-        <figcaption><b>La maschera</b>, con la formula del nodo (<code>NoiseMask.cpp</code>) e le costanti FX6 (inizio 3,5,
-        pieno 5 stop, nativi 800/12800): EI 3200 su nativo 800 la anticipa di 2 stop; nativo alto e codec 8 bit
-        costano mezzo stop ciascuno.</figcaption></figure>
-    </div>
-  </div>
-  <div class="cols">
-    <div>
-      <div class="sci"><b>Fisica.</b> I fotoni arrivano a caso (statistica di Poisson): con S elettroni il rumore fotonico
-      è √S. A questo si somma il rumore di lettura σ, fisso. <code>SNR = S / √(S + σ²)</code>: nelle luci domina il
-      fotonico e l'SNR cala di mezzo stop per stop; nelle ombre domina la lettura e cala di uno stop per stop. Alzare l'EI
-      non aggiunge luce: amplifica, quindi sposta tutta la curva verso il grigio.</div>
-      <div class="formula">s      = log2(Y/0,18) dopo EI e bilanciamento
-inizio = D − 0,5 (nativo alto) + codec
-soglia = max(0, inizio − log2(EI / nativo))
-alpha  = smoothstep da −soglia (0)
-         a −(soglia + sfumatura) (1)</div>
-      <p><b>Codec</b>: ProRes RAW −0,5 stop (FX6: 0,3-0,7 stop in meno a SNR = 2 senza la riduzione rumore interna);
-      8 bit −0,5 (stima: blocchi e banding); Intra, ProRes, Long GOP 10 bit 0.</p>
-    </div>
-    <div>
-      <figure><img src="img/noise_ei_it.svg" alt="">
-        <figcaption><b>Soglia contro EI</b>: uno stop di EI = uno stop di soglia, come nella misura ARRI. Al nativo alto una FX6
-        parte mezzo stop più vicina al grigio.</figcaption></figure>
-      <table>
-        <tr><td class="k">Maschera</td><td>Spenta, <b>Automatica</b> (soglia per camera, ISO nativo, codec), <b>Personalizzata</b>.</td></tr>
-        <tr><td class="k">Inizio · Sfumatura</td><td>Personalizzata: stop sotto il grigio all'ISO nativo (default 3) e stop per
-          arrivare piena (1,5). EI e codec si applicano lo stesso.</td></tr>
-        <tr><td class="k">Vedi maschera</td><td>In grigio al posto dell'immagine (bianco = da pulire). Solo per controllo.</td></tr>
-        <tr><td class="k">Soglia</td><td>Dice la soglia in uso, la camera, il nativo, il codec e se è misurata o stimata.</td></tr>
-      </table>
-    </div>
-  </div>
-  <p><b>Costanti per camera</b> (inizio / pieno, stop sotto il grigio al nativo): FX6 3,5/5 <i>misurata</i> · A7S III,
-  A7 IV, S5/S5 II 3/4,5 <i>misurate</i> · GH6 2,5/4 <i>misurata</i> · FX30, FX3, altre S-Log 3/4,5 <i>stimate</i> · LogC3
-  5,3/6,9 e LogC4 6,1/7,7 <i>derivate da ARRI</i> · Apple Log 1,5/3 <i>derivata</i> · D-Log M, D-Log 2/3, HLG 2/3,5,
-  Canon, Fujifilm, Nikon, RED, Blackmagic 3,5/5 <i>stimate</i>. Fonti (ARRI, CineD) in <code>docs/NOISE.md</code>.</p>
-  <div class="warn"><b>Non provato in Resolve</b> che l'alpha arrivi alla key di Neat Video; se non arriva, un nodo in
-  parallelo con <i>Vedi maschera</i> e un qualifier di luminanza. Record delle clip scritti prima della 3.2:
-  <i>Rileggi metadata</i> per il codec.</div>
-</div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (5)</span><span>8 / 10</span></footer>
-</section>
-
-<!-- ======================= 9 · DETAIL ======================= -->
+<!-- ======================= 8 · DETAIL ======================= -->
 <section class="page"><div class="content">
   <div class="part"><h1>Il nodo Log MetaRaw Detail</h1><span class="where">Color › OpenFX · dopo Log MetaRaw, prima di CST/LUT/DRT</span></div>
   <p>Il nodo creativo: lavora <b>per aree</b>, su una base che segue i bordi (guided filter), e muove le grandi aree senza
@@ -632,10 +571,10 @@ alpha  = smoothstep da −soglia (0)
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Detail</span><span>9 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Detail</span><span>8 / 9</span></footer>
 </section>
 
-<!-- ======================= 10 · CAMERE, LIMITI, CREDITI ======================= -->
+<!-- ======================= 9 · CAMERE, LIMITI, CREDITI ======================= -->
 <section class="page"><div class="content">
   <div class="part"><h1>Camere e curve, limiti, crediti</h1><span class="where">dettagli in docs/CAMERAS.md, docs/DJI_LOG.md</span></div>
   <div class="cols">
@@ -689,7 +628,7 @@ alpha  = smoothstep da −soglia (0)
         <li>S-Log2 segue il documento Sony; la curva S-Log2 di Resolve differisce di circa 0,15 stop.</li>
         <li>Da verificare su più file: XAVC HS (HEVC), HLG, S-Cinetone, zoom motorizzati; Input Color Space per le camere
             non Sony.</li>
-        <li><b>Non provati in Resolve</b>: Maschera rumore → key di Neat Video, modalità e fasi del Detail, tone mapping
+        <li><b>Non provati in Resolve</b>: modalità e fasi del Detail, tone mapping
             della 3.1; <b>Metal non eseguito</b> per queste parti (parità CPU/modello verificata dai test). Resolve 20, Linux
             e Windows non provati.</li>
         <li>Progetto hobbistico e indipendente, distribuito così com'è, <b>senza garanzie</b> né responsabilità per l'uso
@@ -706,7 +645,6 @@ alpha  = smoothstep da −soglia (0)
         <li>OpenDRT v1.1.0 di Jed Smith (GPL-3), portato dal DCTL.</li>
         <li>Valori ACES 1.3 e 2.0 confrontati con OpenColorIO; curve e gamut dai documenti dei produttori.</li>
         <li>D-Log M: misura Osmo Action 6 di <code>jens-krause/dlogm-dctl</code>; fit precedente di Thatcher Freeman.</li>
-        <li>Rumore: white paper ARRI sulla gamma dinamica, test di laboratorio CineD.</li>
       </ul>
       <p class="note">Sony, XAVC e Catalyst sono marchi di Sony Group Corporation; DaVinci Resolve è un marchio di Blackmagic
       Design. Progetto indipendente, non affiliato né approvato da nessuna delle due. Figure:
@@ -714,7 +652,7 @@ alpha  = smoothstep da −soglia (0)
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>10 / 10 · Licenza GNU GPL v3</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>9 / 9 · Licenza GNU GPL v3</span></footer>
 </section>
 
 </body>

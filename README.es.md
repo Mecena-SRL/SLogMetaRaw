@@ -45,7 +45,7 @@ lo mejor de lo que hay. No puede crear lo que no hay.
 
 ## Instalación
 
-1. Descarga `SLogMetaRaw-3.2.1.dmg` desde **Releases** y ábrelo.
+1. Descarga `SLogMetaRaw-4.0.0.dmg` desde **Releases** y ábrelo.
 2. Doble clic en **Installa Log MetaRaw.pkg**. No está firmado con un certificado de Apple: la primera vez, clic
    derecho › **Abrir**. Pide la contraseña del Mac porque el plugin va en una carpeta del sistema.
 3. Reinicia DaVinci Resolve.
@@ -134,7 +134,7 @@ El nodo es puntual: cada píxel depende solo de sí mismo. Nunca crea halos y **
 
 | Control | Qué hace |
 |---|---|
-| **Versión** (arriba) | `v3.2.1`. Una vez al día pregunta a GitHub por la última release. Si la hay muestra **🟢 v3.1.0 → 3.x.y** y el clic abre en el navegador la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo |
+| **Versión** (arriba) | `v4.0.0`. Una vez al día pregunta a GitHub por la última release. Si la hay muestra **🟢 v3.1.0 → 3.x.y** y el clic abre en el navegador la descarga del instalador de tu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada por sí mismo |
 | **Camera** · **Rileggi metadata** | la cámara leída. *Rileggi* (releer) vuelve a leer el clip, devuelve cada control a los valores de cámara y escribe los metadatos del clip en el Media Pool |
 | **Ripresa** (rodaje) · **Decodifica** | *Clip* permite cambiar los controles; *Camera metadata* los bloquea en los valores de rodaje |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot o un preset. Adaptación cromática Bradford en luz lineal, desde el blanco que registró la cámara |
@@ -142,7 +142,6 @@ El nodo es puntual: cada píxel depende solo de sí mismo. Nunca crea halos y **
 | **Esposizione** (EI) | índice de exposición: el doble de EI = +1 paso |
 | **False color** | una casilla sobre Temperatura, una bajo Tint y una bajo Esposizione; ver abajo |
 | **Spazio colore** (espacio de color) | tres subgrupos. **Ingresso** (entrada): Spazio colore y Gamma que entran al nodo, Rilevato (detectado) y *Ripristina da camera*, Data level, Livello y *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* y las referencias de rodaje. **Uscita** (salida): **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione y Mappatura gamut, Vibrance luci, Spazio colore y Gamma (como un Color Space Transform; *Timeline* no convierte), tamaño y exportación de la LUT |
-| **Maschera rumore** (máscara de ruido) | **Maschera**: Spenta (apagada), Automatica, Personalizzata (**Inizio** inicio, **Sfumatura** transición); **Vedi maschera** (ver máscara); **Soglia** (umbral) muestra el umbral en uso. Activada, el nodo se vuelve un nodo máscara: imagen sin cambios, solo el alfa; ver abajo |
 | **Toni** (tonos) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* añade Contrast, Shadows, Whites, Blacks, Vibrance y las **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range y Falloff, Contrast Pivot, false color *Zone*); aparecen solos si el nodo los usa |
 | **Dati di ripresa** (datos de rodaje) | solo lectura: objetivo, focal, diafragma, foco, obturador, EI, WB, fps, ND, LUT de cámara |
 
@@ -178,18 +177,6 @@ curva log. La opción *Corregir el Data Level* del script lo arregla para todo e
 una Gamma de escena como DaVinci WG / DaVinci Intermediate ya no se sustituyen por Rec.709 / Gamma 2.4: la imagen
 renderizada para Rec.709 viaja en esa codificación, para pasarla a otros plugins (Dehancer…), y un CST a Rec.709 /
 Gamma 2.4 sin tone mapping la devuelve idéntica. Las salidas de pantalla (Rec.709, P3, Rec.2020) no cambian.
-
-**Máscara de ruido (3.2.0, nodo máscara desde 3.2.1).** Con Maschera activada el nodo se vuelve una máscara: no revela,
-pasa la imagen que recibe idéntica bit a bit y escribe solo el **alfa**: 1 donde la cámara, al EI elegido, tiene ruido
-visible, 0 donde está limpia, con transición suave (Resolve usa el alfa de un plugin como key de su propio nodo, así que
-un nodo que revela no puede llevarla). Usa un segundo nodo Log MetaRaw, copia del que revela (mismo EI), colocado antes
-de él, y conecta su salida alfa a la entrada key del nodo con Neat Video; el nodo que revela queda con Maschera Spenta y
-no cambia. *Automatica* usa un umbral por cámara, ISO nativo (también dual) y códec (ProRes RAW y 8 bits lo adelantan
-medio paso); *Personalizzata* usa el Inizio y la Sfumatura que elijas. En ambos, cada paso de EI por encima del nativo
-lo acerca un paso al gris. *Vedi maschera* la muestra en gris en lugar de la imagen. **Aún no probado en Resolve**: que
-el alfa llegue a la entrada key del nodo con Neat Video. Si no llega, un nodo en paralelo con *Vedi maschera* y un
-qualifier de luminancia. Las constantes están medidas para algunas cámaras y estimadas para las demás:
-[docs/NOISE.md](docs/NOISE.md) (en italiano).
 
 **Sin metadatos.** Un ProRes de grabador externo, o un clip que no se puede leer, deja el nodo neutro. Marca
 *Spazio colore › Senza metadata › Sblocca controlli* y escribe el EI, los Kelvin y el tinte de rodaje: los controles se activan
@@ -245,7 +232,7 @@ quitar. [docs/DETAIL.md](docs/DETAIL.md)
 ## Actualizaciones y privacidad
 
 - Los **nodos** preguntan a GitHub por la última release de este proyecto como mucho una vez al día, en segundo plano.
-  La petición lleva solo la versión del programa (`User-Agent: SLogMetaRaw/3.2.1`). Para desactivarlo crea el archivo
+  La petición lleva solo la versión del programa (`User-Agent: SLogMetaRaw/4.0.0`). Para desactivarlo crea el archivo
   vacío `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - El **script** solo consulta cuando haces clic en su versión.
 - Un clic solo abre un enlace de descarga de las releases de GitHub de este proyecto. Nada se instala sin ti.
@@ -266,7 +253,7 @@ quitar. [docs/DETAIL.md](docs/DETAIL.md)
 - **Una matemática, tres implementaciones.** La matemática está en `ofx/SLogMetaRaw/math` y se compila como C++ y como
   Metal. Un modelo Python de referencia verifica ambas: CPU y GPU coinciden dentro de 2·10⁻⁴, con FMA desactivado en todas
   las rutas.
-- **Tests.** 509 tests automáticos: parsers, modelos de referencia, C++, Metal, un host OpenFX en miniatura que carga los
+- **Tests.** 520 tests automáticos: parsers, modelos de referencia, C++, Metal, un host OpenFX en miniatura que carga los
   dos nodos como lo hace Resolve, y archivos golden de los paneles.
 
 ---
@@ -352,9 +339,7 @@ Rendering y datos de cámara: el Output Transform ACES 2.0 está portado de Open
 con sus transformaciones integradas (ACES: Academy of Motion Picture Arts and Sciences); [OpenDRT](https://github.com/jedypod/open-display-transform)
 v1.1.0 es de Jed Smith (GPL-3.0), portado de su DCTL. La curva y el gamut DJI D-Log M vienen de las mediciones de la Osmo
 Action 6 en [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 y de la LUT DJI de la Action 6, usada solo
-como referencia y no distribuida; hasta la 3.1.x la curva era el ajuste de Thatcher Freeman. Las constantes de la máscara
-de ruido vienen del white paper de rango dinámico de ARRI y de las pruebas de laboratorio de CineD
-([docs/NOISE.md](docs/NOISE.md)).
+como referencia y no distribuida; hasta la 3.1.x la curva era el ajuste de Thatcher Freeman.
 
 [GNU GPL v3.0 o posterior](LICENSE). El SDK OpenFX es © The Open Effects Association (BSD-3). Sony, XAVC y Catalyst son
 marcas de Sony Group Corporation; DaVinci Resolve es una marca de Blackmagic Design. Proyecto independiente, no afiliado

@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.2.1 più il nodo `noise/` (branch del plugin Noise). Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 4.0.0 in sviluppo: aggiunto il nodo `noise/`, rimosso `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -47,8 +47,7 @@ resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui
 ```
 Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Detail, Noise)
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
-  │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp),
-  │                                 NoiseMask (Maschera rumore: tabella per camera, docs/NOISE.md)
+  │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp)
   ├──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
   └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles
                                     (tabella camere e formati, docs/DENOISE.md)
@@ -125,8 +124,8 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py` (con `gen/GamutMatrices.h` e
   `gen/Aces2Tables.h`): non va mai editato a mano.
 
-_Ultimo aggiornamento: 24/11/2026 — aggiunto `develop/NoiseMask` (Maschera rumore nell'alpha; il record della clip
-ha `noise_codec`). Prima, 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
+_Ultimo aggiornamento: 24/11/2026 — rimosso `develop/NoiseMask` (Maschera rumore, 3.2.0-3.2.1: passa al plugin Noise;
+il record della clip conserva `noise_codec`). Prima, 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
 (`tools/aces2.py`, `gen/Aces2Tables.h`) e OpenDRT (`tests/model/opendrt.py`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
 dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:
 cambiano il pannello Develop e `math/HostOnly.h`, che ora risolve Temperatura e Tint da un colore); aggiunto
