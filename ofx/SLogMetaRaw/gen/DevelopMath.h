@@ -1405,7 +1405,9 @@ SM_FN float sm_noise_mask(float y, SM_CREF(DevelopParams) p) {
     return t * t * (3.0f - 2.0f * t);
 }
 
-// The developed pixel; mask is the Maschera rumore when p.nmOn, else 0.
+// The developed pixel; mask is the Maschera rumore when p.nmOn, else 0. Resolve keys the node with the alpha of its
+// plugin (output where alpha = 1, input where 0): a mask node therefore passes its input untouched and only writes
+// the alpha, for the key input of the denoiser's node.
 SM_FN SMf3 sm_develop_a(SMf3 in, SM_CREF(DevelopParams) p, SM_OUT(float) mask) {
     mask = 0.0f;
     if (p.bypass != 0 && p.levelFix == 0) return in;
@@ -1425,7 +1427,7 @@ SM_FN SMf3 sm_develop_a(SMf3 in, SM_CREF(DevelopParams) p, SM_OUT(float) mask) {
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
     if (p.nmOn != 0) {
         mask = sm_noise_mask(xyz.y, p);
-        if (p.nmOn == 2) return smf3(mask, mask, mask);
+        return p.nmOn == 2 ? smf3(mask, mask, mask) : in;
     }
 
     if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);

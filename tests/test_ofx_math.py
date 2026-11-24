@@ -55,8 +55,9 @@ class OfxMath(unittest.TestCase):
             self.assertEqual(float(out), 0.0, ' '.join(cmd))
 
     def test_the_noise_mask_writes_only_the_alpha(self):
-        """Maschera rumore: the RGB stays bit-identical (Rec.709 too, with every rendering), the alpha is 0 above the
-        edge, 1 a fade below it, smoothstep between; Vedi maschera shows exactly that value."""
+        """Maschera rumore: Resolve keys the node with its plugin's alpha, so a mask node passes its input bit for bit
+        (with every rendering chosen) and writes only the alpha: 0 above the edge, 1 a fade below it, smoothstep
+        between; Vedi maschera shows exactly that value."""
         rnd = random.Random(7)
         cases = []
         for drt in range(6):
@@ -66,7 +67,7 @@ class OfxMath(unittest.TestCase):
         out = self.run_exe(['--noise'], ['%r %r %r %d %r %r' % c for c in cases]).split('\n')
         for case, line in zip(cases, out):
             same, mask, view = line.split()
-            self.assertEqual(same, '1', 'RGB changed by the mask: %r' % (case,))
+            self.assertEqual(same, '1', 'the mask node changed the picture: %r' % (case,))
             self.assertEqual(view, '1', case)
             self.assertTrue(0.0 <= float(mask) <= 1.0, case)
         grey = 0.41055718   # S-Log3 code of 18% grey: s = 0

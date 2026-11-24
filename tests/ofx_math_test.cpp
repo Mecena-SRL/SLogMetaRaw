@@ -8,8 +8,8 @@
 //   --curve lo hi n: expo TONE -> n + 1 lines "e d hl hw" of sm_t5_curve at e = lo..hi (float32), then "end"
 //   --fma a b c: a*b+c, exactly 0 for the probe values only without contraction
 //   --noise: "r g b drt edge invFade" (S-Gamut3.Cine / S-Log3 -> Rec.709 / Gamma 2.4) -> "same mask view":
-//            same = 1 when the RGB with the Maschera rumore on is bit-identical to it off, view = 1 when the
-//            Vedi maschera picture is the mask
+//            same = 1 when the RGB with the Maschera rumore on is the input, bit for bit (Resolve keys the node
+//            with the alpha), view = 1 when the Vedi maschera picture is the mask
 // TONE = contrast highlights shadows whites blacks vibrance saturation zonePivot zoneExp[4] zoneSat[4]
 //        zoneRange[4] zoneFalloff[4] softClip softClipLevel softClipColor   (27 values)
 #include <cstdio>
@@ -100,13 +100,12 @@ int main(int argc, char** argv)
             p.drt = (int)drt;
             p.expo = 1.0f; p.ratioL = p.ratioM = p.ratioS = p.norm = 1.0f;
             const SMf3 in = smf3((float)r, (float)g, (float)b);
-            const SMf3 off = sm_develop(in, p);
             p.nmOn = 1; p.nmEdge = (float)edge; p.nmInvFade = (float)inv;
             float mask = -1.0f, viewMask = -1.0f;
             const SMf3 on = sm_develop_a(in, p, mask);
             p.nmOn = 2;
             const SMf3 view = sm_develop_a(in, p, viewMask);
-            printf("%d %.9g %d\n", memcmp(&off, &on, sizeof(SMf3)) == 0 ? 1 : 0, mask,
+            printf("%d %.9g %d\n", memcmp(&in, &on, sizeof(SMf3)) == 0 ? 1 : 0, mask,
                    view.x == mask && view.y == mask && view.z == mask && viewMask == mask ? 1 : 0);
         }
         return 0;

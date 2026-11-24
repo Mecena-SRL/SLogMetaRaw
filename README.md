@@ -45,7 +45,7 @@ is there. It cannot create what is not there.
 
 ## Install
 
-1. Download `SLogMetaRaw-3.2.0.dmg` from **Releases** and open it.
+1. Download `SLogMetaRaw-3.2.1.dmg` from **Releases** and open it.
 2. Double-click **Installa Log MetaRaw.pkg**. It is not signed with an Apple certificate: the first time,
    right-click it and choose **Open**. It asks for the Mac password because the plugin goes in a system folder.
 3. Restart DaVinci Resolve.
@@ -132,7 +132,7 @@ The node is pointwise: each pixel depends only on itself. It never makes halos, 
 
 | Control | What it does |
 |---|---|
-| **Version** (top) | `v3.2.0`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
+| **Version** (top) | `v3.2.1`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
 | **Camera** · **Rileggi metadata** | the camera that was read. *Rileggi* re-reads the clip, sets every control back to the camera values and writes the clip's metadata into the Media Pool |
 | **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
@@ -140,7 +140,7 @@ The node is pointwise: each pixel depends only on itself. It never makes halos, 
 | **Esposizione** (EI) | exposure index: double the EI = +1 stop |
 | **False color** | a box above Temperatura, one below Tint and one below Esposizione; see below |
 | **Spazio colore** (colour space) | three sub-groups. **Ingresso** (input): Spazio colore and Gamma entering the node, Rilevato (detected) and *Ripristina da camera*, Data level, Livello and *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* and the shooting references. **Uscita** (output): **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione and Mappatura gamut, Vibrance luci, Spazio colore and Gamma (like a Color Space Transform; *Timeline* does not convert), LUT size and export |
-| **Maschera rumore** (noise mask) | **Maschera**: Spenta (off), Automatica, Personalizzata (custom: **Inizio** start, **Sfumatura** fade); **Vedi maschera** (show mask); **Soglia** shows the threshold in use. Writes the noisy areas into alpha, colours unchanged; see below |
+| **Maschera rumore** (noise mask) | **Maschera**: Spenta (off), Automatica, Personalizzata (custom: **Inizio** start, **Sfumatura** fade); **Vedi maschera** (show mask); **Soglia** shows the threshold in use. On, the node becomes a mask node: image unchanged, only the alpha; see below |
 | **Toni** (tones) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* adds Contrast, Shadows, Whites, Blacks, Vibrance and the **Zone** (Black, Shadow, Light, Specular with Exp, Sat, Range and Falloff, Contrast Pivot, *Zone* false color); they appear by themselves when the node uses them |
 | **Dati di ripresa** (shooting data) | read only: lens, focal length, aperture, focus, shutter, EI, WB, fps, ND, camera LUT |
 
@@ -175,13 +175,17 @@ and Gamma such as DaVinci WG / DaVinci Intermediate are no longer replaced by Re
 Rec.709 travels in that encoding, to hand it to other plugins (Dehancer…), and a CST to Rec.709 / Gamma 2.4 without tone
 mapping brings it back identical. Display outputs (Rec.709, P3, Rec.2020) are unchanged.
 
-**Noise mask (3.2.0).** The node can write into the **alpha** channel the areas where the camera, at the chosen EI, shows
-noise, so Neat Video or another denoiser works only there. *Automatica* uses a threshold per camera, native ISO (dual ISO
-included) and codec (ProRes RAW and 8 bit move it half a stop earlier); *Personalizzata* uses your Inizio and Sfumatura.
-In both, every stop of EI above native moves it one stop closer to grey. *Vedi maschera* shows it in place of the image.
-Colours and output stay identical, bit for bit. **Not tried in Resolve yet**: that the alpha reaches the key input of the
-node with Neat Video. If it does not, use a parallel node with *Vedi maschera* and a luminance qualifier. The constants
-are measured for some cameras and estimated for the others: [docs/NOISE.md](docs/NOISE.md) (in Italian).
+**Noise mask (3.2.0, mask node since 3.2.1).** With Maschera on, the node becomes a mask: it does not develop, it passes
+the image it receives unchanged, bit for bit, and writes only the **alpha**: 1 where the camera, at the chosen EI, shows
+noise, 0 where it is clean, with a smooth fade (Resolve uses a plugin's alpha as the key of its own node, so a
+developing node cannot carry it). Use a second Log MetaRaw node, a copy of the developing one (same EI), placed before
+it, and connect its alpha output to the key input of the node with Neat Video; the developing node keeps Maschera Spenta
+and does not change. *Automatica* uses a threshold per camera, native ISO (dual ISO included) and codec (ProRes RAW and
+8 bit move it half a stop earlier); *Personalizzata* uses your Inizio and Sfumatura. In both, every stop of EI above
+native moves it one stop closer to grey. *Vedi maschera* shows it in grey in place of the image. **Not tried in Resolve
+yet**: that the alpha reaches the key input of the node with Neat Video. If it does not, use a parallel node with *Vedi
+maschera* and a luminance qualifier. The constants are measured for some cameras and estimated for the others:
+[docs/NOISE.md](docs/NOISE.md) (in Italian).
 
 **Without metadata.** A ProRes from an external recorder, or a clip that cannot be read, leaves the node neutral. Tick
 *Spazio colore › Senza metadata › Sblocca controlli* and type the shooting EI, Kelvin and tint: the controls come alive, and
@@ -235,7 +239,7 @@ but next to strong edges grain can grow 1.25–1.7×. Dehaze needs a real haze t
 ## Updates and privacy
 
 - The **nodes** ask GitHub for this project's latest release at most once a day, in the background. The request
-  carries only the program version (`User-Agent: SLogMetaRaw/3.2.0`). To turn it off, create the empty file
+  carries only the program version (`User-Agent: SLogMetaRaw/3.2.1`). To turn it off, create the empty file
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - The **script** checks only when you click its version.
 - A click only opens a download link from this project's GitHub releases. Nothing is installed without you.

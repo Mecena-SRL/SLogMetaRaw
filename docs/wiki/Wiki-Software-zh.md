@@ -153,7 +153,7 @@ Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT /
 | **Esposizione**（EI） | 曝光指数：EI 加倍 = +1 档 |
 | **False color** | Temperatura 上方、Tint 下方和 Esposizione 下方各一个复选框；见下文 |
 | **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：**Tone mapping**（Nessuno/CST、ACES 2.0、Luminanza、Filmico、ACES 1.3、OpenDRT）、Compressione 与 Mappatura gamut、Vibrance luci、Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
-| **Maschera rumore**（噪点遮罩） | **Maschera**：Spenta（关）、Automatica（自动）、Personalizzata（自定义：**Inizio** 起点、**Sfumatura** 过渡）；**Vedi maschera**（查看遮罩）；**Soglia**（阈值）显示当前阈值。把噪点区域写入 alpha，颜色不变；见下文 |
+| **Maschera rumore**（噪点遮罩） | **Maschera**：Spenta（关）、Automatica（自动）、Personalizzata（自定义：**Inizio** 起点、**Sfumatura** 过渡）；**Vedi maschera**（查看遮罩）；**Soglia**（阈值）显示当前阈值。开启后节点变为遮罩节点：画面不变，只写 alpha；见下文 |
 | **Toni**（色调） | Highlights、**Bianco**（档）、Soft Clip、Saturation（−100…+100）。*Mostra tutti i controlli* 加入 Contrast、Shadows、Whites、Blacks、Vibrance 和 **Zone**（Black、Shadow、Light、Specular 的 Exp、Sat、Range 和 Falloff，Contrast Pivot，*Zone* false color）；节点使用它们时会自动出现 |
 | **Dati di ripresa**（拍摄数据） | 只读：镜头、焦距、光圈、对焦、快门、EI、白平衡、帧率、ND、机内 LUT。 |
 
@@ -170,7 +170,7 @@ Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT /
 
 **带场景输出的 tone mapping（3.2.0）。** 选用渲染（ACES 2.0、Filmico、OpenDRT…）时，DaVinci WG / DaVinci Intermediate 这类场景 Spazio colore 和 Gamma 不再被替换为 Rec.709 / Gamma 2.4：为 Rec.709 渲染的画面以该编码传递，便于交给其他插件（Dehancer…）；之后用不带 tone mapping 的 CST 转到 Rec.709 / Gamma 2.4 即可完全还原。显示输出（Rec.709、P3、Rec.2020）不变。
 
-**噪点遮罩（3.2.0）。** 节点可以把摄影机在所选 EI 下出现可见噪点的区域写入 **alpha** 通道，让 Neat Video 或其他降噪器只在那里工作。*Automatica* 按摄影机、原生 ISO（含双原生 ISO）和编码设定阈值（ProRes RAW 和 8 位提前半档）；*Personalizzata* 使用你设定的 Inizio 和 Sfumatura。两种模式下，所选 EI 每高出原生 ISO 一档，阈值就向灰点靠近一档。*Vedi maschera* 用遮罩代替画面显示。颜色和输出逐位不变。**尚未在 Resolve 中测试**：alpha 能否到达 Neat Video 节点的 key 输入。若不能，可用一个并行节点，开启 *Vedi maschera* 并加亮度限定器。部分摄影机的常数为实测，其余为估计：[docs/NOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/NOISE.md)（意大利语）。
+**噪点遮罩（3.2.0，自 3.2.1 起为遮罩节点）。** 开启 Maschera 后，节点变为遮罩：不做显影，把收到的画面逐位不变地传出，只写 **alpha**：摄影机在所选 EI 下有可见噪点处为 1，干净处为 0，中间平滑过渡（Resolve 把插件输出的 alpha 当作该节点自身的 key，所以显影节点无法携带它）。使用第二个 Log MetaRaw 节点，复制自显影节点（相同 EI），放在它之前，并把它的 alpha 输出连到 Neat Video 节点的 key 输入；显影节点保持 Maschera Spenta，不受影响。*Automatica* 按摄影机、原生 ISO（含双原生 ISO）和编码设定阈值（ProRes RAW 和 8 位提前半档）；*Personalizzata* 使用你设定的 Inizio 和 Sfumatura。两种模式下，所选 EI 每高出原生 ISO 一档，阈值就向灰点靠近一档。*Vedi maschera* 以灰度代替画面显示遮罩。**尚未在 Resolve 中测试**：alpha 能否到达 Neat Video 节点的 key 输入。若不能，可用一个并行节点，开启 *Vedi maschera* 并加亮度限定器。部分摄影机的常数为实测，其余为估计：[docs/NOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/NOISE.md)（意大利语）。
 
 ---
 

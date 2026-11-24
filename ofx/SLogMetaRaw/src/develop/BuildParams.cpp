@@ -136,6 +136,8 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     const NoiseCamera cam = m_NoiseCamera.gamma == nodeGamma ? m_NoiseCamera : noiseCamera(nodeGamma, "", "");
     setNoiseMask(p, cam, noise, m_NoiseView->getValue(), m_NoiseStart->getValueAtTime(p_Time),
                  m_NoiseFade->getValueAtTime(p_Time), shotEI, ei, p_NoiseInfo);
+    if (p_NodeInfo && p.nmOn == 1)
+        *p_NodeInfo = "NODO MASCHERA RUMORE: immagine invariata, solo alpha · " + *p_NodeInfo;
     if (p_NodeInfo && p.nmOn == 2) *p_NodeInfo = "MASCHERA RUMORE IN VISTA · " + *p_NodeInfo;
     return true;
 }

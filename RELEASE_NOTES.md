@@ -1,5 +1,14 @@
 # Changelog
 
+## Log MetaRaw 3.2.1
+
+- **Maschera rumore, correzione**: in Resolve il nodo con la maschera accesa mostrava un'immagine strana (a rilievo),
+  perché Resolve usa l'alpha di un plugin come key del suo stesso nodo: dove l'alpha è 0 ripassa l'ingresso log, dove
+  è 1 l'immagine sviluppata. Ora con Maschera su Automatica o Personalizzata il nodo diventa un **nodo maschera**:
+  non sviluppa, passa l'immagine che riceve identica (bit per bit, verificato dai test) e scrive solo l'alpha. Uso:
+  una copia del nodo Log MetaRaw (stesso EI) messa prima di quello che sviluppa, con la maschera accesa; la sua uscita
+  alpha va all'ingresso key del nodo con Neat Video. Il nodo che sviluppa resta con la maschera spenta e non cambia.
+
 ## Log MetaRaw 3.2.0
 
 - **Maschera rumore** (nodo Develop, gruppo nuovo): scrive nel canale alpha le zone dove la camera ha rumore all'EI

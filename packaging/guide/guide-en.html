@@ -105,7 +105,7 @@
     <tr><td class="k">Vibrance luci</td><td>Highlight vibrance: colour back into bright, pale highlights after rendering</td><td class="pg">7</td></tr>
     <tr><td class="k">Uscita › Spazio colore · Gamma</td><td>Like a CST; scene encodings too: DaVinci WG / Intermediate <span class="new">3.2</span></td><td class="pg">7</td></tr>
     <tr><td class="k">Dimensione LUT · Esporta LUT (.cube)</td><td>LUT size 17/33/65 and export of the whole node</td><td class="pg">5</td></tr>
-    <tr><td class="k">Maschera rumore <span class="new">3.2</span></td><td>Noise mask: Maschera, Inizio, Sfumatura, Vedi maschera, Soglia → alpha</td><td class="pg">8</td></tr>
+    <tr><td class="k">Maschera rumore <span class="new">3.2</span></td><td>Noise mask: Maschera, Inizio, Sfumatura, Vedi maschera, Soglia; mask node, picture unchanged, noise → alpha</td><td class="pg">8</td></tr>
     <tr><td class="k">Toni</td><td>Tones: Highlights (film shoulder), Bianco (white, stops), Soft Clip, Saturation</td><td class="pg">6</td></tr>
     <tr><td class="k">Mostra tutti i controlli</td><td>Show all: Contrast, Shadows, Whites, Blacks, Vibrance, Azzera toni</td><td class="pg">6</td></tr>
     <tr><td class="k">Zone</td><td>Zones Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; zone view</td><td class="pg">6</td></tr>
@@ -438,7 +438,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <tr><td class="k">Burning highlights</td><td>Highlights −50…−100 (with a DRT after, Bianco 4-5)</td></tr>
         <tr><td class="k">Backlight</td><td>Shadows +30…+60, Blacks −20…−40</td></tr>
         <tr><td class="k">Film look</td><td>Contrast +20…+30, Highlights −60</td></tr>
-        <tr><td class="k">Noisy shadows</td><td>Shadow Sat −30…−50 (or the noise mask, page 8)</td></tr>
+        <tr><td class="k">Noisy shadows</td><td>Shadow Sat −30…−50 (or a noise mask node, page 8)</td></tr>
       </table>
       <div class="warn"><b>Physical cost</b>: lifting shadows by 1.5 stops pointwise needs a transition of about 3 stops.
       No "auto" from the picture: it would flicker. Formulas: <code>docs/TONE_MAPPING.md</code>.</div>
@@ -515,15 +515,16 @@ full → video:  x' = x · 1023/876 − 64/876</div>
 <!-- ======================= 8 · DEVELOP: NOISE MASK ======================= -->
 <section class="page"><div class="content">
   <div class="part"><h1>Maschera rumore (noise mask) <span class="new">3.2</span></h1><span class="where">Log MetaRaw node · for Neat Video and other denoisers</span></div>
-  <p>The node can write into the <b>alpha</b> channel the areas where the camera, at the chosen EI, shows visible noise,
-  so the denoiser works only there. <b>Colours and output do not change</b>: RGB identical bit for bit with the mask on
-  and off, with every tone mapping (checked by tests).</p>
+  <p>With Maschera on, the node becomes a <b>mask node</b>: it does not develop, it passes the image it receives
+  unchanged and writes only the <b>alpha</b>: 1 where the camera, at the chosen EI, shows visible noise, 0 where it is
+  clean, with a smooth fade (Resolve uses a plugin's alpha as the key of its own node). <b>Use</b>: a second Log MetaRaw
+  node, a copy of the developing one (same EI), placed before it; its alpha output goes to the key input of the node
+  with Neat Video. The developing node keeps Maschera Spenta.</p>
   <div class="cols">
     <div>
       <figure><img src="img/noise_snr_en.svg" alt="">
-        <figcaption><b>Where noise comes from</b> (an illustrative model: photon shot noise + 3 e⁻ read noise, parameters
-        chosen to reproduce ARRI's table). Raising EI by one stop gives the sensor one stop less light for the same grey:
-        the floor (SNR = 1) moves one stop closer. ARRI measures 6.9 / 5.9 / 4.9 stops at EI 800 / 1600 / 3200.</figcaption></figure>
+        <figcaption><b>Where noise comes from</b> (illustrative model, 3 e⁻ read noise, fitted to ARRI's table). One
+        stop more EI = one stop less light for the same grey: the floor (SNR = 1) moves one stop closer. ARRI measures 6.9 / 5.9 / 4.9 stops at EI 800 / 1600 / 3200.</figcaption></figure>
     </div>
     <div>
       <figure><img src="img/noise_mask_en.svg" alt="">
@@ -555,7 +556,7 @@ alpha  = smoothstep from −thresh (0)
           <b>Personalizzata</b> (custom).</td></tr>
         <tr><td class="k">Inizio · Sfumatura</td><td>Start · fade (custom): stops below grey at native ISO (default 3) and
           stops to reach full (1.5). EI and codec still apply.</td></tr>
-        <tr><td class="k">Vedi maschera</td><td>Show mask instead of the picture (white = to clean). For checking only.</td></tr>
+        <tr><td class="k">Vedi maschera</td><td>Show mask, in grey, instead of the picture (white = to clean). For checking only.</td></tr>
         <tr><td class="k">Soglia</td><td>Threshold: shows the threshold in use, camera, native, codec, measured or estimated.</td></tr>
       </table>
     </div>
@@ -564,9 +565,9 @@ alpha  = smoothstep from −thresh (0)
   S5/S5 II 3/4.5 <i>measured</i> · GH6 2.5/4 <i>measured</i> · FX30, FX3, other S-Log 3/4.5 <i>estimated</i> · LogC3
   5.3/6.9 and LogC4 6.1/7.7 <i>derived from ARRI</i> · Apple Log 1.5/3 <i>derived</i> · D-Log M, D-Log 2/3, HLG 2/3.5,
   Canon, Fujifilm, Nikon, RED, Blackmagic 3.5/5 <i>estimated</i>. Sources (ARRI, CineD) in <code>docs/NOISE.md</code>.</p>
-  <div class="warn"><b>Not tried in Resolve</b>: that the node's alpha reaches the key input of the node with Neat Video.
-  If it does not: a parallel node with <i>Vedi maschera</i> and a luminance qualifier. Clip records written before 3.2
-  do not know the codec until you press <i>Rileggi metadata</i>.</div>
+  <div class="warn"><b>Not tried in Resolve</b>: that the alpha reaches Neat Video's key input; if it does not, a
+  parallel node with <i>Vedi maschera</i> and a luminance qualifier. Clip records written before 3.2: press
+  <i>Rileggi metadata</i> for the codec.</div>
 </div>
 <footer><span>Log MetaRaw @VERSION@ · Develop node (5)</span><span>8 / 10</span></footer>
 </section>
