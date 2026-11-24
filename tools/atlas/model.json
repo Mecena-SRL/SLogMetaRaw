@@ -1535,7 +1535,7 @@
  "fingerprints": {
   "beh:ui.read": {
    "slogmetaraw/__main__.py::_helper": "b1f37d747ba2",
-   "slogmetaraw/clipdb.py::deep": "26e07efcae44",
+   "slogmetaraw/clipdb.py::deep": "6ad895f10a28",
    "slogmetaraw/extract.py::read_clip": "581d7d0f66a5",
    "slogmetaraw/plugin_cache.py::write_cache": "4d0ecc333510",
    "slogmetaraw/resolve_io.py::clip_path": "194973a11e5a",
