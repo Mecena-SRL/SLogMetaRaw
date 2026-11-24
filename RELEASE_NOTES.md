@@ -15,6 +15,9 @@
   scena come DaVinci WG / DaVinci Intermediate non vengono più sostituiti da Rec.709 / Gamma 2.4. L'immagine resa per
   Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer, ...): un CST verso Rec.709 / Gamma 2.4
   senza tone mapping la riporta identica. Uscite di schermo (Rec.709, P3, Rec.2020) invariate bit per bit.
+- **Guide illustrate**: guida italiana e inglese riscritte in 10 pagine, con una prima pagina che riassume tutte le
+  funzioni, grafici calcolati dai modelli del programma (`tools/make_guide_figures.py`) e spiegazioni scientifiche.
+  README, wiki e crediti aggiornati.
 
 ## Log MetaRaw 3.1.2
 

@@ -50,7 +50,7 @@ Log MetaRaw 读取并使用这些数据，由三部分组成：
 | Python 库 | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
 | 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
-运行时，它会在 `~/Library/Application Support/SLogMetaRaw/cache` 中为每个片段保存一个小的 JSON 记录。磁盘映像中还有三页的意大利语和英语指南。
+运行时，它会在 `~/Library/Application Support/SLogMetaRaw/cache` 中为每个片段保存一个小的 JSON 记录。磁盘映像中还有十页的意大利语和英语图解指南。
 
 **干净安装与卸载。** 每次安装都从干净状态开始：安装程序会完整替换之前的插件和库，并移除开发版安装，不会留下旧版本的任何文件。磁盘映像中的 **Disinstalla Log MetaRaw.command**（第一次请右键 › 打开）会移除所有已安装的版本（包括 1.x 和 2.x）以及缓存、设置和日志。它在动手之前会列出全部内容，要求你关闭 Resolve，并询问是否同时删除导出的 CSV。已经写入 Resolve 项目的元数据属于项目本身，会保留。
 

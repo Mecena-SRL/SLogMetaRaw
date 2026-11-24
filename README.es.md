@@ -60,7 +60,7 @@ siguiente arranque. Sin eso, Resolve seguiría mostrando el panel antiguo y no v
 | El script del menú | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
 Mientras funciona guarda un pequeño registro JSON por clip en `~/Library/Application Support/SLogMetaRaw/cache`. El
-disco también contiene las guías de tres páginas, en italiano e inglés.
+disco también contiene las guías ilustradas de diez páginas, en italiano e inglés.
 
 **Instalación limpia y desinstalación.** Cada instalación empieza limpia: el instalador sustituye por completo el plugin
 y la biblioteca anteriores y quita las instalaciones de desarrollo, así que no queda ningún archivo de una versión vieja.
