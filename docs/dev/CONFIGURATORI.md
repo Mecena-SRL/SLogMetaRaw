@@ -202,3 +202,8 @@ stampa, Supporto di visione (sala, proiettore, tubo, monitor, console LCD, carta
 motore più veloce. Verificato come sopra; aperto: parità Metal del supporto (CI), aspetto su un 4K vero.
 Terzo giro: nitidezza dei duplicati, bagliore di vetro e obiettivo, scia dell'LCD (rende anche il fotogramma prima),
 righe del pannello nascoste quando non servono (crRowIdle).
+Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
+motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
+residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per
+escludere la texture), torna dove c'è mosso. Aperto: diagnostica «Verifica ultimo render» di Ivan in Resolve (subframe
+e posa letta davvero), velocità su GPU reale.

@@ -47,7 +47,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-4.0.3.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-4.0.4.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -135,7 +135,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v4.0.3`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v4.0.4`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -233,7 +233,7 @@ Trabalham sobre a imagem da câmera, antes do **Log MetaRaw**.
   - Os perfis são estimativas até serem calibrados com amostras reais. [docs/DENOISE.md](docs/DENOISE.md)
 - **Stabilize** lê o giroscópio do clipe (Gyroflow integrado). Tem estilos do micromovimento à grua e um **MASTER**
   animável. **Motion Blur** reconstrói o obturador a partir do fluxo óptico, por exemplo de 50p a 90° para 25p a
-  180°. Ambos vêm do Mecena Motion (`motion/`) e são instalados pelo pacote macOS, só Apple silicon.
+  180°, e mantém o grão do sensor nas zonas com movimento. Ambos vêm do Mecena Motion (`motion/`) e são instalados pelo pacote macOS, só Apple silicon.
 - **Aquisição profunda**, uma caixa na janela do script: grava o giroscópio e a objetiva de cada quadro na
   MecenaClipDB, para o Stabilize.
 
@@ -242,7 +242,7 @@ Nenhum dos três nós foi ainda testado no Resolve com clipes reais.
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.0.3`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.0.4`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
