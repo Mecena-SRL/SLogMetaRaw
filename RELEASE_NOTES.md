@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.0.4
 
 - **Motion Blur, grana del sensore preservata**: la scia non spalma più la grana (nella realtà il rumore appartiene al
   pixel, non all'oggetto che si muove). Il nodo misura il rumore del fotogramma nelle zone piatte e restituisce solo

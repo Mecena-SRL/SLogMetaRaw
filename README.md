@@ -47,7 +47,7 @@ is there. It cannot create what is not there.
 
 ## Install
 
-1. Download `SLogMetaRaw-4.0.3.dmg` from **Releases** and open it.
+1. Download `SLogMetaRaw-4.0.4.dmg` from **Releases** and open it.
 2. Double-click **Installa Log MetaRaw.pkg**. It is not signed with an Apple certificate: the first time,
    right-click it and choose **Open**. It asks for the Mac password because the plugin goes in a system folder.
 3. Restart DaVinci Resolve.
@@ -134,7 +134,7 @@ The node is pointwise: each pixel depends only on itself. It never makes halos, 
 
 | Control | What it does |
 |---|---|
-| **Version** (top) | `v4.0.3`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
+| **Version** (top) | `v4.0.4`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
 | **Camera** · **Rileggi metadata** | the camera that was read. *Rileggi* re-reads the clip, sets every control back to the camera values and writes the clip's metadata into the Media Pool |
 | **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
@@ -245,7 +245,7 @@ They work on the camera image, before **Log MetaRaw**.
     CPU.
   - The profiles are estimates until they are tuned on real samples. [docs/DENOISE.md](docs/DENOISE.md)
 - **Stabilize** reads the clip's gyro (built-in Gyroflow). Its styles go from micro-shake to crane, with a keyframeable
-  **MASTER**. **Motion Blur** rebuilds the shutter from optical flow, for example 50p at 90° to 25p at 180°. Both come
+  **MASTER**. **Motion Blur** rebuilds the shutter from optical flow, for example 50p at 90° to 25p at 180°, and keeps the sensor grain in the blurred areas. Both come
   from Mecena Motion (`motion/`) and are installed by the macOS package, Apple silicon only.
 - **Deep acquisition**, a tick in the script window: it stores the gyro and the lens of every frame in the MecenaClipDB
   for Stabilize.
@@ -255,7 +255,7 @@ None of the three nodes has been tried in Resolve on real clips yet.
 ## Updates and privacy
 
 - The **nodes** ask GitHub for this project's latest release at most once a day, in the background. The request
-  carries only the program version (`User-Agent: SLogMetaRaw/4.0.3`). To turn it off, create the empty file
+  carries only the program version (`User-Agent: SLogMetaRaw/4.0.4`). To turn it off, create the empty file
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - The **script** checks only when you click its version.
 - A click only opens a download link from this project's GitHub releases. Nothing is installed without you.
