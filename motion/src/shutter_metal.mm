@@ -89,7 +89,7 @@ struct Scratch {
 };
 struct Engine {
     std::mutex cacheMutex;
-    std::unique_ptr<Scratch> idle;
+    std::vector<std::unique_ptr<Scratch>> idle; // one per concurrent render (Resolve renders in parallel)
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     id<MTLCommandQueue> queue = [device newCommandQueue];
     id<MTLComputePipelineState> kernels[KernelCount]{};
@@ -130,7 +130,11 @@ bool metalBlur(const blur::Job& job, Image dst, const int* win) {
         const size_t pyramidBytes = size_t(blur::pyramidSize(g)) * 4, fieldBytes = size_t(blur::fieldSize(g)) * 4;
         const size_t level0Bytes = size_t(g.fieldW[0]) * g.fieldH[0] * 8;
         std::unique_ptr<Scratch> scratch;
-        { std::lock_guard<std::mutex> lock(E.cacheMutex); scratch = std::move(E.idle); }
+        {
+            std::lock_guard<std::mutex> lock(E.cacheMutex);
+            for (auto it = E.idle.begin(); it != E.idle.end(); ++it)
+                if ((*it)->width == w && (*it)->height == h && (*it)->draft == job.draft) { scratch = std::move(*it); E.idle.erase(it); break; }
+        }
         if (!scratch || scratch->width != w || scratch->height != h || scratch->draft != job.draft) {
             scratch = std::make_unique<Scratch>(); scratch->width = w; scratch->height = h; scratch->draft = job.draft;
         }
@@ -251,7 +255,11 @@ bool metalBlur(const blur::Job& job, Image dst, const int* win) {
         if (end > x)
             for (int y = std::max(win[1], dst.y0); y < std::min(win[3], dst.y0 + dst.h); ++y)
                 std::memcpy(dst.at(x, y), packed + 4 * (size_t(y - dst.y0) * dst.w + x - dst.x0), size_t(end - x) * 16);
-        { std::lock_guard<std::mutex> lock(E.cacheMutex); if (!E.idle) E.idle = std::move(scratch); }
+        {
+            std::lock_guard<std::mutex> lock(E.cacheMutex);
+            if (E.idle.size() >= 4) E.idle.erase(E.idle.begin());
+            E.idle.push_back(std::move(scratch));
+        }
         return true;
     }
 }
