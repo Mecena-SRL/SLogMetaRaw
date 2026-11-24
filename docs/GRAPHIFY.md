@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.2.2 (struttura come la 3.1.0). Va rigenerato quando cambia la struttura dei moduli, non a
+`main` prima del plugin Noise e della stabilizzazione (struttura come la 3.1.0). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)

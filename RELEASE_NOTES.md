@@ -1,6 +1,6 @@
 # Changelog
 
-## Log MetaRaw 3.2.2
+## Log MetaRaw 4.0.0
 
 - **Maschera rumore rimossa** dal nodo Develop (gruppo, controlli e calcolo): anche come nodo maschera (3.2.1) in Resolve
   l'immagine restava strana. Il modello del rumore per camera (ISO nativi, EI, codec) passa al futuro plugin di

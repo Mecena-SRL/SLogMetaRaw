@@ -8,4 +8,4 @@ Ivan Mazzone + Claude (@Ivan_94m).
 """
 from .extract import read_clip, DatalessError, find_sidecar  # noqa: F401
 
-__version__ = '3.2.2'
+__version__ = '4.0.0'
