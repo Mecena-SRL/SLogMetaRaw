@@ -81,8 +81,11 @@ int main(int argc, char** argv)
             NoiseControls c;
             c.skin = 0.3f;
             c.preserve = 0.1f;
-            RunNoiseKernels((__bridge void*)queue, W, H, gf.data(), (int)gf.size(), radius, profile, c,
-                            (float*)(__bridge void*)out, row);
+            if (!RunNoiseKernels((__bridge void*)queue, W, H, gf.data(), (int)gf.size(), radius, profile, c,
+                                 (float*)(__bridge void*)out, row)) {
+                printf("KERNEL_FAILED\n");
+                return 1;
+            }
             sync();
             const auto t0 = std::chrono::steady_clock::now();
             for (int r = 0; r < 5; ++r)

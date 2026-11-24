@@ -110,7 +110,7 @@ inline float nz_sad(const device float* A, const device float* B, int w, int h, 
                     int size)
 {
     float sum = 0.0f;
-    const int half = size / 2, x0 = cx - half, y0 = cy - half;
+    const int hs = size / 2, x0 = cx - hs, y0 = cy - hs;
     if (x0 >= 0 && y0 >= 0 && x0 + size <= w && y0 + size <= h && x0 + dx >= 0 && y0 + dy >= 0 && x0 + dx + size <= w
         && y0 + dy + size <= h) {
         for (int y = 0; y < size; ++y) {

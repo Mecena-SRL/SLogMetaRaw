@@ -3005,7 +3005,7 @@ static const char* kMetalNoise =
     "                    int size)\n"
     "{\n"
     "    float sum = 0.0f;\n"
-    "    const int half = size / 2, x0 = cx - half, y0 = cy - half;\n"
+    "    const int hs = size / 2, x0 = cx - hs, y0 = cy - hs;\n"
     "    if (x0 >= 0 && y0 >= 0 && x0 + size <= w && y0 + size <= h && x0 + dx >= 0 && y0 + dy >= 0 && x0 + dx + size <= w\n"
     "        && y0 + dy + size <= h) {\n"
     "        for (int y = 0; y < size; ++y) {\n"
