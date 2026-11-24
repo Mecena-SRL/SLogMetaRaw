@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.2.0; dalla 3.1.0 si aggiunge solo `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 3.2.1 più il nodo `noise/` (branch del plugin Noise). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -45,13 +45,15 @@ resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui
 ## C++ — `ofx/SLogMetaRaw/src/` (plugin OFX per DaVinci Resolve)
 
 ```
-Plugin.cpp  (registra le due factory OFX)
+Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Detail, Noise)
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp),
   │                                 NoiseMask (Maschera rumore: tabella per camera, docs/NOISE.md)
-  └──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
+  ├──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
+  └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet), NoiseProfiles
+                                    (tabella camere e formati, docs/DENOISE.md)
 
-common/  (condiviso dai due nodi)
+common/  (condiviso dai nodi)
   ClipCache, ColourSpaces, Files, FlatJson, ImageLayout, ParamDefs, Update, UpdateBadge,
   Version, ZoneParams, Child (API di processo figlio: Child.cpp su POSIX, ChildWin.cpp su Windows)
 ```
@@ -66,6 +68,10 @@ common/  (condiviso dai due nodi)
   in ingresso (`DetailPasses`, GPU Metal + fallback CPU). Modalità Zonale e Split grade (Standard e Cinematografico eliminati); la
   Zonale in fasi (`zonalPhase`): Sviluppo puntuale (`dt_zonal_curve`), Stampa per aree + `dt_edge_burn`,
   Presenza. Parametri: `math/DetailHost.h::dt_prepare`, per pixel: `math/Detail.h::dt_gain`.
+- **Noise** (terzo nodo, prima del Develop): riduzione rumore sull'immagine log. `NoiseProfiles` costruisce il
+  rumore atteso per luminosità e banda dalla clip (`model`, `noise_codec`, `noise_iso`, `noise_bitrate`… del record
+  di `plugin_cache.py`); `NoiseEngine` fa il temporale (block matching su piramide, pesi per patch) e lo spaziale
+  (canali opponenti, à trous B3 in 5 bande, garrote). Solo CPU per ora; accesso temporale OFX (`getFramesNeeded`).
 - **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
   `drt` ≠ 0 (scelta `rendering` in Uscita): 1 ACES 2.0 (Output Transform SDR 100 nit Rec.709; parametri e tabelle
   fissi calcolati da `tools/aces2.py` in `gen/Aces2Tables.h`), 2 Luminanza (stile DaVinci, approssimato), 3 Filmico

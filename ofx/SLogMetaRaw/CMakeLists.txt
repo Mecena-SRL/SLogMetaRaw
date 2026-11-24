@@ -86,7 +86,7 @@ add_custom_target(slogmetaraw_gen DEPENDS ${GEN_OUT})
 
 # ---- plugin sources: the CPU path renders everywhere, Metal is added on macOS
 file(GLOB PLUGIN_SRCS CONFIGURE_DEPENDS
-  src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
+  src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp src/noise/*.cpp)
 if(NOT WIN32)
   list(FILTER PLUGIN_SRCS EXCLUDE REGEX "ChildWin\\.cpp$")
 endif()
@@ -143,7 +143,8 @@ else()
   set(OFX_ARCH_DIR "Linux-x86-64")
 endif()
 set(BUNDLE_DIR "${CMAKE_BINARY_DIR}/SLogMetaRaw.ofx.bundle")
-set(RESOURCES com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png fc_exposure.png fc_temperature.png
+set(RESOURCES com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png com.slogmetaraw.SLogMetaRawNoise.png
+             fc_exposure.png fc_temperature.png
               fc_tint.png fc_zones.png view_gain.png view_base.png
               view_zones.png view_zones_grey.png)
 set(_res_copy)
@@ -195,6 +196,7 @@ if(SLOGMETARAW_BUILD_TESTS)
   endif()
   slog_test(ofx_math_test "${REPO_ROOT}/tests/ofx_math_test.cpp")
   slog_test(detail_test "${REPO_ROOT}/tests/detail_test.cpp" src/detail/DetailPasses.cpp)
+  slog_test(noise_test "${REPO_ROOT}/tests/noise_test.cpp" src/noise/NoiseEngine.cpp src/noise/NoiseProfiles.cpp)
   if(WIN32)
     set(_child ${_common}/ChildWin.cpp)
   else()

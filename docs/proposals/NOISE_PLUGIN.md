@@ -1,7 +1,7 @@
 # Proposta: plugin Log MetaRaw Noise (riduzione rumore video)
 
-Stato: **solo progetto**, nessun codice. Nessuna parte è implementata né verificata; le stime di costo e qualità sono
-da misurare. Parte dalla Maschera rumore della 3.2.1 (`docs/NOISE.md`).
+Stato: proposta iniziale. La prima versione implementata (CPU, spaziale + temporale, profili per camera e formato) è
+descritta in `docs/DENOISE.md`; questa pagina resta come storia del progetto.
 
 ## 1. Obiettivo
 
