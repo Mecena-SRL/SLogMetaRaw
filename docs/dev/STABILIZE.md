@@ -1,4 +1,4 @@
-# Dati di movimento, Stabilize e Shutter in un solo pacchetto
+# Dati di movimento, Stabilize e Motion Blur in un solo pacchetto
 
 Stato: fasi 1 e 2 fatte (acquisizione profonda, un solo pacchetto macOS), fase 3 da fare.
 
@@ -18,7 +18,7 @@ letture per fotogramma a 2000 Hz; FX30 MP4 25p, 80): accelerometro a riposo 0,99
 | Sony senza IMU (HDR-CX405, a6300) | solo obiettivo | nessun dato di movimento → avviso |
 | DJI Osmo Action / Pocket | quaternioni di assetto (`djmd`) | sì |
 | GoPro | GPMF (GYRO, ACCL, CORI) | sì |
-| iPhone + Blackmagic Camera | nessun dato di movimento nella clip di prova | — (Shutter: stabilizzazione ottica leggera) |
+| iPhone + Blackmagic Camera | nessun dato di movimento nella clip di prova | — (Motion Blur: stabilizzazione ottica leggera) |
 | Panasonic S5 | nessun giroscopio nel file | — |
 
 ## Fase 1 (fatta): acquisizione profonda
@@ -35,7 +35,7 @@ letture per fotogramma a 2000 Hz; FX30 MP4 25p, 80): accelerometro a riposo 0,99
 ## Fase 2: un solo pacchetto (fatta, da provare su Mac)
 
 - Sorgenti di GyroMotion copiati in `motion/` senza storia (scelta di Ivan: verranno riscritti molto). Stabilize è un
-  fork di gyroflow-ofx (Rust, core Gyroflow con le patch di `motion/release/*.patch`), Shutter è in C++/Metal.
+  fork di gyroflow-ofx (Rust, core Gyroflow con le patch di `motion/release/*.patch`), Motion Blur è in C++/Metal.
   Entrambi stanno in un solo binario OFX, solo macOS.
 - La categoria OpenFX è **Log MetaRaw** (`set_grouping` in `motion/vendor/openfx/src/gyroflow.rs`,
   `kOfxImageEffectPluginPropGrouping` in `motion/src/plugin.cpp`). Gli identificativi non cambiano.
@@ -44,7 +44,7 @@ letture per fotogramma a 2000 Hz; FX30 MP4 25p, 80): accelerometro a riposo 0,99
   la stessa ricevuta del pkg separato), con gli script `motion/release/installer/{pre,post}install`. La versione di
   Motion viene da `motion/release/Info.plist`.
 - Il disinstallatore toglie bundle, script e `mecena-clipdb`, e lascia il MecenaClipDB.
-- Restano da fare: Linux e Windows (il core Gyroflow compila anche lì, Shutter ha già il percorso CPU) e una
+- Restano da fare: Linux e Windows (il core Gyroflow compila anche lì, Motion Blur ha già il percorso CPU) e una
   versione unica per i due prodotti.
 
 ## Fase 3: DJI Action 4

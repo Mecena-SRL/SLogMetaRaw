@@ -61,7 +61,7 @@ struct Frame{
 };
 void describe(OfxImageEffectHandle e){
     auto p=properties(e);
-    check(prop->propSetString(p,kOfxPropLabel,0,"Mecena Shutter"));
+    check(prop->propSetString(p,kOfxPropLabel,0,"Motion Blur"));
     check(prop->propSetString(p,kOfxImageEffectPluginPropGrouping,0,"Log MetaRaw"));
     check(prop->propSetString(p,kOfxImageEffectPropSupportedContexts,0,kOfxImageEffectContextFilter));
     check(prop->propSetString(p,kOfxImageEffectPropSupportedContexts,1,kOfxImageEffectContextGeneral));
@@ -692,7 +692,7 @@ OfxStatus entry(const char* action,const void* handle,OfxPropertySetHandle in,Of
                 }
             } catch(OfxStatus) {}
         }
-        std::fprintf(stderr,"[Mecena Shutter] %s failed (OFX %d)\n",action,err);
+        std::fprintf(stderr,"[Motion Blur] %s failed (OFX %d)\n",action,err);
         return err;
     }catch(const std::bad_alloc&){return kOfxStatErrMemory;}catch(...){return kOfxStatFailed;}
 }

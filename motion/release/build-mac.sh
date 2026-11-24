@@ -50,7 +50,7 @@ cp "tools/resolve/Mecena ClipDB.py" "$bundle/Contents/Resources/"
 cp release/Info.plist "$bundle/Contents/"
 cp LICENSE "$bundle/Contents/Resources/GPL-3.txt"
 # Icone degli effetti: OFX le cerca come <identificativo plugin>.png/.svg in Resources.
-cp assets/icons/it.mecena.motion.*.png assets/icons/it.mecena.motion.*.svg "$bundle/Contents/Resources/"
+cp assets/icons/it.mecena.motion.*.png "$bundle/Contents/Resources/"
 for dep in $(otool -L "$bin" | tail -n +2 | awk '{print $1}'); do
     case "$dep" in /System/Library/*|/usr/lib/*) ;; *)
         # A linked dylib lists itself as LC_ID_DYLIB; that entry is not a dependency.

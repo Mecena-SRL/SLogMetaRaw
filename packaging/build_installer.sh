@@ -30,6 +30,9 @@ done
 iconutil -c icns "$ICONSET" -o "$ROOT/assets/SLogMetaRaw.icns"
 cp "$ROOT/assets/effect_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRaw.png"
 cp "$ROOT/assets/detail_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawDetail.png"
+# Stabilize and Motion Blur keep their plugin identifiers (saved projects): the icons take those names
+cp "$ROOT/assets/stabilize_256.png" "$ROOT/motion/assets/icons/it.mecena.motion.stabilize.png"
+cp "$ROOT/assets/motionblur_256.png" "$ROOT/motion/assets/icons/it.mecena.motion.shutter.png"
 make -C "$ROOT/ofx/SLogMetaRaw" >/dev/null
 cp "$ROOT/assets/icon_1024.png" "$PKG_DIR/guide/icon.png"
 # the guides carry @VERSION@ like the installer pages: print a substituted copy (with img/, the figures of

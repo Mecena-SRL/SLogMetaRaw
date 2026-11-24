@@ -7,7 +7,7 @@ Dalla timeline corrente:
   2. aggiorna il database MecenaClipDB con mecena-clipdb (solo le clip nuove o cambiate);
   3. scrive la mappa timeline -> clip in MecenaClipDB/timelines/ e la rende attiva.
 
-Con la mappa attiva, Mecena Stabilize su un adjustment clip stabilizza ogni frame con i dati giroscopio, accelerometro e
+Con la mappa attiva, Stabilize su un adjustment clip stabilizza ogni frame con i dati giroscopio, accelerometro e
 ottica della clip che si trova sotto. Su una clip normale il database basta anche senza mappa.
 
 Installazione: copiare in

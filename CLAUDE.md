@@ -30,7 +30,7 @@ Regole:
 - JEV è facoltativo: non certifica correttezza né autorizza operazioni.
 
 ## Mecena Motion
-Stabilize, Shutter e `mecena-clipdb` stanno in `motion/` (Rust + C++, solo macOS): build e test con
+Stabilize, Motion Blur e `mecena-clipdb` stanno in `motion/` (Rust + C++, solo macOS): build e test con
 `bash motion/release/build-mac.sh`, CI `.github/workflows/motion.yml`. Istruzioni e limiti: `motion/LEGGIMI.md`,
 `docs/dev/STABILIZE.md`.
 

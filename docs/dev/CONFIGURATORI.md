@@ -175,5 +175,5 @@ verificata (font diverso da Linux).
 Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--deep`; `slogmetaraw/clipdb.py` lancia
 `mecena-clipdb` di Mecena Motion (repo Mecena-SRL/GyroMotion) e riporta la voce del MecenaClipDB. Scelta di Ivan:
 un solo database, nessun parser IMU in Log MetaRaw (il lettore Sony provato su FX6/FX30 è stato tolto). Piano di
-integrazione Stabilize/Shutter: `docs/dev/STABILIZE.md`. Fatto anche: sorgenti di GyroMotion in `motion/` (copia senza storia, scelta di Ivan), categoria «Log MetaRaw», pkg
+integrazione Stabilize/Motion Blur: `docs/dev/STABILIZE.md`. Fatto anche: sorgenti di GyroMotion in `motion/` (copia senza storia, scelta di Ivan), categoria «Log MetaRaw», pkg
 macOS unico che compila Motion. Non provato su Mac. Aperto: DJI Action 4, Linux/Windows per Motion.

@@ -144,6 +144,6 @@ void startHost(int argc,char** argv){
         assert(std::count(pageChildren.begin(),pageChildren.end(),name)==1);
     assert(plugin->mainEntry(kOfxActionCreateInstance,nullptr,nullptr,nullptr)==kOfxStatOK);
     assert(reported.find("sorgente Resolve")!=std::string::npos);
-    std::puts("Mecena Shutter: clip/timeline clocks, look and render diagnostics, standalone instance OK");
+    std::puts("Motion Blur: clip/timeline clocks, look and render diagnostics, standalone instance OK");
 }
 }

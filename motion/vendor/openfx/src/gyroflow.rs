@@ -271,7 +271,7 @@ impl Execute for GyroflowPlugin {
                 };
 
                 if !has_gyro {
-                    instance_data.plugin.set_status(&mut instance_data.params, "Gyro assente", "In Mecena Shutter apri Avanzate e attiva la stabilizzazione ottica.", false);
+                    instance_data.plugin.set_status(&mut instance_data.params, "Gyro assente", "In Motion Blur apri Avanzate e attiva la stabilizzazione ottica.", false);
                 } else if (src_fps - fps).abs() > 0.01 && src_frame.is_none() {
                     let status = format!("Timeline fps mismatch! ({fps:.3} clip, {src_fps:.3} timeline)");
                     instance_data.plugin.set_status(&mut instance_data.params, &status, "Timeline frame rate doesn't match the clip frame rate! Use the plugin in Fusion instead", false);
@@ -806,9 +806,9 @@ impl Execute for GyroflowPlugin {
                 let mut effect_properties: EffectDescriptor = effect.properties()?;
                 effect_properties.set_grouping("Log MetaRaw")?;
 
-                effect_properties.set_label("Mecena Stabilize")?;
-                effect_properties.set_short_label("Mecena Stabilize")?;
-                effect_properties.set_long_label("Mecena Stabilize")?;
+                effect_properties.set_label("Stabilize")?;
+                effect_properties.set_short_label("Stabilize")?;
+                effect_properties.set_long_label("Stabilize")?;
 
                 effect_properties.set_supported_pixel_depths(&[BitDepth::Byte, BitDepth::Short, BitDepth::Float])?;
                 effect_properties.set_supported_contexts(&[ImageEffectContext::Filter])?;
