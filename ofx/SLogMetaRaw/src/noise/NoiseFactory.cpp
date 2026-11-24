@@ -54,6 +54,9 @@ void NoiseFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "fotogramma, premi Misura su un fotogramma con zone uniformi. Manuale: un profilo generico, regolato "
                  "solo da Livello rumore", prof);
     defineInfo(d, page, prof, "profileInfo", "Da", "—");
+    defineButton(d, page, "readCamera", "Leggi dati camera",
+                 "Rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive nel Media Pool di "
+                 "Resolve come Rileggi metadata di Log MetaRaw e aggiorna il profilo Automatico", prof);
     defineButton(d, page, "measure", "Misura dal fotogramma",
                  "Legge il rumore del fotogramma corrente per luminosità e banda (blocchi più uniformi) e passa a "
                  "Profilo: Misurato. Meglio un fotogramma con cielo, muri o zone fuori fuoco a più luminosità", prof);

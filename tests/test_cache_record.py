@@ -63,7 +63,7 @@ class CacheRules(unittest.TestCase):
 
     def test_partial_fields(self):
         """The record says how many samples were read and whether that is complete."""
-        self.assertEqual(plugin_cache.VERSION, 6)
+        self.assertEqual(plugin_cache.VERSION, 7)
         plugin_cache.write_cache(self.part)
         rec = self.record()
         self.assertEqual((rec['samples_read'], rec['samples_planned'], rec['partial']), (8, 8, 1))
@@ -105,7 +105,7 @@ class CacheRules(unittest.TestCase):
         plugin_cache.write_cache(read_clip(mxf, max_samples=8), keep_complete=True)
         with open(path, encoding='utf-8') as fh:
             rec = json.load(fh)
-        self.assertEqual((rec['version'], rec['supported'], rec['cam_space'], rec['cam_gamma']), (6, 1, 8, 9))
+        self.assertEqual((rec['version'], rec['supported'], rec['cam_space'], rec['cam_gamma']), (7, 1, 8, 9))
 
     def test_resolve_status_sits_next_to_the_record(self):
         """<fnv>.resolve.json shares the record's name, so the plugin finds both from one hash."""

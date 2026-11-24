@@ -190,7 +190,7 @@ class OfxHost(unittest.TestCase):
             for byte in unicodedata.normalize('NFC', os.path.realpath(moved)).encode('utf-8'):
                 value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff
             (cache / ('%016x.json' % value)).write_text(json.dumps({
-                'version': 6, 'supported': 1, 'camera_name': 'Relink camera', 'shot_temp': 4300, 'shot_tint': 0,
+                'version': 7, 'supported': 1, 'camera_name': 'Relink camera', 'shot_temp': 4300, 'shot_tint': 0,
                 'shot_ei': 1250}), encoding='utf-8')
             env = dict(os.environ, HOME=str(home), SLOGMETARAW_TEST_NO_RESOLVE='1', SLOGMETARAW_NO_UPDATE_CHECK='1')
 
@@ -222,6 +222,37 @@ class OfxHost(unittest.TestCase):
             custom = pasted('--set', 'whiteBalance=7', '--set', 'colorTemp=3333', '--set', 'tint=12')
             self.assertEqual((float(custom['colorTemp']), float(custom['tint'])), (3333, 12), 'a Custom balance travels')
             self.assertAlmostEqual(float(custom['exposure']), 2500, delta=1)
+
+    def test_noise_reads_the_camera_from_the_record_and_ignores_old_ones(self):
+        """The Noise node takes camera, codec and ISO from the record Log MetaRaw writes. A record of an older version
+        (before 4.0.1 it had no noise_* fields) counts as missing: the line says why, the panel or the Leggi dati
+        camera button reads the clip again."""
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / 'user'
+            cache = home / SUPPORT_REL / 'cache'
+            cache.mkdir(parents=True)
+            clip = Path(directory) / 'C0001.MP4'
+            clip.write_bytes(b'0123456789')
+            value = 0xcbf29ce484222325
+            import unicodedata
+            for byte in unicodedata.normalize('NFC', os.path.realpath(clip)).encode('utf-8'):
+                value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff
+            env = dict(os.environ, HOME=str(home), SLOGMETARAW_TEST_NO_RESOLVE='1', SLOGMETARAW_NO_UPDATE_CHECK='1')
+
+            def profile(version):
+                (cache / ('%016x.json' % value)).write_text(json.dumps({
+                    'version': version, 'supported': 1, 'model': 'ILME-FX30', 'cam_gamma': 9, 'noise_codec': 'long',
+                    'noise_iso': 800}), encoding='utf-8')
+                out = subprocess.run([self.exe, BINARY, str(clip), '--plugin', '2', '--no-reload'],
+                                     capture_output=True, text=True, env=env, timeout=20).stdout
+                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)['profileInfo']
+
+            self.assertTrue(profile(7).startswith('Sony FX30 · Long GOP'), profile(7))
+            old = profile(6)
+            self.assertIn('Metadata non ancora letti', old)
+            self.assertNotIn('FX30', old)
+            self.assertIn('param:readCamera|OfxParamTypePushButton|Leggi dati camera',
+                          self.host('--plugin', '2', '--no-reload', '--dump-params'))
 
     def test_the_lut_safe_node_comes_first_and_the_spatial_one_second(self):
         """Resolve identifies a plugin by bundle index too, and only a pointwise node may be baked into
@@ -285,7 +316,7 @@ class OfxHost(unittest.TestCase):
             # The fake reader isolates process launching from Sony parsing. It must
             # receive the exact clip path and create the record the real plugin reads;
             # in --to-resolve mode (the reload button) it also prints the JSON result.
-            record = {'version': 6, 'supported': 1, 'camera_name': 'Bootstrap test camera',
+            record = {'version': 7, 'supported': 1, 'camera_name': 'Bootstrap test camera',
                       'shot_temp': 4300, 'shot_tint': 0, 'shot_ei': 1250}
             reader = (
                 'import json, os, sys, unicodedata\n'
