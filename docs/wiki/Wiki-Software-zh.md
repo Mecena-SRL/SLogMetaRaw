@@ -314,6 +314,25 @@ Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT /
 
 ---
 
+## Noise、Stabilize 与 Motion Blur 节点（4.0.0）
+
+它们处理摄影机画面，位于 **Log MetaRaw** 之前。
+
+- **Log MetaRaw Noise** 知道该预期多少噪声、出现在哪里。它从脚本记录中读取摄影机、ISO（或 EI 与原生 ISO）、编码、每像素
+  比特数与 4:2:0，并为 Sony FX6、FX30、iPhone 17 Pro、DJI Osmo Action 4 和 5 Pro 提供配置。也可以从含平坦区域的帧中
+  测量噪声。
+  - *时域*：±1 至 ±3 个相邻帧，按块对齐并逐像素加权，运动部分和剪辑点不会糊在一起。
+  - *空域*：亮度与色彩分开处理，分 5 个小波频带。每个系数与其邻域的能量比较，从而保留纹理。
+  - 提供已去除噪声的视图、细节与肤色保护，以及在剪辑时关闭所有 Noise 节点的 **Salta Noise ovunque**。
+  - 在 Mac 上全部在 Metal GPU 上运行，测试验证其结果与 CPU 一致；其他系统在 CPU 上运行。
+  - 配置在用真实样本校准之前都是估计值。[docs/DENOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DENOISE.md)
+- **Stabilize** 读取片段的陀螺仪数据（内置 Gyroflow），提供从微抖到摇臂的风格，以及可设关键帧的 **MASTER**。
+  **Motion Blur** 基于光流重建快门，例如从 50p 90° 到 25p 180°。两者都来自 Mecena Motion（`motion/`），由 macOS 安装包
+  安装，仅限 Apple 芯片。
+- **深度采集**是脚本窗口中的一个勾选项：把每一帧的陀螺仪和镜头数据存入 MecenaClipDB，供 Stabilize 使用。
+
+这三个节点都尚未在 Resolve 中用真实片段测试。
+
 ## 9. 工作流程：每个节点放在哪里
 
 ### A——在 DaVinci Wide Gamut 中调色（推荐）

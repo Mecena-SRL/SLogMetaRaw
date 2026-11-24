@@ -312,6 +312,29 @@ Approfondimento: [docs/DETAIL.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob
 
 ---
 
+## I nodi Noise, Stabilize e Motion Blur (4.0.0)
+
+Lavorano sull'immagine della camera, prima di **Log MetaRaw**.
+
+- **Log MetaRaw Noise** sa quanto rumore aspettarsi e dove. Dal record dello script legge la camera, l'ISO (o l'EI e
+  l'ISO nativo), il codec, i bit per pixel e il 4:2:0. Ha profili per Sony FX6 e FX30, iPhone 17 Pro e DJI Osmo
+  Action 4 e 5 Pro. Può anche misurare il rumore da un fotogramma con zone piatte.
+  - *Temporale*: da ±1 a ±3 fotogrammi vicini, allineati a blocchi e pesati pixel per pixel, così le parti in movimento
+    e i tagli non si impastano.
+  - *Spaziale*: luminanza e colore separati, in 5 bande wavelet. Ogni coefficiente è confrontato con l'energia del suo
+    vicinato, che tiene la trama.
+  - Viste del rumore rimosso, protezione di dettaglio e pelle, e **Salta Noise ovunque** per spegnere tutti i nodi
+    Noise mentre monti.
+  - Su Mac gira tutto su GPU Metal, e i test verificano che dia lo stesso risultato della CPU. Altrove gira su CPU.
+  - I profili sono stime finché non vengono tarati su campioni reali. [docs/DENOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DENOISE.md)
+- **Stabilize** legge il giroscopio della clip (Gyroflow integrato). Ha stili dal micromosso al crane e un **MASTER**
+  animabile. **Motion Blur** ricostruisce l'otturatore dal flusso ottico, per esempio da 50p a 90° a 25p a 180°.
+  Vengono entrambi da Mecena Motion (`motion/`) e li installa il pacchetto macOS, solo Apple silicon.
+- **Acquisizione profonda**, una spunta nella finestra dello script: salva il giroscopio e l'obiettivo di ogni
+  fotogramma nel MecenaClipDB, per Stabilize.
+
+Nessuno dei tre nodi è ancora stato provato in Resolve su clip reali.
+
 ## 9. Pipeline: dove va ogni nodo
 
 ### A — Grade in DaVinci Wide Gamut (consigliata)

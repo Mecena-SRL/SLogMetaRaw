@@ -314,6 +314,31 @@ Deep dive (Italian): [docs/DETAIL.md](https://github.com/Mecena-SRL/SLogMetaRaw/
 
 ---
 
+## The Noise, Stabilize and Motion Blur nodes (4.0.0)
+
+They work on the camera image, before **Log MetaRaw**.
+
+- **Log MetaRaw Noise** knows how much noise to expect, and where. It reads the camera, the ISO (or the EI and the
+  native ISO), the codec, the bits per pixel and the 4:2:0 chroma from the script's record, with tuned profiles for the
+  Sony FX6 and FX30, iPhone 17 Pro and DJI Osmo Action 4 and 5 Pro. It can also measure the noise from a frame with
+  flat areas.
+  - *Temporal*: ±1 to ±3 neighbour frames, aligned by blocks and weighted per pixel, so moving parts and cuts do not
+    smear.
+  - *Spatial*: luma and colour apart, in 5 wavelet bands. Each coefficient is weighed against the energy of its
+    neighbourhood, which keeps texture.
+  - Views of the removed noise, detail and skin protection, and **Salta Noise ovunque** to switch every Noise node off
+    while you edit.
+  - On a Mac it runs entirely on the Metal GPU, and the tests check that it matches the CPU. Elsewhere it runs on the
+    CPU.
+  - The profiles are estimates until they are tuned on real samples. [docs/DENOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DENOISE.md)
+- **Stabilize** reads the clip's gyro (built-in Gyroflow). Its styles go from micro-shake to crane, with a keyframeable
+  **MASTER**. **Motion Blur** rebuilds the shutter from optical flow, for example 50p at 90° to 25p at 180°. Both come
+  from Mecena Motion (`motion/`) and are installed by the macOS package, Apple silicon only.
+- **Deep acquisition**, a tick in the script window: it stores the gyro and the lens of every frame in the MecenaClipDB
+  for Stabilize.
+
+None of the three nodes has been tried in Resolve on real clips yet.
+
 ## 9. Pipelines: where each node goes
 
 ### A — Grade in DaVinci Wide Gamut (recommended)

@@ -47,6 +47,8 @@
   tr.grp td span { font-weight: 400; color: var(--muted); }
   .sum td { padding: 0.45mm 1.2mm; font-size: 8.7pt; }
   .sum td.k { width: 47mm; }
+  .sum.tight td { padding: 0.2mm 1.2mm; font-size: 8pt; line-height: 1.17; }
+  .sum.tight tr.grp td { font-size: 8pt; }
   .note { color: var(--muted); }
   .new { display: inline-block; font-size: 7pt; font-weight: 700; color: #fff; background: var(--green);
          border-radius: 1mm; padding: 0 1mm; vertical-align: 0.3mm; margin-left: 0.8mm; }
@@ -79,10 +81,10 @@
     </div>
   </header>
   <p>Cameras write into the file how each shot was taken (Kelvin, tint, EI, lens, log profile). <b>Log MetaRaw reads
-  that data and uses it</b>, in linear light, with published curves and gamuts. Three tools, in this order:</p>
+  that data and uses it</b>, in linear light, with published curves and gamuts. The script and five nodes, in this order (the number is also on each node's icon):</p>
   <figure><img src="img/flow_en.svg" alt=""></figure>
 
-  <table class="sum">
+  <table class="sum tight">
     <tr><th>Function (label in the program)</th><th>What it does</th><th class="pg">page</th></tr>
     <tr class="grp"><td colspan="3">Script <span>· Workspace › Scripts › Log MetaRaw · follows Resolve's language</span></td></tr>
     <tr><td class="k">Source</td><td>Whole Media Pool, or the selected clips</td><td class="pg">3</td></tr>
@@ -91,6 +93,14 @@
     <tr><td class="k">Export CSV</td><td>Fields Resolve lacks (EI, tint, focus…), to import as metadata</td><td class="pg">3</td></tr>
     <tr><td class="k">Copy to clips without metadata</td><td>Copies the values of read clips onto an external recorder's ProRes</td><td class="pg">3</td></tr>
     <tr><td class="k">Options</td><td>Camera tag · Overwrite metadata · Correct the Data Level · Also set Input Color Space</td><td class="pg">3</td></tr>
+    <tr class="grp"><td colspan="3">Log MetaRaw Noise node <span>· node 1, on the log image · temporal and spatial, Metal GPU</span> <span class="new">4.0</span></td></tr>
+    <tr><td class="k">Profilo · Misura dal fotogramma</td><td>Profile: expected noise by camera, ISO and format (Automatic), measured or Manual; noise level</td><td class="pg">9</td></tr>
+    <tr><td class="k">Temporale · Spaziale · Protezione</td><td>Temporal ±1-3 aligned frames; luma, colour, bands, shadows; detail and skin</td><td class="pg">9</td></tr>
+    <tr><td class="k">Vista · Salta Noise ovunque</td><td>Removed noise, map, motion; Skip Noise everywhere turns every Noise node off</td><td class="pg">9</td></tr>
+    <tr class="grp"><td colspan="3">Stabilize · Motion Blur <span>· nodes 2 and 3 · Mecena Motion, Apple silicon Macs only</span> <span class="new">4.0</span></td></tr>
+    <tr><td class="k">Stabilize › Stile · MASTER</td><td>The clip's gyro (Gyroflow): micro-shake, controlled, cinematic, crane styles</td><td class="pg">9</td></tr>
+    <tr><td class="k">Motion Blur › Look · Shutter</td><td>Blur rebuilt from optical flow, e.g. 50p 90° → 25p 180°</td><td class="pg">9</td></tr>
+    <tr><td class="k">Script › Acquisizione profonda</td><td>Deep acquisition: gyro and lens of every frame into MecenaClipDB</td><td class="pg">9</td></tr>
     <tr class="grp"><td colspan="3">Log MetaRaw node (Develop) <span>· Color › OpenFX, first node · pointwise, exportable as a LUT · Italian labels</span></td></tr>
     <tr><td class="k">Version · Camera · Rileggi metadata</td><td>Update check; camera read; <i>re-read</i> resets to the shot values</td><td class="pg">4</td></tr>
     <tr><td class="k">Ripresa › Decodifica</td><td>Shot › Decode: <i>Clip</i> (free) or <i>Camera metadata</i> (locked to shot values)</td><td class="pg">4</td></tr>
@@ -122,7 +132,7 @@
   reduction baked in: in linear light it behaves in a way that reminds you of raw, but what the camera did not record does
   not come back. Exposing well matters most. Original files are never modified.</div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 9 · Summary of every function</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 10 · Summary of every function</span></footer>
 </section>
 
 <!-- ======================= 2 · INSTALL ======================= -->
@@ -196,7 +206,7 @@
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · install</span><span>2 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · install</span><span>2 / 10</span></footer>
 </section>
 
 <!-- ======================= 3 · SCRIPT ======================= -->
@@ -261,7 +271,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · the script</span><span>3 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · the script</span><span>3 / 10</span></footer>
 </section>
 
 <!-- ======================= 4 · DEVELOP: DECODE, EI, BALANCE ======================= -->
@@ -311,7 +321,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Develop node (1)</span><span>4 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (1)</span><span>4 / 10</span></footer>
 </section>
 
 <!-- ======================= 5 · DEVELOP: FALSE COLOUR, COLOUR SPACE ======================= -->
@@ -376,7 +386,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Develop node (2)</span><span>5 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (2)</span><span>5 / 10</span></footer>
 </section>
 
 <!-- ======================= 6 · DEVELOP: TONES AND ZONES ======================= -->
@@ -444,7 +454,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Develop node (3)</span><span>6 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (3)</span><span>6 / 10</span></footer>
 </section>
 
 <!-- ======================= 7 · DEVELOP: TONE MAPPING AND GAMUT ======================= -->
@@ -508,7 +518,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Develop node (4)</span><span>7 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (4)</span><span>7 / 10</span></footer>
 </section>
 
 <!-- ======================= 8 · DETAIL ======================= -->
@@ -575,10 +585,64 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Detail node</span><span>8 / 9</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Detail node</span><span>8 / 10</span></footer>
 </section>
 
-<!-- ======================= 9 · CAMERAS, LIMITS, CREDITS ======================= -->
+<!-- ======================= 9 · NOISE, STABILIZE, MOTION BLUR ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Noise, Stabilize, Motion Blur</h1><span class="where">Color › OpenFX › Log MetaRaw · nodes 1, 2, 3, before Log MetaRaw</span></div>
+  <p>Three nodes that work <b>on the camera image, before development</b>: noise comes off best where you know how much
+  there is, and stabilisation and motion blur belong before creative grain and the grade. The order is on the icon.
+  Control names are in Italian, as in the panel.</p>
+  <div class="cols">
+    <div>
+      <h2>1 · Log MetaRaw Noise</h2>
+      <table>
+        <tr><td class="k">Profilo</td><td><b>Automatico</b>: from the script's record (camera, ISO or EI and native ISO, codec,
+          bits per pixel, 4:2:0) the expected noise for 16 brightness levels and 5 bands, luma and colour apart. The <i>Da</i>
+          line says what it used. <b>Misura dal fotogramma</b> measures a frame with flat areas. <b>Manuale</b>: a generic curve.</td></tr>
+        <tr><td class="k">Livello rumore</td><td>How much noise the filter expects (×): the first thing to set.</td></tr>
+        <tr><td class="k">Temporale</td><td><b>Fotogrammi</b> Automatic (by format: RAW and Intra ±2, compressed Long GOP ±1),
+          off, ±1-3. Each neighbour is aligned by blocks and weighted per pixel: where the motion does not match it does not count.</td></tr>
+        <tr><td class="k">Spaziale</td><td><b>Luminanza</b> (grain) and <b>Colore</b>; fine, medium and coarse detail bands;
+          more strength in the shadows.</td></tr>
+        <tr><td class="k">Protezione</td><td><b>Preserva dettaglio</b> puts some fine grain back; <b>Protezione pelle</b> keeps
+          texture on skin tones.</td></tr>
+        <tr><td class="k">Vista</td><td>Output, <i>removed noise</i> (×4: it should look like grain without outlines), expected
+          noise map, motion.</td></tr>
+        <tr><td class="k">Salta Noise ovunque</td><td>Turns every Noise node of the project off until clicked again or Resolve
+          reopens. Before export the Noise line must not say SALTATO.</td></tr>
+      </table>
+      <div class="sci"><b>How it removes noise.</b> Opponent channels (Y, R−B, R−2G+B), à trous wavelet in 5 bands; a
+      coefficient shrinks when the mean energy of its 3×3 neighbours is below 1.2 × the band's expected noise at that
+      brightness (NeighShrink): texture has energy across the neighbourhood and stays, a lone spike does not. On a Mac it all
+      runs on the Metal GPU (verified equal to the CPU), elsewhere on the CPU. Profiles are estimates, to be tuned on samples.</div>
+    </div>
+    <div>
+      <h2>2 · Stabilize</h2>
+      <p>Stabilises with the clip's gyro (built-in Gyroflow, read from the original). <b>Stile</b>: micro-shake only,
+      controlled, <b>cinematic</b> (removes footstep bounce, keeps pans), crane / gimbal. <b>MASTER (%)</b> is keyframed in
+      Edit or Color; <b>Crop massimo</b> and <b>Blocco orizzonte</b> (horizon lock); <b>Leggi dati clip</b> rereads. The gyro
+      only measures rotations: camera translation stays.</p>
+      <h2>3 · Motion Blur</h2>
+      <p>Rebuilds motion blur from optical flow between the frame and its neighbours, minus the exposure already recorded.
+      Typical case: shot 50p at 90°, 25p timeline: <b>Look · FPS e shutter › Cinema · shutter on the timeline</b>,
+      <b>Shutter desiderato 180°</b> (adds 15 ms of path, not 20). <b>Valori manuali › Segnale in ingresso</b> must be the
+      curve coming in (S-Log3, DaVinci Intermediate, linear). <b>Anteprima</b> smooth or high quality; <i>Vista › RGB
+      difference ×8</i> shows what changes.</p>
+      <h2>Deep acquisition</h2>
+      <p>A tick in the script window (or <code>--deep</code>): every clip also goes through <code>mecena-clipdb</code>, which
+      stores gyro, accelerometer, orientation, readout and lens of every frame in <b>MecenaClipDB</b>, read by Stabilize.
+      Best at ingest, with the cards connected. Slower (up to 180 s per clip).</p>
+      <p class="note">Stabilize and Motion Blur (Mecena Motion) are in the macOS pkg, Apple silicon only; Linux and Windows
+      do not have them. None of the three nodes has been tried in Resolve on real clips yet.</p>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Noise, Stabilize, Motion Blur nodes</span><span>9 / 10</span></footer>
+</section>
+
+<!-- ======================= 10 · CAMERAS, LIMITS, CREDITS ======================= -->
 <section class="page"><div class="content">
   <div class="part"><h1>Cameras and curves, limits, credits</h1><span class="where">details in docs/CAMERAS.md, docs/DJI_LOG.md</span></div>
   <div class="cols">
@@ -632,7 +696,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <li>S-Log2 follows the Sony paper; Resolve's S-Log2 curve differs by about 0.15 stop.</li>
         <li>Still to check on more files: XAVC HS (HEVC), HLG, S-Cinetone, power zooms; Input Color Space for non-Sony
             cameras.</li>
-        <li><b>Not tried in Resolve</b>: Detail modes and phases, the 3.1 tone mappings;
+        <li><b>Not tried in Resolve</b>: the 4.0 Noise, Stabilize and Motion Blur nodes, Detail modes and phases, the 3.1 tone mappings;
             <b>Metal not run</b> for these parts (CPU/model parity checked by tests). Resolve 20, Linux and Windows not
             tested.</li>
         <li>An independent hobby project, distributed as is, <b>with no warranty</b> and no liability for professional use.</li>
@@ -646,6 +710,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <li>Sony tags: SMPTE RDD 18, ExifTool, and telemetry-parser by AdrianEddy (MIT), from which part of the tag table
             comes.</li>
         <li>OpenFX SDK © The Open Effects Association (BSD-3).</li>
+        <li>Stabilize: Gyroflow by AdrianEddy and contributors (GPL-3), with its lens catalogue.</li>
         <li>OpenDRT v1.1.0 by Jed Smith (GPL-3), ported from the DCTL.</li>
         <li>ACES 1.3 and 2.0 values compared with OpenColorIO; curves and gamuts from the manufacturers' papers.</li>
         <li>D-Log M: Osmo Action 6 measurement from <code>jens-krause/dlogm-dctl</code>; earlier fit by Thatcher Freeman.</li>
@@ -656,7 +721,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>9 / 9 · GNU GPL v3 licence</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>10 / 10 · GNU GPL v3 licence</span></footer>
 </section>
 
 </body>

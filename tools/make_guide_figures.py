@@ -524,19 +524,21 @@ def boxes(s, items, y, h, x0, x1, gap=14, fill=SOFT, size=10.5):
 
 
 FLOW = {
-    0: [('Script', 'Workspace › Scripts', INK), ('Log MetaRaw', 'Develop · 1° nodo', WARM),
-        ('Log MetaRaw\nDetail', 'spaziale · 2° nodo', COOL), ('grade', 'altri nodi', '#9aa0aa'),
-        ('CST / LUT /\nDRT', 'per ultimo', INK)],
-    1: [('Script', 'Workspace › Scripts', INK), ('Log MetaRaw', 'Develop · 1st node', WARM),
-        ('Log MetaRaw\nDetail', 'spatial · 2nd node', COOL), ('grade', 'other nodes', '#9aa0aa'),
-        ('CST / LUT /\nDRT', 'last', INK)],
+    0: [('Script', 'Workspace › Scripts', INK), ('1 · Noise', 'rumore, sul log', '#7a8fa6'),
+        ('2 · Stabilize', 'giroscopio', '#7a8fa6'), ('3 · Motion\nBlur', 'mosso', '#7a8fa6'),
+        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Detail', 'spaziale', COOL),
+        ('grade ·\nCST / LUT', 'per ultimo', INK)],
+    1: [('Script', 'Workspace › Scripts', INK), ('1 · Noise', 'noise, on log', '#7a8fa6'),
+        ('2 · Stabilize', 'gyro', '#7a8fa6'), ('3 · Motion\nBlur', 'motion blur', '#7a8fa6'),
+        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Detail', 'spatial', COOL),
+        ('grade ·\nCST / LUT', 'last', INK)],
 }
 CACHE = ('metadata → Media Pool + record JSON per clip', 'metadata → Media Pool + one JSON record per clip')
 
 
 def fig_flow(path):
     s = Svg(FULL, 92)
-    c = boxes(s, FLOW[LANG], 8, 50, 6, FULL - 6)
+    c = boxes(s, FLOW[LANG], 8, 50, 6, FULL - 6, gap=9, size=9.5)
     s.text(c[0], 78, CACHE[LANG], 9, 'start', MUTED, italic=True)
     s.save(path)
 

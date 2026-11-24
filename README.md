@@ -16,13 +16,15 @@ Sony cameras write the shooting setup into every file: white balance in Kelvin, 
 colour profile. Resolve uses that data for the MXF files of an FX6 or FX9, which get a *Camera Raw* panel. For the MP4
 files of an FX30, FX3, a7 or a6000-series camera it ignores the data.
 
-Log MetaRaw reads that data and uses it. It has three parts:
+Log MetaRaw reads that data and uses it. It is a script and five nodes, numbered in chain order on their icons:
 
 | | Where | What it does |
 |---|---|---|
 | **Script** | Workspace › Scripts › Log MetaRaw | reads the metadata of every clip in the project and writes it into the Media Pool |
-| **Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
-| **Log MetaRaw Detail** node | Color › OpenFX | the creative node, with darkroom modes (Zonale, Split grade, Unito): local tone recovery, Texture, Clarity, Dehaze |
+| **1 · Log MetaRaw Noise** node | Color › OpenFX | noise reduction on the log image, with the expected noise of the camera, ISO and format; temporal and spatial, Metal GPU |
+| **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | gyro stabilisation (built-in Gyroflow) and motion blur rebuilt from optical flow; Apple silicon Macs only |
+| **4 · Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
+| **5 · Log MetaRaw Detail** node | Color › OpenFX | the creative node, with darkroom modes (Zonale, Split grade, Unito): local tone recovery, Texture, Clarity, Dehaze |
 
 No file is transcoded and no original file is ever written.
 
@@ -92,7 +94,7 @@ it is the best estimate, not a calibration. With an unknown profile they stay ne
 5. Then add your CST, LUT or DRT.
 
 ```
-Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  the rest of the grade
+Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  the rest of the grade
 ```
 
 ---
@@ -223,6 +225,31 @@ but next to strong edges grain can grow 1.25–1.7×. Dehaze needs a real haze t
 
 ---
 
+## The Noise, Stabilize and Motion Blur nodes (4.0.0)
+
+They work on the camera image, before **Log MetaRaw**.
+
+- **Log MetaRaw Noise** knows how much noise to expect, and where. It reads the camera, the ISO (or the EI and the
+  native ISO), the codec, the bits per pixel and the 4:2:0 chroma from the script's record, with tuned profiles for the
+  Sony FX6 and FX30, iPhone 17 Pro and DJI Osmo Action 4 and 5 Pro. It can also measure the noise from a frame with
+  flat areas.
+  - *Temporal*: ±1 to ±3 neighbour frames, aligned by blocks and weighted per pixel, so moving parts and cuts do not
+    smear.
+  - *Spatial*: luma and colour apart, in 5 wavelet bands. Each coefficient is weighed against the energy of its
+    neighbourhood, which keeps texture.
+  - Views of the removed noise, detail and skin protection, and **Salta Noise ovunque** to switch every Noise node off
+    while you edit.
+  - On a Mac it runs entirely on the Metal GPU, and the tests check that it matches the CPU. Elsewhere it runs on the
+    CPU.
+  - The profiles are estimates until they are tuned on real samples. [docs/DENOISE.md](docs/DENOISE.md)
+- **Stabilize** reads the clip's gyro (built-in Gyroflow). Its styles go from micro-shake to crane, with a keyframeable
+  **MASTER**. **Motion Blur** rebuilds the shutter from optical flow, for example 50p at 90° to 25p at 180°. Both come
+  from Mecena Motion (`motion/`) and are installed by the macOS package, Apple silicon only.
+- **Deep acquisition**, a tick in the script window: it stores the gyro and the lens of every frame in the MecenaClipDB
+  for Stabilize.
+
+None of the three nodes has been tried in Resolve on real clips yet.
+
 ## Updates and privacy
 
 - The **nodes** ask GitHub for this project's latest release at most once a day, in the background. The request
@@ -264,11 +291,12 @@ python3 -m slogmetaraw clip.MP4             # Catalyst-style readout from the co
 ```
 slogmetaraw/         parsers, Resolve writing, the script window, update check
 resolve_script/      launcher for Workspace › Scripts
-ofx/SLogMetaRaw/     math/ (shared CPU/Metal), src/ (common, develop, detail), metal/
+ofx/SLogMetaRaw/     math/ (shared CPU/Metal), src/ (common, develop, detail, noise), metal/
+motion/              Mecena Motion: Stabilize, Motion Blur, mecena-clipdb (Rust + C++, macOS)
 tools/               generators for matrices, icons and charts
 tests/               tests and reference models (the sample clips are not in the repository)
 packaging/           installer, guides, uninstaller
-docs/                TONE_MAPPING, DETAIL, FALSE_COLOR, DATA_LEVELS
+docs/                TONE_MAPPING, DETAIL, DENOISE, FALSE_COLOR, DATA_LEVELS
 ```
 
 ### Linux and Windows (CPU render, experimental)
@@ -306,7 +334,7 @@ builds the packages and installs the .deb/.rpm on Rocky 8/9, Ubuntu 20.04-24.04 
 
 ## Known limits
 
-- Resolve's own Camera Raw panel and gyro stabilisation cannot be unlocked for MP4. Both live inside Resolve's
+- Resolve's own Camera Raw panel and gyro stabilisation cannot be unlocked for MP4 (for the gyro there is the Stabilize node). Both live inside Resolve's
   decoders. Log MetaRaw rebuilds the colour controls. It does not open a door into Resolve.
 - Some cameras (the a6300 among them) do not record a Kelvin value. It is then estimated from the lighting preset and flagged.
 - S-Log2 follows the Sony paper. Resolve's own S-Log2 curve differs by about 0.15 stop.
@@ -319,7 +347,7 @@ builds the packages and installs the .deb/.rpm on Rocky 8/9, Ubuntu 20.04-24.04 
 ## Credits and licence
 
 **Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m).
-Written with Claude (Anthropic): 1.0 on 19 September 2026, 1.1.0 on 22 September, 2.0.0 on 23 September 2026, 3.2.0 on 24 November 2026. The full
+Written with Claude (Anthropic): 1.0 on 19 September 2026, 1.1.0 on 22 September, 2.0.0 on 23 September 2026, 3.2.0 and 4.0.0 on 24 November 2026. The full
 history is in [RELEASE_NOTES.md](RELEASE_NOTES.md) (in Italian).
 
 Sony tag references: SMPTE RDD 18, [ExifTool](https://exiftool.org) and
@@ -331,6 +359,9 @@ against its built-ins (ACES: Academy of Motion Picture Arts and Sciences); [Open
 Jed Smith (GPL-3.0), ported from its DCTL. The DJI D-Log M curve and gamut come from the Osmo Action 6 measurements in
 [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 and from DJI's Action 6 LUT, used only as a reference and not
 distributed; up to 3.1.x the curve was Thatcher Freeman's fit.
+
+Stabilize builds on [Gyroflow](https://github.com/gyroflow/gyroflow) by AdrianEddy and contributors (GPL-3.0) and its
+lens catalogue. The Noise node's spatial filter follows NeighShrink (Chen, Bui and Krzyżak, 2004).
 
 [GNU GPL v3.0 or later](LICENSE). The OpenFX SDK is © The Open Effects Association (BSD-3). Sony, XAVC and Catalyst are
 trademarks of Sony Group Corporation; DaVinci Resolve is a trademark of Blackmagic Design. This is an independent project,

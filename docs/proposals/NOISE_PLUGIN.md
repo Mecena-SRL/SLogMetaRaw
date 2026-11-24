@@ -105,7 +105,7 @@ I nomi OFX sono permanenti: questa lista va approvata prima di scriverla.
 
 | Gruppo | Controllo | Note |
 |---|---|---|
-| Profilo | Profilo: Automatico (camera) / Misurato / Manuale | Automatico = tabella `docs/NOISE.md` |
+| Profilo | Profilo: Automatico (camera) / Misurato / Manuale | Automatico = profili per camera e formato (`docs/DENOISE.md`) |
 | | EI, Camera (letti dal record, come nel Develop) | stessa sorgente dati |
 | | Rumore manuale (stop sotto il grigio) | solo Manuale |
 | Temporale | Fotogrammi: Spento / ±1 / ±2 | V2 |
@@ -133,7 +133,7 @@ del sensore e non amplifica il rumore con curve e saturazione. Il nodo maschera 
 1. Nodo separato o modalità del Develop? Proposta: nodo separato (prima del Develop, temporale, costo diverso).
 2. CUDA per Windows/Linux in V2?
 3. Nomi del pannello (sezione 6).
-4. Taratura delle costanti stimate: serve una scala di esposizioni su grigio per camera (già aperto in `docs/NOISE.md`).
+4. Taratura delle costanti stimate: serve una scala di esposizioni su grigio per camera (aperto in `docs/DENOISE.md`).
 
 ## Fonti
 
@@ -146,4 +146,4 @@ del sensore e non amplifica il rumore con curve e saturazione. Il nodo maschera 
 - M. Tassano et al., «FastDVDnet», CVPR 2020 (riferimento ML, non adottato).
 - Neat Video, documentazione utente (profilo di rumore, filtro temporale e spaziale).
 - OpenFX Programming Reference: temporal clip access, `getFramesNeeded`.
-- Ricerca del progetto: `docs/NOISE.md` e report «Rumore video per camera».
+- Ricerca del progetto: `docs/DENOISE.md` (la vecchia `docs/NOISE.md` è stata rimossa in 4.0.0) e report «Rumore video per camera».
