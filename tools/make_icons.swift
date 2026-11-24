@@ -2,7 +2,7 @@
 // Draws the Log MetaRaw icons (installer, disk image, SLogMetaRaw OpenFX effect).
 // Usage: swift tools/make_icons.swift <output dir>
 // Writes icon_1024.png (app/installer icon), effect_256.png, detail_256.png, stabilize_256.png and
-// motionblur_256.png (OpenFX node icons).
+// motionblur_256.png (OpenFX node icons, with their place in the node chain).
 import AppKit
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
@@ -283,15 +283,54 @@ func drawMotionBlurIcon(size s: CGFloat) -> NSBitmapImageRep {
     }
 }
 
+// Where the node goes in the chain: Noise 1, Stabilize 2, Motion Blur 3, Log MetaRaw 4, Detail 5.
+// Five pips along the top of the tile; the node's own step is an orange chip with its number.
+let chainSteps = 5
+func drawStep(_ step: Int, on rep: NSBitmapImageRep) -> NSBitmapImageRep {
+    let s = CGFloat(rep.pixelsWide)
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    let y = s * 0.845, x0 = s * 0.2, dx = s * 0.6 / CGFloat(chainSteps - 1)
+    let line = NSBezierPath()
+    line.move(to: CGPoint(x: x0, y: y))
+    line.line(to: CGPoint(x: x0 + dx * CGFloat(chainSteps - 1), y: y))
+    line.lineWidth = s * 0.01
+    line.lineCapStyle = .round
+    color(0xFFFFFF, 0.28).setStroke()
+    line.stroke()
+    for i in 1...chainSteps where i != step {
+        let x = x0 + dx * CGFloat(i - 1), r = s * 0.022
+        let pip = NSBezierPath(ovalIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+        color(0x15171C).setFill()
+        pip.fill()
+        pip.lineWidth = s * 0.008
+        color(0xFFFFFF, 0.55).setStroke()
+        pip.stroke()
+    }
+    let x = x0 + dx * CGFloat(step - 1), r = s * 0.068
+    let chip = NSBezierPath(ovalIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+    color(0xFFB347).setFill()
+    chip.fill()
+    chip.lineWidth = s * 0.012
+    color(0x15171C).setStroke()
+    chip.stroke()
+    let digit = NSAttributedString(string: String(step), attributes: [
+        .font: NSFont.systemFont(ofSize: r * 1.1, weight: .heavy), .foregroundColor: color(0x15171C)])
+    let size = digit.size()
+    digit.draw(at: CGPoint(x: x - size.width / 2, y: y - size.height / 2))
+    NSGraphicsContext.restoreGraphicsState()
+    return rep
+}
+
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "."
 try! drawIcon(size: 1024).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/icon_1024.png"))
-try! drawIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(4, on: drawIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/effect_256.png"))
-try! drawDetailIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(5, on: drawDetailIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/detail_256.png"))
-try! drawStabilizeIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(2, on: drawStabilizeIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/stabilize_256.png"))
-try! drawMotionBlurIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(3, on: drawMotionBlurIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/motionblur_256.png"))
 print("icons written to \(out)")

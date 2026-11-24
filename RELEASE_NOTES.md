@@ -11,6 +11,8 @@
   Mecena ClipDB) entrano nel repository in `motion/`, e il pkg di Log MetaRaw per macOS li compila e li installa
   insieme. Stabilize e Motion Blur compaiono nella categoria OpenFX **Log MetaRaw**. Solo Mac con Apple silicon. Il
   disinstallatore toglie anche Mecena Motion e lascia il MecenaClipDB.
+- **Ordine dei nodi sulle icone**: in cima a ogni icona una timeline di 5 tappe indica dove mettere il nodo: 1 Noise,
+  2 Stabilize, 3 Motion Blur, 4 Log MetaRaw, 5 Detail.
 
 ## Log MetaRaw 3.2.1
 
