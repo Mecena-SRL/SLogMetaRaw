@@ -1,0 +1,5 @@
+.DS_Store
+/dist/
+/target/
+*.ofx.bundle/
+__pycache__/

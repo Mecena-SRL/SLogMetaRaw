@@ -14,6 +14,17 @@
   l'immagine restava strana. Il modello del rumore per camera (ISO nativi, EI, codec) passa al nodo
   Noise. I progetti salvati con la maschera accesa dovrebbero riaprirsi con il nodo che sviluppa (non provato).
 - Guide: tolta la pagina della maschera (9 pagine).
+- **Acquisizione profonda (IMU)**, nuova spunta nella finestra (e `--deep` da riga di comando): con Mecena Motion
+  installato, ogni clip letta passa anche da `mecena-clipdb`, che salva giroscopio, accelerometro, orientamento,
+  tempo di lettura del sensore e obiettivo di ogni fotogramma nel **MecenaClipDB**, lo stesso database che legge
+  Mecena Stabilize. Tutte le camere che Gyroflow conosce (Sony, DJI, GoPro…). Senza Mecena Motion la clip si legge
+  come prima, con un avviso. Più lenta: limite 180 s per clip.
+- **Un solo pacchetto**: i sorgenti di Mecena Motion (Stabilize, Motion Blur, `mecena-clipdb`, script
+  Mecena ClipDB) entrano nel repository in `motion/`, e il pkg di Log MetaRaw per macOS li compila e li installa
+  insieme. Stabilize e Motion Blur compaiono nella categoria OpenFX **Log MetaRaw**. Solo Mac con Apple silicon. Il
+  disinstallatore toglie anche Mecena Motion e lascia il MecenaClipDB.
+- **Ordine dei nodi sulle icone**: in cima a ogni icona una timeline di 5 tappe indica dove mettere il nodo: 1 Noise,
+  2 Stabilize, 3 Motion Blur, 4 Log MetaRaw, 5 Detail.
 
 ## Log MetaRaw 3.2.1
 

@@ -14,8 +14,11 @@ PREINSTALL = os.path.join(ROOT, 'packaging', 'scripts', 'preinstall')
 UTIL = 'Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility'
 OFX_CACHE = 'Library/Application Support/Blackmagic Design/DaVinci Resolve/OFXPluginCacheV2.xml'
 
-# every place any version ever wrote to: 2.x, 1.x, the old SonyMeta name, developer installs, the test probe
+# every place any version ever wrote to: 2.x, 1.x, the old SonyMeta name, developer installs, the test probe,
+# and Mecena Motion (Stabilize, Shutter, mecena-clipdb), installed with Log MetaRaw
 SYSTEM = ['Library/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/MacOS/SLogMetaRaw.ofx',
+          'Library/OFX/Plugins/MecenaMotion.ofx.bundle/Contents/Resources/mecena-clipdb',
+          UTIL + '/Mecena ClipDB.py', 'usr/local/bin/mecena-clipdb',
           'Library/OFX/Plugins/SLogMetaRawProbe.ofx.bundle/Contents/Info.plist',
           'Library/OFX/Plugins/SonyMetaRAW.ofx.bundle/Contents/Info.plist',
           'Library/Application Support/SLogMetaRaw/lib/slogmetaraw/__init__.py',
@@ -34,6 +37,7 @@ USER = [UTIL + '/Log MetaRaw.py', UTIL + '/S-Log MetaRaw.py', UTIL + '/SLogMetaR
 UNRELATED = ['Library/OFX/Plugins/Other.ofx.bundle/Contents/Info.plist', UTIL + '/Other.py',
              'Library/Application Support/Blackmagic Design/DaVinci Resolve/Preferences/config.dat']
 CSV = 'Documents/SLogMetaRaw/export.csv'
+CLIPDB = 'Movies/MecenaClipDB/index.json'   # the user's motion database: data, never removed
 
 
 def touch(base, rel):
@@ -51,7 +55,7 @@ class FakeMac:
         self.home = os.path.join(self.tmp.name, 'home')
         for rel in SYSTEM + UNRELATED:
             touch(self.root, rel)
-        for rel in USER + UNRELATED + [CSV, 'Movies/clip.MP4']:
+        for rel in USER + UNRELATED + [CSV, CLIPDB, 'Movies/clip.MP4']:
             touch(self.home, rel)
 
     def env(self, **extra):
@@ -83,6 +87,7 @@ class Uninstaller(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(self.mac.root, rel)), rel)
             self.assertTrue(os.path.exists(os.path.join(self.mac.home, rel)), rel)
         self.assertTrue(os.path.exists(os.path.join(self.mac.home, 'Movies/clip.MP4')))
+        self.assertTrue(os.path.exists(os.path.join(self.mac.home, CLIPDB)))
         self.assertIn('rimosso del tutto', run.stdout)
 
     def test_csv_exports_stay_unless_asked(self):

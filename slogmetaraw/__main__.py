@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""CLI: python3 -m slogmetaraw [--json] [--interval S] [--max-samples N] PATH [PATH...]
+"""CLI: python3 -m slogmetaraw [--json] [--deep] [--interval S] [--max-samples N] PATH [PATH...]
 (files or folders).
 
 Modes used by the OpenFX plugin (argument order and flat JSON output are its contract):
   --cache PATH [PATH...] [--max-samples N] [--deadline S]
   --to-resolve PATH
   --update-check [--current X] [--force]
-and --helper, the streaming reader of the script window."""
+and --helper [--deep], the streaming reader of the script window."""
 import io
 import json
 import math
@@ -75,13 +75,17 @@ def _utf8_stream(name):
         setattr(sys, name, io.TextIOWrapper(stream.buffer, encoding='utf-8', line_buffering=(name == 'stdout')))
 
 
-def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET):
+def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET, deep=False):
     """Streaming mode used by the script window (ui.py): one clip path per line on
     stdin, one JSON result per line on stdout. A clip that hangs can be killed from
-    outside (the window enforces a per-clip timeout), so the scan always finishes."""
+    outside (the window enforces a per-clip timeout), so the scan always finishes.
+
+    deep: also scan each clip into MecenaClipDB with mecena-clipdb (clipdb.py)."""
     # inside Resolve the locale is often ASCII: paths and metadata travel as UTF-8 regardless
     _utf8_stream('stdin')
     _utf8_stream('stdout')
+    if deep:
+        from . import clipdb
     for line in sys.stdin:
         path = line.strip()
         if not path:
@@ -89,6 +93,8 @@ def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET):
         try:
             r = read_clip(path, interval=interval, max_samples=max_samples,
                           deadline=time.monotonic() + budget)
+            if deep:
+                clipdb.deep(r)
             print(json.dumps({'path': path, 'ok': True, 'result': r},
                              default=_jsonable, ensure_ascii=False), flush=True)
         except DatalessError as exc:
@@ -368,12 +374,15 @@ def main(argv=None):
     ap.add_argument('--max-samples', type=int, default=FULL_SAMPLES, help='sampled frames per clip')
     ap.add_argument('--cache', action='store_true',
                     help='write the SLogMetaRaw plugin records and print their paths')
+    ap.add_argument('--deep', action='store_true',
+                    help='acquisizione profonda: dati di movimento e obiettivo nel MecenaClipDB '
+                         '(mecena-clipdb di Mecena Motion)')
     ap.add_argument('--helper', action='store_true', help=argparse.SUPPRESS)
     ap.add_argument('--to-resolve', action='store_true',
                     help='legge i metadata di una clip e li scrive nel Media Pool di Resolve')
     a = ap.parse_args(args)
     if a.helper:
-        return _helper(a.interval, a.max_samples)
+        return _helper(a.interval, a.max_samples, deep=a.deep)
     if a.to_resolve:
         return to_resolve(a.paths)
     if not a.paths:
@@ -386,6 +395,9 @@ def main(argv=None):
         t0 = time.time()
         try:
             r = read_clip(path, interval=a.interval, max_samples=a.max_samples)
+            if a.deep:
+                from . import clipdb
+                clipdb.deep(r)
         except DatalessError as e:
             print('SKIP', e, file=sys.stderr)
             continue

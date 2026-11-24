@@ -19,6 +19,11 @@ TABLES = {
     'it': {
         # --- extract.py section titles / labels (English source) ---
         'MEDIA': 'MEDIA',
+        'Gyroscope': 'Giroscopio',
+        'Summary': 'Riepilogo',
+        'Clip folder': 'Cartella della clip',
+        'yes': 'sì',
+        'no (orientation only)': 'no (solo orientamento)',
         'SHOOTING INFORMATION': 'INFORMAZIONI DI RIPRESA',
         'VIDEO': 'VIDEO',
         'AUDIO': 'AUDIO',
@@ -108,6 +113,12 @@ TABLES = {
         'Livelli di riferimento MXF': 'MXF reference levels',
         'Interpretazione in Resolve': 'How Resolve interprets it',
         'Correggi il Data Level': 'Correct the Data Level',
+        'Acquisizione profonda (IMU)': 'Deep acquisition (IMU)',
+        'Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.':
+            'With Mecena Motion installed: gyroscope, accelerometer and lens of every frame in the MecenaClipDB, read by Stabilize. Slower.',
+        'Acquisizione profonda: Mecena Motion (mecena-clipdb) non installato.': 'Deep acquisition: Mecena Motion (mecena-clipdb) is not installed.',
+        'Acquisizione profonda: nessun dato di movimento (%s).': 'Deep acquisition: no motion data (%s).',
+        'MOVIMENTO (acquisizione profonda, MecenaClipDB per Stabilize)': 'MOTION (deep acquisition, MecenaClipDB for Stabilize)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Sets Data Level = Full or Video in Clip Attributes according to the capture gamma: this is the real fix and it applies to the whole project',
         ' Data Level corretto su %d clip.': ' Data Level corrected on %d clips.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -228,6 +239,12 @@ TABLES = {
         'Livelli di riferimento MXF': 'Niveles de referencia MXF',
         'Interpretazione in Resolve': 'Interpretación en Resolve',
         'Correggi il Data Level': 'Corregir el Data Level',
+        'Acquisizione profonda (IMU)': 'Adquisición profunda (IMU)',
+        'Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.':
+            'Con Mecena Motion instalado: giroscopio, acelerómetro y objetivo de cada fotograma en la MecenaClipDB, que lee Stabilize. Más lenta.',
+        'Acquisizione profonda: Mecena Motion (mecena-clipdb) non installato.': 'Adquisición profunda: Mecena Motion (mecena-clipdb) no está instalado.',
+        'Acquisizione profonda: nessun dato di movimento (%s).': 'Adquisición profunda: sin datos de movimiento (%s).',
+        'MOVIMENTO (acquisizione profonda, MecenaClipDB per Stabilize)': 'MOVIMIENTO (adquisición profunda, MecenaClipDB para Stabilize)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Establece Data Level = Full o Video en Atributos del clip según la gamma de captura: es la corrección real y se aplica a todo el proyecto',
         ' Data Level corretto su %d clip.': ' Data Level corregido en %d clips.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -393,6 +410,12 @@ TABLES = {
         'Livelli di riferimento MXF': 'Níveis de referência MXF',
         'Interpretazione in Resolve': 'Interpretação no Resolve',
         'Correggi il Data Level': 'Corrigir o Data Level',
+        'Acquisizione profonda (IMU)': 'Aquisição profunda (IMU)',
+        'Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.':
+            'Com o Mecena Motion instalado: giroscópio, acelerômetro e lente de cada quadro na MecenaClipDB, lida pelo Stabilize. Mais lenta.',
+        'Acquisizione profonda: Mecena Motion (mecena-clipdb) non installato.': 'Aquisição profunda: o Mecena Motion (mecena-clipdb) não está instalado.',
+        'Acquisizione profonda: nessun dato di movimento (%s).': 'Aquisição profunda: sem dados de movimento (%s).',
+        'MOVIMENTO (acquisizione profonda, MecenaClipDB per Stabilize)': 'MOVIMENTO (aquisição profunda, MecenaClipDB para o Stabilize)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Define Data Level = Full ou Video nos Atributos do clipe conforme a gama de captura: é a correção real e vale para todo o projeto',
         ' Data Level corretto su %d clip.': ' Data Level corrigido em %d clipes.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -557,6 +580,12 @@ TABLES = {
         'Livelli di riferimento MXF': 'MXF 参考电平',
         'Interpretazione in Resolve': 'Resolve 的解释方式',
         'Correggi il Data Level': '修正数据电平',
+        'Acquisizione profonda (IMU)': '深度采集（IMU）',
+        'Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.':
+            '安装 Mecena Motion 后：每一帧的陀螺仪、加速度计和镜头数据写入 MecenaClipDB，供 Stabilize 读取。速度较慢。',
+        'Acquisizione profonda: Mecena Motion (mecena-clipdb) non installato.': '深度采集：未安装 Mecena Motion（mecena-clipdb）。',
+        'Acquisizione profonda: nessun dato di movimento (%s).': '深度采集：没有运动数据（%s）。',
+        'MOVIMENTO (acquisizione profonda, MecenaClipDB per Stabilize)': '运动（深度采集，供 Stabilize 使用的 MecenaClipDB）',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': '根据拍摄伽马在片段属性中设置 Data Level = Full 或 Video：这是真正的修正，对整个项目有效',
         ' Data Level corretto su %d clip.': ' 已为 %d 个片段修正 Data Level。',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':

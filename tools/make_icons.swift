@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Draws the Log MetaRaw icons (installer, disk image, SLogMetaRaw OpenFX effect).
 // Usage: swift tools/make_icons.swift <output dir>
-// Writes icon_1024.png (app/installer icon), effect_256.png and detail_256.png (OpenFX node icons).
+// Writes icon_1024.png (app/installer icon), effect_256.png, detail_256.png, noise_256.png, stabilize_256.png and
+// motionblur_256.png (OpenFX node icons, with their place in the node chain).
 import AppKit
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
@@ -188,8 +189,8 @@ func drawIcon(size s: CGFloat) -> NSBitmapImageRep {
     return rep
 }
 
-// The Detail node: the same tile with a badge of stacked ripples (local contrast, texture).
-func drawDetailIcon(size s: CGFloat) -> NSBitmapImageRep {
+// A node of the family: the same tile with a round badge, its mark drawn by `mark(centre, radius)`.
+func drawBadgeIcon(size s: CGFloat, mark: (CGPoint, CGFloat) -> Void) -> NSBitmapImageRep {
     let base = drawIcon(size: s)
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: base)
@@ -200,30 +201,159 @@ func drawDetailIcon(size s: CGFloat) -> NSBitmapImageRep {
     color(0xFFFFFF, 0.85).setStroke()
     badge.lineWidth = s * 0.012
     badge.stroke()
-    for (i, a) in [0.45, 0.75, 1.0].enumerated() {
-        let y0 = c.y - r * 0.45 + CGFloat(i) * r * 0.45
-        let wave = NSBezierPath()
-        wave.lineWidth = s * 0.016
-        wave.lineCapStyle = .round
-        var x = c.x - r * 0.62
-        wave.move(to: CGPoint(x: x, y: y0))
-        while x <= c.x + r * 0.62 {
-            let phase = (x - (c.x - r * 0.62)) / (r * 1.24) * 2 * .pi * 2
-            wave.line(to: CGPoint(x: x, y: y0 + sin(phase) * r * 0.12 * CGFloat(a)))
-            x += s * 0.004
-        }
-        color(0xFFB347, CGFloat(a)).setStroke()
-        wave.stroke()
-    }
+    mark(c, r)
     NSGraphicsContext.restoreGraphicsState()
     return base
+}
+
+// Detail: stacked ripples (local contrast, texture).
+func drawDetailIcon(size s: CGFloat) -> NSBitmapImageRep {
+    return drawBadgeIcon(size: s) { c, r in
+        for (i, a) in [0.45, 0.75, 1.0].enumerated() {
+            let y0 = c.y - r * 0.45 + CGFloat(i) * r * 0.45
+            let wave = NSBezierPath()
+            wave.lineWidth = s * 0.016
+            wave.lineCapStyle = .round
+            var x = c.x - r * 0.62
+            wave.move(to: CGPoint(x: x, y: y0))
+            while x <= c.x + r * 0.62 {
+                let phase = (x - (c.x - r * 0.62)) / (r * 1.24) * 2 * .pi * 2
+                wave.line(to: CGPoint(x: x, y: y0 + sin(phase) * r * 0.12 * CGFloat(a)))
+                x += s * 0.004
+            }
+            color(0xFFB347, CGFloat(a)).setStroke()
+            wave.stroke()
+        }
+    }
+}
+
+// Stabilize: a gimbal (three axes) with the horizon held level.
+func drawStabilizeIcon(size s: CGFloat) -> NSBitmapImageRep {
+    return drawBadgeIcon(size: s) { c, r in
+        let g = r * 0.62
+        for (rx, ry) in [(g, g * 0.33), (g * 0.33, g)] {
+            let axis = NSBezierPath(ovalIn: CGRect(x: c.x - rx, y: c.y - ry, width: 2 * rx, height: 2 * ry))
+            axis.lineWidth = s * 0.008
+            color(0xFFFFFF, 0.4).setStroke()
+            axis.stroke()
+        }
+        let ring = NSBezierPath(ovalIn: CGRect(x: c.x - g, y: c.y - g, width: 2 * g, height: 2 * g))
+        ring.lineWidth = s * 0.016
+        color(0xFFB347).setStroke()
+        ring.stroke()
+        let horizon = NSBezierPath()
+        horizon.move(to: CGPoint(x: c.x - r * 0.8, y: c.y))
+        horizon.line(to: CGPoint(x: c.x + r * 0.8, y: c.y))
+        horizon.lineWidth = s * 0.016
+        horizon.lineCapStyle = .round
+        color(0xFFFFFF, 0.95).setStroke()
+        horizon.stroke()
+        let hub = NSBezierPath(ovalIn: CGRect(x: c.x - r * 0.14, y: c.y - r * 0.14, width: r * 0.28, height: r * 0.28))
+        color(0x15171C).setFill()
+        hub.fill()
+        hub.lineWidth = s * 0.01
+        color(0xFFB347).setStroke()
+        hub.stroke()
+    }
+}
+
+// Motion Blur: a shutter disc half open, with the streaks it leaves behind.
+func drawMotionBlurIcon(size s: CGFloat) -> NSBitmapImageRep {
+    return drawBadgeIcon(size: s) { c, r in
+        let d = r * 0.42, cx = c.x + r * 0.18
+        for (i, dy) in [-0.3, 0.0, 0.3].enumerated() {
+            let y = c.y + CGFloat(dy) * r
+            let streak = NSRect(x: c.x - r * 0.72, y: y - s * 0.007, width: r * (i == 1 ? 0.62 : 0.5), height: s * 0.014)
+            NSGradient(colors: [color(0xFF8A3D, 0), color(0xFF8A3D, 0.9)])!.draw(in: streak, angle: 0)
+        }
+        let disc = CGRect(x: cx - d, y: c.y - d, width: 2 * d, height: 2 * d)
+        color(0x0E0F12).setFill()
+        NSBezierPath(ovalIn: disc).fill()
+        let open = NSBezierPath()
+        open.move(to: CGPoint(x: cx, y: c.y))
+        open.appendArc(withCenter: CGPoint(x: cx, y: c.y), radius: d, startAngle: -90, endAngle: 90)
+        open.close()
+        NSGradient(colors: [color(0xFFE08A), color(0xFF8A3D)])!.draw(in: open, angle: 0)
+        let rim = NSBezierPath(ovalIn: disc)
+        rim.lineWidth = s * 0.012
+        color(0xFFFFFF, 0.9).setStroke()
+        rim.stroke()
+        color(0xFFFFFF).setFill()
+        NSBezierPath(ovalIn: CGRect(x: cx - r * 0.06, y: c.y - r * 0.06, width: r * 0.12, height: r * 0.12)).fill()
+    }
+}
+
+// Noise: grain that fades into a clean field behind a sweep.
+func drawNoiseIcon(size s: CGFloat) -> NSBitmapImageRep {
+    return drawBadgeIcon(size: s) { c, r in
+        var seed: UInt64 = 7
+        func rnd() -> CGFloat { seed = seed * 16807 % 2147483647; return CGFloat(seed) / 2147483647 }
+        for _ in 0..<46 {
+            let a = rnd() * 2 * .pi, d = sqrt(rnd()) * r * 0.66
+            let x = c.x + cos(a) * d, y = c.y + sin(a) * d, g = s * 0.008
+            color(0xFFB347, 1 - (x - (c.x - r * 0.66)) / (r * 1.32)).setFill()
+            NSBezierPath(ovalIn: CGRect(x: x - g, y: y - g, width: 2 * g, height: 2 * g)).fill()
+        }
+        let sweep = NSBezierPath()
+        sweep.appendArc(withCenter: CGPoint(x: c.x - r * 0.34, y: c.y), radius: r * 0.6,
+                        startAngle: 66, endAngle: -66, clockwise: true)
+        sweep.lineWidth = s * 0.014
+        sweep.lineCapStyle = .round
+        color(0xFFFFFF, 0.9).setStroke()
+        sweep.stroke()
+    }
+}
+
+// Where the node goes in the chain: Noise 1, Stabilize 2, Motion Blur 3, Log MetaRaw 4, Detail 5.
+// Five pips along the top of the tile; the node's own step is an orange chip with its number.
+let chainSteps = 5
+func drawStep(_ step: Int, on rep: NSBitmapImageRep) -> NSBitmapImageRep {
+    let s = CGFloat(rep.pixelsWide)
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    let y = s * 0.845, x0 = s * 0.2, dx = s * 0.6 / CGFloat(chainSteps - 1)
+    let line = NSBezierPath()
+    line.move(to: CGPoint(x: x0, y: y))
+    line.line(to: CGPoint(x: x0 + dx * CGFloat(chainSteps - 1), y: y))
+    line.lineWidth = s * 0.01
+    line.lineCapStyle = .round
+    color(0xFFFFFF, 0.28).setStroke()
+    line.stroke()
+    for i in 1...chainSteps where i != step {
+        let x = x0 + dx * CGFloat(i - 1), r = s * 0.022
+        let pip = NSBezierPath(ovalIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+        color(0x15171C).setFill()
+        pip.fill()
+        pip.lineWidth = s * 0.008
+        color(0xFFFFFF, 0.55).setStroke()
+        pip.stroke()
+    }
+    let x = x0 + dx * CGFloat(step - 1), r = s * 0.068
+    let chip = NSBezierPath(ovalIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+    color(0xFFB347).setFill()
+    chip.fill()
+    chip.lineWidth = s * 0.012
+    color(0x15171C).setStroke()
+    chip.stroke()
+    let digit = NSAttributedString(string: String(step), attributes: [
+        .font: NSFont.systemFont(ofSize: r * 1.1, weight: .heavy), .foregroundColor: color(0x15171C)])
+    let size = digit.size()
+    digit.draw(at: CGPoint(x: x - size.width / 2, y: y - size.height / 2))
+    NSGraphicsContext.restoreGraphicsState()
+    return rep
 }
 
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "."
 try! drawIcon(size: 1024).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/icon_1024.png"))
-try! drawIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(4, on: drawIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/effect_256.png"))
-try! drawDetailIcon(size: 256).representation(using: .png, properties: [:])!
+try! drawStep(5, on: drawDetailIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/detail_256.png"))
+try! drawStep(1, on: drawNoiseIcon(size: 256)).representation(using: .png, properties: [:])!
+    .write(to: URL(fileURLWithPath: out + "/noise_256.png"))
+try! drawStep(2, on: drawStabilizeIcon(size: 256)).representation(using: .png, properties: [:])!
+    .write(to: URL(fileURLWithPath: out + "/stabilize_256.png"))
+try! drawStep(3, on: drawMotionBlurIcon(size: 256)).representation(using: .png, properties: [:])!
+    .write(to: URL(fileURLWithPath: out + "/motionblur_256.png"))
 print("icons written to \(out)")

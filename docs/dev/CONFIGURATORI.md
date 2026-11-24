@@ -179,3 +179,8 @@ GPU, cache, Salta ovunque, Misura in modalità Metal), taratura dei profili sui 
 Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).
+Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--deep`; `slogmetaraw/clipdb.py` lancia
+`mecena-clipdb` di Mecena Motion (repo Mecena-SRL/GyroMotion) e riporta la voce del MecenaClipDB. Scelta di Ivan:
+un solo database, nessun parser IMU in Log MetaRaw (il lettore Sony provato su FX6/FX30 è stato tolto). Piano di
+integrazione Stabilize/Motion Blur: `docs/dev/STABILIZE.md`. Fatto anche: sorgenti di GyroMotion in `motion/` (copia senza storia, scelta di Ivan), categoria «Log MetaRaw», pkg
+macOS unico che compila Motion. Non provato su Mac. Aperto: DJI Action 4, Linux/Windows per Motion.

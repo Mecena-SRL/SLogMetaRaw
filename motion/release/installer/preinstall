@@ -1,0 +1,4 @@
+#!/bin/bash
+# Rimuove la copia precedente: un aggiornamento non deve lasciare file vecchi nel bundle.
+rm -rf "/Library/OFX/Plugins/MecenaMotion.ofx.bundle"
+exit 0

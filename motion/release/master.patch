@@ -1,0 +1,106 @@
+--- a/src/core/lib.rs
++++ b/src/core/lib.rs
+@@ -1167,11 +1167,15 @@
+         }
+     }
+ 
+-    pub fn process_pixels<T: PixelType>(&self, mut timestamp_us: i64, frame: Option<usize>, buffers: &mut Buffers) -> Result<stabilization::ProcessedInfo, GyroflowCoreError> {
++    pub fn process_pixels<T: PixelType>(&self, timestamp_us: i64, frame: Option<usize>, buffers: &mut Buffers) -> Result<stabilization::ProcessedInfo, GyroflowCoreError> {
++        self.process_pixels_with_master::<T>(timestamp_us, frame, buffers, 1.0)
++    }
++
++    pub fn process_pixels_with_master<T: PixelType>(&self, mut timestamp_us: i64, frame: Option<usize>, buffers: &mut Buffers, master: f64) -> Result<stabilization::ProcessedInfo, GyroflowCoreError> {
+         // A frame of a GPU which wgpu can't share the CUDA memory with: on a copy in the host memory
+         #[cfg(any(target_os = "windows", target_os = "linux"))]
+         if gpu::wgpu_interop_cuda::needs_host_copy(buffers) {
+-            return gpu::wgpu_interop_cuda::through_host(buffers, |buffers| self.process_pixels::<T>(timestamp_us, frame, buffers));
++            return gpu::wgpu_interop_cuda::through_host(buffers, |buffers| self.process_pixels_with_master::<T>(timestamp_us, frame, buffers, master));
+         }
+ 
+         if let gpu::BufferSource::Cpu { buffer } = &buffers.input.data  { if buffer.is_empty() { return Err(GyroflowCoreError::InputBufferEmpty); } }
+@@ -1217,7 +1221,8 @@
+         }
+ 
+         if let Some(undist) = self.stabilization.try_read_for(std::time::Duration::from_millis(30000)) {
+-            undist.process_pixels::<T>(timestamp_us, frame, buffers, None)
++            let transform = (master < 1.0).then(|| undist.frame_transform_with_master::<T>(timestamp_us, frame, buffers, master.clamp(0.0, 1.0)));
++            undist.process_pixels::<T>(timestamp_us, frame, buffers, transform.as_ref())
+         } else {
+             Err(GyroflowCoreError::Unknown)
+         }
+--- a/src/core/stabilization/frame_transform.rs
++++ b/src/core/stabilization/frame_transform.rs
+@@ -301,6 +301,10 @@
+     }
+ 
+     pub fn at_timestamp(params: &ComputeParams, timestamp_ms: f64, frame: usize) -> Self {
++        Self::at_timestamp_with_master(params, timestamp_ms, frame, 1.0)
++    }
++
++    pub fn at_timestamp_with_master(params: &ComputeParams, timestamp_ms: f64, frame: usize, master: f64) -> Self {
+         // ----------- Keyframes -----------
+         let video_rotation = params.keyframes.value_at_video_timestamp(&KeyframeType::VideoRotation, timestamp_ms).unwrap_or(params.video_rotation);
+         let background_margin = params.keyframes.value_at_video_timestamp(&KeyframeType::BackgroundMargin, timestamp_ms).unwrap_or(params.background_margin);
+@@ -341,6 +345,11 @@
+             }
+         }
+ 
++        if master < 1.0 {
++            let neutral = params.width as f64 / params.output_width.max(1) as f64;
++            fov = neutral + master * (fov - neutral);
++            ui_fov = neutral + master * (ui_fov - neutral);
++        }
+         let scaled_k = camera_matrix;
+         // No `get_new_k` here: the kernel builds the output plane itself, from `f`, `fov` and the output
+         // size, because the lens-correction blend needs it before the rotation (`undistort_coord`)
+@@ -404,6 +413,8 @@
+             let quat = smoothed_quat1
+                      * quat1
+                      * gyro.org_quat_at(quat_time, &lookup);
++
++            let quat = if master == 1.0 { quat } else { Quat64::identity().slerp(&quat, master) };
+ 
+             let (mut sx, mut sy, mut ra, mut ox, mut oy) = if let Some(is) = file_metadata.camera_stab_at(frame) {
+                 let y_sensor = sensor_row(y, is.crop_area.1 as f64, is.crop_area.3 as f64);
+@@ -442,8 +453,8 @@
+                 i_r[(0, 0)], i_r[(0, 1)], i_r[(0, 2)],
+                 i_r[(1, 0)], i_r[(1, 1)], i_r[(1, 2)],
+                 i_r[(2, 0)], i_r[(2, 1)], i_r[(2, 2)],
+-                sx, sy, ra,
+-                ox, oy,
++                sx * master as f32, sy * master as f32, ra * master as f32,
++                ox * master as f32, oy * master as f32,
+                 bz, 0.0
+             ]
+         }).collect::<Vec<[f32; 16]>>();
+@@ -474,7 +485,7 @@
+             background_mode:          params.background_mode as i32,
+             background_margin:        background_margin as f32,
+             background_margin_feather:background_feather as f32,
+-            translation2d: [(adaptive_zoom_center_x * params.width as f64 / fov) as f32, (adaptive_zoom_center_y * params.height as f64 / fov) as f32],
++            translation2d: [(master * adaptive_zoom_center_x * params.width as f64 / fov) as f32, (master * adaptive_zoom_center_y * params.height as f64 / fov) as f32],
+             translation3d: [0.0, 0.0, 0.0, 0.0], // currently unused
+             digital_lens_params,
+             light_refraction_coefficient: light_refraction_coefficient as f32,
+--- a/src/core/stabilization/mod.rs
++++ b/src/core/stabilization/mod.rs
+@@ -314,6 +314,10 @@
+     }
+ 
+     pub fn get_frame_transform_at<T: PixelType>(&self, timestamp_us: i64, frame: Option<usize>, buffers: &Buffers) -> FrameTransform {
++        self.frame_transform_with_master::<T>(timestamp_us, frame, buffers, 1.0)
++    }
++
++    pub fn frame_transform_with_master<T: PixelType>(&self, timestamp_us: i64, frame: Option<usize>, buffers: &Buffers, master: f64) -> FrameTransform {
+         let timestamp_ms = (timestamp_us as f64) / 1000.0;
+         // The frame the video presents at the time. A video whose frames aren't evenly spaced has it by its own frame
+         // times, the only ones that give it (a frame number given with the time counts the frames as if they were)
+@@ -322,7 +326,7 @@
+             _ => self.compute_params.frame_at_timestamp(timestamp_ms).max(0) as usize,
+         };
+ 
+-        let mut transform = FrameTransform::at_timestamp(&self.compute_params, timestamp_ms, frame);
++        let mut transform = FrameTransform::at_timestamp_with_master(&self.compute_params, timestamp_ms, frame, master);
+         transform.kernel_params.pixel_value_limit = T::default_max_value().unwrap_or(f32::MAX);
+         transform.kernel_params.max_pixel_value = T::default_max_value().unwrap_or(1.0);
+         // If the pixel format gets converted to normalized 0-1 float in shader

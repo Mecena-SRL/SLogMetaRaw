@@ -1,0 +1,33 @@
+[package]
+name = "gyroflow-ofx"
+version = "3.0.0"
+authors = ["Adrian <adrian.eddy@gmail.com>", "Ilya Epifanov <elijah.epifanov@gmail.com>"]
+license = "GPL-3.0-or-later"
+edition = "2024"
+description = "Gyroflow OpenFX plugin"
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+gyroflow-plugin-base = { path = "../common" }
+ofx = "0.3"
+log = "0.4"
+regex = "1.12"
+
+[build-dependencies]
+winres = "0.1"
+
+[patch.crates-io]
+ofx = { git = "https://github.com/AdrianEddy/ofx-rs.git", rev = "0b15219" }
+ofx_sys = { git = "https://github.com/AdrianEddy/ofx-rs.git", rev = "0b15219" }
+#ofx = { path = "../../ofx-rs/ofx" }
+#ofx_sys = { path = "../../ofx-rs/ofx-sys" }
+
+[profile.deploy]
+inherits = "release"
+codegen-units = 1
+lto = true
+strip = true
+

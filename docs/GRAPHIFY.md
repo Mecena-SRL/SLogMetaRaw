@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 4.0.0 in sviluppo: aggiunto il nodo `noise/`, rimosso `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 4.0.0 in sviluppo: aggiunti il nodo `noise/`, `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Motion Blur, Rust + C++, build separata in `motion/release/build-mac.sh`); rimosso `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -15,6 +15,7 @@ __main__.py ──> extract.py ──> codec.py
    │                 ├──────> mxf.py
    │                 ├──────> nrt.py
    │                 └──────> rtmd.py
+   ├──> clipdb.py   (--deep: lancia mecena-clipdb di Mecena Motion → MecenaClipDB; usa extract._warn)
    │
 ui.py ──> i18n.py
    ├────> osx_utils.py

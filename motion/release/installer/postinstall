@@ -1,0 +1,15 @@
+#!/bin/bash
+bundle="/Library/OFX/Plugins/MecenaMotion.ofx.bundle"
+xattr -dr com.apple.quarantine "$bundle" 2>/dev/null
+chmod -R go-w "$bundle"
+# Script Resolve di MecenaClipDB per tutti gli utenti e comando mecena-clipdb nel PATH.
+scripts="/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility"
+if [[ -f "$bundle/Contents/Resources/Mecena ClipDB.py" ]]; then
+    mkdir -p "$scripts"
+    cp "$bundle/Contents/Resources/Mecena ClipDB.py" "$scripts/"
+fi
+if [[ -x "$bundle/Contents/Resources/mecena-clipdb" ]]; then
+    mkdir -p /usr/local/bin
+    ln -sf "$bundle/Contents/Resources/mecena-clipdb" /usr/local/bin/mecena-clipdb
+fi
+exit 0

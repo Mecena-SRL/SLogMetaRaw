@@ -42,6 +42,7 @@ GIL_YIELD = 0.015
 WRITE_BUDGET = 0.07        # seconds of SetMetadata calls per timer tick
 CLIP_TIMEOUT_FIRST = 10    # seconds for the first clip of a volume: a sleeping disk spins up
 CLIP_TIMEOUT_NEXT = 6
+CLIP_TIMEOUT_DEEP = 180    # deep acquisition: mecena-clipdb reads the whole clip (clipdb.SCAN_TIMEOUT, plus margin)
 UPDATE_TIMEOUT = 8
 UI_LOG_PATH = os.path.join(paths.log_dir(), 'ui.log')
 
@@ -221,8 +222,8 @@ def _volume_of(path, mounts):
     return best
 
 
-def _spawn_reader():
-    """One persistent child process that parses clips (--helper mode).
+def _spawn_reader(deep=False):
+    """One persistent child process that parses clips (--helper mode; deep: --deep).
 
     Parsing runs in a child so that a clip stuck on a dead volume can be killed:
     the scan must always be able to finish."""
@@ -230,7 +231,7 @@ def _spawn_reader():
     lib = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # ResolvePython ignores PYTHONPATH (isolated via ._pth): the library path goes in as data.
     # -X utf8 also makes os.open() accept accented paths when the locale is ASCII (#39)
-    return subprocess.Popen([_reader_python(), '-X', 'utf8', '-c', _BOOTSTRAP, lib, '--helper'],
+    return subprocess.Popen([_reader_python(), '-X', 'utf8', '-c', _BOOTSTRAP, lib, '--helper'] + (['--deep'] if deep else []),
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.DEVNULL, encoding='utf-8', bufsize=1, env=_reader_env(),
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
@@ -388,6 +389,9 @@ def main(resolve, fusion, bmd, selftest=False):
             ui.CheckBox({'ID': 'SetLevels', 'Weight': 0, 'Checked': True, 'Text': t('Correggi il Data Level'),
                          'ToolTip': t('Imposta Data Level = Full o Video in Attributi clip secondo la gamma di '
                                       'ripresa: è la correzione vera, vale per tutto il progetto')}),
+            ui.CheckBox({'ID': 'Deep', 'Weight': 0, 'Text': t('Acquisizione profonda (IMU)'),
+                         'ToolTip': t('Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni '
+                                      'fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.')}),
         ]),
         ui.HGroup({'Weight': 0}, [
             ui.Label({'ID': 'Progress', 'Weight': 1, 'Text': ''}),
@@ -562,7 +566,7 @@ def main(resolve, fusion, bmd, selftest=False):
                 out.append({'uid': c.GetUniqueId(), 'clip': c, 'name': c.GetName(), 'path': path})
         return out
 
-    def read_worker(entries):
+    def read_worker(entries, deep=False):
         ok = skipped = errors = slow = 0
         cache_error = None
         proc = None
@@ -583,11 +587,12 @@ def main(resolve, fusion, bmd, selftest=False):
                     state['done'].append(row)
                     state['processed'] += 1
                     continue
-                limit = CLIP_TIMEOUT_NEXT if volume in seen else CLIP_TIMEOUT_FIRST
+                limit = (CLIP_TIMEOUT_DEEP if deep else
+                         CLIP_TIMEOUT_NEXT if volume in seen else CLIP_TIMEOUT_FIRST)
                 seen.add(volume)
                 msg = None
                 if proc is None:
-                    proc = _spawn_reader()
+                    proc = _spawn_reader(deep)
                 try:
                     proc.stdin.write(path + '\n')
                     proc.stdin.flush()
@@ -695,12 +700,13 @@ def main(resolve, fusion, bmd, selftest=False):
         state['total'] = len(gathered)
         set_running('read')
         set_progress(t('Lettura metadata… %d/%d') % (0, len(gathered)), 0)
+        deep = bool(itm['Deep'].Checked)   # widgets are read here, on the UI thread
         if sync or not TIMER_OK:
-            read_worker(gathered)
+            read_worker(gathered, deep)
             _drain_read()
         else:
             timer.Start()
-            reader_thread = threading.Thread(target=read_worker, args=(gathered,), daemon=True)
+            reader_thread = threading.Thread(target=read_worker, args=(gathered, deep), daemon=True)
             reader_thread.start()
 
     # --- writing -------------------------------------------------------------

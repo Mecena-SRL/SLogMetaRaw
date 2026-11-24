@@ -280,7 +280,7 @@
      "id": "read.helper",
      "kind": "process",
      "label": "Processo lettore (--helper)",
-     "text": "Un solo processo Python figlio, persistente: riceve un percorso per riga su stdin e risponde con una riga JSON su stdout. Sta in un processo separato per poterlo uccidere se un volume si blocca.",
+     "text": "Un solo processo Python figlio, persistente: riceve un percorso per riga su stdin e risponde con una riga JSON su stdout. Sta in un processo separato per poterlo uccidere se un volume si blocca. Con «Acquisizione profonda (IMU)» parte con --deep: dopo read_clip lancia mecena-clipdb (Mecena Motion) che scrive giroscopio, accelerometro e obiettivo della clip nel MecenaClipDB letto da Stabilize; senza Mecena Motion o senza dati di movimento resta un avviso della clip.",
      "basis": "dedotto",
      "refs": [
       {
@@ -288,6 +288,12 @@
       },
       {
        "code": "slogmetaraw/ui.py::_spawn_reader"
+      },
+      {
+       "code": "slogmetaraw/clipdb.py::deep"
+      },
+      {
+       "test": "tests/test_clipdb.py::ClipDb.test_scan_reports_the_database_entry"
       }
      ]
     },
@@ -307,7 +313,7 @@
      "id": "read.wait",
      "kind": "decision",
      "label": "Risposta entro il limite?",
-     "text": "Attende la riga JSON: 10 s per la prima clip di un volume (un disco in standby si risveglia), 6 s per le successive. Una riga non JSON viene ignorata.",
+     "text": "Attende la riga JSON: 10 s per la prima clip di un volume (un disco in standby si risveglia), 6 s per le successive, 180 s con l'acquisizione profonda. Una riga non JSON viene ignorata.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1528,7 +1534,8 @@
  ],
  "fingerprints": {
   "beh:ui.read": {
-   "slogmetaraw/__main__.py::_helper": "be4948598901",
+   "slogmetaraw/__main__.py::_helper": "b1f37d747ba2",
+   "slogmetaraw/clipdb.py::deep": "6ad895f10a28",
    "slogmetaraw/extract.py::read_clip": "581d7d0f66a5",
    "slogmetaraw/plugin_cache.py::write_cache": "4d0ecc333510",
    "slogmetaraw/resolve_io.py::clip_path": "194973a11e5a",
@@ -1536,23 +1543,23 @@
    "slogmetaraw/ui.py::_mount_points": "bc2d07e19ce0",
    "slogmetaraw/ui.py::_read_result": "612c6f4fd474",
    "slogmetaraw/ui.py::_reader_lines": "b2bea30df528",
-   "slogmetaraw/ui.py::_spawn_reader": "6ae6e02b99ff",
+   "slogmetaraw/ui.py::_spawn_reader": "70b69feb8431",
    "slogmetaraw/ui.py::_volume_of": "0ab327b414cc",
    "slogmetaraw/ui.py::main._drain_read": "f99f09038b34",
    "slogmetaraw/ui.py::main._finalize_read": "df0c41174ce6",
    "slogmetaraw/ui.py::main._remember_detail_sections": "21923eba93af",
    "slogmetaraw/ui.py::main.gather": "86af6587f0a2",
-   "slogmetaraw/ui.py::main.on_read": "1d0cd4cb6e32",
+   "slogmetaraw/ui.py::main.on_read": "bef54c1d8497",
    "slogmetaraw/ui.py::main.on_timer": "3ca2273d1b64",
-   "slogmetaraw/ui.py::main.read_worker": "2d10f640f1c0"
+   "slogmetaraw/ui.py::main.read_worker": "587b95e003ef"
   },
   "beh:ui.details.sections": {
    "slogmetaraw/ui.py::main._drain_read": "f99f09038b34",
    "slogmetaraw/ui.py::main._remember_detail_sections": "21923eba93af",
    "slogmetaraw/ui.py::main._section_open": "3ca6b9ec1086",
-   "slogmetaraw/ui.py::main.on_read": "1d0cd4cb6e32",
+   "slogmetaraw/ui.py::main.on_read": "bef54c1d8497",
    "slogmetaraw/ui.py::main.on_select": "cc8688f47998",
-   "slogmetaraw/ui.py::main.read_worker": "2d10f640f1c0",
+   "slogmetaraw/ui.py::main.read_worker": "587b95e003ef",
    "slogmetaraw/ui.py::main.show_details": "44eb62d2468c"
   },
   "beh:detail.colour": {
