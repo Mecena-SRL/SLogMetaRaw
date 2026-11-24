@@ -40,6 +40,16 @@ class CacheRules(unittest.TestCase):
         with open(plugin_cache.cache_path(self.clip), encoding='utf-8') as fh:
             return json.load(fh)
 
+    def test_noise_codec_names_how_the_shadows_were_recorded(self):
+        nc = plugin_cache.noise_codec
+        self.assertEqual(nc({'v_fourcc': 'aprn'}), 'raw')
+        self.assertEqual(nc({'v_fourcc': 'apch'}), 'intra')
+        self.assertEqual(nc({'format_name': 'XAVC Intra 4K'}), 'intra')
+        self.assertEqual(nc({'format_name': 'XAVC S-I 4K', 'v_codec': 'H.264', 'v_bit_depth': 10}), 'intra')
+        self.assertEqual(nc({'format_name': 'XAVC S 4K', 'v_codec': 'H.264', 'v_bit_depth': 8}), 'long8')
+        self.assertEqual(nc({'v_codec': 'H.265', 'v_bit_depth': 10}), 'long')
+        self.assertEqual(nc({}), '')
+
     def test_partial_fields(self):
         """The record says how many samples were read and whether that is complete."""
         self.assertEqual(plugin_cache.VERSION, 6)

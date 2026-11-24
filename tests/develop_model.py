@@ -41,8 +41,8 @@ HLG_GREY = 0.18 / (0.38 * 0.38 / 3)          # BT.2408: 38% HLG signal = 18% gre
 CINE = {15: (0.555556, 0.009468, 0.344676, 0.790453, 8.735631, 0.092864, 0.00089),     # F-Log
         16: (5.555556, 0.064829, 0.245281, 0.384316, 8.799461, 0.092864, 0.000889),    # F-Log2
         20: (5.555556, 0.052272, 0.247190, 0.385537, 5.367655, 0.092809, 0.010591)}    # LogC3 EI 800
-DLM = (5.403507709503174, 0.9523495435714722, 2.4300594329833984, 0.5263257622718811, 0.9165859222412109,
-       0.44757312536239624, 1.7669587135314941, 0.016361355781555176)
+DLM = (-7.1430240, -5.7811094, -4.7320245, -3.8868240, -3.2453822, -2.7471208, -2.3173791, -1.9180706,   # log2 at i/16
+       -1.5247973, -1.1241255, -0.7105378, -0.2958065, 0.1171398, 0.5602375, 1.0579305, 1.6015527)
 
 
 def clog3_enc(x):
@@ -64,10 +64,12 @@ def encode_camera(y, g):
         if y >= 0.01: return 0.08550479 * math.log2(y + 0.00964052) + 0.69336945
         return 47.28711236 * (y + 0.05641088) ** 2 if y >= -0.05641088 else 0.0
     if g == 13:
-        a, b, c, cut, k1, k0, k2, sc = DLM
-        o = y / sc
-        t = (o - k0) / k1 if o < 0.9299839 else o / k2
-        return (math.log2(max(t + c, 1e-6)) - b) / a
+        top = 16 * (DLM[15] - DLM[14])
+        if y < 2 ** DLM[0]: return y / (16 * 2 ** DLM[0])
+        lg = math.log2(y)
+        if lg >= DLM[15]: return 1 + (lg - DLM[15]) / top
+        i = next(i for i in range(1, 16) if DLM[i] > lg)
+        return (i + (lg - DLM[i - 1]) / (DLM[i] - DLM[i - 1])) / 16
     if g == 14: return 6.025 * y + 0.0929 if y <= 0.0078 else math.log10(y * 0.9892 + 0.0108) * 0.256663 + 0.584555
     if g in CINE:
         a, b, c, d, e, f, cut = CINE[g]
@@ -93,9 +95,10 @@ def decode_camera(x, g):
         if x >= 0.20855532: return 2 ** ((x - 0.69336945) / 0.08550479) - 0.00964052
         return math.sqrt(x / 47.28711236) - 0.05641088 if x > 0 else -0.05641088
     if g == 13:
-        a, b, c, cut, k1, k0, k2, sc = DLM
-        t = 2 ** (x * a + b) - c
-        return (t * k1 + k0 if t < cut else t * k2) * sc
+        if x < 1 / 16: return x * 16 * 2 ** DLM[0]
+        if x >= 1: return 2 ** (DLM[15] + (x - 1) * 16 * (DLM[15] - DLM[14]))
+        i = int(x * 16)
+        return 2 ** (DLM[i - 1] + (x * 16 - i) * (DLM[i] - DLM[i - 1]))
     if g == 14: return (x - 0.0929) / 6.025 if x <= 0.14 else (10 ** (3.89616 * x - 2.27752) - 0.0108) / 0.9892
     if g in CINE:
         a, b, c, d, e, f, cut = CINE[g]
@@ -374,10 +377,13 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
         gmap = display.RECOMMENDED[drt][1]
     if rgc:
         xyz = display.gamut_compress(xyz, rgc)
-    if drt:   # display rendering: out_space / out_gamma are the display
-        c = display.render(xyz, drt, out_space, None, gmap)
+    if drt:   # rendered for a display gamut: the output one, else Rec.709 carried in the output space
+        ds = out_space if 1 <= out_space <= 5 else 1
+        c = display.render(xyz, drt, ds, None, gmap)
         if hl_vib > 0:
-            c = display.highlight_vibrance(c, hl_vib, out_space)
+            c = display.highlight_vibrance(c, hl_vib, ds)
+        if ds != out_space:
+            c = mul(MATS[out_space][1], mul(MATS[ds][0], c))
         return [encode1(v, out_gamma) for v in c]
     space, gamma = (out_space, out_gamma) if convert else (node_space, node_gamma)
     o = mul(MATS[space][1], xyz)

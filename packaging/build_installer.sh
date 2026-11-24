@@ -1,6 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Builds dist/SLogMetaRaw-<version>.dmg with the installer (.pkg), the three-page guides and the uninstaller.
+# Builds dist/SLogMetaRaw-<version>.dmg with the installer (.pkg), the illustrated guides (at most ten pages) and the
+# uninstaller.
 #   ./packaging/build_installer.sh
 set -euo pipefail
 export COPYFILE_DISABLE=1   # no AppleDouble ._ files in the package
@@ -27,9 +28,10 @@ cp "$ROOT/assets/effect_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMeta
 cp "$ROOT/assets/detail_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawDetail.png"
 make -C "$ROOT/ofx/SLogMetaRaw" >/dev/null
 cp "$ROOT/assets/icon_1024.png" "$PKG_DIR/guide/icon.png"
-# the guides carry @VERSION@ like the installer pages: print a substituted copy
+# the guides carry @VERSION@ like the installer pages: print a substituted copy (with img/, the figures of
+# tools/make_guide_figures.py)
 GUIDE="$BUILD/guide"; mkdir -p "$GUIDE"
-cp "$PKG_DIR/guide/"* "$GUIDE/"
+cp -R "$PKG_DIR/guide/"* "$GUIDE/"
 sed -i '' "s/@VERSION@/$VERSION/g" "$GUIDE/guida.html" "$GUIDE/guide-en.html"
 # find any Chromium-based browser for headless PDF generation
 CHROME=""
@@ -49,14 +51,14 @@ fi
     --print-to-pdf="$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "file://$GUIDE/guida.html" 2>/dev/null
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
     --print-to-pdf="$BUILD/dmg/Log MetaRaw Guide (english).pdf" "file://$GUIDE/guide-en.html" 2>/dev/null
-# each guide must stay within three pages
+# each guide: page 1 is the summary of every function, ten pages at most
 for g in "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf"; do
   python3 - "$g" <<'EOF'
 import sys
 d = open(sys.argv[1], 'rb').read()
 n = d.count(b'/Type /Page') - d.count(b'/Type /Pages')
-if not 1 <= n <= 3:
-    sys.exit('%s: %d pagine invece di 3 al massimo' % (sys.argv[1], n))
+if not 1 <= n <= 10:
+    sys.exit('%s: %d pagine invece di 10 al massimo' % (sys.argv[1], n))
 EOF
 done
 

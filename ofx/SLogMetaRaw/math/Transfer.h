@@ -52,18 +52,26 @@ SM_FN float sm_cine_dec(float x, float a, float b, float c, float d, float e, fl
 #define SM_LC4_C 0.0928641251221896f
 #define SM_LC4_S 0.1135972086105891f
 #define SM_LC4_T -0.0180569961199113f
-// DJI D-Log M: DJI publishes no formula, only LUTs. Community fit by Thatcher Freeman (dwg-transforms,
-// Mini 4 Pro footage, 18% grey near code 0.40), on the legal range. Its midtone slope matches the neutral axis of DJI's
-// own D-Log M -> Rec.709 LUT (which adds a display toe and shoulder), so it is kept.
+// DJI D-Log M: DJI publishes no formula, only LUTs, and the curve is not a log (S-shaped, docs/DJI_LOG.md).
+// log2 of scene-linear light at codes i/16, i = 1..16, on the legal range: the Osmo Action 6 curve measured with a
+// ColorChecker exposure series (jens-krause/dlogm-dctl v1.3), 18% grey at code 0.414. Linear in log2 between
+// nodes (0.8/1023 rms from the measured curve), linear to zero below 1/16, constant stops per code above 1.
+SM_CONST float SM_DLOGM[16] = {-7.1430240f, -5.7811094f, -4.7320245f, -3.8868240f, -3.2453822f, -2.7471208f,
+                               -2.3173791f, -1.9180706f, -1.5247973f, -1.1241255f, -0.7105378f, -0.2958065f,
+                               0.1171398f, 0.5602375f, 1.0579305f, 1.6015527f};
 SM_FN float sm_dlogm_dec(float x) {
-    float t = SM_EXP2(x * 5.403507709503174f + 0.9523495435714722f) - 2.4300594329833984f;
-    return (t < 0.5263257622718811f ? t * 0.9165859222412109f + 0.44757312536239624f : t * 1.7669587135314941f)
-           * 0.016361355781555176f;
+    if (x < 0.0625f) return x * 16.0f * SM_EXP2(SM_DLOGM[0]);
+    if (x >= 1.0f) return SM_EXP2(SM_DLOGM[15] + (x - 1.0f) * 16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = (int)(x * 16.0f);
+    return SM_EXP2(SM_DLOGM[i - 1] + (x * 16.0f - (float)i) * (SM_DLOGM[i] - SM_DLOGM[i - 1]));
 }
 SM_FN float sm_dlogm_enc(float y) {
-    float o = y / 0.016361355781555176f;
-    float t = o < 0.9299839f ? (o - 0.44757312536239624f) / 0.9165859222412109f : o / 1.7669587135314941f;
-    return (SM_LOG2(SM_MAX(t + 2.4300594329833984f, 1e-6f)) - 0.9523495435714722f) / 5.403507709503174f;
+    if (y < SM_EXP2(SM_DLOGM[0])) return y / (16.0f * SM_EXP2(SM_DLOGM[0]));
+    float l = SM_LOG2(y);
+    if (l >= SM_DLOGM[15]) return 1.0f + (l - SM_DLOGM[15]) / (16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = 1;
+    while (SM_DLOGM[i] <= l) i++;
+    return ((float)i + (l - SM_DLOGM[i - 1]) / (SM_DLOGM[i] - SM_DLOGM[i - 1])) / 16.0f;
 }
 // HLG: BT.2100 inverse OETF scaled so that BT.2408's 38% signal is 18% grey
 #define SM_HLG_A 0.17883277f

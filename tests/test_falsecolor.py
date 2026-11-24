@@ -93,7 +93,7 @@ def node_view(codes, space, gamma, mode, ei=800, temp=5600, tint=0):
 
 class ClipOnShortCurves(unittest.TestCase):
     """The bands were drawn for S-Log3, which records more than +5.5 stops. Rec.709, sRGB and the gamma curves end at
-    +2.5 stops over grey, D-Log M at +3.7, HLG at +4.4, F-Log at +5.3: a clipped white there read grey or green and the
+    +2.5 stops over grey, D-Log M at +4.1, HLG at +4.4, F-Log at +5.3: a clipped white there read grey or green and the
     red band never lit (v3.1.0 develops non-log Sony video as Rec.709 and reads those cameras)."""
     SHORT = ((1, 5, 'Rec.709'), (1, 6, 'sRGB'), (1, 3, 'Gamma 2.4'), (2, 24, 'HLG'), (19, 13, 'D-Log M'),
              (2, 15, 'F-Log'))

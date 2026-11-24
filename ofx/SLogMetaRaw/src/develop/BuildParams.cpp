@@ -8,8 +8,10 @@
 #include "../common/ColourSpaces.h"
 #include "ToneParams.h"
 
-bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_NodeInfo, std::string* p_LevelInfo)
+bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_NodeInfo, std::string* p_LevelInfo,
+                                std::string* p_NoiseInfo)
 {
+    if (p_NoiseInfo) *p_NoiseInfo = "spenta";
     if (!m_Ready) { p.bypass = 1; return false; }
     p = DevelopParams();
 
@@ -90,13 +92,13 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     // A display rendering needs a display: on Timeline it writes Rec.709 / Gamma 2.4.
     p.outSpace = cs >= 1 && cs <= kSpaceCount ? cs - 1 : p.drt ? 1 : nodeSpace;
     p.outGamma = gm >= 1 && gm <= kGammaCount ? gm - 1 : p.drt ? 3 : nodeGamma;
-    bool forced = false;
-    if (p.drt) sm_display_encoding(&p.outSpace, &p.outGamma, &forced);
+    if (p.drt) sm_display_encoding(&p.outGamma);
+    const bool sceneOut = p.drt && !(p.outSpace >= 1 && p.outSpace <= 5 && p.outGamma >= 2 && p.outGamma <= 6);
     p.convert = (p.drt || p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
     // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)
         *p_NodeInfo += std::string(" · Uscita: ") + kSpaceNames[p.outSpace] + " / " + kGammaNames[p.outGamma]
-                     + (forced ? " (il rendering scrive luce di schermo: Spazio colore / Gamma di scena sostituiti)" : "")
+                     + (sceneOut ? " (immagine gia resa: per vederla, un CST verso lo schermo senza tone mapping)" : "")
                      + " (Log MetaRaw Detail va messo prima di questa conversione)"
                      + (p.drt && !hostCs.empty() && hostCs.compare(0, 3, "g24") && hostCs.compare(0, 4, "rec1")
                             && hostCs.compare(0, 4, "srgb") && hostCs.compare(0, 3, "g22")
@@ -127,5 +129,15 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
 
     const SMToneControls tones = m_Tones.read(p_Time);
     sm_set_tone(&p, &tones, p.outSpace, p.convert, p.expo);
+
+    int noise = 0;
+    m_NoiseMask->getValue(noise);
+    // the camera row read with the metadata, unless the node decodes another curve (Ingresso, no metadata)
+    const NoiseCamera cam = m_NoiseCamera.gamma == nodeGamma ? m_NoiseCamera : noiseCamera(nodeGamma, "", "");
+    setNoiseMask(p, cam, noise, m_NoiseView->getValue(), m_NoiseStart->getValueAtTime(p_Time),
+                 m_NoiseFade->getValueAtTime(p_Time), shotEI, ei, p_NoiseInfo);
+    if (p_NodeInfo && p.nmOn == 1)
+        *p_NodeInfo = "NODO MASCHERA RUMORE: immagine invariata, solo alpha · " + *p_NodeInfo;
+    if (p_NodeInfo && p.nmOn == 2) *p_NodeInfo = "MASCHERA RUMORE IN VISTA · " + *p_NodeInfo;
     return true;
 }

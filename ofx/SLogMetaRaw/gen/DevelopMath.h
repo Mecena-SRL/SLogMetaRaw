@@ -11,6 +11,7 @@
 #define SM_CONST constant
 #define SM_CPTR constant float*
 #define SM_CREF(T) constant T&
+#define SM_OUT(T) thread T&
 // Metal's default math functions stay fast even under MTLMathModeSafe: parity needs precise::.
 #define SM_POW precise::pow
 #define SM_LOG2 precise::log2
@@ -30,6 +31,7 @@
 #define SM_CONST static const
 #define SM_CPTR const float*
 #define SM_CREF(T) const T&
+#define SM_OUT(T) T&
 #define SM_POW powf
 #define SM_LOG2 log2f
 #define SM_LOG10 log10f
@@ -121,6 +123,9 @@ struct DevelopParams {
     float gcLim[3];    // its distance limit per channel
     float gcPwr;       // its power
     int gmOn;          // Mappatura gamut: 1 = saturation compression into the output gamut before the rendering
+    int nmOn;          // Maschera rumore (develop/NoiseMask.cpp): 0 off, 1 in the alpha, 2 shown as the picture
+    float nmEdge;      // where it starts: log2(Y / 0.18) after Exposure
+    float nmInvFade;   // 1 / the stops it takes to reach 1
 };
 
 // ---- math/Transfer.h
@@ -176,18 +181,26 @@ SM_FN float sm_cine_dec(float x, float a, float b, float c, float d, float e, fl
 #define SM_LC4_C 0.0928641251221896f
 #define SM_LC4_S 0.1135972086105891f
 #define SM_LC4_T -0.0180569961199113f
-// DJI D-Log M: DJI publishes no formula, only LUTs. Community fit by Thatcher Freeman (dwg-transforms,
-// Mini 4 Pro footage, 18% grey near code 0.40), on the legal range. Its midtone slope matches the neutral axis of DJI's
-// own D-Log M -> Rec.709 LUT (which adds a display toe and shoulder), so it is kept.
+// DJI D-Log M: DJI publishes no formula, only LUTs, and the curve is not a log (S-shaped, docs/DJI_LOG.md).
+// log2 of scene-linear light at codes i/16, i = 1..16, on the legal range: the Osmo Action 6 curve measured with a
+// ColorChecker exposure series (jens-krause/dlogm-dctl v1.3), 18% grey at code 0.414. Linear in log2 between
+// nodes (0.8/1023 rms from the measured curve), linear to zero below 1/16, constant stops per code above 1.
+SM_CONST float SM_DLOGM[16] = {-7.1430240f, -5.7811094f, -4.7320245f, -3.8868240f, -3.2453822f, -2.7471208f,
+                               -2.3173791f, -1.9180706f, -1.5247973f, -1.1241255f, -0.7105378f, -0.2958065f,
+                               0.1171398f, 0.5602375f, 1.0579305f, 1.6015527f};
 SM_FN float sm_dlogm_dec(float x) {
-    float t = SM_EXP2(x * 5.403507709503174f + 0.9523495435714722f) - 2.4300594329833984f;
-    return (t < 0.5263257622718811f ? t * 0.9165859222412109f + 0.44757312536239624f : t * 1.7669587135314941f)
-           * 0.016361355781555176f;
+    if (x < 0.0625f) return x * 16.0f * SM_EXP2(SM_DLOGM[0]);
+    if (x >= 1.0f) return SM_EXP2(SM_DLOGM[15] + (x - 1.0f) * 16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = (int)(x * 16.0f);
+    return SM_EXP2(SM_DLOGM[i - 1] + (x * 16.0f - (float)i) * (SM_DLOGM[i] - SM_DLOGM[i - 1]));
 }
 SM_FN float sm_dlogm_enc(float y) {
-    float o = y / 0.016361355781555176f;
-    float t = o < 0.9299839f ? (o - 0.44757312536239624f) / 0.9165859222412109f : o / 1.7669587135314941f;
-    return (SM_LOG2(SM_MAX(t + 2.4300594329833984f, 1e-6f)) - 0.9523495435714722f) / 5.403507709503174f;
+    if (y < SM_EXP2(SM_DLOGM[0])) return y / (16.0f * SM_EXP2(SM_DLOGM[0]));
+    float l = SM_LOG2(y);
+    if (l >= SM_DLOGM[15]) return 1.0f + (l - SM_DLOGM[15]) / (16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = 1;
+    while (SM_DLOGM[i] <= l) i++;
+    return ((float)i + (l - SM_DLOGM[i - 1]) / (SM_DLOGM[i] - SM_DLOGM[i - 1])) / 16.0f;
 }
 // HLG: BT.2100 inverse OETF scaled so that BT.2408's 38% signal is 18% grey
 #define SM_HLG_A 0.17883277f
@@ -289,7 +302,7 @@ SM_CONST float SM_RGB_TO_XYZ[180] = {
     0.70485832f, 0.129760295f, 0.115837311f, 0.254524176f, 0.781477733f, -0.036001909f, 0.0f, 0.0f, 1.089057751f,  // 16 AWG4
     0.735275246f, 0.068609411f, 0.146571271f, 0.286694099f, 0.842979134f, -0.129673234f, -0.079680857f, -0.347343217f, 1.516081825f,  // 17 RWG
     0.606538368f, 0.220412735f, 0.123504823f, 0.26799294f, 0.832748409f, -0.100741349f, -0.029442554f, -0.08661243f, 1.205112735f,  // 18 BMDWG5
-    0.470720694f, 0.284452962f, 0.195282271f, 0.173203786f, 0.845688582f, -0.018892368f, -0.017471504f, 0.082878776f, 1.023650479f,  // 19 DJIDLogM
+    0.486885614f, 0.295019105f, 0.168551208f, 0.201495169f, 0.760695444f, 0.037809387f, -0.057204781f, -0.013451746f, 1.159714278f,  // 19 DJIDLogM
 };
 SM_CONST float SM_XYZ_TO_RGB[180] = {
     1.516672042f, -0.281478048f, -0.146963633f, -0.464917101f, 1.251423776f, 0.174884609f, 0.064849047f, 0.109139344f, 0.761414622f,  // 0 DWG
@@ -311,7 +324,7 @@ SM_CONST float SM_XYZ_TO_RGB[180] = {
     1.509215472f, -0.250597345f, -0.168811475f, -0.491545452f, 1.361245546f, 0.097282942f, 0.0f, 0.0f, 0.918224951f,  // 16 AWG4
     1.41280648f, -0.177523201f, -0.151770732f, -0.486203277f, 1.290696427f, 0.157400615f, -0.037139011f, 0.286376f, 0.687679779f,  // 17 RWG
     1.866357736f, -0.518390509f, -0.234606717f, -0.600329854f, 1.378119951f, 0.17672811f, 0.002451481f, 0.086381609f, 0.836767715f,  // 18 BMDWG5
-    2.385295535f, -0.756346959f, -0.46900297f, -0.486737753f, 1.334671865f, 0.117487725f, 0.080120053f, -0.120969503f, 0.959378806f,  // 19 DJIDLogM
+    2.404690317f, -0.938245946f, -0.318905235f, -0.642486407f, 1.564510137f, 0.042371377f, 0.111162915f, -0.028133448f, 0.847042313f,  // 19 DJIDLogM
 };
 
 // ---- math/Gamut.h
@@ -1386,7 +1399,17 @@ SM_FN SMf3 sm_highlight_vibrance(SMf3 c, float a, int space) {
 // ---- math/Develop.h
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
+// Maschera rumore: 0 above the edge, 1 a fade below it, smoothstep between. It reads the picture, never writes it.
+SM_FN float sm_noise_mask(float y, SM_CREF(DevelopParams) p) {
+    const float t = sm_clamp((p.nmEdge - SM_LOG2(SM_MAX(y, 1e-10f) / 0.18f)) * p.nmInvFade, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// The developed pixel; mask is the Maschera rumore when p.nmOn, else 0. Resolve keys the node with the alpha of its
+// plugin (output where alpha = 1, input where 0): a mask node therefore passes its input untouched and only writes
+// the alpha, for the key input of the denoiser's node.
+SM_FN SMf3 sm_develop_a(SMf3 in, SM_CREF(DevelopParams) p, SM_OUT(float) mask) {
+    mask = 0.0f;
     if (p.bypass != 0 && p.levelFix == 0) return in;
     SMf3 lin = smf3(sm_decode(in.x, p.nodeGamma), sm_decode(in.y, p.nodeGamma),
                     sm_decode(in.z, p.nodeGamma));
@@ -1402,14 +1425,20 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     lms = smf3(lms.x * p.ratioL, lms.y * p.ratioM, lms.z * p.ratioS);
     xyz = sm_mul(SM_BRADFORD, 9, lms);
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
+    if (p.nmOn != 0) {
+        mask = sm_noise_mask(xyz.y, p);
+        return p.nmOn == 2 ? smf3(mask, mask, mask) : in;
+    }
 
     if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
 
     if (p.gcOn != 0) xyz = sm_gamut_compress(xyz, p);
-    if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve
-        SMf3 d = sm_display(xyz, p.drt, p.outSpace, p.gmOn);
-        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, p.outSpace);
+    if (p.drt != 0) {   // rendered for a display gamut: the output one, else Rec.709 carried in the output space
+        const int ds = p.outSpace >= 1 && p.outSpace <= 5 ? p.outSpace : 1;
+        SMf3 d = sm_display(xyz, p.drt, ds, p.gmOn);
+        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, ds);
+        if (ds != p.outSpace) d = sm_from_xyz(sm_to_xyz(d, ds), p.outSpace);
         return smf3(sm_encode(d.x, p.outGamma), sm_encode(d.y, p.outGamma), sm_encode(d.z, p.outGamma));
     }
     const int space = p.convert != 0 ? p.outSpace : p.nodeSpace;
@@ -1417,6 +1446,11 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     SMf3 o = sm_from_xyz(xyz, space);
     if (p.gmOn != 0) o = sm_gamut_map(o);
     return smf3(sm_encode(o.x, gamma), sm_encode(o.y, gamma), sm_encode(o.z, gamma));
+}
+
+SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
+    float mask;
+    return sm_develop_a(in, p, mask);
 }
 
 // ---- math/Detail.h
@@ -1933,16 +1967,12 @@ static inline void sm_set_level_fix(DevelopParams* p, int space, int gamma, int 
     p->levelOffset = hostFull ? -64.0f / 876.0f : 64.0f / 1023.0f;
 }
 
-// A rendering writes display light: only a display gamut (Rec.709, Rec.2020, P3) and a display curve (Gamma 2.2,
-// 2.4, 2.6, sRGB) are meaningful. Rec.709 is the camera OETF: on display light it reads as the BT.1886 display,
-// Gamma 2.4. A scene encoding (DaVinci, S-Gamut, ACES, Linear, log curves) becomes Rec.709 / Gamma 2.4: Resolve
-// would read it as scene values and the picture would be rendered twice. forced says a choice was replaced.
-static inline void sm_display_encoding(int* space, int* gamma, bool* forced) {
-    const bool displaySpace = *space >= 1 && *space <= 5;
-    const bool displayGamma = (*gamma >= 2 && *gamma <= 4) || *gamma == 6;
-    *forced = !displaySpace || (!displayGamma && *gamma != 5);
-    if (!displaySpace) *space = 1;
-    if (!displayGamma) *gamma = 3;
+// A rendering writes display light. Rec.709 is the camera OETF: on display light it reads as the BT.1886 display,
+// Gamma 2.4, so it becomes Gamma 2.4. Any other choice is kept: a scene gamut (DaVinci WG, ACES...) carries the
+// picture rendered for Rec.709, a scene curve (DaVinci Intermediate, log...) encodes that display light, so a Color
+// Space Transform back to Rec.709 / Gamma 2.4 without tone mapping gives the rendered picture again.
+static inline void sm_display_encoding(int* gamma) {
+    if (*gamma == 5) *gamma = 3;
 }
 
 // Up to 3.1.0 each rendering had its gamut steps built in; they are now Compressione gamut (1 = ACES reference) and

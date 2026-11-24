@@ -138,14 +138,16 @@ class OfxHost(unittest.TestCase):
         self.assertIn('secret:gamutPower=1', self.host('--plugin', '0', '--no-reload'))
 
     def test_a_rendering_writes_a_display_encoding(self):
-        """Display light encoded with the camera OETF (Rec.709) or a scene curve was too dark or rendered twice."""
+        """The camera OETF (Rec.709) on display light read too dark: it becomes Gamma 2.4. A scene encoding is kept."""
         def info(*args):
             return self.values('--set', 'inputSpace=9', '--set', 'inputGamma=10', '--set', 'unlockNoMeta=1', *args)
-        for gamma in ('6', '1', '2'):   # Rec.709, DaVinci Intermediate, Linear
-            v = info('--set', 'rendering=4', '--set', 'gamma=' + gamma, '--change', 'inputGamma=10')
-            self.assertIn('Uscita: Rec.709 / Gamma 2.4', v['nodeInfo'], v['nodeInfo'])
+        v = info('--set', 'rendering=4', '--set', 'gamma=6', '--change', 'inputGamma=10')
+        self.assertIn('Uscita: Rec.709 / Gamma 2.4', v['nodeInfo'], v['nodeInfo'])
+        dwg = info('--set', 'rendering=3', '--set', 'colorSpace=1', '--set', 'gamma=1', '--change', 'inputGamma=10')
+        self.assertIn('Uscita: DaVinci WG / DaVinci Intermediate (immagine gia resa', dwg['nodeInfo'], dwg['nodeInfo'])
         kept = info('--set', 'rendering=4', '--set', 'colorSpace=4', '--set', 'gamma=7', '--change', 'inputGamma=10')
         self.assertIn('Uscita: P3 D65 / sRGB', kept['nodeInfo'], kept['nodeInfo'])
+        self.assertNotIn('immagine gia resa', kept['nodeInfo'])
 
     def test_the_eyedropper_sets_temperature_and_tint(self):
         """A warm-looking neutral lowers the Kelvin, a cool one raises it, and the balance becomes Custom."""
@@ -219,6 +221,39 @@ class OfxHost(unittest.TestCase):
             custom = pasted('--set', 'whiteBalance=7', '--set', 'colorTemp=3333', '--set', 'tint=12')
             self.assertEqual((float(custom['colorTemp']), float(custom['tint'])), (3333, 12), 'a Custom balance travels')
             self.assertAlmostEqual(float(custom['exposure']), 2500, delta=1)
+
+    def test_the_noise_mask_follows_camera_codec_and_selected_ei(self):
+        """Maschera rumore: the FX6 row, half a stop earlier in ProRes RAW, one stop closer to grey for every stop of
+        selected EI over the native one; the high native gain costs half a stop, not its distance from 800."""
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / 'user'
+            cache = home / SUPPORT_REL / 'cache'
+            cache.mkdir(parents=True)
+            clip = Path(directory) / 'C0001.MXF'
+            clip.write_bytes(b'0123456789')
+            value = 0xcbf29ce484222325
+            import unicodedata
+            for byte in unicodedata.normalize('NFC', os.path.realpath(clip)).encode('utf-8'):
+                value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff
+            env = dict(os.environ, HOME=str(home), SLOGMETARAW_TEST_NO_RESOLVE='1', SLOGMETARAW_NO_UPDATE_CHECK='1')
+
+            def info(shot_ei, codec, *settings):
+                (cache / ('%016x.json' % value)).write_text(json.dumps({
+                    'version': 6, 'supported': 1, 'camera_name': 'Sony ILME-FX6V', 'model': 'ILME-FX6V',
+                    'noise_codec': codec, 'cam_space': 8, 'cam_gamma': 9, 'shot_temp': 5600, 'shot_tint': 0,
+                    'shot_ei': shot_ei}), encoding='utf-8')
+                out = subprocess.run([self.exe, BINARY, str(clip), '--plugin', '0', '--no-reload',
+                                      '--set', 'noiseMask=1'] + list(settings),
+                                     capture_output=True, text=True, env=env, timeout=20).stdout
+                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)['noiseInfo']
+
+            self.assertTrue(info(800, 'intra').startswith('da -3,5 a -5,0 stop sotto il grigio · Sony FX6, nativo 800'))
+            self.assertTrue(info(800, 'raw').startswith('da -3,0 a -4,5'), 'ProRes RAW: no in-camera NR')
+            self.assertTrue(info(800, 'intra', '--change', 'exposure=3200').startswith('da -1,5 a -3,0'), '+2 stops')
+            self.assertTrue(info(12800, 'intra').startswith('da -3,0 a -4,5 '
+                                                                                        'stop sotto il grigio · Sony '
+                                                                                        'FX6, nativo 12800 (alto)'))
+            self.assertTrue(info(800, 'intra', '--change', 'exposure=12800').startswith('dal grigio a -1,5'))
 
     def test_the_lut_safe_node_comes_first_and_the_spatial_one_second(self):
         """Resolve identifies a plugin by bundle index too, and only a pointwise node may be baked into

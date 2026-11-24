@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **3.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -70,7 +70,7 @@ Cada instalação começa limpa: o plugin e a biblioteca anteriores são substit
 | Cache por clipe (JSON) | `~/Library/Application Support/SLogMetaRaw/cache` |
 
 **Requisitos:** macOS 12 ou posterior, Apple silicon ou Intel, DaVinci Resolve 21 ou 20 (no Resolve 20: instale o Python 3 em python.org, ele não traz nenhum próprio).
-**Clipes:** Sony XAVC `.MP4` ou `.MXF` — o script lê todos. Os nós revelam **S-Log3** (S-Gamut3.Cine ou S-Gamut3), **S-Log2** e **S-Log** (S-Gamut). Com outros perfis (Cine, HLG, S-Cinetone) eles ficam neutros e avisam.
+**Clipes:** Sony XAVC em `.MP4` ou `.MXF`, mais as câmeras de [docs/CAMERAS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md) (Panasonic V-Log, Apple Log, DJI D-Log e D-Log M e outras), cada uma com a confiabilidade da sua leitura. O script lê todos. Os nós revelam **S-Log3** (S-Gamut3.Cine ou S-Gamut3), **S-Log2**, **S-Log** (S-Gamut) e as curvas dessas câmeras. Desde a 3.2.0 o DJI D-Log M usa a curva medida numa Osmo Action 6 ([docs/DJI_LOG.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DJI_LOG.md)): para as outras câmeras DJI é a melhor estimativa, não uma calibração. Com um perfil desconhecido ficam neutros e avisam.
 
 ---
 
@@ -145,14 +145,15 @@ O nó é **pontual**: cada pixel depende só de si mesmo. Nunca cria halos, e o 
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | Mostra `v3.0.0`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v3.0.0 → 3.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
+| **Versão** (no topo) | Mostra `v3.2.0`. Uma vez por dia pergunta ao GitHub pela última release; se houver uma, mostra **🟢 v3.2.0 → 3.x.y** e um clique abre o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho. |
 | **Camera** · **Rileggi metadata** (reler) | A câmera que foi lida. *Rileggi* relê o clipe, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool. Responde em cerca de 2 s. |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
 | **Punto bianco** (ponto branco) | o conta-gotas do Resolve: escolha na imagem um ponto que deve ser neutro e Temperatura e Tint se ajustam sozinhos, com a mesma matemática do render |
 | **Esposizione** (EI) | índice de exposição: o dobro do EI = +1 stop |
 | **False color** | uma caixa acima de Temperatura, uma abaixo de Tint e uma abaixo de Esposizione; veja abaixo |
-| **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
+| **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione e Mappatura gamut, Vibrance luci, Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
+| **Maschera rumore** (máscara de ruído) | **Maschera**: Spenta (desligada), Automatica, Personalizzata (**Inizio** início, **Sfumatura** transição); **Vedi maschera** (ver máscara); **Soglia** (limiar) mostra o limiar em uso. Ligada, o nó vira um nó máscara: imagem inalterada, só o alfa; veja abaixo |
 | **Toni** (tons) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* acrescenta Contrast, Shadows, Whites, Blacks, Vibrance e as **Zone** (Black, Shadow, Light, Specular com Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); aparecem sozinhos se o nó os usa |
 | **Dati di ripresa** (Dados de gravação) | Só leitura: objetiva, focal, abertura, foco, obturador, EI, WB, fps, ND, LUT da câmera. |
 
@@ -165,7 +166,11 @@ O nó é **pontual**: cada pixel depende só de si mesmo. Nunca cria halos, e o 
 - **Ingresso › Stato** (estado) — o que o nó detectou; também avisa quando uma vista de falsa cor está ativa.
 - **Senza metadata › Sblocca controlli** — veja [§11](#11-casos-especiais).
 
-> **A saída Rec.709** no nó é um CST *sem* tone mapping (as altas luzes além de Bianco clipam) e exclui o nó Detail. Prefira um CST de saída no final da árvore.
+> **A saída Rec.709** no nó com Tone mapping *Nessuno (CST)* é um CST simples (as altas luzes além de Bianco clipam), e qualquer conversão de saída exclui o nó Detail. Prefira um CST de saída no final da árvore.
+
+**Tone mapping com saída de cena (3.2.0).** Com um rendering (ACES 2.0, Filmico, OpenDRT…), um Spazio colore e uma Gamma de cena como DaVinci WG / DaVinci Intermediate não são mais substituídos por Rec.709 / Gamma 2.4: a imagem renderizada para Rec.709 viaja nessa codificação, para passá-la a outros plugins (Dehancer…), e um CST para Rec.709 / Gamma 2.4 sem tone mapping a devolve idêntica. As saídas de tela (Rec.709, P3, Rec.2020) não mudam.
+
+**Máscara de ruído (3.2.0, nó máscara desde a 3.2.1).** Com Maschera ligada o nó vira uma máscara: não revela, passa a imagem que recebe idêntica bit a bit e escreve só o **alfa**: 1 onde a câmera, no EI escolhido, tem ruído visível, 0 onde está limpa, com transição suave (o Resolve usa o alfa de um plugin como key do próprio nó, então um nó que revela não pode levá-la). Use um segundo nó Log MetaRaw, cópia do que revela (mesmo EI), colocado antes dele, e ligue a sua saída alfa à entrada key do nó com o Neat Video; o nó que revela fica com Maschera Spenta e não muda. *Automatica* usa um limiar por câmera, ISO nativo (também duplo) e codec (ProRes RAW e 8 bits o antecipam em meio stop); *Personalizzata* usa o Inizio e a Sfumatura que você escolher. Nos dois, cada stop de EI acima do nativo o aproxima um stop do cinza. *Vedi maschera* mostra a máscara em cinza no lugar da imagem. **Ainda não testado no Resolve**: que o alfa chegue à entrada key do nó com o Neat Video. Se não chegar, um nó em paralelo com *Vedi maschera* e um qualifier de luminância. As constantes são medidas para algumas câmeras e estimadas para as outras: [docs/NOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/NOISE.md) (em italiano).
 
 ---
 

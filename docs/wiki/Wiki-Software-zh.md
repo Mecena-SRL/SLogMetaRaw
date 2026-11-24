@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **3.0.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **3.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -70,7 +70,7 @@ Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文�
 | 每个片段的缓存（JSON） | `~/Library/Application Support/SLogMetaRaw/cache` |
 
 **系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，DaVinci Resolve 21 或 20（Resolve 20：请从 python.org 安装 Python 3，它自身不带 Python）。
-**片段：** 索尼 XAVC `.MP4` 或 `.MXF`——脚本可以全部读取。节点可显影 **S-Log3**（S-Gamut3.Cine 或 S-Gamut3）、**S-Log2** 和 **S-Log**（S-Gamut）。遇到其他配置（Cine、HLG、S-Cinetone）时，节点保持中性并给出提示。
+**片段：** `.MP4` 或 `.MXF` 格式的索尼 XAVC，以及 [docs/CAMERAS.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md) 中列出的摄影机（Panasonic V-Log、Apple Log、DJI D-Log 与 D-Log M 等），每种都注明读取的可靠程度。脚本全部可以读取。节点可显影 **S-Log3**（S-Gamut3.Cine 或 S-Gamut3）、**S-Log2**、**S-Log**（S-Gamut）以及这些摄影机的曲线。自 3.2.0 起 DJI D-Log M 使用在 Osmo Action 6 上实测的曲线（[docs/DJI_LOG.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DJI_LOG.md)）：对其他 DJI 摄影机这是最佳估计，而非校准。遇到未知配置时节点保持中性并给出提示。
 
 ---
 
@@ -145,14 +145,15 @@ Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT /
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | 显示 `v3.0.0`。每天最多向 GitHub 查询一次最新版本；如果有新版本，会显示 **🟢 v3.0.0 → 3.x.y**，点击会打开适合你系统的安装程序下载页面（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西。 |
+| **版本**（顶部） | 显示 `v3.2.0`。每天最多向 GitHub 查询一次最新版本；如果有新版本，会显示 **🟢 v3.2.0 → 3.x.y**，点击会打开适合你系统的安装程序下载页面（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西。 |
 | **Camera** · **Rileggi metadata**（重新读取） | 读取到的摄影机。*Rileggi* 会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池。约 2 秒内响应。 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
 | **Punto bianco**（白点） | Resolve 的吸管：在图像上选一个应为中性的点，Temperatura 和 Tint 自动调整，与渲染使用相同的数学 |
 | **Esposizione**（EI） | 曝光指数：EI 加倍 = +1 档 |
 | **False color** | Temperatura 上方、Tint 下方和 Esposizione 下方各一个复选框；见下文 |
-| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：**Tone mapping**（Nessuno/CST、ACES 2.0、Luminanza、Filmico、ACES 1.3、OpenDRT）、Compressione 与 Mappatura gamut、Vibrance luci、Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Maschera rumore**（噪点遮罩） | **Maschera**：Spenta（关）、Automatica（自动）、Personalizzata（自定义：**Inizio** 起点、**Sfumatura** 过渡）；**Vedi maschera**（查看遮罩）；**Soglia**（阈值）显示当前阈值。开启后节点变为遮罩节点：画面不变，只写 alpha；见下文 |
 | **Toni**（色调） | Highlights、**Bianco**（档）、Soft Clip、Saturation（−100…+100）。*Mostra tutti i controlli* 加入 Contrast、Shadows、Whites、Blacks、Vibrance 和 **Zone**（Black、Shadow、Light、Specular 的 Exp、Sat、Range 和 Falloff，Contrast Pivot，*Zone* false color）；节点使用它们时会自动出现 |
 | **Dati di ripresa**（拍摄数据） | 只读：镜头、焦距、光圈、对焦、快门、EI、白平衡、帧率、ND、机内 LUT。 |
 
@@ -165,7 +166,11 @@ Log MetaRaw  →  Log MetaRaw Detail  →  其余调色  →  输出 CST / LUT /
 - **Ingresso › Stato**（状态）——节点检测到的情况；当有伪色视图开启时也会提示。
 - **Senza metadata › Sblocca controlli**——见[第 11 节](#11-特殊情况)。
 
-> 节点中的 **Rec.709 输出**是一个*不带*色调映射的 CST（高光超过 Bianco 会直接被剪切），并且会关闭 Detail 节点。请优先把输出 CST 放在节点树的末尾。
+> 节点中 Tone mapping 为 *Nessuno (CST)* 时，**Rec.709 输出**是一个普通 CST（高光超过 Bianco 会直接被剪切）；任何输出转换都会关闭 Detail 节点。请优先把输出 CST 放在节点树的末尾。
+
+**带场景输出的 tone mapping（3.2.0）。** 选用渲染（ACES 2.0、Filmico、OpenDRT…）时，DaVinci WG / DaVinci Intermediate 这类场景 Spazio colore 和 Gamma 不再被替换为 Rec.709 / Gamma 2.4：为 Rec.709 渲染的画面以该编码传递，便于交给其他插件（Dehancer…）；之后用不带 tone mapping 的 CST 转到 Rec.709 / Gamma 2.4 即可完全还原。显示输出（Rec.709、P3、Rec.2020）不变。
+
+**噪点遮罩（3.2.0，自 3.2.1 起为遮罩节点）。** 开启 Maschera 后，节点变为遮罩：不做显影，把收到的画面逐位不变地传出，只写 **alpha**：摄影机在所选 EI 下有可见噪点处为 1，干净处为 0，中间平滑过渡（Resolve 把插件输出的 alpha 当作该节点自身的 key，所以显影节点无法携带它）。使用第二个 Log MetaRaw 节点，复制自显影节点（相同 EI），放在它之前，并把它的 alpha 输出连到 Neat Video 节点的 key 输入；显影节点保持 Maschera Spenta，不受影响。*Automatica* 按摄影机、原生 ISO（含双原生 ISO）和编码设定阈值（ProRes RAW 和 8 位提前半档）；*Personalizzata* 使用你设定的 Inizio 和 Sfumatura。两种模式下，所选 EI 每高出原生 ISO 一档，阈值就向灰点靠近一档。*Vedi maschera* 以灰度代替画面显示遮罩。**尚未在 Resolve 中测试**：alpha 能否到达 Neat Video 节点的 key 输入。若不能，可用一个并行节点，开启 *Vedi maschera* 并加亮度限定器。部分摄影机的常数为实测，其余为估计：[docs/NOISE.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/NOISE.md)（意大利语）。
 
 ---
 

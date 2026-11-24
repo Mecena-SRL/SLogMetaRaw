@@ -165,7 +165,7 @@ quindi indipendenti dalla curva log della clip, e la lettura non cambia passando
 S-Log2 a S-Log3 o da una timeline all'altra.
 
 **Curve corte.** +5,5 stop vale per S-Log3, che registra oltre +7. Rec.709, sRGB e le curve gamma finiscono a
-+2,5 stop sul grigio, D-Log M a +3,7, HLG a +4,4, F-Log a +5,3: lì un bianco bruciato restava grigio o verde e il
++2,5 stop sul grigio, D-Log M a +4,1, HLG a +4,4, F-Log a +5,3: lì un bianco bruciato restava grigio o verde e il
 rosso non si accendeva mai. Dalla 3.1.0 (correzione) conta anche la **cima della curva d'ingresso** (codice 1,0):
 un canale che la raggiunge (entro 0,02 stop) è rosso, uno entro ¼ di stop è giallo. La cima è letta prima
 dell'esposizione, quindi un bianco bruciato resta rosso qualunque EI si scelga. In lineare non c'è cima.

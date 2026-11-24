@@ -183,16 +183,12 @@ static inline void sm_set_level_fix(DevelopParams* p, int space, int gamma, int 
     p->levelOffset = hostFull ? -64.0f / 876.0f : 64.0f / 1023.0f;
 }
 
-// A rendering writes display light: only a display gamut (Rec.709, Rec.2020, P3) and a display curve (Gamma 2.2,
-// 2.4, 2.6, sRGB) are meaningful. Rec.709 is the camera OETF: on display light it reads as the BT.1886 display,
-// Gamma 2.4. A scene encoding (DaVinci, S-Gamut, ACES, Linear, log curves) becomes Rec.709 / Gamma 2.4: Resolve
-// would read it as scene values and the picture would be rendered twice. forced says a choice was replaced.
-static inline void sm_display_encoding(int* space, int* gamma, bool* forced) {
-    const bool displaySpace = *space >= 1 && *space <= 5;
-    const bool displayGamma = (*gamma >= 2 && *gamma <= 4) || *gamma == 6;
-    *forced = !displaySpace || (!displayGamma && *gamma != 5);
-    if (!displaySpace) *space = 1;
-    if (!displayGamma) *gamma = 3;
+// A rendering writes display light. Rec.709 is the camera OETF: on display light it reads as the BT.1886 display,
+// Gamma 2.4, so it becomes Gamma 2.4. Any other choice is kept: a scene gamut (DaVinci WG, ACES...) carries the
+// picture rendered for Rec.709, a scene curve (DaVinci Intermediate, log...) encodes that display light, so a Color
+// Space Transform back to Rec.709 / Gamma 2.4 without tone mapping gives the rendered picture again.
+static inline void sm_display_encoding(int* gamma) {
+    if (*gamma == 5) *gamma = 3;
 }
 
 // Up to 3.1.0 each rendering had its gamut steps built in; they are now Compressione gamut (1 = ACES reference) and

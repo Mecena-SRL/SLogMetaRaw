@@ -43,7 +43,7 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 |---|---|---|---|
 | 11 | V-Log | Full | Panasonic V-Log/V-Gamut reference manual (via colour-science) |
 | 12 | Apple Log | Video | Apple Log Profile white paper, 2023; Apple Log 2 usa la stessa curva |
-| 13 | D-Log M | Video | **nessuna formula DJI**: fit di Thatcher Freeman (`dwg-transforms`, Mini 4 Pro, grigio 18% vicino a 0.40); pendenza dei toni medi uguale all'asse neutro della LUT ufficiale DJI |
+| 13 | D-Log M | Video | **nessuna formula DJI**: tabella a 17 nodi della curva Osmo Action 6 misurata con ColorChecker (`jens-krause/dlogm-dctl` v1.3), grigio 18% a 0.414; errore 0,8/1023 rms dalla misura |
 | 14 | D-Log | Full | DJI D-Log/D-Gamut white paper, 2017 |
 | 15, 16 | F-Log, F-Log2 | Full | Fujifilm F-Log/F-Log2 data sheet |
 | 17 | N-Log | Full | Nikon N-Log specification, 2018 |
@@ -63,22 +63,29 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 | 15, 16 | ARRI Wide Gamut 3, 4 | ARRI |
 | 17 | REDWideGamutRGB | RED |
 | 18 | Blackmagic Wide Gamut Gen 5 | Blackmagic |
-| 19 | DJI D-Log M Gamut | **stimato**: primarie native di Thatcher Freeman, scelte per resa più tenue; DJI non pubblica il gamut |
+| 19 | DJI D-Log M Gamut | **dedotto**: matrice nativo → Rec.709 della Action 6 ricavata dalla LUT DJI OA6 (`jens-krause/dlogm-dctl`); DJI non pubblica il gamut |
 
 Il punto di grigio 18% di ogni curva (codifica di 0.18) coincide con i valori pubblicati dai produttori: V-Log 0.423,
 Apple Log 0.488, F-Log 0.459, N-Log 0.364, C-Log2 0.398, C-Log3 0.343, LogC3 0.391, LogC4 0.278, Gen 5 0.384.
+
+Le costanti di rumore per camera (soglia della *Maschera rumore*, ISO nativi, correzione per codec), misurate o
+stimate, sono in [NOISE.md](NOISE.md).
 
 ## D-Log M: stato e prossimo passo
 
 DJI distribuisce solo LUT D-Log M → Rec.709; la curva e il gamut non sono pubblicati e DaVinci Resolve 21.1 non ha
 D-Log M nel Color Space Transform. La LUT è usata solo come **riferimento** per capire la codifica, mai applicata:
 
-- **curva**: l'asse neutro della LUT ufficiale DJI e quello di una LUT CineMatch coincidono; la pendenza dei toni medi
-  è quella del fit di Thatcher Freeman, che resta (la LUT aggiunge solo piede e spalla da display);
-- **gamut**: `tools/lut_gamut.py` linearizza la LUT sull'asse neutro e risolve ai minimi quadrati la matrice nativo →
-  Rec.709 (righe a somma 1, punti non clippati). Primarie native: R 0.766/0.336, G 0.267/0.971, B 0.147/0.042, D65.
-  Errore medio sui colori della LUT 0,013 (Freeman 0,032, Rec.2020 0,033, P3 0,028). Il gamut ricavato è più saturo e
-  contiene il "look" DJI della LUT: il plugin tiene di proposito le primarie di Freeman (scelta del 15/11/2026).
+- **curva** (dal 24/11/2026): D-Log M non è una log ma una curva a S; nessuna formula chiusa la segue entro il rumore
+  di misura, quindi il plugin usa una tabella a 17 nodi (log2 della luce ai codici i/16) della curva Action 6 misurata
+  con ColorChecker. Sostituisce il fit di Freeman (grigio 0.400, nessuna spalla: −0,4 stop a codice 1.0);
+- **gamut**: primarie R 0.771/0.319, G 0.283/0.730, B 0.123/0.028, D65, dalla matrice che la LUT OA6 implica (LUT
+  separabile, residuo 0,004). Sostituisce le primarie di Freeman. La LUT "Action 5 Pro" / "Pocket 3" è la LUT Mavic 3
+  Pro 2023, non separabile: `tools/lut_gamut.py` su quella dà primarie instabili;
+- **limite**: misura di una sola camera (Action 6). Per Action 4/5 Pro, Pocket 3 e droni è la stima migliore
+  disponibile, non una taratura (analisi in `docs/DJI_LOG.md`).
+
+Ricerca completa per camera (D-Log, D-Log M, D-Log2, percorsi `djmd` dei droni, lacune): `docs/DJI_LOG.md`.
 
 Resta da verificare: una clip della Osmo Action 4 e una serie di esposizioni di un ColorChecker (o cartoncino grigio) a
 ±1 stop, per fissare grigio e matrice su una misura e non su una LUT. I file LUT non sono nel repository.
@@ -92,7 +99,7 @@ matematica del nodo:
 |---|---|---|---|
 | Panasonic DC-S5, V-Log, H.264 4:2:2 | Full (flag VUI) | Y min 136 (V-Log: 128) | curva e matrice V-Gamut uguali al reference manual Panasonic (0.423 / 128 / 602; matrice a 6 cifre); WB di ripresa 4000 K sotto luce diurna: muri a xy 0.295, 0.331 (≈ 7700 K rispetto a D65), immagine fredda per scelta di ripresa, non per la decodifica |
 | iPhone, Apple Log | Video | Y min 119 | neutri e incarnati plausibili |
-| DJI Osmo Action 5 Pro, D-Log M | Video | Y min 46 | muro grigio a xy 0.320, 0.336, Y 0.18 |
+| DJI Osmo Action 5 Pro, D-Log M | Video | Y min 46 | muro grigio a xy 0.320, 0.336, Y 0.18 (con la curva e il gamut di Freeman, prima del 24/11/2026) |
 
 Con la S5 conta il Data Level: il file è Full; se Resolve lo decodifica Video il bianco 90% sale di +0,37 stop, il nero
 va sotto zero e la saturazione cresce. Lo script imposta Data Level = Full; con Data Level su Auto il nodo non corregge.

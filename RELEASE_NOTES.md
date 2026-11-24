@@ -1,5 +1,33 @@
 # Changelog
 
+## Log MetaRaw 3.2.1
+
+- **Maschera rumore, correzione**: in Resolve il nodo con la maschera accesa mostrava un'immagine strana (a rilievo),
+  perché Resolve usa l'alpha di un plugin come key del suo stesso nodo: dove l'alpha è 0 ripassa l'ingresso log, dove
+  è 1 l'immagine sviluppata. Ora con Maschera su Automatica o Personalizzata il nodo diventa un **nodo maschera**:
+  non sviluppa, passa l'immagine che riceve identica (bit per bit, verificato dai test) e scrive solo l'alpha. Uso:
+  una copia del nodo Log MetaRaw (stesso EI) messa prima di quello che sviluppa, con la maschera accesa; la sua uscita
+  alpha va all'ingresso key del nodo con Neat Video. Il nodo che sviluppa resta con la maschera spenta e non cambia.
+
+## Log MetaRaw 3.2.0
+
+- **Maschera rumore** (nodo Develop, gruppo nuovo): scrive nel canale alpha le zone dove la camera ha rumore all'EI
+  scelto, per far lavorare Neat Video solo lì. Automatica (soglia per camera, ISO nativo, doppio ISO e codec:
+  ProRes RAW e 8 bit la anticipano di mezzo stop) o Personalizzata (Inizio e Sfumatura); ogni stop di EI sopra il
+  nativo la avvicina di uno stop al grigio. *Vedi maschera* la mostra. Colori invariati bit per bit. Dati e fonti:
+  `docs/NOISE.md`. **Non provato in Resolve**: il collegamento alpha → key del nodo Neat Video.
+- **DJI D-Log M, nuova curva e nuovo gamut**: la curva è la misura della Osmo Action 6 con ColorChecker (tabella a
+  17 nodi, grigio 18% a 0.414 invece di 0.400, luci fino a +4,1 stop invece di +3,7); il gamut è quello che implica la
+  LUT DJI della Action 6. Le clip D-Log M cambiano: medi circa 0,1 stop più scuri, luci alte più aperte, colori
+  diversi (verdi meno spinti, blu più). Misura di una sola camera: per le altre D-Log M è la stima migliore, non una taratura (`docs/DJI_LOG.md`).
+- **Tone mapping con uscita di scena**: con un rendering (ACES 2.0, Filmico, OpenDRT...) Spazio colore e Gamma di
+  scena come DaVinci WG / DaVinci Intermediate non vengono più sostituiti da Rec.709 / Gamma 2.4. L'immagine resa per
+  Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer, ...): un CST verso Rec.709 / Gamma 2.4
+  senza tone mapping la riporta identica. Uscite di schermo (Rec.709, P3, Rec.2020) invariate bit per bit.
+- **Guide illustrate**: guida italiana e inglese riscritte in 10 pagine, con una prima pagina che riassume tutte le
+  funzioni, grafici calcolati dai modelli del programma (`tools/make_guide_figures.py`) e spiegazioni scientifiche.
+  README, wiki e crediti aggiornati.
+
 ## Log MetaRaw 3.1.2
 
 - **DJI D-Log M**: curva di Thatcher Freeman confermata dall'asse neutro della LUT ufficiale DJI (usata come
