@@ -32,8 +32,8 @@ echo "== python: $(python3 --version)"
 python3 - "$PLUGIN" <<'PY'
 import ctypes, sys
 lib = ctypes.CDLL(sys.argv[1])
-assert lib.OfxGetNumberOfPlugins() == 2, 'expected the two nodes'
-print('plugin loads, 2 nodes')
+assert lib.OfxGetNumberOfPlugins() == 3, 'expected the three nodes'
+print('plugin loads, 3 nodes')
 PY
 # the library runs on this python3 (Rocky/RHEL 8: 3.6)
 python3 - <<'PY'
