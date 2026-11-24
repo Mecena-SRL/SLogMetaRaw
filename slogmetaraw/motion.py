@@ -167,7 +167,8 @@ def read(path, fps=None, deadline=None):
 def gcsv(motion):
     """Gyroflow's IMU log: raw integers, scaled by gscale (to deg/s) and ascale (to g).
 
-    Each frame's readings are spread evenly over that frame, as telemetry-parser times them."""
+    Readings are evenly spaced over the frames read, as telemetry-parser times them: a frame
+    with one reading less (FX6 MXF, every ~20 frames) does not shift the others."""
     fps = motion.get('fps') or 25.0
     gscale = motion.get('gyro_scale') or 1.0
     if motion.get('gyro_rad'):
@@ -181,12 +182,13 @@ def gcsv(motion):
     if motion.get('readout_ms'):
         lines += ['frame_readout_time,%g' % motion['readout_ms'], 'frame_readout_direction,0']
     lines += ['tscale,0.000001', 'gscale,%r' % gscale, 'ascale,%r' % ascale, 't,gx,gy,gz,ax,ay,az']
-    for i, (g, a) in enumerate(zip(motion['gyro'], motion['accel'])):
-        n = len(g)
+    dt = len(motion['gyro']) / fps / max(1, motion['gyro_samples']) * 1e6   # µs per reading
+    k = 0
+    for g, a in zip(motion['gyro'], motion['accel']):
         for j, v in enumerate(g):
-            t = round((i + j / n) / fps * 1e6)
-            acc = a[min(len(a) - 1, j * len(a) // n)] if a else (0, 0, 0)
-            lines.append('%d,%d,%d,%d,%d,%d,%d' % ((t,) + v + acc))
+            acc = a[min(len(a) - 1, j * len(a) // len(g))] if a else (0, 0, 0)
+            lines.append('%d,%d,%d,%d,%d,%d,%d' % ((round(k * dt),) + v + acc))
+            k += 1
     return '\n'.join(lines) + '\n'
 
 
