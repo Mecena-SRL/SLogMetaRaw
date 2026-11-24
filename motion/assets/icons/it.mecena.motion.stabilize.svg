@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262a31"/><stop offset="1" stop-color="#121418"/>
+    </linearGradient>
+    <linearGradient id="ac" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6ff2e4"/><stop offset="1" stop-color="#1fa8b8"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)"/>
+  <rect x="8.5" y="8.5" width="239" height="239" rx="55.5" fill="none" stroke="#ffffff" stroke-opacity=".08"/>
+  <!-- three gimbal axes -->
+  <ellipse cx="128" cy="128" rx="78" ry="78" fill="none" stroke="url(#ac)" stroke-width="10"/>
+  <ellipse cx="128" cy="128" rx="78" ry="26" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="5"/>
+  <ellipse cx="128" cy="128" rx="26" ry="78" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="5"/>
+  <!-- locked horizon -->
+  <line x1="34" y1="128" x2="222" y2="128" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="128" cy="128" r="17" fill="#121418" stroke="url(#ac)" stroke-width="8"/>
+  <circle cx="128" cy="128" r="5" fill="#ffffff"/>
+</svg>

@@ -1,6 +1,6 @@
 # Dati di movimento, Stabilize e Shutter in un solo pacchetto
 
-Stato: fase 1 fatta (acquisizione profonda con MecenaClipDB), fase 2 in corso (categoria e installer fatti), fase 3 da fare.
+Stato: fasi 1 e 2 fatte (acquisizione profonda, un solo pacchetto macOS), fase 3 da fare.
 
 ## Decisione (24/11/2026, Ivan)
 
@@ -32,26 +32,20 @@ letture per fotogramma a 2000 Hz; FX30 MP4 25p, 80): accelerometro a riposo 0,99
   clip non ha dati di movimento, la clip si legge come prima e compare un avviso.
 - Resolve: gli script non possono assegnare dati di giroscopio a una clip, quindi i dati restano nel database.
 
-## Fase 2: un solo pacchetto
+## Fase 2: un solo pacchetto (fatta, da provare su Mac)
 
-GyroMotion oggi: Stabilize (fork di gyroflow-ofx, Rust, core Gyroflow con patch) e Shutter (C++/Metal) stanno in un
-binario OFX, solo macOS, categoria «Mecena Motion», con un installer suo.
-
-Piano, nell'ordine:
-1. Categoria OFX comune: Stabilize e Shutter in **Log MetaRaw** (`set_grouping` in `gyroflow.rs`,
-   `kOfxImageEffectPluginPropGrouping` in `plugin.cpp`). I due effetti restano nel loro bundle: gli identificativi
-   restano gli stessi, così i progetti salvati non si rompono.
-   PR Mecena-SRL/GyroMotion#7. Fino alla release successiva di GyroMotion il pkg porta la 0.11.0, che è ancora in
-   «Mecena Motion».
-2. Fatto: un installer unico per macOS. `packaging/build_installer.sh` scarica lo zip del bundle di una release
-   GyroMotion, fissata come `MOTION_VERSION` più `MOTION_SHA256`, e lo installa come secondo componente
-   (`it.mecena.motion.pkg`, la stessa ricevuta del pkg di GyroMotion) con i suoi script (`packaging/motion-scripts`).
-   Il disinstallatore toglie bundle, script e `mecena-clipdb` e lascia il MecenaClipDB. Solo Apple silicon. Per
-   aggiornare Motion si cambiano versione e digest.
-3. I sorgenti di GyroMotion entrano in questo repository (`motion/`) con la loro CI macOS. Linux e Windows vengono
-   dopo: il core Gyroflow compila anche lì, ma Shutter Metal no (c'è il percorso CPU).
-
-Da decidere con Ivan prima del punto 3: mantenere la storia git di GyroMotion (subtree) o copiare i file e basta.
+- Sorgenti di GyroMotion copiati in `motion/` senza storia (scelta di Ivan: verranno riscritti molto). Stabilize è un
+  fork di gyroflow-ofx (Rust, core Gyroflow con le patch di `motion/release/*.patch`), Shutter è in C++/Metal.
+  Entrambi stanno in un solo binario OFX, solo macOS.
+- La categoria OpenFX è **Log MetaRaw** (`set_grouping` in `motion/vendor/openfx/src/gyroflow.rs`,
+  `kOfxImageEffectPluginPropGrouping` in `motion/src/plugin.cpp`). Gli identificativi non cambiano.
+- Build: `motion/release/build-mac.sh`. La CI la lancia in `.github/workflows/motion.yml` quando cambia `motion/`.
+  `packaging/build_installer.sh` la lancia e mette il bundle nel pkg come secondo componente (`it.mecena.motion.pkg`,
+  la stessa ricevuta del pkg separato), con gli script `motion/release/installer/{pre,post}install`. La versione di
+  Motion viene da `motion/release/Info.plist`.
+- Il disinstallatore toglie bundle, script e `mecena-clipdb`, e lascia il MecenaClipDB.
+- Restano da fare: Linux e Windows (il core Gyroflow compila anche lì, Shutter ha già il percorso CPU) e una
+  versione unica per i due prodotti.
 
 ## Fase 3: DJI Action 4
 

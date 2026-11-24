@@ -29,6 +29,11 @@ Regole:
 - Verificare sul prodotto reale: diagrammi e mock non sostituiscono build, controlli e test.
 - JEV è facoltativo: non certifica correttezza né autorizza operazioni.
 
+## Mecena Motion
+Stabilize, Shutter e `mecena-clipdb` stanno in `motion/` (Rust + C++, solo macOS): build e test con
+`bash motion/release/build-mac.sh`, CI `.github/workflows/motion.yml`. Istruzioni e limiti: `motion/LEGGIMI.md`,
+`docs/dev/STABILIZE.md`.
+
 ## Atlante della logica
 ```
 python3 tools/atlas/atlas.py --run-tests   # genera build/atlas/index.html (aprire nel browser)

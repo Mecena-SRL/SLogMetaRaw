@@ -7,9 +7,10 @@
   tempo di lettura del sensore e obiettivo di ogni fotogramma nel **MecenaClipDB**, lo stesso database che legge
   Mecena Stabilize. Tutte le camere che Gyroflow conosce (Sony, DJI, GoPro…). Senza Mecena Motion la clip si legge
   come prima, con un avviso. Più lenta: limite 180 s per clip.
-- **Un solo installer per macOS**: il pkg di Log MetaRaw installa anche Mecena Motion (Mecena Stabilize, Mecena
-  Shutter, `mecena-clipdb` e lo script Mecena ClipDB), preso dalla release di GyroMotion e verificato con il suo
-  digest. Solo Mac con Apple silicon. Il disinstallatore toglie anche Mecena Motion e lascia il MecenaClipDB.
+- **Un solo pacchetto**: i sorgenti di Mecena Motion (Mecena Stabilize, Mecena Shutter, `mecena-clipdb`, script
+  Mecena ClipDB) entrano nel repository in `motion/`, e il pkg di Log MetaRaw per macOS li compila e li installa
+  insieme. Stabilize e Shutter compaiono nella categoria OpenFX **Log MetaRaw**. Solo Mac con Apple silicon. Il
+  disinstallatore toglie anche Mecena Motion e lascia il MecenaClipDB.
 
 ## Log MetaRaw 3.2.1
 

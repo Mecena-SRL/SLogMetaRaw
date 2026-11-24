@@ -1,0 +1,27 @@
+name: Mecena Motion
+# Stabilize, Shutter and mecena-clipdb (motion/): Rust with the Gyroflow core, macOS only. Built and tested by
+# motion/release/build-mac.sh (bundle checks, Shutter host and cinema tests, Metal against CPU) when motion/ changes.
+on:
+  pull_request:
+    paths: ['motion/**', '.github/workflows/motion.yml']
+  push:
+    branches: [main]
+    paths: ['motion/**', '.github/workflows/motion.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: bash motion/release/build-mac.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MecenaMotion-macOS
+          path: |
+            motion/dist/*.zip
+            motion/dist/*.pkg
+            motion/dist/*.txt

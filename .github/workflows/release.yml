@@ -47,12 +47,14 @@ jobs:
     # one at the commit CMakeLists.txt pins (the one the macOS CI tests run against), laid out as Resolve's Developer
     # folder, with compat/ofxImageEffectExt.h standing in for Resolve's extension header.
     runs-on: macos-15    # the Metal code needs the macOS 15 SDK, as in ci.yml
-    timeout-minutes: 30
+    timeout-minutes: 60  # Mecena Motion compiles the Gyroflow core (motion/release/build-mac.sh)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Rust for Mecena Motion
+        run: rustup update stable && rustup default stable
       - name: OpenFX SDK in the Resolve layout
         run: |
           COMMIT="$(sed -n 's/^ *GIT_TAG \([0-9a-f]\{40\}\).*/\1/p' ofx/SLogMetaRaw/CMakeLists.txt)"

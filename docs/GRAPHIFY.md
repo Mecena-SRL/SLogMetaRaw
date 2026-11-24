@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.2.0; dalla 3.1.0 si aggiunge solo `develop/NoiseMask`, poi `clipdb.py` (acquisizione profonda). Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 3.2.0; dalla 3.1.0 si aggiunge solo `develop/NoiseMask`, poi `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Shutter, Rust + C++, build separata in `motion/release/build-mac.sh`). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)

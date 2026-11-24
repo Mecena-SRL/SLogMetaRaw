@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Deep acquisition: the clip's motion and lens data, read by Mecena Motion's mecena-clipdb.
 
-One database for the script and for Stabilize: MecenaClipDB (format in GyroMotion,
-vendor/common/src/clipdb.rs). mecena-clipdb reads every camera Gyroflow knows (Sony, DJI,
+One database for the script and for Stabilize: MecenaClipDB (format in
+motion/vendor/common/src/clipdb.rs). mecena-clipdb reads every camera Gyroflow knows (Sony, DJI,
 GoPro, Insta360, Blackmagic...) with Gyroflow's parser and calibrations and writes, per clip,
 clips/<id>/ with gyro.gyroflow, imu.csv, orientation.csv, lens.csv, frames.csv and clip.json.
 This module only runs it and reports what it wrote; database and tool are found the way the

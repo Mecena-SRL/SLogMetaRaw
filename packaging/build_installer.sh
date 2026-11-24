@@ -10,11 +10,10 @@ PKG_DIR="$ROOT/packaging"
 VERSION="$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import slogmetaraw; print(slogmetaraw.__version__)' "$ROOT")"
 BUILD="$ROOT/build/installer"
 DIST="$ROOT/dist"
-# Mecena Motion (Stabilize, Shutter, mecena-clipdb), the same package as Log MetaRaw: the bundle of a
-# Mecena-SRL/GyroMotion release, checked against its digest. Apple silicon only.
-MOTION_VERSION=0.11.0
-MOTION_SHA256=cf69111c317672ffe07be6778e4f1c0806ed313ec8e5fd4cebd7c7d6b7d09fb6
-MOTION_URL="https://github.com/Mecena-SRL/GyroMotion/releases/download/v$MOTION_VERSION/MecenaMotion-$MOTION_VERSION-arm64.zip"
+# Mecena Motion (Stabilize, Shutter, mecena-clipdb), the same package as Log MetaRaw: built from motion/
+# (Rust and the Gyroflow core, see motion/release/build-mac.sh). Apple silicon only.
+MOTION="$ROOT/motion"
+MOTION_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$MOTION/release/Info.plist")"
 rm -rf "$BUILD" && mkdir -p "$BUILD/root" "$BUILD/resources" "$BUILD/dmg" "$DIST"
 
 echo "1/6 plugin"
@@ -80,21 +79,20 @@ find "$R" -name ".DS_Store" -delete
 xattr -rc "$R"
 
 M="$BUILD/motion-root"
-mkdir -p "$M/Library/OFX/Plugins"
-curl -fsSL -o "$BUILD/motion.zip" "$MOTION_URL"
-echo "$MOTION_SHA256  $BUILD/motion.zip" | shasum -a 256 -c - >/dev/null
-ditto -x -k "$BUILD/motion.zip" "$M/Library/OFX/Plugins/"
-[[ -d "$M/Library/OFX/Plugins/MecenaMotion.ofx.bundle" ]] || { echo "ERRORE: MecenaMotion.ofx.bundle assente nello zip" >&2; exit 1; }
+mkdir -p "$M/Library/OFX/Plugins" "$BUILD/motion-scripts"
+bash "$MOTION/release/build-mac.sh" > "$BUILD/motion-build.log" 2>&1 || { tail -40 "$BUILD/motion-build.log" >&2; exit 1; }
+ditto -x -k "$MOTION/dist/MecenaMotion-$MOTION_VERSION-$(uname -m).zip" "$M/Library/OFX/Plugins/"
+cp "$MOTION/release/installer/preinstall" "$MOTION/release/installer/postinstall" "$BUILD/motion-scripts/"
 
 echo "4/6 pacchetto"
 # a checkout that lost the mode bit would ship a package whose scripts execve cannot run
 chmod +x "$PKG_DIR/scripts/preinstall" "$PKG_DIR/scripts/postinstall" \
-         "$PKG_DIR/motion-scripts/preinstall" "$PKG_DIR/motion-scripts/postinstall"
+         "$BUILD/motion-scripts/preinstall" "$BUILD/motion-scripts/postinstall"
 pkgbuild --root "$R" --install-location / --identifier com.slogmetaraw.pkg --version "$VERSION" \
          --scripts "$PKG_DIR/scripts" "$BUILD/SLogMetaRaw-component.pkg" > "$BUILD/pkgbuild.log" 2>&1
 # the receipt of Mecena Motion's own installer: either one updates the other
 pkgbuild --root "$M" --install-location / --identifier it.mecena.motion.pkg --version "$MOTION_VERSION" \
-         --scripts "$PKG_DIR/motion-scripts" "$BUILD/MecenaMotion-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
+         --scripts "$BUILD/motion-scripts" "$BUILD/MecenaMotion-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
 cp "$PKG_DIR/resources/"* "$BUILD/resources/"
 # the version lives in slogmetaraw/__init__.py alone: substitute it into the
 # installer pages too, so they cannot announce a different one from the disk

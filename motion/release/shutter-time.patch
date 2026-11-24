@@ -1,0 +1,46 @@
+--- a/src/core/gyro_source/mod.rs
++++ b/src/core/gyro_source/mod.rs
+@@ -481,6 +481,9 @@
+         let mut lens_params = BTreeMap::new();
+         let mut frame_readout_direction_tag: Option<i32> = None;
+         let mut additional_data = serde_json::Value::Object(serde_json::Map::new());
++        let mut shutter_min = f64::INFINITY;
++        let mut shutter_max: f64 = 0.0;
++        let mut shutter_count = 0usize;
+ 
+         if input.camera_type() == "BlackBox" {
+             if let Some(ref mut samples) = input.samples {
+@@ -646,6 +649,19 @@
+                             }
+                         }
+                     }
++                    // Only publish a clip exposure when independently reported samples agree.
++                    // RTMD's Imager ExposureTime is in milliseconds; ShutterSpeed is seconds as a rational.
++                    let speed_ms = tag_map.get(&GroupId::Exposure)
++                        .and_then(|g| g.get_t(TagId::ShutterSpeed) as Option<&(u32, u32)>)
++                        .and_then(|&(n, d)| (n > 0 && d > 0 && n != u32::MAX && d != u32::MAX).then(|| 1000.0 * f64::from(n) / f64::from(d)));
++                    let sony_ms = || tag_map.get(&GroupId::Imager)
++                        .and_then(|g| g.get_t(TagId::ExposureTime) as Option<&f64>).copied();
++                    let exposure_ms = speed_ms.or_else(|| if input.camera_type() == "Sony" { sony_ms() } else { None });
++                    if let Some(ms) = exposure_ms.filter(|ms| ms.is_finite() && *ms > 0.0 && *ms <= 1000.0) {
++                        shutter_min = shutter_min.min(ms);
++                        shutter_max = shutter_max.max(ms);
++                        shutter_count += 1;
++                    }
+                     let additional_data = additional_data.as_object_mut().unwrap();
+                     if !additional_data.contains_key("recording_settings") {
+                         let mut settings = serde_json::Map::new();
+@@ -812,6 +828,13 @@
+         // Canon's cameras that don't write their readout time: corrected, and timed (`canon::get_time_offset`), with a typical one
+         let frame_readout_time = frame_readout_time.or((input.camera_type() == "Canon").then_some(canon::DEFAULT_READOUT_MS));
+ 
++        if let Some(object) = additional_data.as_object_mut() {
++            let key = "mecena_stable_exposure_ms";
++            object.remove(key);
++            if shutter_count >= 3 && shutter_max-shutter_min <= (0.015*shutter_min).max(0.015) {
++                object.insert(key.into(), ((shutter_min+shutter_max) * 0.5).into());
++            }
++        }
+         let mut md = FileMetadata {
+             imu_orientation,
+             detected_source: Some(detected_source),
