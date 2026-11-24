@@ -6,6 +6,7 @@
 #include "ofxsImageEffect.h"
 
 #include "../common/UpdateBadge.h"
+#include "../develop/ClipMeta.h"
 #include "NoiseProfiles.h"
 
 const int kNoiseSettingsVersion = 1;
@@ -33,7 +34,7 @@ public:
     void beginEdit() override;
 
 private:
-    void syncClip();
+    void syncClip(MetaMode p_Mode);
     int inputGamma() const;                           // -1: unknown, the node stays neutral
     int radiusAt(double p_Time) const;
     NoiseModel modelAt(double p_Time, int p_FrameWidth) const;
@@ -68,6 +69,7 @@ private:
 
     mutable std::mutex m_Mutex;                       // the clip's recording, read by every render
     NoiseSource m_Source;
+    std::string m_ReadStatus;                         // why the camera data are missing; empty when read
     NoiseProfile m_MeasuredProfile;                   // parsed from the hidden parameter
 };
 

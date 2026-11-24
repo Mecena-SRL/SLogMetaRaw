@@ -13,7 +13,7 @@ import unicodedata
 from . import camera, datalevel, paths, resolve_io
 
 CACHE_DIR = os.path.join(paths.support_dir(), 'cache')
-VERSION = 6   # the plugin re-reads older records
+VERSION = 7   # the plugin re-reads older records (7: noise_* fields for the Noise node)
 
 
 def fnv1a64(text):

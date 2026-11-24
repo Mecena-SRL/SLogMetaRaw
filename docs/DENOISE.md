@@ -33,7 +33,9 @@ singolo coefficiente a quella sul vicinato: errore solo spaziale da 0,0088 a 0,0
 
 1. **Profilo**: per 16 livelli di luminosità e 5 bande (1, 2, 4, 8, 16 px) il rumore atteso, separato per
    luminanza e colore. Tre modi:
-   - *Automatico*: dal modello della camera e del formato (sotto);
+   - *Automatico*: dal modello della camera e del formato (sotto), letti dal file della clip con lo stesso lettore di
+     Log MetaRaw: all'apertura del pannello se la clip non ha ancora i dati, o con il pulsante **Leggi dati camera**
+     (rilegge e scrive anche nel Media Pool, come *Rileggi metadata*);
    - *Misurato*: il pulsante **Misura dal fotogramma** legge il fotogramma corrente; per ogni luminosità e banda
      prende i blocchi più uniformi (15° percentile). Serve un fotogramma con zone piatte (cielo, muri, fuori fuoco)
      a più luminosità. Le bande grosse mancanti si ricavano dal rapporto delle altre;
@@ -94,8 +96,8 @@ vecchia Maschera rumore (stop sotto il grigio dove il rumore inizia e dove è pi
 ## In Resolve
 
 1. Nodo **Log MetaRaw Noise** prima del nodo Log MetaRaw (o di CST/LUT), sull'immagine della camera.
-2. Lascia Profilo su Automatico se la clip ha il record dello script (la riga *Da* dice camera, formato e ISO usati);
-   altrimenti scegli un fotogramma con zone uniformi e premi **Misura dal fotogramma**.
+2. Lascia Profilo su Automatico e premi **Leggi dati camera** (la riga *Da* dice camera, formato e ISO usati, o
+   perché mancano); se la clip non ha dati di camera scegli un fotogramma con zone uniformi e premi **Misura dal fotogramma**.
 3. Regola *Livello rumore* (quanto rumore il filtro si aspetta), poi Luminanza e Colore. *Vista: Rumore rimosso*
    mostra cosa toglie: deve sembrare grana senza contorni.
 4. **Salta Noise ovunque**: spegne tutti i nodi Noise del progetto finché non lo ripremi o riapri Resolve. Prima

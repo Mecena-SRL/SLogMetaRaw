@@ -124,7 +124,7 @@ NoiseEffect::NoiseEffect(OfxImageEffectHandle p_Handle)
         std::string text;
         m_Measured->getValue(text);
         m_MeasuredProfile = noiseProfileFromText(text);
-        syncClip();
+        syncClip(MetaMode::CacheOnly);
         m_Badge.attach(*this);
     } catch (...) {
     }
@@ -140,15 +140,27 @@ NoiseEffect::~NoiseEffect()
     }
 }
 
-void NoiseEffect::syncClip()
+// The clip's camera data come from the same record Log MetaRaw writes: CacheOnly at creation, Read when the panel
+// opens or the clip changes (starts the reader if the clip has no record), Reload from "Leggi dati camera".
+void NoiseEffect::syncClip(MetaMode p_Mode)
 {
     const std::string path = getPropertySet().propGetString(kOfxImageEffectPropSrcFilePath, false);
     std::map<std::string, std::string> record;
     NoiseSource src;
-    if (!path.empty() && readClipRecord(path, record)) src = noiseSourceFromRecord(record);
+    std::string status;
+    if (path.empty()) {
+        status = "Resolve non ha fornito il percorso della clip (compound clip?)";
+    } else {
+        ClipMeta meta;
+        if (acquireMeta(path, p_Mode, meta, status) == MetaOutcome::Found && readClipRecord(path, record)) {
+            src = noiseSourceFromRecord(record);
+            status.clear();
+        }
+    }
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
         m_Source = src;
+        m_ReadStatus = status;
     }
     std::string bound;
     m_BoundPath->getValue(bound);
@@ -366,7 +378,11 @@ void NoiseEffect::refreshInfo()
     std::string cur;
     m_Info->getValue(cur);
     if (cur != text) m_Info->setValue(text);
-    const std::string info = gamma < 0 ? std::string("—") : modelAt(t, 0).info;
+    std::string info = gamma < 0 ? std::string("—") : modelAt(t, 0).info;
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        if (!m_ReadStatus.empty()) info = m_ReadStatus + " · " + info;
+    }
     m_ProfileInfo->getValue(cur);
     if (cur != info) m_ProfileInfo->setValue(info);
 }
@@ -375,7 +391,7 @@ void NoiseEffect::beginEdit()
 {
     if (!m_Ready) return;
     try {
-        syncClip();
+        syncClip(MetaMode::Read);
         m_Badge.refresh(true);
     } catch (...) {
     }
@@ -385,7 +401,7 @@ void NoiseEffect::changedClip(const OFX::InstanceChangedArgs&, const std::string
 {
     if (!m_Ready) return;
     try {
-        if (p_ClipName == kOfxImageEffectSimpleSourceClipName) syncClip();
+        if (p_ClipName == kOfxImageEffectSimpleSourceClipName) syncClip(MetaMode::Read);
         m_Badge.refresh(false);
     } catch (...) {
     }
@@ -402,6 +418,8 @@ void NoiseEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const std
         if (p_ParamName == "skipAll") {
             skipFlag().store(!skipFlag().load());
             refreshInfo();
+        } else if (p_ParamName == "readCamera") {
+            syncClip(MetaMode::Reload);
         } else if (p_ParamName == "measure") {
             measure(p_Args.time);
         } else if (p_ParamName == "measuredProfile") {

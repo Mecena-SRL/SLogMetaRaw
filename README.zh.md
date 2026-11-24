@@ -40,7 +40,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-4.0.0.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-4.0.1.dmg` 并打开。
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -101,7 +101,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v4.0.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v4.0.1`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
@@ -171,7 +171,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 它们处理摄影机画面，位于 **Log MetaRaw** 之前。
 
 - **Log MetaRaw Noise** 知道该预期多少噪声、出现在哪里。它从脚本记录中读取摄影机、ISO（或 EI 与原生 ISO）、编码、每像素
-  比特数与 4:2:0，并为 Sony FX6、FX30、iPhone 17 Pro、DJI Osmo Action 4 和 5 Pro 提供配置。也可以从含平坦区域的帧中
+  比特数与 4:2:0，并为 Sony FX6、FX30、iPhone 17 Pro、DJI Osmo Action 4 和 5 Pro 提供配置。按钮 **Leggi dati camera** 会从文件重新读取这些数据（打开面板时如缺失会自动读取）。也可以从含平坦区域的帧中
   测量噪声。
   - *时域*：±1 至 ±3 个相邻帧，按块对齐并逐像素加权，运动部分和剪辑点不会糊在一起。
   - *空域*：亮度与色彩分开处理，分 5 个小波频带。每个系数与其邻域的能量比较，从而保留纹理。
@@ -187,7 +187,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.0.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.0.1`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
