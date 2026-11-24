@@ -7,6 +7,7 @@
 #define SM_CONST constant
 #define SM_CPTR constant float*
 #define SM_CREF(T) constant T&
+#define SM_OUT(T) thread T&
 // Metal's default math functions stay fast even under MTLMathModeSafe: parity needs precise::.
 #define SM_POW precise::pow
 #define SM_LOG2 precise::log2
@@ -26,6 +27,7 @@
 #define SM_CONST static const
 #define SM_CPTR const float*
 #define SM_CREF(T) const T&
+#define SM_OUT(T) T&
 #define SM_POW powf
 #define SM_LOG2 log2f
 #define SM_LOG10 log10f

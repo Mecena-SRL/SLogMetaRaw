@@ -54,6 +54,26 @@ class OfxMath(unittest.TestCase):
             out = subprocess.run(cmd + probe, capture_output=True, text=True, check=True).stdout
             self.assertEqual(float(out), 0.0, ' '.join(cmd))
 
+    def test_the_noise_mask_writes_only_the_alpha(self):
+        """Maschera rumore: the RGB stays bit-identical (Rec.709 too, with every rendering), the alpha is 0 above the
+        edge, 1 a fade below it, smoothstep between; Vedi maschera shows exactly that value."""
+        rnd = random.Random(7)
+        cases = []
+        for drt in range(6):
+            for _ in range(60):
+                r, g, b = (rnd.uniform(0.0, 1.0) for _ in range(3))
+                cases.append((r, g, b, drt, -rnd.uniform(0.0, 5.0), 1.0 / rnd.uniform(0.25, 4.0)))
+        out = self.run_exe(['--noise'], ['%r %r %r %d %r %r' % c for c in cases]).split('\n')
+        for case, line in zip(cases, out):
+            same, mask, view = line.split()
+            self.assertEqual(same, '1', 'RGB changed by the mask: %r' % (case,))
+            self.assertEqual(view, '1', case)
+            self.assertTrue(0.0 <= float(mask) <= 1.0, case)
+        grey = 0.41055718   # S-Log3 code of 18% grey: s = 0
+        for edge, inv, want in ((0.0, 1.0, 0.0), (1.0, 1.0, 1.0), (0.5, 1.0, 0.5), (-1.0, 1.0, 0.0)):
+            line = self.run_exe(['--noise'], ['%r %r %r 0 %r %r' % (grey, grey, grey, edge, inv)])
+            self.assertAlmostEqual(float(line.split()[1]), want, places=3, msg=(edge, inv))
+
     def test_the_eyedropper_makes_the_picked_colour_neutral(self):
         """Punto bianco: Temperatura e Tint risolti dal colore scelto, poi applicati dal render, rendono quel colore
         grigio. Lo dice il render, non una formula riscritta nel test."""

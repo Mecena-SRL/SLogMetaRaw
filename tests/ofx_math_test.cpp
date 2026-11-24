@@ -7,6 +7,9 @@
 //   --dump-tone: outSpace convert expo TONE -> every tone field sm_set_tone writes
 //   --curve lo hi n: expo TONE -> n + 1 lines "e d hl hw" of sm_t5_curve at e = lo..hi (float32), then "end"
 //   --fma a b c: a*b+c, exactly 0 for the probe values only without contraction
+//   --noise: "r g b drt edge invFade" (S-Gamut3.Cine / S-Log3 -> Rec.709 / Gamma 2.4) -> "same mask view":
+//            same = 1 when the RGB with the Maschera rumore on is bit-identical to it off, view = 1 when the
+//            Vedi maschera picture is the mask
 // TONE = contrast highlights shadows whites blacks vibrance saturation zonePivot zoneExp[4] zoneSat[4]
 //        zoneRange[4] zoneFalloff[4] softClip softClipLevel softClipColor   (27 values)
 #include <cstdio>
@@ -85,6 +88,26 @@ int main(int argc, char** argv)
             sm_set_white_balance(&p, shotK, shotT, k, tint);
             const SMf3 o = sm_develop(smf3((float)r, (float)g, (float)b), p);
             printf("%d %.6g %.6g %.9g %.9g %.9g\n", ok, k, tint, o.x, o.y, o.z);
+        }
+        return 0;
+    }
+    if (argc == 2 && !strcmp(argv[1], "--noise")) {
+        double r, g, b, drt, edge, inv;
+        while (scanf("%lf %lf %lf %lf %lf %lf", &r, &g, &b, &drt, &edge, &inv) == 6) {
+            DevelopParams p = {};
+            p.convert = 1;
+            p.nodeSpace = 8; p.nodeGamma = 9; p.outSpace = 1; p.outGamma = 3;
+            p.drt = (int)drt;
+            p.expo = 1.0f; p.ratioL = p.ratioM = p.ratioS = p.norm = 1.0f;
+            const SMf3 in = smf3((float)r, (float)g, (float)b);
+            const SMf3 off = sm_develop(in, p);
+            p.nmOn = 1; p.nmEdge = (float)edge; p.nmInvFade = (float)inv;
+            float mask = -1.0f, viewMask = -1.0f;
+            const SMf3 on = sm_develop_a(in, p, mask);
+            p.nmOn = 2;
+            const SMf3 view = sm_develop_a(in, p, viewMask);
+            printf("%d %.9g %d\n", memcmp(&off, &on, sizeof(SMf3)) == 0 ? 1 : 0, mask,
+                   view.x == mask && view.y == mask && view.z == mask && viewMask == mask ? 1 : 0);
         }
         return 0;
     }

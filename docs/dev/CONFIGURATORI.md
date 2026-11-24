@@ -162,3 +162,8 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   esposizione sulle curve corte (`sm_fc_headroom`), visto su un fotogramma reale di C0001 (Rec.709). Aperto: dettagli
   del problema segnalato in Resolve; toggle false color attivi ma senza effetto con *Camera metadata* o senza
   metadata (nodo trasparente); vista zone con i valori iniziali quasi tutta tinta (Ombre e Luci coprono ogni stop).
+
+Maschera rumore (24/11/2026): gruppo nuovo del Develop, alpha con le zone rumorose per camera, ISO nativo, codec ed
+EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`); RGB invariato, verificato dai test. Da provare in Resolve:
+alpha del nodo come key del nodo Neat Video, Metal non eseguito. Aperto: tarare le costanti stimate (C70, Z8,
+X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.

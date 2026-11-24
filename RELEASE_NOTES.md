@@ -2,6 +2,12 @@
 
 ## Prossima versione
 
+- **Maschera rumore** (nodo Develop, gruppo nuovo): scrive nel canale alpha le zone dove la camera ha rumore all'EI
+  scelto, per far lavorare Neat Video solo lì. Automatica (soglia per camera, ISO nativo, doppio ISO e codec:
+  ProRes RAW e 8 bit la anticipano di mezzo stop) o Personalizzata (Inizio e Sfumatura); ogni stop di EI sopra il
+  nativo la avvicina di uno stop al grigio. *Vedi maschera* la mostra. Colori invariati bit per bit. Dati e fonti:
+  `docs/NOISE.md`. **Non provato in Resolve**: il collegamento alpha → key del nodo Neat Video.
+
 - **Tone mapping con uscita di scena**: con un rendering (ACES 2.0, Filmico, OpenDRT...) Spazio colore e Gamma di
   scena come DaVinci WG / DaVinci Intermediate non vengono più sostituiti da Rec.709 / Gamma 2.4. L'immagine resa per
   Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer, ...): un CST verso Rec.709 / Gamma 2.4

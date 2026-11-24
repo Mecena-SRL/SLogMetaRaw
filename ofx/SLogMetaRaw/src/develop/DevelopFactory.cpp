@@ -164,6 +164,24 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Salva una LUT 3D .cube con White Balance, Exposure, Toni e conversione Color Space / Gamma di "
                  "questo nodo. Ingresso: il segnale che entra nel nodo", output);
 
+    GroupParamDescriptor* noise = defineGroup(d, page, "noiseGroup", "Maschera rumore", false);
+    if (noise) noise->setHint("Per Neat Video e i denoiser: nell'alpha le zone che la camera rende rumorose all'EI "
+                              "scelto. L'immagine non cambia");
+    static const char* noiseOpts[] = { "Spenta", "Automatica", "Personalizzata" };
+    defineChoice(d, page, "noiseMask", "Maschera", noiseOpts, 3, 0,
+                 "Scrive nel canale alpha 1 dove la camera ha rumore e 0 dove è pulita, sfumando; i colori restano "
+                 "identici. Automatica: soglia misurata o stimata per camera, ISO nativo e codec. Personalizzata: "
+                 "Inizio e Sfumatura tuoi. In entrambe la soglia si sposta con l'EI scelto: ogni stop sopra il nativo "
+                 "la avvicina di uno stop al grigio. In Resolve collega l'uscita alpha del nodo all'ingresso key "
+                 "del nodo con Neat Video", noise);
+    const char* noiseHint = "Personalizzata: stop sotto il grigio 18% a cui inizia la maschera all'ISO nativo, e "
+                            "quanti stop servono per arrivare piena. L'EI scelto la sposta come in Automatica";
+    defineSlider(d, page, "noiseStart", "Inizio", 3.0, 0.0, 10.0, 0.0, 8.0, 0.1, noiseHint, noise);
+    defineSlider(d, page, "noiseFade", "Sfumatura", 1.5, 0.25, 4.0, 0.25, 4.0, 0.05, noiseHint, noise);
+    defineCheck(d, page, "noiseView", "Vedi maschera", false,
+                "Mostra la maschera al posto dell'immagine (bianco = zona da pulire). Solo per controllarla", noise);
+    defineInfo(d, page, noise, "noiseInfo", "Soglia");
+
     GroupParamDescriptor* tones = defineGroup(d, page, "tonesGroup", "Toni", true);
     GroupParamDescriptor* zones = defineGroup(d, page, "zonesGroup", "Zone", false);
     defineToneParams(d, page, tones, zones);

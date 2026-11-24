@@ -112,6 +112,7 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
     if (path.empty()) {
         m_Outcome = MetaOutcome::Missing;
         m_CameraName.clear();
+        m_NoiseCamera = noiseCamera(-1, "", "");
         m_Detail = "Resolve non ha fornito il percorso della clip (compound clip?)";
         updateEnabledness();
         refreshNodeInfo();
@@ -140,6 +141,7 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
     if (m_Outcome != MetaOutcome::Found) {
         setIfDifferent(m_MetaValid, false);
         m_CameraName.clear();
+        m_NoiseCamera = noiseCamera(-1, "", "");
         for (int i = 0; i < kDetailCount; ++i) setText(m_Details[i], "—");
         setText(m_Details[kDetailCount - 1], path.substr(path.find_last_of("/\\") + 1));
         if (!sameClip) {   // decoding facts of another clip must not follow a copied node
@@ -155,6 +157,7 @@ void DevelopEffect::syncMetadata(MetaMode p_Mode)
     }
 
     m_CameraName = meta.fields["camera_name"];
+    m_NoiseCamera = noiseCamera(meta.camGamma, meta.fields["model"], meta.fields["noise_codec"]);
     for (int i = 0; i < kDetailCount; ++i) {
         auto it = meta.fields.find(kDetails[i].key);
         setText(m_Details[i], it != meta.fields.end() && !it->second.empty() ? it->second : "—");
@@ -246,10 +249,11 @@ void DevelopEffect::composeStatus()
 void DevelopEffect::refreshNodeInfo()
 {
     DevelopParams p;
-    std::string info, level;
-    buildParams(0.0, p, &info, &level);
+    std::string info, level, noise;
+    buildParams(0.0, p, &info, &level, &noise);
     if (!info.empty()) setText(m_NodeInfo, info);
     if (!level.empty()) setText(m_LevelInfo, level);
+    setText(m_NoiseInfo, noise);
     composeStatus();
 }
 
@@ -267,6 +271,14 @@ void DevelopEffect::updateEnabledness()
     for (OFX::DoubleParam* g : m_GamutParams) {
         g->setEnabled(on);
         g->setIsSecret(gc != 2);
+    }
+    int noise = 0;
+    m_NoiseMask->getValue(noise);
+    m_NoiseMask->setEnabled(on);
+    m_NoiseView->setEnabled(on && noise != 0);
+    for (OFX::DoubleParam* n : { m_NoiseStart, m_NoiseFade }) {
+        n->setEnabled(on);
+        n->setIsSecret(noise != 2);
     }
     for (const std::string& name : toneParamNames()) getParam(name)->setEnabled(on);
     refreshToneVisibility(*this, m_Tones, m_TonesMore->getValue());

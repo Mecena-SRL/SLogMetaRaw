@@ -36,8 +36,9 @@ public:
             for (int x = p_ProcWindow.x1; x < p_ProcWindow.x2; ++x, dst += 4) {
                 if (row && x >= sx1 && x < sx2) {
                     const float* src = row + (size_t)(x - sx1) * 4;
-                    SMf3 o = sm_develop(smf3(src[0], src[1], src[2]), _params);
-                    dst[0] = o.x; dst[1] = o.y; dst[2] = o.z; dst[3] = src[3];
+                    float mask;
+                    SMf3 o = sm_develop_a(smf3(src[0], src[1], src[2]), _params, mask);
+                    dst[0] = o.x; dst[1] = o.y; dst[2] = o.z; dst[3] = _params.nmOn != 0 ? mask : src[3];
                 } else {
                     dst[0] = dst[1] = dst[2] = dst[3] = 0.0f;
                 }
