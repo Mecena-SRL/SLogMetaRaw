@@ -22,10 +22,10 @@ LDFLAGS = -bundle -fvisibility=hidden $(ARCH_FLAGS) -framework Metal -framework 
 
 BUNDLE = SLogMetaRaw.ofx.bundle
 BUILD = build
-RESOURCES = com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png fc_exposure.png fc_temperature.png fc_tint.png \
+RESOURCES = com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png com.slogmetaraw.SLogMetaRawNoise.png fc_exposure.png fc_temperature.png fc_tint.png \
             fc_zones.png view_gain.png view_base.png view_zones.png view_zones_grey.png
 SUPPORT_SRCS = ofxsCore ofxsImageEffect ofxsInteract ofxsLog ofxsMultiThread ofxsParams ofxsProperty ofxsPropertyValidation
-CPP_SRCS = $(wildcard src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
+CPP_SRCS = $(wildcard src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp src/noise/*.cpp)
 MM_SRCS = $(wildcard metal/*.mm)
 OBJS = $(CPP_SRCS:%.cpp=$(BUILD)/%.o) $(MM_SRCS:%.mm=$(BUILD)/%.o) $(SUPPORT_SRCS:%=$(BUILD)/support/%.o)
 GEN = gen/DevelopMath.h gen/MetalSource.inc gen/GamutMatrices.h gen/Aces2Tables.h
@@ -72,7 +72,8 @@ TEST_BIN = $(BUILD)/tests
 # the OFX-free part of src/common
 TEST_OBJS_COMMON = $(filter $(addprefix $(BUILD)/src/common/,Files.o FlatJson.o Child.o Version.o),$(OBJS))
 TESTS = $(TEST_BIN)/ofx_math_test $(TEST_BIN)/metal_test $(TEST_BIN)/host_test $(TEST_BIN)/common_test \
-        $(TEST_BIN)/detail_test $(TEST_BIN)/detail_metal_test
+        $(TEST_BIN)/detail_test $(TEST_BIN)/detail_metal_test $(TEST_BIN)/noise_test \
+        $(TEST_BIN)/noise_metal_test
 
 test-bins: $(TESTS)
 
@@ -97,8 +98,18 @@ $(TEST_BIN)/detail_test: ../../tests/detail_test.cpp $(BUILD)/src/detail/DetailP
 	@mkdir -p $(TEST_BIN)
 	$(CXX) $< $(BUILD)/src/detail/DetailPasses.o -o $@ $(filter-out -MMD -MP,$(CXXFLAGS))
 
+NOISE_TEST_OBJS = $(BUILD)/src/noise/NoiseEngine.o $(BUILD)/src/noise/NoiseProfiles.o
+$(TEST_BIN)/noise_test: ../../tests/noise_test.cpp $(NOISE_TEST_OBJS)
+	@mkdir -p $(TEST_BIN)
+	$(CXX) $< $(NOISE_TEST_OBJS) -o $@ $(filter-out -MMD -MP,$(CXXFLAGS))
+
 $(TEST_BIN)/detail_metal_test: ../../tests/detail_metal_test.mm $(BUILD)/src/detail/DetailPasses.o \
         $(BUILD)/metal/MetalContext.o $(BUILD)/metal/DetailKernels.o
+	@mkdir -p $(TEST_BIN)
+	$(CXX) $^ -o $@ $(filter-out -MMD -MP,$(OBJCFLAGS)) -framework Metal -framework Foundation
+
+$(TEST_BIN)/noise_metal_test: ../../tests/noise_metal_test.mm $(BUILD)/src/noise/NoiseEngine.o \
+        $(BUILD)/metal/MetalContext.o $(BUILD)/metal/NoiseKernels.o
 	@mkdir -p $(TEST_BIN)
 	$(CXX) $^ -o $@ $(filter-out -MMD -MP,$(OBJCFLAGS)) -framework Metal -framework Foundation
 

@@ -81,6 +81,29 @@ def noise_codec(m):
     return 'long' if m.get('v_codec') or m.get('video_codec') else ''
 
 
+def _num(v):
+    """A positive finite number for the flat record, else 0."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return 0
+    return f if f > 0 and f == f and f != float('inf') else 0
+
+
+def noise_format(m):
+    """What the Noise node needs to pick its profile besides the codec class: the gain the camera recorded with,
+    and the stream (bitrate, bit depth, chroma, size, frame rate). 0 or '' = unknown."""
+    return {
+        'noise_iso': _num(m.get('iso')),
+        'noise_bitrate': _num(m.get('bitrate_mbps')),
+        'noise_bit_depth': int(_num(m.get('v_bit_depth'))),
+        'noise_chroma': str(m.get('v_chroma') or m.get('chroma') or ''),
+        'noise_width': int(_num(m.get('v_width') or m.get('width'))),
+        'noise_height': int(_num(m.get('v_height') or m.get('height'))),
+        'noise_fps': _num(m.get('v_fps') or m.get('fps')),
+    }
+
+
 def _record(r):
     """Flat record with the values the plugin shows and uses (strings and numbers only)."""
     m, d = r['meta'], r['display']
@@ -140,6 +163,7 @@ def _record(r):
         'cam_gamma': camera.GAMMA_CODE.get(cam_gamma, -1),
         'model': m.get('model') or '',
         'noise_codec': noise_codec(m),
+        **noise_format(m),
         'color_space': m.get('color_space') or '',
         # shown by the plugin (read-only fields)
         'camera_name': ('%s %s' % (m.get('manufacturer') or '', model)).strip()

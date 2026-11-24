@@ -26,6 +26,7 @@ done
 iconutil -c icns "$ICONSET" -o "$ROOT/assets/SLogMetaRaw.icns"
 cp "$ROOT/assets/effect_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRaw.png"
 cp "$ROOT/assets/detail_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawDetail.png"
+cp "$ROOT/assets/noise_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawNoise.png"
 make -C "$ROOT/ofx/SLogMetaRaw" >/dev/null
 cp "$ROOT/assets/icon_1024.png" "$PKG_DIR/guide/icon.png"
 # the guides carry @VERSION@ like the installer pages: print a substituted copy (with img/, the figures of
