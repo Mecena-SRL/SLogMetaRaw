@@ -162,6 +162,8 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   esposizione sulle curve corte (`sm_fc_headroom`), visto su un fotogramma reale di C0001 (Rec.709). Aperto: dettagli
   del problema segnalato in Resolve; toggle false color attivi ma senza effetto con *Camera metadata* o senza
   metadata (nodo trasparente); vista zone con i valori iniziali quasi tutta tinta (Ombre e Luci coprono ogni stop).
+- 24/11/2026, ricerca DJI (`docs/DJI_LOG.md`, solo documentazione): aperti D-Log2/D-Gamut2 (in Resolve 21.1),
+  D-Log M per famiglia di camere (misure Action 6 / 360 II diverse da Freeman), percorsi `djmd` per schema dei droni.
 
 Maschera rumore (24/11/2026): gruppo nuovo del Develop, alpha con le zone rumorose per camera, ISO nativo, codec ed
 EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`); RGB invariato, verificato dai test. Da provare in Resolve:

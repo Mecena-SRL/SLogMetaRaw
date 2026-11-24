@@ -7,7 +7,10 @@
   ProRes RAW e 8 bit la anticipano di mezzo stop) o Personalizzata (Inizio e Sfumatura); ogni stop di EI sopra il
   nativo la avvicina di uno stop al grigio. *Vedi maschera* la mostra. Colori invariati bit per bit. Dati e fonti:
   `docs/NOISE.md`. **Non provato in Resolve**: il collegamento alpha → key del nodo Neat Video.
-
+- **DJI D-Log M, nuova curva e nuovo gamut**: la curva è la misura della Osmo Action 6 con ColorChecker (tabella a
+  17 nodi, grigio 18% a 0.414 invece di 0.400, luci fino a +4,1 stop invece di +3,7); il gamut è quello che implica la
+  LUT DJI della Action 6. Le clip D-Log M cambiano: medi circa 0,1 stop più scuri, luci alte più aperte, colori
+  diversi (verdi meno spinti, blu più). Misura di una sola camera: per le altre D-Log M è la stima migliore, non una taratura (`docs/DJI_LOG.md`).
 - **Tone mapping con uscita di scena**: con un rendering (ACES 2.0, Filmico, OpenDRT...) Spazio colore e Gamma di
   scena come DaVinci WG / DaVinci Intermediate non vengono più sostituiti da Rec.709 / Gamma 2.4. L'immagine resa per
   Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer, ...): un CST verso Rec.709 / Gamma 2.4

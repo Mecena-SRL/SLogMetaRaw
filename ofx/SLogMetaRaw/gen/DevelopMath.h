@@ -181,18 +181,26 @@ SM_FN float sm_cine_dec(float x, float a, float b, float c, float d, float e, fl
 #define SM_LC4_C 0.0928641251221896f
 #define SM_LC4_S 0.1135972086105891f
 #define SM_LC4_T -0.0180569961199113f
-// DJI D-Log M: DJI publishes no formula, only LUTs. Community fit by Thatcher Freeman (dwg-transforms,
-// Mini 4 Pro footage, 18% grey near code 0.40), on the legal range. Its midtone slope matches the neutral axis of DJI's
-// own D-Log M -> Rec.709 LUT (which adds a display toe and shoulder), so it is kept.
+// DJI D-Log M: DJI publishes no formula, only LUTs, and the curve is not a log (S-shaped, docs/DJI_LOG.md).
+// log2 of scene-linear light at codes i/16, i = 1..16, on the legal range: the Osmo Action 6 curve measured with a
+// ColorChecker exposure series (jens-krause/dlogm-dctl v1.3), 18% grey at code 0.414. Linear in log2 between
+// nodes (0.8/1023 rms from the measured curve), linear to zero below 1/16, constant stops per code above 1.
+SM_CONST float SM_DLOGM[16] = {-7.1430240f, -5.7811094f, -4.7320245f, -3.8868240f, -3.2453822f, -2.7471208f,
+                               -2.3173791f, -1.9180706f, -1.5247973f, -1.1241255f, -0.7105378f, -0.2958065f,
+                               0.1171398f, 0.5602375f, 1.0579305f, 1.6015527f};
 SM_FN float sm_dlogm_dec(float x) {
-    float t = SM_EXP2(x * 5.403507709503174f + 0.9523495435714722f) - 2.4300594329833984f;
-    return (t < 0.5263257622718811f ? t * 0.9165859222412109f + 0.44757312536239624f : t * 1.7669587135314941f)
-           * 0.016361355781555176f;
+    if (x < 0.0625f) return x * 16.0f * SM_EXP2(SM_DLOGM[0]);
+    if (x >= 1.0f) return SM_EXP2(SM_DLOGM[15] + (x - 1.0f) * 16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = (int)(x * 16.0f);
+    return SM_EXP2(SM_DLOGM[i - 1] + (x * 16.0f - (float)i) * (SM_DLOGM[i] - SM_DLOGM[i - 1]));
 }
 SM_FN float sm_dlogm_enc(float y) {
-    float o = y / 0.016361355781555176f;
-    float t = o < 0.9299839f ? (o - 0.44757312536239624f) / 0.9165859222412109f : o / 1.7669587135314941f;
-    return (SM_LOG2(SM_MAX(t + 2.4300594329833984f, 1e-6f)) - 0.9523495435714722f) / 5.403507709503174f;
+    if (y < SM_EXP2(SM_DLOGM[0])) return y / (16.0f * SM_EXP2(SM_DLOGM[0]));
+    float l = SM_LOG2(y);
+    if (l >= SM_DLOGM[15]) return 1.0f + (l - SM_DLOGM[15]) / (16.0f * (SM_DLOGM[15] - SM_DLOGM[14]));
+    int i = 1;
+    while (SM_DLOGM[i] <= l) i++;
+    return ((float)i + (l - SM_DLOGM[i - 1]) / (SM_DLOGM[i] - SM_DLOGM[i - 1])) / 16.0f;
 }
 // HLG: BT.2100 inverse OETF scaled so that BT.2408's 38% signal is 18% grey
 #define SM_HLG_A 0.17883277f
@@ -294,7 +302,7 @@ SM_CONST float SM_RGB_TO_XYZ[180] = {
     0.70485832f, 0.129760295f, 0.115837311f, 0.254524176f, 0.781477733f, -0.036001909f, 0.0f, 0.0f, 1.089057751f,  // 16 AWG4
     0.735275246f, 0.068609411f, 0.146571271f, 0.286694099f, 0.842979134f, -0.129673234f, -0.079680857f, -0.347343217f, 1.516081825f,  // 17 RWG
     0.606538368f, 0.220412735f, 0.123504823f, 0.26799294f, 0.832748409f, -0.100741349f, -0.029442554f, -0.08661243f, 1.205112735f,  // 18 BMDWG5
-    0.470720694f, 0.284452962f, 0.195282271f, 0.173203786f, 0.845688582f, -0.018892368f, -0.017471504f, 0.082878776f, 1.023650479f,  // 19 DJIDLogM
+    0.486885614f, 0.295019105f, 0.168551208f, 0.201495169f, 0.760695444f, 0.037809387f, -0.057204781f, -0.013451746f, 1.159714278f,  // 19 DJIDLogM
 };
 SM_CONST float SM_XYZ_TO_RGB[180] = {
     1.516672042f, -0.281478048f, -0.146963633f, -0.464917101f, 1.251423776f, 0.174884609f, 0.064849047f, 0.109139344f, 0.761414622f,  // 0 DWG
@@ -316,7 +324,7 @@ SM_CONST float SM_XYZ_TO_RGB[180] = {
     1.509215472f, -0.250597345f, -0.168811475f, -0.491545452f, 1.361245546f, 0.097282942f, 0.0f, 0.0f, 0.918224951f,  // 16 AWG4
     1.41280648f, -0.177523201f, -0.151770732f, -0.486203277f, 1.290696427f, 0.157400615f, -0.037139011f, 0.286376f, 0.687679779f,  // 17 RWG
     1.866357736f, -0.518390509f, -0.234606717f, -0.600329854f, 1.378119951f, 0.17672811f, 0.002451481f, 0.086381609f, 0.836767715f,  // 18 BMDWG5
-    2.385295535f, -0.756346959f, -0.46900297f, -0.486737753f, 1.334671865f, 0.117487725f, 0.080120053f, -0.120969503f, 0.959378806f,  // 19 DJIDLogM
+    2.404690317f, -0.938245946f, -0.318905235f, -0.642486407f, 1.564510137f, 0.042371377f, 0.111162915f, -0.028133448f, 0.847042313f,  // 19 DJIDLogM
 };
 
 // ---- math/Gamut.h
