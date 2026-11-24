@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 4.0.0 in sviluppo: aggiunti il nodo `noise/`, `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Motion Blur, Rust + C++, build separata in `motion/release/build-mac.sh`); rimosso `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 4.0.1 (4.0.0: aggiunti il nodo `noise/`, `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Motion Blur, Rust + C++, build separata in `motion/release/build-mac.sh`); rimosso `develop/NoiseMask`; 4.0.1: `noise/NoiseEffect` usa il lettore di `develop/ClipMeta`). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -50,7 +50,7 @@ Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Detail, Nois
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp)
   ├──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
-  └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles
+  └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles, develop/ClipMeta (lettura clip)
                                     (tabella camere e formati, docs/DENOISE.md)
 
 common/  (condiviso dai nodi)

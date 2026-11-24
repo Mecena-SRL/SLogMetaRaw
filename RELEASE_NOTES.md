@@ -6,6 +6,14 @@
   Resolve calcolava 7 fotogrammi a monte, Stabilize compreso, per ognuno). Il contesto lontano si legge solo quando
   serve. Su Mac i buffer Metal restano pronti anche con più render in parallelo. Il calcolo è lo stesso. Da
   provare in Resolve.
+## Log MetaRaw 4.0.1
+
+- **Noise legge i dati camera**: nuovo tasto **Leggi dati camera** nel gruppo Profilo del rumore, come Rileggi
+  metadata di Log MetaRaw: rilegge dal file camera, ISO, codec, bitrate e formato, li scrive nel Media Pool e
+  aggiorna il profilo Automatico. All'apertura del pannello il nodo avvia da solo la lettura se la clip non ha
+  ancora i dati. Prima il nodo usava solo i dati già registrati da Log MetaRaw, e quelli scritti dalle versioni
+  precedenti non avevano i campi del rumore: ora sono considerati vecchi (record versione 7) e vengono riletti.
+  La riga Da dice perché mancano i dati quando la lettura non riesce.
 
 ## Log MetaRaw 4.0.0
 

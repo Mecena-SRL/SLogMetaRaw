@@ -5,7 +5,7 @@
 #include <string>
 
 // Records older than this are read again (VERSION in slogmetaraw/plugin_cache.py).
-const int kRecordVersion = 6;
+const int kRecordVersion = 7;
 
 // False when there is no record, it is older than kRecordVersion, or it belongs to another file
 // that used to live at that path.
