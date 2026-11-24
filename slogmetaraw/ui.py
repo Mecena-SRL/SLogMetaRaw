@@ -42,7 +42,7 @@ GIL_YIELD = 0.015
 WRITE_BUDGET = 0.07        # seconds of SetMetadata calls per timer tick
 CLIP_TIMEOUT_FIRST = 10    # seconds for the first clip of a volume: a sleeping disk spins up
 CLIP_TIMEOUT_NEXT = 6
-CLIP_TIMEOUT_DEEP = 180    # deep acquisition reads every frame (DEEP_BUDGET in __main__, plus margin)
+CLIP_TIMEOUT_DEEP = 180    # deep acquisition: mecena-clipdb reads the whole clip (clipdb.SCAN_TIMEOUT, plus margin)
 UPDATE_TIMEOUT = 8
 UI_LOG_PATH = os.path.join(paths.log_dir(), 'ui.log')
 
@@ -390,8 +390,8 @@ def main(resolve, fusion, bmd, selftest=False):
                          'ToolTip': t('Imposta Data Level = Full o Video in Attributi clip secondo la gamma di '
                                       'ripresa: è la correzione vera, vale per tutto il progetto')}),
             ui.CheckBox({'ID': 'Deep', 'Weight': 0, 'Text': t('Acquisizione profonda (IMU)'),
-                         'ToolTip': t('Legge giroscopio, accelerometro e fuoco di ogni fotogramma per la '
-                                      'stabilizzazione (file .gcsv per Stabilize e Gyroflow). Più lenta.')}),
+                         'ToolTip': t('Con Mecena Motion installato: giroscopio, accelerometro e obiettivo di ogni '
+                                      'fotogramma nel MecenaClipDB, letto da Stabilize. Più lenta.')}),
         ]),
         ui.HGroup({'Weight': 0}, [
             ui.Label({'ID': 'Progress', 'Weight': 1, 'Text': ''}),

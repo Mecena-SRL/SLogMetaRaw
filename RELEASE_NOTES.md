@@ -2,11 +2,11 @@
 
 ## In sviluppo
 
-- **Acquisizione profonda (IMU)**, nuova spunta nella finestra (e `--deep` da riga di comando): oltre ai metadata
-  legge giroscopio, accelerometro, tempo di lettura del sensore e fuoco/focale/diaframma di **ogni fotogramma** e li
-  salva accanto alla scheda del plugin come `.gcsv` (formato Gyroflow, si apre anche in Gyroflow) e `.lens.csv`.
-  Base per il futuro nodo Stabilize. Per ora solo camere Sony con dati IMU nella traccia rtmd (MP4 e MXF); provato
-  su clip sintetiche, **non ancora su una clip Sony reale con giroscopio**. Più lenta: limite 180 s per clip.
+- **Acquisizione profonda (IMU)**, nuova spunta nella finestra (e `--deep` da riga di comando): con Mecena Motion
+  installato, ogni clip letta passa anche da `mecena-clipdb`, che salva giroscopio, accelerometro, orientamento,
+  tempo di lettura del sensore e obiettivo di ogni fotogramma nel **MecenaClipDB**, lo stesso database che legge
+  Mecena Stabilize. Tutte le camere che Gyroflow conosce (Sony, DJI, GoPro…). Senza Mecena Motion la clip si legge
+  come prima, con un avviso. Più lenta: limite 180 s per clip.
 
 ## Log MetaRaw 3.2.1
 

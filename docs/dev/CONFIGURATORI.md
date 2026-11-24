@@ -172,7 +172,7 @@ X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.
 Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).
-Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--deep`, `slogmetaraw/motion.py` legge
-giroscopio, accelerometro e fuoco di ogni fotogramma Sony (rtmd MP4/MXF) e scrive `.gcsv` (Gyroflow) e `.lens.csv`
-accanto alla scheda. Provato solo su clip sintetiche. Piano Stabilize/Shutter nello stesso pacchetto e stato per camera:
-`docs/dev/STABILIZE.md`. Aperto: clip Sony reale con giroscopio, DJI (quaternioni djmd), sorgente del plugin separato.
+Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--deep`; `slogmetaraw/clipdb.py` lancia
+`mecena-clipdb` di Mecena Motion (repo Mecena-SRL/GyroMotion) e riporta la voce del MecenaClipDB. Scelta di Ivan:
+un solo database, nessun parser IMU in Log MetaRaw (il lettore Sony provato su FX6/FX30 è stato tolto). Piano di
+integrazione Stabilize/Shutter: `docs/dev/STABILIZE.md`. Aperto: installer e categoria comuni, DJI Action 4.

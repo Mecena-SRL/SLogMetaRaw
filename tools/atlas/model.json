@@ -280,7 +280,7 @@
      "id": "read.helper",
      "kind": "process",
      "label": "Processo lettore (--helper)",
-     "text": "Un solo processo Python figlio, persistente: riceve un percorso per riga su stdin e risponde con una riga JSON su stdout. Sta in un processo separato per poterlo uccidere se un volume si blocca. Con «Acquisizione profonda (IMU)» parte con --deep: dopo read_clip legge giroscopio, accelerometro e fuoco di ogni fotogramma (solo Sony rtmd) e scrive <hash>.gcsv e <hash>.lens.csv accanto alla scheda; un errore diventa un avviso della clip.",
+     "text": "Un solo processo Python figlio, persistente: riceve un percorso per riga su stdin e risponde con una riga JSON su stdout. Sta in un processo separato per poterlo uccidere se un volume si blocca. Con «Acquisizione profonda (IMU)» parte con --deep: dopo read_clip lancia mecena-clipdb (Mecena Motion) che scrive giroscopio, accelerometro e obiettivo della clip nel MecenaClipDB letto da Stabilize; senza Mecena Motion o senza dati di movimento resta un avviso della clip.",
      "basis": "dedotto",
      "refs": [
       {
@@ -290,10 +290,10 @@
        "code": "slogmetaraw/ui.py::_spawn_reader"
       },
       {
-       "code": "slogmetaraw/motion.py::deep"
+       "code": "slogmetaraw/clipdb.py::deep"
       },
       {
-       "test": "tests/test_motion.py::Motion.test_helper_deep_writes_files"
+       "test": "tests/test_clipdb.py::ClipDb.test_scan_reports_the_database_entry"
       }
      ]
     },
@@ -1534,9 +1534,9 @@
  ],
  "fingerprints": {
   "beh:ui.read": {
-   "slogmetaraw/__main__.py::_helper": "f72a826bcabb",
+   "slogmetaraw/__main__.py::_helper": "b1f37d747ba2",
+   "slogmetaraw/clipdb.py::deep": "26e07efcae44",
    "slogmetaraw/extract.py::read_clip": "581d7d0f66a5",
-   "slogmetaraw/motion.py::deep": "58ab7f304527",
    "slogmetaraw/plugin_cache.py::write_cache": "4d0ecc333510",
    "slogmetaraw/resolve_io.py::clip_path": "194973a11e5a",
    "slogmetaraw/resolve_io.py::iter_media_pool_clips": "3a32ee6fb47d",

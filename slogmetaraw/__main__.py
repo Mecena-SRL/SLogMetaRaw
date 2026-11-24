@@ -25,7 +25,6 @@ EXTS = ('.mp4', '.mov', '.mxf', '.mpg', '.mpeg', '.mts', '.m2ts')   # ClipMeta.c
 CACHE_SAMPLES = 8
 CACHE_DEADLINE = 15.0
 CLIP_BUDGET = 1.0         # seconds of sampling per clip for the script and --to-resolve
-DEEP_BUDGET = 150.0       # seconds of deep acquisition per clip (every frame's IMU data)
 RESOLVE_CONNECT = 3.0
 RESOLVE_WRITE = 15.0
 RESOLVE_ALARM = 20        # hard limit of the detached writer, above connect + write
@@ -81,12 +80,12 @@ def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET, deep=False):
     stdin, one JSON result per line on stdout. A clip that hangs can be killed from
     outside (the window enforces a per-clip timeout), so the scan always finishes.
 
-    deep: also read every frame's motion data (motion.py) and write its files."""
+    deep: also scan each clip into MecenaClipDB with mecena-clipdb (clipdb.py)."""
     # inside Resolve the locale is often ASCII: paths and metadata travel as UTF-8 regardless
     _utf8_stream('stdin')
     _utf8_stream('stdout')
     if deep:
-        from . import motion
+        from . import clipdb
     for line in sys.stdin:
         path = line.strip()
         if not path:
@@ -95,10 +94,7 @@ def _helper(interval, max_samples=FULL_SAMPLES, budget=CLIP_BUDGET, deep=False):
             r = read_clip(path, interval=interval, max_samples=max_samples,
                           deadline=time.monotonic() + budget)
             if deep:
-                try:
-                    motion.deep(r, deadline=time.monotonic() + DEEP_BUDGET)
-                except Exception as exc:   # the clip's metadata still count
-                    r['warnings'].append('Acquisizione profonda non riuscita: %s' % exc)
+                clipdb.deep(r)
             print(json.dumps({'path': path, 'ok': True, 'result': r},
                              default=_jsonable, ensure_ascii=False), flush=True)
         except DatalessError as exc:
@@ -379,8 +375,8 @@ def main(argv=None):
     ap.add_argument('--cache', action='store_true',
                     help='write the SLogMetaRaw plugin records and print their paths')
     ap.add_argument('--deep', action='store_true',
-                    help='acquisizione profonda: giroscopio, accelerometro e fuoco di ogni fotogramma '
-                         '(file .gcsv per Gyroflow e Stabilize)')
+                    help='acquisizione profonda: dati di movimento e obiettivo nel MecenaClipDB '
+                         '(mecena-clipdb di Mecena Motion)')
     ap.add_argument('--helper', action='store_true', help=argparse.SUPPRESS)
     ap.add_argument('--to-resolve', action='store_true',
                     help='legge i metadata di una clip e li scrive nel Media Pool di Resolve')
@@ -400,8 +396,8 @@ def main(argv=None):
         try:
             r = read_clip(path, interval=a.interval, max_samples=a.max_samples)
             if a.deep:
-                from . import motion
-                motion.deep(r)
+                from . import clipdb
+                clipdb.deep(r)
         except DatalessError as e:
             print('SKIP', e, file=sys.stderr)
             continue
