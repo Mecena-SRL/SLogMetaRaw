@@ -2,12 +2,13 @@
 #pragma once
 #include "ofxsImageEffect.h"
 
-#define kDetailIdentifier "com.slogmetaraw.SLogMetaRawDetail"
+// The Detail's slot and identifier: a project saved with the Detail opens with Creative.
+#define kCreativeIdentifier "com.slogmetaraw.SLogMetaRawDetail"
 
-class DetailFactory : public OFX::PluginFactoryHelper<DetailFactory>
+class CreativeFactory : public OFX::PluginFactoryHelper<CreativeFactory>
 {
 public:
-    DetailFactory();
+    CreativeFactory();
     void load() override;
     void unload() override;
     void describe(OFX::ImageEffectDescriptor& p_Desc) override;

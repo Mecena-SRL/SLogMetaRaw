@@ -1,65 +1,88 @@
 param:Controls|OfxParamTypePage||||||||||||||||
 param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllare gli aggiornamenti|||
-param:detailInfo|OfxParamTypeString|Detail|Spaziale · escluso da Generate LUT|||0|||||||0||||
-param:modeGroup|OfxParamTypeGroup|Sviluppo e spazio colore|||||||||||||||1
-param:devMode|OfxParamTypeChoice|Modalità|0|modeGroup|||||||||0|Zonale: sistema zonale di Ansel Adams, esposizione e sviluppo per zone. Split grade: stampa a due esposizioni, morbida per le luci e dura per le ombre. Unito: misura automatica, sviluppo del negativo e stampa a due esposizioni insieme|Zonale (Ansel Adams),Split grade (stampa),Unito (Split grade + Auto zone + BTZS)||
-param:modeInfo|OfxParamTypeString|Cosa fa|Sistema zonale (Ansel Adams) in tre fasi, un nodo ciascuna: Sviluppo (curva globale: ombra sulla sua zona, luci con N+/N-), Stampa (per aree e bordi), Presenza (dettaglio). Zona V = grigio, 0 = nero, X = bianco della Destinazione|modeGroup||0|||||||0||||
-param:zonalPhase|OfxParamTypeChoice|Fase|0|modeGroup|1||||||||0|Zonale in tre nodi in serie, come in camera oscura: 1 Sviluppo (curva globale, senza aloni: esposizione e N+/N-), 2 Stampa (per aree e bordi), 3 Presenza (Texture, Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase|Un nodo (tutte le fasi),1 · Sviluppo,2 · Stampa,3 · Presenza||
-param:splitPhase|OfxParamTypeChoice|Fase|0|modeGroup|1||||||||0|Split grade in tre nodi in serie: 1 Esposizioni (curva globale: luci morbide e ombre dure), 2 Locale (brucia, scherma, bordi), 3 Presenza (Texture, Clarity, Dehaze). Copia il nodo, incollalo dopo e cambia solo Fase|Un nodo (tutte le fasi),1 · Esposizioni,2 · Locale,3 · Presenza||
-param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|modeGroup|||||||||0|Codifica che entra nel nodo: la decodifica in luce lineare e la riscrive uguale. Automatico la chiede a Resolve, poi alla clip. Va dopo Log MetaRaw e prima di CST/LUT|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
-param:destination|OfxParamTypeChoice|Destinazione (ODT)|0|modeGroup|||||||||0|La trasformazione dopo il nodo: decide dove arrivano il bianco (zona X) e il nero (zona 0). Dal Bianco usa Avanzate › Bianco; le altre lo fissano: CST 2,5 stop sopra il grigio e 4,5 sotto (7 stop in tutto), DRT 4,5 / 6, PQ 1000 nit 6,5 / 7, Scena DaVinci WG 9 / 9. Il nodo non converte: lavora sempre nella codifica d'ingresso|Dal Bianco (manuale),Rec.709 · CST senza tone mapping,Rec.709 · DRT (ACES, AgX, DaVinci),HDR PQ 1000 nit,Scena · DaVinci WG/Intermediate (ODT dopo)||
-param:adamsGroup|OfxParamTypeGroup|Misura|||1||||||||||||1
-param:adamsShadowPos|OfxParamTypeDouble2D|Ombra|0.3,0.3|adamsGroup|1||||||||0|Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)|||
-param:adamsHighPos|OfxParamTypeDouble2D|Luce|0.7,0.7|adamsGroup|1||||||||0|Una luce in cui vuoi ancora dettaglio|||
-param:adamsMeasure|OfxParamTypePushButton|Misura zone||adamsGroup|1|||||||||Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con sviluppo normale (N 0)|||
-param:adamsAuto|OfxParamTypePushButton|Misura automatica||adamsGroup|1|||||||||Legge tutta l'immagine: ombra e luce sono il 2° e il 98° percentile della luminanza. Poi si possono correggere con Ombra e Luce e Misura|||
-param:adamsShadowPlace|OfxParamTypeDouble|Ombra sulla zona|3|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui collocare l'ombra misurata (esposizione): III = ombra con dettaglio|||
-param:adamsHighPlace|OfxParamTypeDouble|Luci sulla zona|8|adamsGroup|1||0|10|0|10|0.1|1||La zona su cui portare la luce misurata (sviluppo): sopra quella misurata N+, sotto N-. VIII = luce con dettaglio|||
-param:adamsInfo|OfxParamTypeString|Zone|Scegli i due punti e premi Misura zone|adamsGroup|1|0|||||||0||||
-param:splitGroup|OfxParamTypeGroup|Split grade|||1||||||||||||1
-param:splitSoft|OfxParamTypeDouble|Luci morbide (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione morbida (grado 0, filtro 00), che porta le luci: piu stop = luci piu scure. 0 = le luci cadono sulla zona VIII|||
-param:splitHard|OfxParamTypeDouble|Ombre dure (stop)|0|splitGroup|1||-3|3|-3|3|0.05|2||Tempo dell'esposizione dura (grado 5), che porta le ombre: piu stop = ombre piu scure. 0 = le ombre cadono sulla zona III|||
-param:splitGrade|OfxParamTypeString|Grado|scegli i due punti e premi Misura|splitGroup|1|0|||||||0||||
-param:splitEngine|OfxParamTypeChoice|Unione|0|splitGroup|1||||||||0|Come si uniscono le due esposizioni. Curva: una sola curva, la pendenza esce dal rapporto fra le due. Due strati: la carta ha uno strato morbido (grado 0) e uno duro (grado 5) e prende, a ogni luce, il più basso dei due|Curva (perno scorrevole),Due strati (per luce)||
-param:viewProvino|OfxParamTypeBoolean|Provino|0|splitGroup|1||||||||0|Mostra il provino sull'immagine: ogni cella è la stessa immagine con esposizioni diverse. Più scuro = più stop. La cella incorniciata di chiaro è quella attuale|||
-param:provinoKind|OfxParamTypeChoice|Provino: forma|0|splitGroup|1||||||||0|Strisce: sette passi della morbida (riga alta) e della dura (riga bassa). Matrice: morbida da sinistra a destra, dura dall'alto in basso. Unioni: curva a sinistra, due strati a destra|Strisce (morbida e dura),Matrice morbida × dura,Unioni a confronto||
-param:provinoStep|OfxParamTypeDouble|Provino: passo (stop)|0.5|splitGroup|1||0.1|1.5|0.1|1.5|0.05|2||Gli stop fra una cella e la vicina|||
-param:provinoPos|OfxParamTypeDouble2D|Provino: cella|0.5,0.5|splitGroup|1||||||||0|Porta il punto sulla cella da usare, poi premi Usa la cella|||
-param:provinoApply|OfxParamTypePushButton|Usa la cella||splitGroup|1|||||||||Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo|||
-param:rangeGroup|OfxParamTypeGroup|Gamma dinamica|||||||||||||||1
-param:viewGain|OfxParamTypeBoolean|Vista: guadagno|0|rangeGroup|||||||||0|Mostra quanto il nodo alza (arancio) o abbassa (blu) ogni zona: grigio = invariato. Bande a 0,25 / 0,5 / 1 / 2 stop||view_gain.png|
-param:viewBase|OfxParamTypeBoolean|Vista: base|0|rangeGroup|||||||||0|Mostra la base edge-aware su cui lavorano i toni locali, senza il dettaglio||view_base.png|
-param:viewZonesColor|OfxParamTypeBoolean|Vista: zone|0|rangeGroup|||||||||0|Mostra la zona (0-X) in cui cade ogni area dopo il nodo, a colori: viola 0, blu I-II, verde-azzurro III-IV, grigio V, rosa VI, giallo VII, arancio VIII, rosso IX, bianco X. Zona 0 = nero e zona X = bianco della Destinazione||view_zones.png|
-param:viewZonesGrey|OfxParamTypeBoolean|Vista: zone in grigi|0|rangeGroup|||||||||0|Le stesse zone come scala di undici grigi, dal nero (0) al bianco (X)||view_zones_grey.png|
-param:localContrast|OfxParamTypeDouble|Local Contrast|0|rangeGroup|||-100|50|-100|50|0.1|2||Contrasto delle grandi aree attorno al grigio, a dettaglio intatto. Il Contrast del nodo principale e globale; qui il dettaglio fine resta com'e|||
-param:localHighlights|OfxParamTypeDouble|Local Highlights|0|rangeGroup|||-100|100|-100|100|0.1|2||Negativo: comprime le grandi aree luminose e tiene, anzi rinforza, la texture (a -100 il massimo registrato arriva sul Bianco di Avanzate); le luci piu compresse vanno verso il bianco. Positivo: piu stacco per aree. Grigio e toni sotto restano fermi|||
-param:localShadows|OfxParamTypeDouble|Local Shadows|0|rangeGroup|||-100|100|-100|100|0.1|2||Apre (positivo) o chiude le ombre per aree, a dettaglio intatto. 100 = 2 stop|||
-param:printEdgeBurn|OfxParamTypeDouble|Brucia i bordi (stop)|0|rangeGroup|1||0|2|0|2|0.05|2||Stampa e Locale: scurisce i margini dell'inquadratura come la bruciatura dei bordi in camera oscura. Dipende solo dalla posizione: nessun alone|||
-param:printEdgeSize|OfxParamTypeDouble|Ampiezza bordi (%)|30|rangeGroup|1||10|60|10|60|1|0||Quanta parte dell'inquadratura, dai margini verso il centro, riceve la bruciatura|||
-param:presenceGroup|OfxParamTypeGroup|Presenza|||||||||||||||1
-param:texture|OfxParamTypeDouble|Texture|0|presenceGroup|||-100|100|-100|100|0.1|2||Dettaglio fine (pelle, tessuti, foglie). Negativo leviga; la grana sotto la soglia rumore non sale|||
-param:clarity|OfxParamTypeDouble|Clarity|0|presenceGroup|||-100|100|-100|100|0.1|2||Contrasto locale a media scala, pesato sui mezzitoni|||
-param:dehaze|OfxParamTypeDouble|Dehaze|0|presenceGroup|||-100|100|-100|100|0.1|2||Toglie (positivo) o aggiunge velo. Il colore e il livello del velo sono in Avanzate › Velo, mai stimati fotogramma per fotogramma|||
-param:detailReset|OfxParamTypePushButton|Azzera dettaglio||presenceGroup||||||||||Riporta a zero tutti i controlli di questo nodo|||
-param:detailAdvancedGroup|OfxParamTypeGroup|Avanzate|||||||||||||||0
-param:preserveDetail|OfxParamTypeDouble|Preserva dettaglio|100|detailAdvancedGroup|||0|100|0|100|1|0||100 = i toni locali muovono solo le aree; 0 = come il nodo principale, puntuale|||
-param:detailRadius|OfxParamTypeDouble|Raggio (% altezza)|4|detailAdvancedGroup|||1|8|1|8|0.1|||Dimensione delle aree dei toni locali, relativa all'altezza: lo stesso look a ogni risoluzione|||
-param:edgeThreshold|OfxParamTypeDouble|Soglia bordi (EV)|0.5|detailAdvancedGroup|||0.25|1|0.25|1|0.01|||Salto di luminanza che conta come bordo: piu bassa = meno aloni, meno recupero|||
-param:noiseThreshold|OfxParamTypeDouble|Soglia rumore (EV)|0.04|detailAdvancedGroup|||0|0.15|0|0.15|0.005|||Sotto questa ampiezza il dettaglio e trattato come rumore: Texture non lo alza. 0 = nessuna protezione|||
-param:clarityCenter|OfxParamTypeDouble|Clarity: centro (EV)|0|detailAdvancedGroup|||-3|3|-3|3|0.05|||Tono, in stop dal grigio 18%, dove Clarity lavora di piu|||
-param:localWhite|OfxParamTypeDouble|Bianco (stop)|2.5|detailAdvancedGroup|||1|10|1|8|0.05|2||Dove Local Highlights -100 porta il massimo registrato, in stop sopra il grigio 18%. 2,5 = bianco Rec.709 con un CST senza tone mapping; con un DRT (ACES, AgX, DaVinci) alza a 4-5. Vale con Destinazione: Dal Bianco|||
-param:hazeGroup|OfxParamTypeGroup|Velo|||||||||||||||0
-param:hazeLevel|OfxParamTypeDouble|Livello velo (EV)|2|hazeGroup|||-2|6|-2|6|0.05|||Luminanza del velo in stop dal grigio 18%: da li in su Dehaze non agisce|||
-param:hazeWarmth|OfxParamTypeDouble|Colore velo|0|hazeGroup|||-100|100|-100|100|0.1|||Negativo = velo freddo (cielo, distanza), positivo = caldo (fumo, polvere)|||
-param:zonalGuideGroup|OfxParamTypeGroup|Guida|||||||||||||||1
-param:zonalGuide|OfxParamTypeString|Fase|1/3 Sviluppo: esposizione e N+/N-, una curva su tutta l'immagine|zonalGuideGroup||0|||||||0||||
-param:zonalGuideStep1|OfxParamTypeString|1|Ombra su un'ombra con dettaglio (III), Luce su una luce con dettaglio (VIII)|zonalGuideGroup||0|||||||0||||
-param:zonalGuideStep2|OfxParamTypeString|2|Misura zone: l'ombra resta sulla sua zona, la luce va dove cade a N 0|zonalGuideGroup||0|||||||0||||
-param:zonalGuideStep3|OfxParamTypeString|3|Ombra sulla zona = esposizione, Luci sulla zona = sviluppo attorno all'ombra|zonalGuideGroup||0|||||||0||||
-param:zonalGuideNext|OfxParamTypeString|Poi|Copia il nodo, incollalo dopo, Fase: 2 · Stampa|zonalGuideGroup||0|||||||0||||
+param:detailInfo|OfxParamTypeString|Creative|Spaziale · escluso da Generate LUT|||0|||||||0||||
+param:processGroup|OfxParamTypeGroup|Processo|||||||||||||||1
+param:shotGroup|OfxParamTypeGroup|Ripresa e sviluppo|||||||||||||||1
+param:printGroup|OfxParamTypeGroup|Stampa e copie|||||||||||||||1
+param:textureGroup|OfxParamTypeGroup|Grana e ottica|||||||||||||||1
+param:separationGroup|OfxParamTypeGroup|Separazioni|||||||||||||||1
+param:screenGroup|OfxParamTypeGroup|Mosaico|||||||||||||||1
+param:plateGroup|OfxParamTypeGroup|Lastra e carta|||||||||||||||1
+param:signalGroup|OfxParamTypeGroup|Segnale|||||||||||||||1
+param:colourGroup|OfxParamTypeGroup|Colore|||||||||||||||0
+param:viewGroup|OfxParamTypeGroup|Supporto di visione|||||||||||||||1
+param:process|OfxParamTypeChoice|Processo|0|processGroup|||||||||0|Il procedimento: come la luce diventa immagine. Ognuno ha i suoi comandi qui sotto|Negativo colore e stampa,Invertibile colore (diapositiva),Bianco e nero,Technicolor tre strisce,Technicolor due colori,Autochrome,Dufaycolor (rete),Tre lastre (Prokudin-Gorskij),Kinemacolor,Dagherrotipo,Collodio umido,Carta salata e albumina,Cianotipia,Platino e palladio,Video analogico,Digitale d'epoca||
+param:processInfo|OfxParamTypeString|Come funziona|Tre strati: curva del negativo, interimage, grana, stampa positiva con le sue luci; uscita Log = scansione del negativo|processGroup||0|||||||0||||
+param:negative|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti|Cinema lenta, pulita,Cinema veloce tungsteno,Veloce senza remjet (alone forte),Fredda a basso contrasto,Vivida ad alto contrasto,Ritratto morbida,Amatoriale calda,Amatoriale fredda-verde,Archivio Est Europa anni '70,Monopack anni '50 (assorbimenti forti),Sovcolor anni '50,ORWO NC anni '70,Svema anni '70-'80,Gevacolor anni '50,Diurna 50, grana finissima,Tungsteno 200, media,Fotografica 400 (negativo still),Fotografica ritratto 160,Amatoriale 800, notturna,Negativo anni '80 (prima dei tabulari)||
+param:print|OfxParamTypeChoice|Positivo|1|printGroup|||||||||0|La pellicola positiva su cui si stampa il negativo: contrasto, dominante, nero. Nessuna = il negativo scansionato, piatto|Nessuna (scansione del negativo),Positivo standard,Positivo a contrasto alto,Positivo freddo,Positivo morbido,Positivo caldo anni '70,Positivo Est Europa (poca densità),Positivo a basso contrasto per telecinema,Positivo con argento trattenuto (bypass in stampa)||
+param:output|OfxParamTypeChoice|Uscita|0|processGroup|||||||||0|Rec.709: la stampa vista in proiezione. Log: la scansione del negativo, riscritta nella codifica d'ingresso, per gradare dopo come un DI|Rec.709 Gamma 2.4 (stampa),Log d'ingresso (scansione del negativo)||
+param:reversal|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|L'invertibile: un solo passaggio, il positivo è la pellicola stessa|Ultra-satura,Neutra,Coloranti aggiunti in sviluppo,Super 8 tungsteno anni '70,Fredda moderna da proiezione,Scaduta (contrasto basso)||
+param:bwStock|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Contrasto e grana dell'emulsione|Cinema classica,Veloce da reportage,Tabulare finissima,Lenta 25, grana finissima,Spinta a 3200,Positiva usata in ripresa (contrasto alto)||
+param:sensitivity|OfxParamTypeChoice|Sensibilità|3|processGroup|||||||||0|A quali colori è sensibile l'emulsione: blu = cieli bianchi e rossi neri; ortocromatica = rossi scuri; pancromatica = tutti|Blu (prima del 1880),Ortocromatica,Pancromatica precoce,Pancromatica moderna||
+param:filter|OfxParamTypeChoice|Filtro di presa|0|processGroup|||||||||0|Il filtro davanti all'obiettivo, compensato in esposizione: giallo-rosso scuriscono il cielo, verde schiarisce le foglie|Nessuno,Giallo,Arancio,Rosso,Verde||
+param:techniEra|OfxParamTypeChoice|Epoca|0|processGroup|||||||||0|Fino al 1944 la stampa aveva una chiave nera (K); dal 1955 le matrici vengono da un negativo monopack|1935-1944 con chiave K,1945-1955,Imbibizione da monopack (1955-1975)||
+param:collodion|OfxParamTypeChoice|Supporto|0|processGroup|||||||||0|Vetro su fondo nero o ferro laccato: il nero dietro l'argento|Ambrotipo (vetro su nero),Ferrotipo (ferro laccato)||
+param:paper|OfxParamTypeChoice|Carta|1|processGroup|||||||||0|Salata: opaca, nelle fibre. Albumina: lucida, neri più profondi|Carta salata,Albumina||
+param:format|OfxParamTypeChoice|Formato|2|processGroup|||||||||0|Le dimensioni del fotogramma: più piccolo = grana, alone e instabilità più grandi sull'immagine|Super 8,16 mm,Super 35,65 mm (Todd-AO, Panavision 70),IMAX 15/70,Lastra 9x12,Super 16,8 mm,9,5 mm Pathé-Baby,35 mm anamorfico,Techniscope,VistaVision||
+param:analog|OfxParamTypeChoice|Formato video|1|processGroup|||||||||0|Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato|Broadcast,VHS SP,VHS LP,S-VHS,Betamax,Video8,Hi8,U-matic,U-matic SP,Betacam SP,1 pollice tipo C||
+param:digital|OfxParamTypeChoice|Camera|0|processGroup|||||||||0|Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera|Cinema digitale moderno,Reflex video 2009,Cinema HD a CCD 2002,CCD 3 sensori anni 2000 (MiniDV),MiniDV cine 24p,Compatta digitale 2004,Telefono 2008,Webcam anni 2000,Action cam 2010,Telefono smart HDR||
+param:generation|OfxParamTypeChoice|Generazione|0|printGroup|||||||||0|Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. Le copie viste in sala erano di solito di distribuzione|Copia campione dal negativo,Copia di distribuzione (interpositivo e internegativo),Riduzione 16 mm da 35 mm,Controtipo di controtipo (archivio)||
+param:medium|OfxParamTypeChoice|Visto su|0|viewGroup|||||||||0|Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, console portatile, carta. Nessuno = il monitor Rec.709. Non vale con Uscita Log|Nessuno (monitor Rec.709),Proiezione in sala (xeno),Proiettore domestico 8/16 mm (alogena),Televisore a tubo PAL (576 righe),Televisore a tubo NTSC (480 righe),Monitor broadcast a tubo,Console portatile LCD verde (160x144),Stampa fotografica su carta||
+param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|processGroup|||||||||0|Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Va dopo Log MetaRaw: l'uscita è Rec.709 Gamma 2.4, o la stessa codifica con Uscita Log|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
+param:exposure|OfxParamTypeDouble|Esposizione (stop)|0|shotGroup|||-6|6|-6|6|0.05|2||La luce che arriva al materiale: sotto = ombre nel piede, sopra = luci nella spalla|||
+param:temperature|OfxParamTypeDouble|Temperatura|0|shotGroup|||-1|1|-1|1|0.01|2||Luce più calda (positivo) o più fredda di quella per cui il materiale è bilanciato|||
+param:tint|OfxParamTypeDouble|Tinta|0|shotGroup|||-1|1|-1|1|0.01|2||Verde (negativo) o magenta|||
+param:push|OfxParamTypeDouble|Sviluppo (stop)|0|shotGroup|||-2|3|-2|3|0.1|1||Spinto (positivo): più contrasto, più grana, ombre più dense. Tirato: più morbido|||
+param:silver|OfxParamTypeDouble|Argento trattenuto|0|shotGroup|||0|1|0|1|0.01|2||Salto della sbianca (bleach bypass): l'argento resta con i coloranti, neri densi e colori spenti|||
+param:flash|OfxParamTypeDouble|Preflash|0|shotGroup|||0|0.3|0|0.3|0.005|2||Una luce uniforme prima o dopo la posa: apre le ombre e abbassa il contrasto|||
+param:age|OfxParamTypeDouble|Età|0|shotGroup|||0|1|0|1|0.01|2||Decadimento: coloranti che sbiadiscono a ritmi diversi (il ciano per primo), base che ingiallisce|||
+param:printR|OfxParamTypeDouble|Luci di stampa R|0|printGroup|||-24|24|-24|24|1|0||Punti della stampatrice: 1 punto = 0,025 log E. Più rosso = stampa più ciano|||
+param:printG|OfxParamTypeDouble|Luci di stampa G|0|printGroup|||-24|24|-24|24|1|0||Più verde = stampa più magenta|||
+param:printB|OfxParamTypeDouble|Luci di stampa B|0|printGroup|||-24|24|-24|24|1|0||Più blu = stampa più gialla|||
+param:printContrast|OfxParamTypeDouble|Contrasto|1|printGroup|||0.5|2|0.5|2|0.01|2||Il contrasto del positivo (o del segnale), moltiplicato su quello del processo|||
+param:printGrain|OfxParamTypeDouble|Grana della stampa|1|printGroup|||0|3|0|3|0.01|2||La grana propria del positivo, nelle sue densità, più fine di quella del negativo: 1 = com'era|||
+param:grain|OfxParamTypeDouble|Grana|1|textureGroup|||0|3|0|3|0.01|2||Quantità rispetto a quella del materiale e del formato: 1 = com'era|||
+param:grainSize|OfxParamTypeDouble|Dimensione grana|1|textureGroup|||0.25|4|0.25|4|0.01|2||Rispetto a quella del materiale e del formato|||
+param:halation|OfxParamTypeDouble|Alone|1|textureGroup|||0|3|0|3|0.01|2||La luce che attraversa l'emulsione e torna dal supporto: rosso attorno alle luci forti|||
+param:bloom|OfxParamTypeDouble|Diffusione|0|textureGroup|||0|1|0|1|0.01|2||Un filtro di diffusione davanti all'obiettivo: le luci si allargano sulle zone vicine|||
+param:bloomRadius|OfxParamTypeDouble|Raggio diffusione (%)|2|textureGroup|||0.2|10|0.2|10|0.1|1||Raggio in percentuale dell'altezza|||
+param:aberration|OfxParamTypeDouble|Aberrazione cromatica|0|textureGroup|||0|1|0|1|0.01|2||Rosso e blu a ingrandimenti diversi verso i bordi, come un obiettivo d'epoca|||
+param:vignette|OfxParamTypeDouble|Vignettatura (stop)|0|textureGroup|||-1|3|-1|3|0.05|2||Caduta di luce agli angoli, prima della curva|||
+param:weave|OfxParamTypeDouble|Instabilità del quadro|0|textureGroup|||0|1|0|1|0.01|2||Il fotogramma oscilla nel passo della macchina, in proporzione al formato|||
+param:breath|OfxParamTypeDouble|Sfarfallio|0|textureGroup|||0|1|0|1|0.01|2||Densità e colore che cambiano un poco da un fotogramma all'altro|||
+param:dust|OfxParamTypeDouble|Polvere|0|textureGroup|||0|1|0|1|0.01|2||Granelli e peli, diversi a ogni fotogramma: bianchi se sul negativo, neri se sul positivo|||
+param:scratches|OfxParamTypeDouble|Graffi|0|textureGroup|||0|1|0|1|0.01|2||Righe verticali lasciate dal passaggio nella macchina|||
+param:registration|OfxParamTypeDouble|Registro (px a 1080)|0|separationGroup|||0|20|0|20|0.1|1||Ogni record (striscia, matrice o lastra) spostato del suo errore: frange colorate sui bordi|||
+param:interval|OfxParamTypeDouble|Intervallo fra le pose (fotogrammi)|0|separationGroup|||0|48|0|48|1|0||Le pose sono in sequenza: ciò che si muove fra una e l'altra si separa nei colori. 0 = simultanee|||
+param:keyImage|OfxParamTypeDouble|Chiave K (-1 = dell'epoca)|-1|separationGroup|||-1|1|-1|1|0.01|2||Immagine argento nera stampata sotto le tre matrici: contorni e neri più profondi|||
+param:dyeDensity|OfxParamTypeDouble|Densità coloranti|1|separationGroup|||0.6|1.4|0.6|1.4|0.01|2||Quanta tinta prendono le matrici nell'imbibizione|||
+param:mosaicScale|OfxParamTypeDouble|Dimensione mosaico|1|screenGroup|||0.25|4|0.25|4|0.01|2||Grani di fecola o maglia della rete, rispetto alla lastra vera|||
+param:clump|OfxParamTypeDouble|Ammassi|0.5|screenGroup|||0|1|0|1|0.01|2||I grani dello stesso colore che si raggruppano in macchie|||
+param:viewLight|OfxParamTypeDouble|Luce di visione|0.85|screenGroup|||0.1|1.2|0.1|1.2|0.01|2||Quanto è forte la luce dietro la lastra: il mosaico assorbe due terzi della luce|||
+param:viewAngle|OfxParamTypeDouble|Angolo di visione|0.9|plateGroup|||-1|1|-1|1|0.01|2||Lo specchio riflette la stanza: da 1 (positivo) a -1 (negativo, l'immagine si rovescia)|||
+param:uv|OfxParamTypeDouble|Ultravioletto|0.5|plateGroup|||0|1|0|1|0.01|2||Quanto UV c'è nella luce: cieli e luci bluastre si bruciano prima. B/N: solo con sensibilità Blu|||
+param:oxidation|OfxParamTypeDouble|Ossidazione|0.3|plateGroup|||0|1|0|1|0.01|2||L'alone iridescente che entra dai bordi della lastra|||
+param:border|OfxParamTypeDouble|Bordo|0.4|plateGroup|||0|1|0|1|0.01|2||Il bordo irregolare dove il collodio o la soluzione non è arrivata|||
+param:toning|OfxParamTypeDouble|Viraggio|0.5|plateGroup|||0|1|0|1|0.01|2||Oro (dagherrotipo, albumina), tannino (cianotipia), palladio (platino): il colore dell'immagine|||
+param:wear|OfxParamTypeDouble|Usura del nastro|0.15|signalGroup|||0|1|0|1|0.01|2||Nastro copiato e ripassato: più rumore, meno colore, dropout|||
+param:heads|OfxParamTypeDouble|Cambio testine|0.3|signalGroup|||0|1|0|1|0.01|2||La banda disturbata in fondo al quadro dove una testina passa all'altra|||
+param:instability|OfxParamTypeDouble|Instabilità|0.25|signalGroup|||0|1|0|1|0.01|2||Le righe ondeggiano: tensione del nastro e base dei tempi|||
+param:colourBleed|OfxParamTypeDouble|Sbavatura colore|1|signalGroup|||0|2|0|2|0.01|2||Banda e ritardo del colore, rispetto a quelli del formato|||
+param:noise|OfxParamTypeDouble|Rumore|1|signalGroup|||0|2|0|2|0.01|2||Rispetto a quello del formato o della camera: 1 = tipico|||
+param:sharpness|OfxParamTypeDouble|Nitidezza elettronica|0|signalGroup|||-1|1|-1|1|0.01|2||Il peaking della camera: contorni chiari attorno ai bordi|||
+param:range|OfxParamTypeDouble|Gamma dinamica (stop)|0|signalGroup|||-3|3|-3|3|0.05|2||Sposta il punto di clip della camera|||
+param:highlights|OfxParamTypeDouble|Spalla|0.5|signalGroup|||0|1|0|1|0.01|2||0 = clip netto, 1 = knee morbido|||
+param:compression|OfxParamTypeDouble|Compressione|1|signalGroup|||0|2|0|2|0.01|2||Sottocampionamento del colore e banding del codec|||
+param:shadowHue|OfxParamTypeDouble|Ombre: tinta|200|colourGroup|||0|360|0|360|1|0||Gradi|||
+param:shadowAmount|OfxParamTypeDouble|Ombre: quantità|0|colourGroup|||0|1|0|1|0.01|2|||||
+param:highHue|OfxParamTypeDouble|Luci: tinta|40|colourGroup|||0|360|0|360|1|0||Gradi|||
+param:highAmount|OfxParamTypeDouble|Luci: quantità|0|colourGroup|||0|1|0|1|0.01|2|||||
+param:balance|OfxParamTypeDouble|Bilanciamento (stop)|0|colourGroup|||-3|3|-3|3|0.05|2||Dove passano le ombre alle luci, in stop dal grigio|||
+param:saturation|OfxParamTypeDouble|Saturazione|1|colourGroup|||0|2|0|2|0.01|2|||||
+param:density|OfxParamTypeDouble|Densità colore|0|colourGroup|||0|1|0|1|0.01|2||Colori saturi più scuri, come i coloranti veri|||
+param:mediumAmount|OfxParamTypeDouble|Intensità del supporto|1|viewGroup|||0|1|0|1|0.01|2||1 = com'è davvero. Sala e proiettore: caduta di luce, sfarfallio, instabilità. Tubo: curvatura, righe, fosfori. Console: retinatura e griglia. Carta: fibre, bianco e nero della carta|||
+param:creativeReset|OfxParamTypePushButton|Azzera comandi||processGroup||||||||||Riporta ai valori del processo tutti i comandi; processo e varianti restano|||
 param:boundPath|OfxParamTypeString||||1||||||||0||||
 param:camSpace|OfxParamTypeInteger||-1||1||||||||0||||
 param:camGamma|OfxParamTypeInteger||-1||1||||||||0||||
 param:settingsVersion|OfxParamTypeInteger||0||1||||||||0||||
-param:adamsShadowL|OfxParamTypeDouble||0||1||||||||0||||
-param:adamsHighL|OfxParamTypeDouble||0||1||||||||0||||

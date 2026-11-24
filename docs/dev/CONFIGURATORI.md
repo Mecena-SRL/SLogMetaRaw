@@ -10,11 +10,11 @@ Prima sessione di allineamento: 01/11/2026.
 | Mappa moduli (Graphify) | `docs/GRAPHIFY.md` | **funzionante, manuale** | Disegnata a mano. Freschezza (versione, moduli citati) controllata dall'Atlante. Nessuno strumento graphify/codegraph installato nel repo. |
 | Estrazione strutturale Python | `tools/atlas/atlas.py` | **funzionante** | AST: funzioni, righe, impronte, chiamate, import, binding UI `win.On.X.Y`, test. |
 | Estrazione C++ (plugin OFX) | `tools/atlas/atlas.py` (`cpp_symbol`) | **parziale** | Ricerca testuale delle definizioni (righe, impronta), non un parser: niente grafo delle chiamate C++. |
-| Atlante dei comportamenti | `tools/atlas/` | **funzionante** | 3 comportamenti: Leggi metadata, Seleziona clip → Dettagli, Detail: colore e passi. Testo e collegamenti manuali, riferimenti estratti e controllati. |
+| Atlante dei comportamenti | `tools/atlas/` | **funzionante** | 3 comportamenti: Leggi metadata, Seleziona clip → Dettagli, Creative: dal processo ai pixel. Testo e collegamenti manuali, riferimenti estratti e controllati. |
 | Verifica dei comportamenti | `tests/` (unittest) | **funzionante** | L'Atlante cita i test e con `--run-tests` ne registra l'esito. |
 | Parametri plugin (golden) | `tests/golden/params_*.txt` | **funzionante** | Fonte verificata dei parametri OFX: base possibile per il catalogo dei controlli del plugin. |
 | Design System / catalogo componenti | vista Interfaccia › Catalogo | **primo nucleo, estratto** | Helper `define*` di `ParamDefs.h` e tipi UIManager, con utilizzi. Mancano fondamenti grafici, varianti e regole d'uso scritte. |
-| Configuratore UI / navigazione | vista Interfaccia | **funzionante, primo incremento** | Anteprima di finestra script, pannello Develop e Detail dalle fonti; selezione, note, proposte di modifica (testo, tooltip, default) esportabili per l'agente. L'anteprima è una rappresentazione, non uno screenshot. Le proposte non modificano il codice da sole. |
+| Configuratore UI / navigazione | vista Interfaccia | **funzionante, primo incremento** | Anteprima di finestra script, pannelli Develop, Creative e Noise dalle fonti; selezione, note, proposte di modifica (testo, tooltip, default) esportabili per l'agente. L'anteprima è una rappresentazione, non uno screenshot. Le proposte non modificano il codice da sole. |
 | Grafici dimostrativi | `tools/make_tone_chart.py`, `make_falsecolor_chart.py`, `docs/*.png` | **dimostrativo** | Immagini generate da `math/` per la documentazione utente; non collegate a un modello. |
 | Bibliotecario / contesto selettivo | — | **parziale** | Pulsante «Copia contesto per l'agente» nell'Atlante (elemento, livello, relazioni, fonti, nota). Nessun indice di decisioni/skill. |
 | JEV | — | non presente | Facoltativo. |
@@ -41,7 +41,7 @@ Identità stabili, uguali in tutti i configuratori futuri:
 - funzione `<file>::<nome qualificato>` (es. `slogmetaraw/ui.py::main.show_details`); evento UI
   `binding:<Widget>.<Evento>`; test `tests/<file>::<Classe>.<metodo>`; modulo `mod:<file>`.
 
-Altre identità: widget `ui:script.<ID>`; controllo OFX `param:<develop|detail>.<nome>` (nome permanente: Resolve
+Altre identità: widget `ui:script.<ID>`; controllo OFX `param:<develop|creative|noise>.<nome>` (nome permanente: Resolve
 salva i nodi per nome); componente `comp:ofx.<helper>` / `comp:script.<Tipo>`; funzione C++ `<file>::<nome>`.
 
 Catena prevista: regola → componente → schermata → azione → comportamento → modulo → implementazione → verifica.
@@ -192,6 +192,16 @@ Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--d
 un solo database, nessun parser IMU in Log MetaRaw (il lettore Sony provato su FX6/FX30 è stato tolto). Piano di
 integrazione Stabilize/Motion Blur: `docs/dev/STABILIZE.md`. Fatto anche: sorgenti di GyroMotion in `motion/` (copia senza storia, scelta di Ivan), categoria «Log MetaRaw», pkg
 macOS unico che compila Motion. Non provato su Mac. Aperto: DJI Action 4, Linux/Windows per Motion.
+Creative (24/11/2026, non rilasciato): scelta di Ivan, il Detail (Zonale, Split grade, Texture, Clarity, Dehaze, P-003)
+è sostituito per intero dal nodo Creative nello stesso slot (P-004 nell'Atlante). Ricerche in `docs/creative/`, motore e
+tabelle in `docs/CREATIVE.md`. Verificato: test CPU (`tests/test_creative.py`), host OFX, golden del pannello, controllo
+sintattico del codice Metal con spazi d'indirizzo simulati. Aperto: prova in Resolve, parità Metal (solo CI macOS),
+taratura dei numeri su riprese reali; rimandati grana anamorfica, DCT e smear CCD, infrarosso, Polaroid, lith.
+Poi (stesso giorno, richiesta di Ivan): più pellicole, positivi e generazioni di copia con grana dei duplicati e della
+stampa, Supporto di visione (sala, proiettore, tubo, monitor, console LCD, carta) come ultimo passo su CPU e Metal,
+motore più veloce. Verificato come sopra; aperto: parità Metal del supporto (CI), aspetto su un 4K vero.
+Terzo giro: nitidezza dei duplicati, bagliore di vetro e obiettivo, scia dell'LCD (rende anche il fotogramma prima),
+righe del pannello nascoste quando non servono (crRowIdle).
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

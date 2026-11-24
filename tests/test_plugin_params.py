@@ -31,7 +31,8 @@ def zone_names():
 
 def table(src, name, end):
     """The rows of one named table, so a regex cannot wander into option arrays."""
-    return ROW.findall(src[src.index(name):src.index(end)])
+    start = src.index(name)
+    return ROW.findall(src[start:src.index(end, start)])
 TONES = re.compile(r'\{\s*"(tone\w+)",\s*"')                             # kToneSliders rows
 LEGACY = re.compile(r'\{\s*"(\w+)",\s*"(?:H|S|C|Sat|Boost|Recovery)"\s*\}')
 FETCH = re.compile(r'fetch(?:String|Double|Choice|Int|Boolean|PushButton|RGB)Param\("([^"]+)"\)')
@@ -41,7 +42,9 @@ class PluginParams(unittest.TestCase):
     def setUp(self):
         self.src = source()
         self.defined = (DEFINE.findall(self.src) + HELPER.findall(self.src) + DETAIL.findall(self.src)
-                        + TONES.findall(self.src) + LEGACY.findall(self.src) + ['version'] + zone_names())
+                        + TONES.findall(self.src) + LEGACY.findall(self.src) + ['version'] + zone_names()
+                        + table(self.src, 'kCrChoices[] = {', 'kCrChoiceCount')    # Creative panel rows
+                        + table(self.src, 'kCrSliders[] = {', 'kCrSliderCount'))
 
     def test_names_are_unique(self):
         """Per plugin: each factory's describeInContext is one namespace (the host test also checks

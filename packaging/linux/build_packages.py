@@ -223,7 +223,7 @@ def build_deb(bundle, out):
             'Maintainer: %s' % MAINTAINER,
             'Homepage: %s' % HOMEPAGE,
             'Description: Sony camera metadata and RAW-style controls for DaVinci Resolve',
-            ' OpenFX nodes (Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
+            ' OpenFX nodes (Log MetaRaw, Creative and Noise) and a Workspace > Scripts window that reads the',
             ' acquisition metadata of Sony XAVC clips into the Media Pool. CPU rendering.',
             ''])
         debian = os.path.join(stage, 'DEBIAN')
@@ -268,7 +268,7 @@ def build_rpm(bundle, out):
             '%define _build_id_links none',
             '%define __os_install_post %{nil}',
             '%description',
-            'OpenFX nodes (Log MetaRaw and Detail) and a Workspace > Scripts window that reads the',
+            'OpenFX nodes (Log MetaRaw, Creative and Noise) and a Workspace > Scripts window that reads the',
             'acquisition metadata of Sony XAVC clips into the Media Pool. CPU rendering.',
             '%install',
             'mkdir -p %{buildroot}',

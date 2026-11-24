@@ -15,8 +15,8 @@
   "helper": "Processo lettore",
   "disco": "Disco",
   "immagine": "Immagine (Resolve)",
-  "nodo": "Nodo Detail: impostazione",
-  "calcolo": "Calcolo per pixel (luce lineare)"
+  "nodo": "Nodo Creative: impostazione",
+  "calcolo": "Calcolo per pixel"
  },
  "subsystems": [
   {
@@ -103,18 +103,18 @@
    "behaviours": []
   },
   {
-   "id": "sub.detail",
-   "label": "Plugin OFX · Detail",
-   "text": "Secondo nodo: recupero locale, texture, clarity, dehaze, in luce lineare. C++ cercato per testo, non analizzato.",
+   "id": "sub.creative",
+   "label": "Plugin OFX · Creative",
+   "text": "Secondo nodo (lo slot del vecchio Detail): sviluppo creativo, un motore unico di processi fotografici, video analogico e camere digitali, CPU e Metal. C++ cercato per testo, non analizzato.",
    "basis": "intenzione",
    "modules": [],
    "refs": [
     {
-     "file": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp"
+     "file": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp"
     }
    ],
    "behaviours": [
-    "beh:detail.colour"
+    "beh:creative.process"
    ]
   },
   {
@@ -876,399 +876,219 @@
    ]
   },
   {
-   "id": "beh:detail.colour",
-   "label": "Detail: colore e passi",
-   "question": "Come lavora il Detail sull'immagine, e in che spazio colore?",
-   "subsystem": "sub.detail",
+   "id": "beh:creative.process",
+   "label": "Creative: dal processo ai pixel",
+   "question": "Come trasforma il Creative l'immagine, e con quali numeri?",
+   "subsystem": "sub.creative",
    "basis": "dedotto",
-   "text": "Il nodo sceglie la codifica d'ingresso (dichiarata in Ingresso (IDT), da Resolve, dalla clip o presunta S-Log3), lavora in luce lineare su una sola grandezza (stop dal grigio) e restituisce un guadagno uguale su R, G e B nella stessa codifica. La modalità (oggi Zonale, Ansel Adams) decide come si muovono le aree; Destinazione (ODT) dice dove arriva il bianco ma il nodo non converte.",
+   "text": "Un motore unico: ogni processo (negativo, invertibile, bianco e nero, Technicolor, Autochrome, tre lastre, dagherrotipo, stampe antiche, video, digitale) è una tabella di numeri. Il nodo decodifica in luce lineare, forma i record, li espone sulla curva del materiale e ricostruisce l'immagine come la vedrebbe il processo; CPU e Metal chiamano le stesse funzioni di math/Creative.h.",
    "refs": [
     {
-     "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
+     "test": "tests/test_creative.py::Creative.test_every_process_renders_a_finite_display_picture"
     },
     {
-     "test": "tests/test_detail.py::Model.test_l1_at_rest_the_node_is_the_identity"
+     "test": "tests/test_creative.py::Creative.test_sequential_plates_split_what_moves"
+    },
+    {
+     "test": "tests/test_metal.py::CreativeMetal.test_kernels_match_cpu"
     }
    ],
    "nodes": [
     {
-     "id": "dc.in",
+     "id": "cr.in",
      "kind": "data",
-     "label": "Immagine che entra nel nodo",
-     "text": "Il fotogramma intero, in float RGBA, nella codifica che arriva dal nodo precedente. Il Detail vuole un log di scena: con Rec.709 o Gamma 2.4 le alte luci sono già tagliate e non c'è niente da recuperare.",
+     "label": "Fotogrammi che entrano",
+     "text": "Il fotogramma intero in float RGBA, nella codifica del nodo precedente (dopo Log MetaRaw); con pose in sequenza (Tre lastre, Kinemacolor) anche i fotogrammi successivi, chiesti a Resolve.",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded"
       }
      ]
     },
     {
-     "id": "dc.choose",
+     "id": "cr.choose",
      "kind": "decision",
      "label": "Quale codifica entra?",
-     "text": "In ordine: 1) Sviluppo e spazio colore › Ingresso (IDT), se dichiarato; 2) lo spazio che Resolve comunica (progetto con gestione colore); 3) la codifica di camera della clip, letta dal record di Log MetaRaw; 4) presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
+     "text": "In ordine: Ingresso (IDT) dichiarato, lo spazio comunicato da Resolve, la codifica di camera della clip, presunta S-Gamut3.Cine/S-Log3. Uno spazio comunicato ma non riconosciuto rende il nodo neutro.",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput"
       },
       {
-       "param": "param:detail.nodeInput"
+       "param": "param:creative.nodeInput"
       },
       {
-       "param": "param:detail.camSpace"
+       "param": "param:creative.camSpace"
       },
       {
-       "param": "param:detail.camGamma"
+       "param": "param:creative.camGamma"
       },
       {
-       "param": "param:detail.boundPath"
+       "param": "param:creative.boundPath"
       }
      ]
     },
     {
-     "id": "dc.neutral",
+     "id": "cr.neutral",
      "kind": "end",
      "label": "Nodo neutro",
      "text": "Codifica sconosciuta: l'immagine esce identica (copia).",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render"
       }
      ]
     },
     {
-     "id": "dc.info",
+     "id": "cr.info",
      "kind": "end",
      "label": "Riga «Ingresso: …»",
-     "text": "In cima al pannello: spazio e curva scelti e il perché (dichiarato, da Resolve, dalla clip, presunto). È l'unico punto dove l'app dice oggi in che spazio lavora.",
+     "text": "In cima al pannello: spazio e curva scelti e il perché.",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo"
       },
       {
-       "param": "param:detail.detailInfo"
+       "param": "param:creative.detailInfo"
       }
      ]
     },
     {
-     "id": "dc.prepare",
-     "kind": "function",
-     "label": "Prepara i parametri",
-     "text": "Legge i controlli e calcola raggi e soglie relativi all'altezza del fotogramma: stesso look a piena risoluzione, in proxy e nel viewer.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare"
-      }
-     ]
-    },
-    {
-     "id": "dc.decode",
-     "kind": "function",
-     "label": "Decodifica in luce lineare",
-     "text": "La curva d'ingresso viene invertita: i valori diventano luce di scena lineare (grigio 18% = 0,18).",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded"
-      }
-     ]
-    },
-    {
-     "id": "dc.luma",
-     "kind": "data",
-     "label": "L = log2(norma / 0,18)",
-     "text": "Una sola grandezza per pixel, in stop dal grigio: è su questa che lavorano tutti i passi. Il colore non entra nei calcoli dei toni.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_luma"
-      }
-     ]
-    },
-    {
-     "id": "dc.base",
-     "kind": "function",
-     "label": "Base per aree (edge-aware)",
-     "text": "Griglia ridotta (382–764 righe) e guided filter: la base segue i bordi forti e ignora la grana. Dettaglio = L − base.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent"
-      },
-      {
-       "param": "param:detail.detailRadius"
-      },
-      {
-       "param": "param:detail.edgeThreshold"
-      }
-     ]
-    },
-    {
-     "id": "dc.mode",
-     "kind": "decision",
-     "label": "Quale modalità?",
-     "text": "Sviluppo e spazio colore › Modalità: Zonale (Ansel Adams), Split grade (stampa a due esposizioni) o Unito (Split grade con Misura automatica e sviluppo alla BTZS). Ognuna ha la sua Fase (Zonale: Sviluppo, Stampa, Presenza; Split grade: Esposizioni, Locale, Presenza, o un nodo) e la sezione Guida in fondo, che cambia con modalità e fase: ogni fase mostra solo i suoi comandi. Standard e Cinematografico sono stati eliminati su decisione di Ivan (nessuna migrazione).",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "param": "param:detail.devMode"
-      },
-      {
-       "param": "param:detail.modeInfo"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode"
-      }
-     ]
-    },
-    {
-     "id": "dc.measure",
+     "id": "cr.panel",
      "kind": "event",
-     "label": "Misura zone",
-     "text": "L'utente mette i punti Ombra e Luce e preme Misura zone: il nodo legge la media dell'immagine d'ingresso attorno a ciascun punto (1% dell'altezza), nella norma del colore. Salva L dei due punti; l'ombra resta sulla sua zona e la luce va dove cade con sviluppo normale (N 0). Non ancora provato in Resolve (lettura dell'immagine fuori dal render).",
+     "label": "Processo e varianti",
+     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h); alcune righe si nascondono anche quando un'altra scelta le rende inutili (crRowIdle: senza stampa niente generazioni, con uscita Log niente supporto).",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess"
       },
       {
-       "param": "param:detail.adamsShadowPos"
-      },
-      {
-       "param": "param:detail.adamsHighPos"
-      },
-      {
-       "param": "param:detail.adamsMeasure"
-      },
-      {
-       "param": "param:detail.adamsInfo"
+       "param": "param:creative.process"
       }
      ]
     },
     {
-     "id": "dc.zonal",
+     "id": "cr.prepare",
      "kind": "function",
-     "label": "Zonale (Ansel Adams) in tre fasi",
-     "text": "Tre fasi, un nodo ciascuna (Fase), o tutte in uno. Sviluppo: una curva sul singolo pixel, senza vicini né aloni; l'esposizione porta l'ombra misurata sulla sua zona, la pendenza (N±) ruota la retta attorno all'ombra perché la luce arrivi sulla sua; sotto l'ombra un piede, sopra la luce una spalla esponenziali verso uno stop oltre la zona 0 e la X. Stampa: Local Contrast/Highlights/Shadows sulla base per aree e Brucia i bordi (solo posizione). Presenza: Texture e Clarity piene nelle zone II–VIII e sfumate a zero verso 0 e X (zona dopo sviluppo e stampa), Dehaze. Vista zone: legenda 0–X, tacche di Ombra e Luce, tratteggio su 0 e X. Le zone sono sull'uscita: V = grigio, 0 = nero e X = bianco della Destinazione (Rec.709 CST: 7 stop; Scena DWG: 18). Split grade usa lo stesso Sviluppo: le zone di destinazione non vengono dai cursori Zonale ma dalle due esposizioni (ombra = III meno Ombre dure, luce = VIII meno Luci morbide); la Stampa è Locale (Highlights brucia le luci). Split grade ha due unioni delle esposizioni: Curva (la stessa retta con pendenza dal rapporto) e Due strati (due rette, grado 5 per le ombre e grado 0 per le luci, la carta prende la più bassa con raccordo di mezzo stop). Il Provino mostra la stessa immagine in celle con esposizioni diverse: strisce, matrice morbida×dura, unioni a confronto; Usa la cella riporta le esposizioni al nodo. Unito: Misura automatica legge il 2° e il 98° percentile della luminanza come ombra e luce; il soggetto (luce meno ombra) è confrontato con la scala della carta (da III a VIII); lo sviluppo del negativo, una retta attorno all'ombra con pendenza fra 0,5 e 2 (N-/N+), prende la prima parte, la stampa a due esposizioni (Curva o Due strati) il resto. Le pendenze limite e i percentili sono scelte, non formule del BTZS.",
-     "basis": "verificato",
+     "label": "Dai comandi ai parametri del motore",
+     "text": "creativePrepare traduce processo, variante, formato e comandi in pesi spettrali dei record, curva, coloranti o filtri, grana, alone, difetti; i numeri sono stime documentate in docs/CREATIVE.md.",
+     "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls"
       },
       {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones"
-      },
-      {
-       "param": "param:detail.adamsShadowPlace"
-      },
-      {
-       "param": "param:detail.adamsHighPlace"
-      },
-      {
-       "param": "param:detail.adamsMeasure"
-      },
-      {
-       "param": "param:detail.adamsInfo"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_zonale_places_the_shadow_and_develops_the_highlight"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_zones_follow_the_destination"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_zonale_development_is_monotone_and_smooth"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_curve"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_edge_burn"
-      },
-      {
-       "param": "param:detail.zonalPhase"
-      },
-      {
-       "param": "param:detail.printEdgeBurn"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_zonale_development_is_pointwise"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_zonale_phases_split_the_work"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_print_burns_the_edges_only"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare"
       }
      ]
     },
     {
-     "id": "dc.zoneview",
+     "id": "cr.record",
+     "kind": "function",
+     "label": "Record",
+     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola. Con le copie (Generazione) i record si sfocano come i duplicati.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_records"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU"
+      }
+     ]
+    },
+    {
+     "id": "cr.glow",
+     "kind": "function",
+     "label": "Alone e diffusione",
+     "text": "Su griglie ridotte: luce che torna dal supporto (alone) e filtro di diffusione.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at"
+      }
+     ]
+    },
+    {
+     "id": "cr.kind",
+     "kind": "decision",
+     "label": "Processo o segnale?",
+     "text": "Processi fotografici: curva e formazione dell'immagine. Video analogico e digitale: catena del segnale.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU"
+      }
+     ]
+    },
+    {
+     "id": "cr.process",
+     "kind": "function",
+     "label": "Curva e immagine",
+     "text": "Curva H&D per record, grana del negativo e dei duplicati (interpositivo, internegativo), danni, curva del positivo con la grana della stampa nelle sue densità; immagine sottrattiva (coloranti), additiva (filtri e mosaico) o monocroma (deposito virato sulla carta), poi Rec.709 Gamma 2.4 o Log d'ingresso.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_process"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain"
+      }
+     ]
+    },
+    {
+     "id": "cr.signal",
+     "kind": "function",
+     "label": "Catena del segnale",
+     "text": "Y Cb Cr, banda del luma e del colore, peaking, ritardo del colore, rumore, testine, dropout, clip e knee della camera.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at"
+      }
+     ]
+    },
+    {
+     "id": "cr.medium",
+     "kind": "function",
+     "label": "Supporto di visione",
+     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log: proiezione in sala o di casa (caduta di luce, sfarfallio, instabilità, flare, lampada, bagliore dell'obiettivo), televisore o monitor a tubo (vetro curvo e il suo bagliore, righe di scansione, fosfori), console LCD a quattro verdi che tiene parte del fotogramma precedente (renderizzato anche lui), carta (bianco, Dmax, fibre).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at"
+      },
+      {
+       "param": "param:creative.medium"
+      },
+      {
+       "param": "param:creative.mediumAmount"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_every_medium_renders_and_changes_the_picture"
+      }
+     ]
+    },
+    {
+     "id": "cr.out",
      "kind": "end",
-     "label": "Vista: zone",
-     "text": "Al posto dell'immagine, la zona 0–X in cui cade ogni area dopo il nodo: undici colori o undici grigi. Stessa scala dell'uscita della Zonale. Funziona in ogni fase.",
-     "basis": "verificato",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of"
-      },
-      {
-       "param": "param:detail.viewZonesColor"
-      },
-      {
-       "param": "param:detail.viewZonesGrey"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_view_zones_paints_eleven_bands"
-      },
-      {
-       "test": "tests/test_detail.py::CpuParity.test_every_control_matches_the_model"
-      }
-     ]
-    },
-    {
-     "id": "dc.tones",
-     "kind": "function",
-     "label": "Toni locali (Stampa)",
-     "text": "Local Contrast e Local Shadows muovono la base con la curva a zone del nodo principale; il dettaglio passa invariato. Agiscono in Stampa (fase 2, o un nodo).",
+     "label": "Immagine in uscita",
+     "text": "Rec.709 Gamma 2.4 (o la scansione del negativo nella codifica d'ingresso); alfa dal fotogramma corrente.",
      "basis": "dedotto",
      "refs": [
       {
-       "param": "param:detail.localContrast"
-      },
-      {
-       "param": "param:detail.localShadows"
-      },
-      {
-       "param": "param:detail.preserveDetail"
-      }
-     ]
-    },
-    {
-     "id": "dc.hl",
-     "kind": "function",
-     "label": "Local Highlights",
-     "text": "Spalla sulle grandi aree luminose con la texture tenuta e rinforzata dove la base è compressa; a −100 il massimo registrato arriva sul bianco della Destinazione (Dal Bianco: Avanzate › Bianco). In Stampa (fase 2, o un nodo).",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "param": "param:detail.localHighlights"
-      },
-      {
-       "param": "param:detail.localWhite"
-      },
-      {
-       "param": "param:detail.destination"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white"
-      },
-      {
-       "test": "tests/test_detail.py::Model.test_destination_white_moves_the_highlight_landing"
-      }
-     ]
-    },
-    {
-     "id": "dc.presence",
-     "kind": "function",
-     "label": "Texture e Clarity",
-     "text": "Texture: dettaglio fine sopra la soglia rumore. Clarity: contrasto a media scala sui mezzitoni. Il dettaglio aggiunto è limitato a ±1,5 stop.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "param": "param:detail.texture"
-      },
-      {
-       "param": "param:detail.clarity"
-      },
-      {
-       "param": "param:detail.noiseThreshold"
-      },
-      {
-       "param": "param:detail.clarityCenter"
-      }
-     ]
-    },
-    {
-     "id": "dc.haze",
-     "kind": "function",
-     "label": "Dehaze",
-     "text": "Canale scuro rispetto al velo dichiarato (livello e colore), mai stimato per fotogramma; sopra il livello del velo non agisce.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "param": "param:detail.dehaze"
-      },
-      {
-       "param": "param:detail.hazeLevel"
-      },
-      {
-       "param": "param:detail.hazeWarmth"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel"
-      }
-     ]
-    },
-    {
-     "id": "dc.gain",
-     "kind": "function",
-     "label": "Guadagno per pixel",
-     "text": "Il risultato è un guadagno uguale su R, G e B: la tinta non cambia. Viste guadagno/base sostituiscono l'immagine per controllo.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_apply"
-      },
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain"
-      },
-      {
-       "param": "param:detail.viewGain"
-      },
-      {
-       "param": "param:detail.viewBase"
-      }
-     ]
-    },
-    {
-     "id": "dc.encode",
-     "kind": "function",
-     "label": "Riscrive nella stessa codifica",
-     "text": "La luce lineare torna nella curva d'ingresso.",
-     "basis": "dedotto",
-     "refs": [
-      {
-       "cpp": "ofx/SLogMetaRaw/math/Detail.h::dt_emit"
-      }
-     ]
-    },
-    {
-     "id": "dc.out",
-     "kind": "end",
-     "label": "Uscita = stessa codifica",
-     "text": "Lo spazio non cambia: la conversione per lo schermo (ODT: CST o DRT verso Rec.709, o PQ) va fatta dopo, in un altro nodo. Destinazione (ODT) la dichiara: bianco e nero in stop dal grigio, CST +2,5/−4,5 (7 stop), DRT +4,5/−6, PQ 1000 +6,5/−7, Scena DWG +9/−9; Dal Bianco usa Avanzate › Bianco. Le stesse misure danno le zone 0 e X.",
-     "basis": "verificato",
-     "refs": [
-      {
-       "test": "tests/test_detail.py::CpuParity.test_at_rest_the_output_is_the_input_bit_for_bit"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render"
       }
      ]
     }
@@ -1276,150 +1096,94 @@
    "edges": [
     {
      "id": "c1",
-     "from": "dc.in",
-     "to": "dc.choose",
+     "from": "cr.in",
+     "to": "cr.choose",
      "kind": "data",
-     "label": "pixel + spazio comunicato da Resolve (se c'è)"
+     "label": "pixel + spazio comunicato"
     },
     {
      "id": "c2",
-     "from": "dc.choose",
-     "to": "dc.neutral",
+     "from": "cr.choose",
+     "to": "cr.neutral",
      "kind": "decision",
      "label": "sconosciuta"
     },
     {
      "id": "c3",
-     "from": "dc.choose",
-     "to": "dc.info",
+     "from": "cr.choose",
+     "to": "cr.info",
      "kind": "data",
      "label": "spazio scelto e motivo"
     },
     {
      "id": "c4",
-     "from": "dc.choose",
-     "to": "dc.prepare",
-     "kind": "decision",
-     "label": "spazio + curva"
+     "from": "cr.choose",
+     "to": "cr.prepare",
+     "kind": "data",
+     "label": "spazio e curva"
     },
     {
      "id": "c5",
-     "from": "dc.prepare",
-     "to": "dc.decode",
-     "kind": "control",
-     "label": "curva d'ingresso"
+     "from": "cr.panel",
+     "to": "cr.prepare",
+     "kind": "data",
+     "label": "comandi"
     },
     {
      "id": "c6",
-     "from": "dc.in",
-     "to": "dc.decode",
+     "from": "cr.prepare",
+     "to": "cr.record",
      "kind": "data",
-     "label": "RGB codificato"
+     "label": "parametri"
     },
     {
      "id": "c7",
-     "from": "dc.decode",
-     "to": "dc.luma",
+     "from": "cr.record",
+     "to": "cr.glow",
      "kind": "data",
-     "label": "RGB lineare"
+     "label": "record"
     },
     {
      "id": "c8",
-     "from": "dc.luma",
-     "to": "dc.base",
+     "from": "cr.glow",
+     "to": "cr.kind",
      "kind": "data",
-     "label": "L"
+     "label": "record + alone"
     },
     {
      "id": "c9",
-     "from": "dc.base",
-     "to": "dc.mode",
-     "kind": "data",
-     "label": "base B, dettaglio L−B"
+     "from": "cr.kind",
+     "to": "cr.process",
+     "kind": "decision",
+     "label": "processo"
     },
     {
      "id": "c10",
-     "from": "dc.tones",
-     "to": "dc.hl",
-     "kind": "data",
-     "label": "base spostata"
+     "from": "cr.kind",
+     "to": "cr.signal",
+     "kind": "decision",
+     "label": "segnale"
     },
     {
      "id": "c11",
-     "from": "dc.hl",
-     "to": "dc.presence",
+     "from": "cr.process",
+     "to": "cr.medium",
      "kind": "data",
-     "label": "L locale"
+     "label": "RGB"
     },
     {
      "id": "c12",
-     "from": "dc.presence",
-     "to": "dc.haze",
+     "from": "cr.signal",
+     "to": "cr.medium",
      "kind": "data",
-     "label": "L + dettaglio"
+     "label": "RGB"
     },
     {
      "id": "c13",
-     "from": "dc.haze",
-     "to": "dc.gain",
+     "from": "cr.medium",
+     "to": "cr.out",
      "kind": "data",
-     "label": "L finale → guadagno"
-    },
-    {
-     "id": "c14",
-     "from": "dc.decode",
-     "to": "dc.gain",
-     "kind": "data",
-     "label": "RGB lineare"
-    },
-    {
-     "id": "c15",
-     "from": "dc.gain",
-     "to": "dc.encode",
-     "kind": "data",
-     "label": "RGB lineare × guadagno"
-    },
-    {
-     "id": "c16",
-     "from": "dc.encode",
-     "to": "dc.out",
-     "kind": "data",
-     "label": "stessa codifica dell'ingresso"
-    },
-    {
-     "id": "c17",
-     "from": "dc.zonal",
-     "to": "dc.tones",
-     "kind": "decision",
-     "label": "Stampa"
-    },
-    {
-     "id": "c19",
-     "from": "dc.measure",
-     "to": "dc.zonal",
-     "kind": "control",
-     "label": "L ombra, L luce"
-    },
-    {
-     "id": "c21",
-     "from": "dc.mode",
-     "to": "dc.zonal",
-     "kind": "decision",
-     "label": "Zonale"
-    },
-    {
-     "id": "c22",
-     "from": "dc.zonal",
-     "to": "dc.presence",
-     "kind": "data",
-     "label": "base spostata"
-    },
-    {
-     "id": "c23",
-     "from": "dc.gain",
-     "to": "dc.zoneview",
-     "kind": "data",
-     "label": "L + guadagno → zona"
+     "label": "RGB"
     }
    ],
    "view": {
@@ -1430,102 +1194,75 @@
      "utente"
     ],
     "pos": {
-     "dc.in": [
+     "cr.in": [
       0,
       0
      ],
-     "dc.choose": [
+     "cr.choose": [
       1,
       1
      ],
-     "dc.neutral": [
+     "cr.neutral": [
       2,
       0
      ],
-     "dc.info": [
+     "cr.info": [
       2,
       3
      ],
-     "dc.prepare": [
+     "cr.panel": [
       2,
+      3
+     ],
+     "cr.prepare": [
+      3,
       1
      ],
-     "dc.decode": [
-      3,
-      2
-     ],
-     "dc.luma": [
+     "cr.record": [
       4,
       2
      ],
-     "dc.base": [
+     "cr.glow": [
       5,
       2
      ],
-     "dc.tones": [
-      7,
-      2
-     ],
-     "dc.hl": [
-      8,
-      2
-     ],
-     "dc.presence": [
-      9,
-      2
-     ],
-     "dc.haze": [
-      10,
-      2
-     ],
-     "dc.gain": [
-      11,
-      2
-     ],
-     "dc.encode": [
-      12,
-      2
-     ],
-     "dc.out": [
-      13,
-      0
-     ],
-     "dc.mode": [
+     "cr.kind": [
       6,
       2
      ],
-     "dc.measure": [
+     "cr.process": [
+      7,
+      2
+     ],
+     "cr.signal": [
       7,
       3
      ],
-     "dc.zonal": [
-      8,
-      3
+     "cr.out": [
+      9,
+      0
      ],
-     "dc.zoneview": [
-      12,
-      3
+     "cr.medium": [
+      8,
+      2
      ]
     }
    },
    "proposals": [
     {
-     "id": "P-003",
+     "id": "P-004",
      "status": "in corso",
-     "label": "Modalità di sviluppo: Zonale, Split grade, Provino e Unito fatti; da provare in Resolve",
-     "problem": "Non è chiaro in che spazio lavora il nodo né per che risultato è pensato; un solo insieme di comandi per scopi diversi.",
-     "change": "Menu Modalità in cima con descrizione; Ingresso (IDT) spostato lì; Destinazione (ODT) che fissa il bianco. Zonale con vista zone a colori e in grigi, scala sull'uscita, poi rifatta in tre fasi, tre nodi in serie: Sviluppo globale (curva sul pixel, niente aloni), Stampa (per aree e bordi bruciati), Presenza. Standard e Cinematografico eliminati (codice, parametri, test): restano le tre modalità volute, Zonale, Split grade e Unito. Split grade: stessa curva dello Sviluppo con il vocabolario della stampa, Luci morbide (esposizione morbida, porta le luci sulla zona VIII) e Ombre dure (esposizione dura, porta le ombre sulla zona III); il grado (2,5 + 2,5·log2 della pendenza) è un'ipotesi da verificare su stampe vere.",
-     "impact": "Pannello Detail (nomi permanenti salvo i parametri eliminati: Cinematografico e Zone locali, elencati in DROPPED_AFTER_2_4_0 di tests/test_ofx_host.py), math/DetailHost.h, kernel CPU e Metal (dt_zonal_curve, dt_edge_burn, peso di Presenza per zona, legenda), golden params_detail.txt, settingsVersion 3: i nodi salvati in Standard o Cinematografico diventano Zonale e cambiano aspetto.",
-     "verification": "Modello Python e parità CPU (tests/test_detail.py). Da provare in Resolve: comandi che appaiono/spariscono, punti sul viewer, Misura zone (lettura immagine fuori dal render), legenda; Metal non eseguito.",
+     "label": "Creative al posto del Detail: da provare in Resolve e tarare",
+     "problem": "Il Detail (zonale, split grade, texture) non serviva; serve uno sviluppo creativo con processi veri e comandi semplici.",
+     "change": "Nodo Creative nello stesso slot: motore unico per 16 processi, tabelle di pellicole, formati, nastri e camere; pannello che mostra solo i comandi del processo.",
+     "impact": "Pannello del secondo nodo rifatto (golden params_detail.txt, parametri del Detail in DROPPED_AFTER_2_4_0), math/Creative.h, kernel Metal, test.",
+     "verification": "Test CPU (tests/test_creative.py) e host OFX; parità Metal solo nella CI macOS; aspetto da tarare su riprese reali.",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls"
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls"
       },
       {
-       "param": "param:detail.nodeInput"
-      },
-      {
-       "param": "param:detail.devMode"
+       "param": "param:creative.process"
       }
      ]
     }
@@ -1562,29 +1299,22 @@
    "slogmetaraw/ui.py::main.read_worker": "587b95e003ef",
    "slogmetaraw/ui.py::main.show_details": "44eb62d2468c"
   },
-  "beh:detail.colour": {
-   "ofx/SLogMetaRaw/math/Detail.h::dt_apply": "01a83eae2d74",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_edge_burn": "fd5aff5b1e59",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_emit": "9cc3dc73ad63",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_haze_pixel": "f33417c4ec86",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_luma": "7ba45505bae8",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_view_gain": "f7da20edb1fc",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_view_zones": "db1f208e7d9a",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_zonal_curve": "18b0aab0b135",
-   "ofx/SLogMetaRaw/math/Detail.h::dt_zone_of": "b95c0e637405",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_destination_white": "1a075e48a9de",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_prepare": "9bef2f90d804",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zonal_develop": "2f63903727ab",
-   "ofx/SLogMetaRaw/math/DetailHost.h::dt_zone_L": "25f44e13f0ff",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::measureZones": "ee7e34ac713c",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::readControls": "3bd740018f08",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::refreshInfo": "c522b9d9578f",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::render": "7202477e8246",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::resolveInput": "e9ada096d0a0",
-   "ofx/SLogMetaRaw/src/detail/DetailEffect.cpp::DetailEffect::updateMode": "219bb62fdf7b",
-   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::decoded": "80053c352c0b",
-   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::guided": "e580c393191c",
-   "ofx/SLogMetaRaw/src/detail/DetailPasses.cpp::tent": "64783bf3bcf8"
+  "beh:creative.process": {
+   "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "c1c85e84d59b",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "fd64b9e99431",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "2d366cf560f9",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "1152803485a5",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "ae97c6204464",
+   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "a6c65cfe45c6"
   }
  }
 }

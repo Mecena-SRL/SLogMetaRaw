@@ -24,7 +24,7 @@ O Log MetaRaw lê esses dados e usa-os. É um script e cinco nós, numerados nos
 | Nó **1 · Log MetaRaw Noise** | Color › OpenFX | redução de ruído na imagem log, com o ruído esperado por câmera, ISO e formato; temporal e espacial, GPU Metal |
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | estabilização por giroscópio (Gyroflow integrado) e desfoque de movimento a partir do fluxo óptico; só Mac Apple silicon |
 | Nó **4 · Log MetaRaw** | Color › OpenFX | revela um clipe a partir dos valores de gravação: balanço, exposição, espaço de cor, tons por zonas, falsa cor |
-| Nó **5 · Log MetaRaw Detail** | Color › OpenFX | o nó criativo, com os modos do laboratório (Zonale, Split grade, Unito): recuperação local de tons, Texture, Clarity, Dehaze |
+| Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; um suporte de visualização (sala, projetor doméstico, TV CRT, console LCD, papel) |
 
 Nenhum arquivo é transcodificado e nenhum original é alterado.
 
@@ -53,7 +53,7 @@ que existe. Não pode criar o que não existe.
 3. Reinicie o DaVinci Resolve.
 
 O instalador também apaga o cache de plugins do Resolve (`OFXPluginCacheV2.xml`), que o Resolve reconstrói na próxima
-inicialização. Sem isso, o Resolve continuaria mostrando o painel antigo e não veria o nó Detail.
+inicialização. Sem isso, o Resolve continuaria mostrando o painel antigo e não veria o nó Creative.
 
 | Instalado | Caminho |
 |---|---|
@@ -90,12 +90,12 @@ melhor estimativa, não uma calibração. Com um perfil desconhecido ficam neutr
 2. Na página Color, coloque o **Log MetaRaw** como **primeiro nó**. Ele pega o EI, os Kelvin e o tint do clipe. Nesses
    valores não muda nada.
 3. Corrija balanço e exposição no nó. As vistas de falsa cor ajudam.
-4. Molde os tons com **Toni** (Tons). Para recuperação local, Texture, Clarity ou Dehaze, acrescente o
-   **Log MetaRaw Detail** como nó seguinte.
+4. Molde os tons com **Toni** (Tons). Para o visual de um filme, um processo antigo, uma fita ou uma câmera de época,
+   acrescente o **Log MetaRaw Creative** como nó seguinte.
 5. Depois, o seu CST, LUT ou DRT.
 
 ```
-Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  resto da correção
+Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Creative  →  CST / LUT / DRT  →  resto da correção
 ```
 
 ---
@@ -186,45 +186,32 @@ termina em segundo plano, com limite de 15 segundos. *Rileggi* responde em cerca
 
 ---
 
-## O nó Log MetaRaw Detail
+## O nó Log MetaRaw Creative
 
-É o nó criativo. Trabalha **por áreas**, sobre uma base que respeita as bordas, e ajusta as grandes áreas sem achatar o
-detalhe fino. É a parte de Highlights e Shadows do Lightroom que um nó pontual não consegue copiar.
+Um único motor que refaz **o processo**, não uma imitação do resultado. A luz da cena, decodificada em Rec.2020 linear,
+vira até três **registros** com a sua sensibilidade espectral. Cada um é exposto na curva do material e transformado em
+imagem como aquele processo fazia: corantes subtrativos, filtros aditivos, um depósito de prata ou platina no papel, um
+sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só os controles do processo escolhido.
 
-| Grupo | Controles |
+| Processo | O que modela |
 |---|---|
-| **Sviluppo e spazio colore** (revelação e espaço de cor) | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
-| **Misura** (medição) | pontos *Ombra* e *Luce* no visor, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
-| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva ou Due strati), **Provino** (tira de teste) |
-| **Gamma dinamica** (faixa dinâmica) | Local Contrast, Local Highlights, Local Shadows; vistas de *ganho* e *base*. Local Highlights comprime as grandes áreas claras e mantém, até reforça, a textura fina: o céu escurece e as nuvens mantêm o detalhe. O Highlights do nó principal, ao contrário, suaviza a textura das altas luzes, como a película |
-| **Presenza** (presença) | Texture, Clarity, Dehaze |
-| **Avanzate** (avançado) | preservação do detalhe, raio, limiares de bordas e ruído, centro do Clarity, **Bianco** do Local Highlights |
-| **Velo** (véu) | nível e cor do véu que o Dehaze remove: quem decide é você, nunca são estimados quadro a quadro |
+| **Negativo colorido e cópia** | três camadas com contraste, pé e ombro próprios, interimagem, grão por camada, halo, cópia positiva com luzes R G B; 14 filmes, também do Leste (Sovcolor, ORWO, Svema, Gevacolor). *Saída Log* dá o escaneamento do negativo |
+| **Reversível**, **Preto e branco** | diapositivo; P&B com sensibilidade azul, orto ou pan e filtro de tomada compensado |
+| **Technicolor** três tiras e duas cores | três negativos do prisma, matrizes por embebição, chave K até 1944; só vermelho e verde |
+| **Autochrome**, **Dufaycolor** | mosaico aditivo de grãos de fécula tingidos ou retícula regular, visto por transparência |
+| **Três chapas**, **Kinemacolor** | exposições em sequência: com *Intervallo* > 0 o nó lê os quadros seguintes e o que se move se separa em cores (Prokudin-Gorski) |
+| **Daguerreótipo**, **Colódio**, papel salgado e albumina, cianotipia, platina | depósitos sensíveis ao azul e ao UV, espelho e oxidação, suporte, borda, viragem |
+| **Vídeo analógico** | 11 formatos, do broadcast ao VHS LP e Betacam SP: banda de luma e cor, atraso da cor, peaking, ruído, troca de cabeças, dropouts |
+| **Digital de época** | 10 câmeras: clip e knee, nitidez eletrônica, ruído, subamostragem, banding |
 
-**Modos (3.0.0).** Três métodos do laboratório, cada um em três **fases**, um nó por fase em série (ou todas num nó). A **Guida**, no fim do painel, dá para cada fase o objetivo, três passos e o que fazer depois (copie o nó, cole depois, mude a Fase). Os nós salvos com a 2.4.0 em Standard ou Cinematografico abrem como Zonale e mudam de aspecto.
+- Vai **logo depois** do Log MetaRaw. Decodifica em luz linear e sai em Rec.709 · Gamma 2.4 (a cópia projetada), ou na
+  codificação de entrada com *Saída Log*.
+- É **espacial**: o Generate LUT o exclui. Os raios seguem a altura do quadro. Ruído determinístico: CPU e Metal dão a
+  mesma imagem.
+- Substitui o nó Detail no mesmo lugar: uma correção salva com o Detail abre como um Creative novo.
 
-- **Destinazione (ODT)** diz ao nó qual transformação vem depois, para saber onde ficam o branco (zona X) e o preto (zona 0). Nunca converte a imagem. *Dal Bianco (manuale)* usa Avanzate › Bianco; as outras o fixam: Rec.709 CST +2,5/−4,5 stops em torno do cinza, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (Ansel Adams): coloque *Ombra* e *Luce* em detalhes a conservar, clique em **Misura zone** e depois *Ombra sulla zona* (exposição, padrão III) e *Luci sulla zona* (revelação N+/N−, padrão VIII). Fases: *1 · Sviluppo* (curva por pixel, sem halos), *2 · Stampa* (Local Shadows, Highlights, Contrast por áreas, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, plenos nas zonas II–VIII).
-- **Split grade** (cópia com duas exposições): **Luci morbide** (exposição suave, grau 0) leva as luzes à zona VIII e **Ombre dure** (dura, grau 5) as sombras à III, em stops; **Grado** lê o resultado. **Unione**: *Curva* (uma só curva) ou *Due strati* (uma camada suave e uma dura, como no papel). **Provino** mostra uma tira de teste sobre a imagem (tiras, matriz suave × dura ou as duas uniões lado a lado): mova *Provino: cella* e clique em **Usa la cella**. Fases: *Esposizioni*, *Locale*, *Presenza*.
-- **Unito** (Split grade + zonas automáticas + BTZS): a extensão do assunto é comparada com a escala do papel (zonas III–VIII do destino); a revelação (N±) aproxima, a cópia com duas exposições faz o resto.
-- **Misura automatica**, em qualquer modo, lê o quadro inteiro e toma os percentis 2 e 98 como sombra e luz.
-- **Vista: zone** (11 cores) e **Vista: zone in grigi** (11 cinzas) mostram em que zona cai cada área após o nó, com a legenda 0–X.
-
-Ainda não testado no Resolve e Metal não executado. A fórmula do grau, os percentis e os limites da revelação são hipóteses desta implementação, não verificadas com o BTZS nem em cópias reais. [docs/DETAIL.md](docs/DETAIL.md)
-
-- Coloque-o **logo depois** do Log MetaRaw, antes de CST, LUT ou DRT. Ele decodifica para luz linear o que recebe e
-  grava de volta na mesma codificação, então vai antes de qualquer conversão: deixe Color Space e Gamma do nó principal em
-  Timeline.
-- É **espacial**, por isso o Generate LUT o exclui, junto com o resto do seu nó. Mantenha-o num nó próprio.
-- Os raios seguem a altura do quadro. O visual é o mesmo em resolução total, em proxy e no visor. Sem estatísticas por
-  quadro, portanto sem flicker.
-- No Metal um quadro UHD leva cerca de 6–18 ms, medidos em Apple silicon. A alternativa por CPU é bem mais lenta.
-
-**Os seus limites, medidos.** Com Local Highlights −100 o halo no lado escuro de uma borda fica abaixo de 3% do degrau.
-Com Local Shadows a ±100, numa borda nítida de um stop o halo chega a cerca de 12% do degrau, e a 4–6% em
-degraus de 2–3 stops. Se o vir, baixe *Soglia bordi* (limiar de bordas). Texture não sobe o grão abaixo do limiar de
-ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaze precisa de um véu real para remover.
-[docs/DETAIL.md](docs/DETAIL.md)
+Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
+ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
 
 ---
 
@@ -300,7 +287,7 @@ motion/              Mecena Motion: Stabilize, Motion Blur, mecena-clipdb (Rust 
 tools/               geradores de matrizes, ícones e gráficos
 tests/               testes e modelos de referência (os clipes de teste não estão no repositório)
 packaging/           instalador, guias, desinstalador
-docs/                TONE_MAPPING, DETAIL, DENOISE, FALSE_COLOR, DATA_LEVELS
+docs/                TONE_MAPPING, CREATIVE, DENOISE, FALSE_COLOR, DATA_LEVELS
 ```
 
 ### Linux e Windows (renderização por CPU, experimental)

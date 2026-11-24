@@ -1,5 +1,25 @@
 # Changelog
 
+## In sviluppo
+
+- **Log MetaRaw Creative** al posto del Detail (stesso posto nel bundle, icona numero 5): sviluppo creativo con un
+  solo motore che rifà il procedimento. 16 processi: negativo colore e stampa (14 pellicole, anche Sovcolor, ORWO,
+  Svema, Gevacolor; uscita Log = scansione del negativo), invertibile, bianco e nero (sensibilità e filtro di presa),
+  Technicolor tre strisce e due colori, Autochrome, Dufaycolor, tre lastre e Kinemacolor (pose in sequenza che
+  leggono i fotogrammi successivi), dagherrotipo, collodio, carta salata e albumina, cianotipia, platino, video
+  analogico (11 formati) e camere digitali d'epoca (10). Formati da 8 mm a IMAX 15/70. Il pannello mostra solo i
+  comandi del processo scelto. CPU e Metal. Zonale, Split grade, Texture, Clarity e Dehaze non ci sono più: un grade
+  salvato con il Detail si apre come un Creative nuovo. I numeri sono stime dalle ricerche in `docs/creative/`, da
+  tarare su riprese vere; non ancora provato in Resolve, Metal verificato solo dai test della CI macOS. Dettagli:
+  `docs/CREATIVE.md`. Guide, README nelle 5 lingue e wiki aggiornati.
+  Poi: 6 negativi, 3 invertibili e 3 B/N in più; 4 positivi nuovi (anche con argento trattenuto); **Generazione**
+  (copia campione, di distribuzione da interpositivo e internegativo, riduzione 16 mm, controtipo) con la grana dei
+  duplicati e la **grana della stampa**; **Supporto di visione** dopo l'uscita: sala, proiettore di casa, televisore a
+  tubo PAL e NTSC, monitor broadcast, console portatile LCD verde, carta fotografica. Motore più veloce: sorgente
+  decodificata una volta, sfocature con meno esponenziali, video analogico circa 3 volte più rapido sulla CPU.
+  Poi: i duplicati perdono nitidezza; bagliore del vetro e dell'obiettivo attorno alle luci; la console tiene la scia
+  del fotogramma precedente; pannello più pulito (righe senza effetto nascoste, Azzera comandi in alto, «Visto su»).
+
 ## Log MetaRaw 4.0.4
 
 - **Motion Blur, grana del sensore preservata**: la scia non spalma più la grana (nella realtà il rumore appartiene al

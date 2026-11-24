@@ -46,10 +46,11 @@ resolve_script/SLogMetaRaw.py   (entry point GUI eseguito dentro Resolve, usa ui
 ## C++ — `ofx/SLogMetaRaw/src/` (plugin OFX per DaVinci Resolve)
 
 ```
-Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Detail, Noise)
+Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Creative (slot del Detail), Noise)
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp)
-  ├──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
+  ├──> creative/CreativeFactory.h ──> CreativeEffect, CreativePanel (tabella del pannello), CreativeModel (tabelle
+  │                                  dei processi → CreativeParams), CreativeEngine (CPU) | CreativeKernels (Metal)
   └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles, develop/ClipMeta (lettura clip)
                                     (tabella camere e formati, docs/DENOISE.md)
 
@@ -64,10 +65,11 @@ common/  (condiviso dai nodi)
   identità della clip, ingresso del nodo `nodeEncoding`, contagocce `pickWhite`; `ToneParams`: visibilità dei
   controlli di Toni e Zone). Pannello a gruppi annidati: Ripresa, Spazio colore (Ingresso, Senza metadata,
   Uscita), Toni, Zone, Dati di ripresa.
-- **Detail** (secondo nodo): recupero locale/texture; non legge metadata clip, lavora sui pixel
-  in ingresso (`DetailPasses`, GPU Metal + fallback CPU). Modalità Zonale e Split grade (Standard e Cinematografico eliminati); la
-  Zonale in fasi (`zonalPhase`): Sviluppo puntuale (`dt_zonal_curve`), Stampa per aree + `dt_edge_burn`,
-  Presenza. Parametri: `math/DetailHost.h::dt_prepare`, per pixel: `math/Detail.h::dt_gain`.
+- **Creative** (secondo nodo, slot e identificatore del vecchio Detail): sviluppo creativo, un motore unico per 16
+  processi (pellicole, procedimenti storici, video analogico, camere digitali). `CreativeModel::creativePrepare` porta
+  comandi e tabelle in `CreativeParams`; per pixel `math/Creative.h` (`cr_record`, `cr_glow_at`, `cr_process`,
+  `cr_signal_at`), passi in `CreativeEngine` (CPU) e `metal/CreativeKernels.mm` + `metal/kernels/Creative.metal`.
+  Accesso temporale OFX per le pose in sequenza. `docs/CREATIVE.md`, ricerche in `docs/creative/`.
 - **Noise** (terzo nodo, prima del Develop): riduzione rumore sull'immagine log. `NoiseProfiles` costruisce il
   rumore atteso per luminosità e banda dalla clip (`model`, `noise_codec`, `noise_iso`, `noise_bitrate`… del record
   di `plugin_cache.py`); `NoiseEngine` fa il temporale (block matching su piramide, pesi per patch) e lo spaziale
@@ -125,7 +127,8 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py` (con `gen/GamutMatrices.h` e
   `gen/Aces2Tables.h`): non va mai editato a mano.
 
-_Ultimo aggiornamento: 24/11/2026 — rimosso `develop/NoiseMask` (Maschera rumore, 3.2.0-3.2.1: passa al plugin Noise;
+_Ultimo aggiornamento: 24/11/2026 — `detail/` e `math/Detail*.h` sostituiti da `creative/` e `math/Creative.h`
+(nodo Creative). Prima, 24/11/2026 — rimosso `develop/NoiseMask` (Maschera rumore, 3.2.0-3.2.1: passa al plugin Noise;
 il record della clip conserva `noise_codec`). Prima, 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
 (`tools/aces2.py`, `gen/Aces2Tables.h`) e OpenDRT (`tests/model/opendrt.py`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
 dalla 2.4.0: cambiano i pannelli Develop e Detail; prima, alla 2.4.0:

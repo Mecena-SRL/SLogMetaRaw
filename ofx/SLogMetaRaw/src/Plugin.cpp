@@ -3,7 +3,7 @@
 // Free software under the GNU General Public License v3 or later; no warranty.
 #include "ofxsImageEffect.h"
 
-#include "detail/DetailFactory.h"
+#include "creative/CreativeFactory.h"
 #include "develop/DevelopFactory.h"
 #include "noise/NoiseFactory.h"
 
@@ -11,9 +11,9 @@
 void OFX::Plugin::getPluginIDs(PluginFactoryArray& p_FactoryArray)
 {
     static DevelopFactory develop;
-    static DetailFactory detail;
+    static CreativeFactory creative;
     static NoiseFactory noise;
     p_FactoryArray.push_back(&develop);
-    p_FactoryArray.push_back(&detail);
+    p_FactoryArray.push_back(&creative);   // the Detail slot: same identifier
     p_FactoryArray.push_back(&noise);
 }

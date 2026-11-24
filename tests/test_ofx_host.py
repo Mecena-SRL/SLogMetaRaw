@@ -24,13 +24,19 @@ GOLDEN = {0: os.path.join(ROOT, 'tests', 'golden', 'params_develop.txt'),
           2: os.path.join(ROOT, 'tests', 'golden', 'params_noise.txt')}
 
 
-# Parameters removed on purpose after 2.4.0 (Detail: Standard and Cinematografico are gone, decided with the owner,
-# no migration): a grade saved with them loads, the values are ignored. devMode is listed because its options changed.
-DROPPED_AFTER_2_4_0 = {1: {'param:' + n for n in (
-    'devMode', 'modeInfo', 'subjectFace', 'subjectLandscape', 'ratioLightPos', 'ratioShadowPos', 'ratioMeasure', 'ratioTarget',
-    'ratioHardness', 'ratioBackground', 'ratioSubjectLift', 'ratioInfo', 'ratioLight', 'ratioShadow', 'ratioMeasured',
-    'localZonePivot', *('localZone%s%s' % (z, k) for z in ('Black', 'Shadow', 'Light', 'Specular')
-                        for k in ('Exp', 'Range', 'Falloff')))}}
+# Parameters removed on purpose after 2.4.0, decided with the owner, no migration: a grade saved with them loads,
+# the values are ignored. Plugin 1: Creative replaced the Detail in the same slot (2026-11-24); of the Detail's panel
+# only the input, the info line and the hidden bookkeeping are left, with their types.
+DETAIL_KEPT = {'param:' + n for n in ('nodeInput', 'detailInfo', 'boundPath', 'camSpace', 'camGamma', 'settingsVersion',
+                                      'version')}
+
+
+def released_names(name):
+    with open(os.path.join(ROOT, 'tests', 'golden', 'released', name), encoding='utf-8') as fh:
+        return {line.split('|')[0] for line in fh.read().splitlines() if line}
+
+
+DROPPED_AFTER_2_4_0 = {1: released_names('params_detail_2.4.0.txt') - DETAIL_KEPT}
 
 
 class OfxHost(unittest.TestCase):
@@ -105,13 +111,20 @@ class OfxHost(unittest.TestCase):
                 self.assertTrue(new_[OPTIONS] == old[OPTIONS] or new_[OPTIONS].startswith(old[OPTIONS] + ','),
                                 '%s: le opzioni non possono cambiare ordine' % name)
 
-    def test_a_new_detail_starts_zonale_at_development_and_a_saved_one_keeps_one_node(self):
-        """Zonale in phases: a new node is guided from 1 · Sviluppo; a node saved before the phases (version 1)
-        keeps every phase in one node, as it was, and the old Standard and Cinematografico modes become Zonale."""
-        new = self.values(plugin=1)
-        self.assertEqual((new.get('zonalPhase'), new.get('settingsVersion')), ('1', '3'))
-        saved = self.values('--set', 'settingsVersion=1', '--set', 'devMode=0', plugin=1)
-        self.assertEqual((saved.get('zonalPhase', '0'), saved.get('settingsVersion')), ('0', '3'))
+    def test_creative_opens_a_detail_node_and_shows_its_process(self):
+        """A node saved by the Detail (settings 3) opens as a Creative of this version; each process shows only
+        its own controls."""
+        self.assertEqual(self.values(plugin=1).get('settingsVersion'), '4')
+        self.assertEqual(self.values('--set', 'settingsVersion=3', plugin=1).get('settingsVersion'), '4')
+        negative = self.host('--plugin', '1', '--no-reload')
+        self.assertIn('secret:negative=0', negative)
+        self.assertIn('secret:analog=1', negative)
+        self.assertIn('secret:signalGroup=1', negative)
+        vhs = self.host('--plugin', '1', '--no-reload', '--change', 'process=14')
+        self.assertIn('secret:negative=1', vhs)
+        self.assertIn('secret:analog=0', vhs)
+        self.assertIn('secret:wear=0', vhs)
+        self.assertIn('secret:grain=1', vhs)
 
     def test_the_old_input_list_fills_the_two_choices(self):
         """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""
@@ -275,7 +288,7 @@ class OfxHost(unittest.TestCase):
         self.assertIn('noSpatialAwareness=true', first)
         self.assertIn('plugin: com.slogmetaraw.SLogMetaRawDetail v1.0', second)
         self.assertIn('noSpatialAwareness=false', second)
-        self.assertIn('identity=1', second)
+        self.assertIn('identity=0', second)   # Creative: a process always develops the picture
         # the Noise node: appended third, spatial and temporal
         self.assertIn('plugin: com.slogmetaraw.SLogMetaRawNoise v1.0', third)
         self.assertIn('noSpatialAwareness=false', third)
