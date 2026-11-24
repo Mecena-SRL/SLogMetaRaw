@@ -169,6 +169,8 @@ Maschera rumore (24/11/2026): gruppo nuovo del Develop, alpha con le zone rumoro
 EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`); RGB invariato, verificato dai test. Da provare in Resolve:
 alpha del nodo come key del nodo Neat Video, Metal non eseguito. Aperto: tarare le costanti stimate (C70, Z8,
 X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.
+Plugin Noise (24/11/2026): solo proposta, `docs/proposals/NOISE_PLUGIN.md` (modello σ dalle costanti della maschera,
+wavelet spaziale V1, temporale con compensazione del movimento V2). Aperto: nomi del pannello, CUDA, prova temporale in Resolve.
 Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).
