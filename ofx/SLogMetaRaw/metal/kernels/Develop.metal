@@ -8,12 +8,11 @@ kernel void SLogMetaRawDevelop(constant int& p_Width [[buffer(11)]], constant in
 {
     if ((int)id.x >= p_Width || (int)id.y >= p_Height) return;
     const int i = ((int)id.y * p_RowPixels + (int)id.x) * 4;
-    float mask;
-    SMf3 o = sm_develop_a(smf3(p_Input[i], p_Input[i + 1], p_Input[i + 2]), p_Params, mask);
+    SMf3 o = sm_develop(smf3(p_Input[i], p_Input[i + 1], p_Input[i + 2]), p_Params);
     p_Output[i] = o.x;
     p_Output[i + 1] = o.y;
     p_Output[i + 2] = o.z;
-    p_Output[i + 3] = p_Params.nmOn != 0 ? mask : p_Input[i + 3];
+    p_Output[i + 3] = p_Input[i + 3];
 }
 
 // Test only: out = a*b + c must round like the CPU build (no fused multiply-add).

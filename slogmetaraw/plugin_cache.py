@@ -67,7 +67,7 @@ def _join(*parts):
 
 
 def noise_codec(m):
-    """How the recording treats shadow noise, for the node's Maschera rumore: raw (ProRes RAW, no in-camera
+    """How the recording treats shadow noise, for the Noise plugin: raw (ProRes RAW, no in-camera
     noise reduction), intra (ProRes, XAVC Intra / S-I), long (10-bit Long GOP), long8 (8 bit); '' unknown."""
     fourcc = m.get('v_fourcc') or ''
     if fourcc in ('aprn', 'aprh'):

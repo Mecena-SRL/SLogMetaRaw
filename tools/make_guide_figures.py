@@ -14,12 +14,9 @@ own reference models, so a figure cannot drift from what the node does:
   drt_curves     tests/model/display.py  render (ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT)
   gamut_rgc      tests/model/display.py  compress (ACES 1.3 Reference Gamut Compression)
   zones          tests/model/detail.py   DEST_WHITE, DEST_BLACK, ZONE_RGB, zone_of
-  noise_mask     the formula of src/develop/NoiseMask.cpp (setNoiseMask) and math/Develop.h (sm_noise_mask),
-                 re-stated below with the camera table of docs/NOISE.md
   dlogm          tests/develop_model.py  DLM (17-node D-Log M table, Osmo Action 6)
 
-Two figures are illustrations, and say so in their captions: noise_snr (a photon shot + read noise sensor whose
-parameters are chosen to reproduce ARRI's per-EI table) and local_vs_point (a 1-D signal, not the Detail filter).
+One figure is an illustration, and says so in its caption: local_vs_point (a 1-D signal, not the Detail filter).
 The block diagrams (flow, develop_chain) are drawn by hand from the order of sm_develop_a.
 """
 import math
@@ -67,18 +64,6 @@ TXT = {
     'magenta': ('magenta (0,803 → 1,264)', 'magenta (0.803 → 1.264)'),
     'yellow': ('giallo (0,880 → 1,312)', 'yellow (0.880 → 1.312)'),
     'identity': ('nessuna compressione', 'no compression'),
-    'below_grey': ('stop sotto il grigio 18%', 'stops below 18% grey'),
-    'snr': ('rapporto segnale/rumore (SNR)', 'signal-to-noise ratio (SNR)'),
-    'mask': ('maschera (alpha)', 'mask (alpha)'),
-    'ei': ('EI', 'EI'),
-    'floor': ('SNR = 1 (pavimento)', 'SNR = 1 (floor)'),
-    'snr2': ('SNR = 2', 'SNR = 2'),
-    'fx6_800': ('FX6, EI 800 (nativo basso)', 'FX6, EI 800 (low native)'),
-    'fx6_3200': ('FX6, EI 3200 su nativo 800', 'FX6, EI 3200 on native 800'),
-    'fx6_12800': ('FX6, EI 12800 (nativo alto: −0,5)', 'FX6, EI 12800 (high native: −0.5)'),
-    'fx6_8bit': ('S-Log3 generica, 8 bit (−0,5)', 'generic S-Log3, 8 bit (−0.5)'),
-    'clean': ('pulita (0)', 'clean (0)'),
-    'noisy': ('da pulire (1)', 'to clean (1)'),
     'zone_dest': ('Destinazione (ODT)', 'Destinazione (ODT)'),
     'cst_dest': ('Rec.709 · CST (−4,5 / +2,5)', 'Rec.709 · CST (−4.5 / +2.5)'),
     'drt_dest': ('Rec.709 · DRT (−6 / +4,5)', 'Rec.709 · DRT (−6 / +4.5)'),
@@ -107,11 +92,6 @@ TXT = {
     'skin': ('incarnato', 'skin'),
     'deep': ('ombra profonda', 'deep shadow'),
     'black': ('nero', 'black'),
-    'ei_axis': ('EI scelto', 'chosen EI'),
-    'thr_axis': ('soglia: stop sotto il grigio', 'threshold: stops below grey'),
-    'arri': ('ARRI ALEV-3, SNR = 1 (misura)', 'ARRI ALEV-3, SNR = 1 (measured)'),
-    'fx6_low': ('FX6 girata a 800: inizio maschera', 'FX6 shot at 800: mask start'),
-    'fx6_high': ('FX6 girata a 12800: inizio maschera', 'FX6 shot at 12800: mask start'),
     'full_ok': ('S-Log3 su scala full (giusto)', 'S-Log3 on the full scale (right)'),
     'as_video': ('la stessa letta come Video', 'the same read as Video'),
     'video_range': ('scala video 64-940', 'video scale 64-940'),
@@ -398,78 +378,6 @@ def fig_gamut_rgc(path):
     s.save(path)
 
 
-# --- noise: the formula of setNoiseMask / sm_noise_mask
-def mask_curve(start, full, low, high, shot_ei, ei, codec=0.0):
-    is_high = high > 0 and shot_ei >= high
-    native = high if is_high else (low if low > 0 else shot_ei)
-    st = start - (0.5 if is_high else 0.0) + codec
-    fade = max(0.25, full - start)
-    below = max(0.0, st - math.log2(ei / native))
-
-    def m(sb):   # sb = stops below grey (positive)
-        tt = min(max((-below + sb) / fade, 0.0), 1.0)
-        return tt * tt * (3 - 2 * tt)
-    return m, below
-
-
-def fig_noise_snr(path):
-    s = Svg(HALF, 236)
-    p = Plot(s, (44, 10, HALF - 10, 190), (0, 10), (-1, 5), t('below_grey'), 'log₂ SNR',
-             range(0, 11, 2), range(-1, 6, 1), yfmt=lambda v: num(v, 0))
-    read = 3.0                                  # electrons rms
-    floor = (1 + math.sqrt(1 + 4 * read ** 2)) / 2   # SNR = 1: S^2 = S + r^2
-    s0 = floor * 2 ** 6.9                       # ARRI ALEV-3, EI 800: floor 6.9 stops below grey
-    xs = frange(0, 10, 160)
-    for i, (ei, col) in enumerate(((800, INK), (1600, WARM), (3200, COOL))):
-        grey = s0 * 800 / ei                    # one stop more EI = one stop less light for the same grey
-        ys = [math.log2((grey * 2 ** -x) / math.sqrt(grey * 2 ** -x + read ** 2)) for x in xs]
-        p.curve(xs, ys, col, 2.0)
-        fx = 6.9 - i
-        s.circle(p.px(fx), p.py(0), 3, col, '#fff')
-        s.text(p.px(fx), p.py(0) - 6, num(fx, 1), 9, 'middle', col, 'bold')
-    s.line(p.x0, p.py(0), p.x1, p.py(0), '#d64545', 0.9, '2,2')
-    s.line(p.x0, p.py(1), p.x1, p.py(1), '#9aa0aa', 0.9, '2,2')
-    s.text(p.x0 + 4, p.py(0) - 4, t('floor'), 9, 'start', '#d64545')
-    s.text(p.x0 + 4, p.py(1) - 4, t('snr2'), 9, 'start', MUTED)
-    p.legend(p.px(6.6), p.py(4.6), [('EI 800', INK, None), ('EI 1600', WARM, None), ('EI 3200', COOL, None)], 9.5, 12.5)
-    s.save(path)
-
-
-def fig_noise_mask(path):
-    s = Svg(HALF, 236)
-    p = Plot(s, (44, 10, HALF - 10, 190), (0, 8), (0, 1), t('below_grey'), t('mask'),
-             range(0, 9, 1), [0, 0.25, 0.5, 0.75, 1.0], yfmt=lambda v: num(v, 2))
-    xs = frange(0, 8, 200)
-    fx6 = (3.5, 5.0, 800, 12800)
-    sets = (((800, 800, 0.0), 'fx6_800', INK, None), ((800, 3200, 0.0), 'fx6_3200', WARM, None),
-            ((12800, 12800, 0.0), 'fx6_12800', COOL, None), ((800, 800, -0.5), 'fx6_8bit', '#2e9e5b', '4,3'))
-    for (shot, ei, codec), key, col, dash in sets:
-        cam = (3.0, 4.5, 800, 0) if codec else fx6      # the 8-bit example: generic S-Log3 row of NoiseMask.cpp
-        m = mask_curve(*cam, shot_ei=shot, ei=ei, codec=codec)[0]
-        p.curve(xs, [m(x) for x in xs], col, 2.0, dash)
-    p.legend(p.px(3.9), p.py(0.42), [(t(k), c, d) for _, k, c, d in sets], 9, 12.5)
-    s.text(p.px(0.1), p.py(0.93), t('noisy') + ' ↑', 9, 'start', MUTED)
-    s.save(path)
-
-
-def fig_noise_ei(path):
-    s = Svg(HALF, 222)
-    eis = [800 * 2 ** (i / 4) for i in range(0, 25)]
-    p = Plot(s, (44, 10, HALF - 22, 176), (math.log2(800), math.log2(51200)), (0, 7.5), t('ei_axis'),
-             t('thr_axis'), [math.log2(v) for v in (800, 1600, 3200, 6400, 12800, 25600, 51200)], range(0, 8),
-             xfmt=lambda v: '%d' % round(2 ** v), yfmt=lambda v: num(v, 0))
-    for v, y in ((800, 6.9), (1600, 5.9), (3200, 4.9)):
-        s.circle(p.px(math.log2(v)), p.py(y), 3.2, '#d64545', '#fff')
-    s.poly([(p.px(math.log2(v)), p.py(y)) for v, y in ((800, 6.9), (3200, 4.9))], '#d64545', 1.4, '3,2')
-    lo = [mask_curve(3.5, 5.0, 800, 12800, 800, ei)[1] for ei in eis]
-    hi = [mask_curve(3.5, 5.0, 800, 12800, 12800, ei)[1] for ei in eis if ei >= 12800]
-    p.curve([math.log2(e) for e in eis], lo, INK, 2.0)
-    p.curve([math.log2(e) for e in eis if e >= 12800], hi, COOL, 2.0)
-    p.legend(p.px(math.log2(5000)), p.py(7.1), [(t('arri'), '#d64545', '3,2'), (t('fx6_low'), INK, None),
-                                                (t('fx6_high'), COOL, None)], 9, 12.5)
-    s.save(path)
-
-
 def fig_zones(path):
     s = Svg(FULL, 152)
     x0, x1 = 196, FULL - 14
@@ -635,11 +543,11 @@ def fig_flow(path):
 
 CHAIN = {
     0: [('decodifica', 'curva → lineare', INK), ('Data level', 'code value', INK), ('EI', '× 2^stop', WARM),
-        ('Bradford', 'Temp. · Tint', WARM), ('maschera\nrumore', '→ alpha', '#2e9e5b'),
+        ('Bradford', 'Temp. · Tint', WARM),
         ('Toni · Zone', '1 guadagno', COOL), ('gamut', 'RGC · mappa', COOL),
         ('tone\nmapping', 'o CST', INK), ('codifica', 'uscita', INK)],
     1: [('decode', 'curve → linear', INK), ('Data level', 'code values', INK), ('EI', '× 2^stops', WARM),
-        ('Bradford', 'Temp. · Tint', WARM), ('noise\nmask', '→ alpha', '#2e9e5b'),
+        ('Bradford', 'Temp. · Tint', WARM),
         ('Toni · Zone', '1 gain', COOL), ('gamut', 'RGC · map', COOL),
         ('tone\nmapping', 'or CST', INK), ('encode', 'output', INK)],
 }
@@ -656,7 +564,6 @@ def fig_develop_chain(path):
 
 FIGURES = [('log_curves', fig_log_curves), ('wb_locus', fig_wb_locus), ('false_color', fig_false_color),
            ('tone_curves', fig_tone_curves), ('drt_curves', fig_drt_curves), ('gamut_rgc', fig_gamut_rgc),
-           ('noise_snr', fig_noise_snr), ('noise_mask', fig_noise_mask), ('noise_ei', fig_noise_ei),
            ('zones', fig_zones), ('dlogm', fig_dlogm), ('local_vs_point', fig_local_vs_point),
            ('flow', fig_flow), ('develop_chain', fig_develop_chain), ('data_levels', fig_data_levels),
            ('curve_tops', fig_curve_tops)]
