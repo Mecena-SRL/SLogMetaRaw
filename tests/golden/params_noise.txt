@@ -1,11 +1,11 @@
 param:Controls|OfxParamTypePage||||||||||||||||
 param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllare gli aggiornamenti|||
 param:noiseInfo|OfxParamTypeString|Noise|Temporale + spaziale · prima di Log MetaRaw|||0|||||||0||||
+param:readCamera|OfxParamTypePushButton|Rileggi metadata||||||||||||Come in Log MetaRaw: rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive nel Media Pool di Resolve, riporta Ingresso (IDT) ad Automatico e riattiva il nodo con il profilo della camera|||
 param:skipAll|OfxParamTypePushButton|Salta Noise ovunque||||||||||||Spegne tutti i nodi Noise del progetto per lavorare veloce; un secondo clic li riaccende. Si riaccendono da soli alla riapertura di Resolve. Prima dell'export controlla che la riga Noise non dica SALTATO; se un nodo resta spento dopo averli riaccesi, svuota la render cache|||
 param:profileGroup|OfxParamTypeGroup|Profilo del rumore|||||||||||||||1
 param:profileMode|OfxParamTypeChoice|Profilo|0|profileGroup|||||||||0|Automatico: dalla camera, dall'ISO e dal formato della clip, letti da soli. Misurato: il profilo della camera corretto sulla zona campione (Usa il campione), o misurato sull'intero fotogramma (Misura dal fotogramma). Manuale: un profilo generico, regolato solo da Livello rumore|Automatico (camera e formato),Misurato (campione o fotogramma),Manuale||
 param:profileInfo|OfxParamTypeString|Da|—|profileGroup||0|||||||0||||
-param:readCamera|OfxParamTypePushButton|Leggi dati camera||profileGroup||||||||||Rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive nel Media Pool di Resolve come Rileggi metadata di Log MetaRaw e aggiorna il profilo Automatico|||
 param:sampleShow|OfxParamTypeBoolean|Mostra campione|0|profileGroup|||||||||0|Disegna la zona campione (riquadro giallo e nero) e i suoi due angoli nel viewer: trascinali su una zona piatta, senza dettaglio (cielo, muro, fuori fuoco)|||
 param:sampleA|OfxParamTypeDouble2D|Campione: angolo|0.42,0.58|profileGroup|1||||||||0|Un angolo della zona campione (frazione del fotogramma, 0,0 in basso a sinistra)|||
 param:sampleB|OfxParamTypeDouble2D|Campione: angolo opposto|0.58,0.42|profileGroup|1||||||||0|L'angolo opposto della zona campione|||

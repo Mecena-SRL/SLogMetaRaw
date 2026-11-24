@@ -148,7 +148,7 @@ NoiseEffect::~NoiseEffect()
 }
 
 // The clip's camera data come from the same record Log MetaRaw writes: CacheOnly at creation, Read when the panel
-// opens or the clip changes (starts the reader if the clip has no record), Reload from "Leggi dati camera".
+// opens or the clip changes (starts the reader if the clip has no record), Reload from "Rileggi metadata".
 void NoiseEffect::syncClip(MetaMode p_Mode)
 {
     const std::string path = getPropertySet().propGetString(kOfxImageEffectPropSrcFilePath, false);
@@ -175,7 +175,9 @@ void NoiseEffect::syncClip(MetaMode p_Mode)
     refreshInfo();
 }
 
-// Declared, then what Resolve reports, then the clip's camera curve; S-Log3 when nothing says otherwise.
+// Declared, then what Resolve reports, then the clip's camera curve, as in Log MetaRaw: a name Resolve gives that is
+// not in the table (DaVinci YRGB, a timeline space we do not map) means the nodes receive the camera encoding.
+// S-Log3 when Resolve says nothing and the clip has no data; neutral only for an unknown name on a clip without data.
 int NoiseEffect::inputGamma() const
 {
     int input = 0;
@@ -184,9 +186,9 @@ int NoiseEffect::inputGamma() const
     int space = 0, gamma = 0;
     const std::string cs = m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false);
     if (mapColourspace(cs, space, gamma)) return gamma;
-    if (!cs.empty()) return -1;
     std::lock_guard<std::mutex> lock(m_Mutex);
-    return validCode(m_Source.gamma, kGammaCount) >= 0 ? m_Source.gamma : 9;
+    if (validCode(m_Source.gamma, kGammaCount) >= 0) return m_Source.gamma;
+    return cs.empty() ? 9 : -1;
 }
 
 NoiseModel NoiseEffect::modelAt(double t, int p_FrameWidth) const
@@ -485,7 +487,8 @@ void NoiseEffect::refreshInfo()
     std::string text;
     if (noiseSkipped()) text = "SALTATO in tutto il progetto (fino al riavvio di Resolve o a un nuovo clic) · ";
     if (gamma < 0) {
-        text += "ingresso non riconosciuto, nodo neutro · scegli Ingresso (IDT)";
+        const std::string cs = m_SrcClip->getPropertySet().propGetString(kOfxImageClipPropColourspace, false);
+        text += "ingresso non riconosciuto (Resolve: " + cs + "), nodo neutro · premi Rileggi metadata o scegli Ingresso (IDT)";
     } else {
         const int r = radiusAt(t);
         text += std::string("Ingresso ") + kGammaNames[gamma] + " · temporale " + (r > 0 ? "±" + std::to_string(r) : "spento")
@@ -534,7 +537,8 @@ void NoiseEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const std
         if (p_ParamName == "skipAll") {
             skipFlag().store(!skipFlag().load());
             refreshInfo();
-        } else if (p_ParamName == "readCamera") {
+        } else if (p_ParamName == "readCamera") {   // like Rileggi metadata in Log MetaRaw: back to the camera
+            m_NodeInput->setValue(0);
             syncClip(MetaMode::Reload);
         } else if (p_ParamName == "measure") {
             measure(p_Args.time);

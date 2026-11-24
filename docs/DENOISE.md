@@ -34,8 +34,10 @@ singolo coefficiente a quella sul vicinato: errore solo spaziale da 0,0088 a 0,0
 1. **Profilo**: per 16 livelli di luminosità e 5 bande (1, 2, 4, 8, 16 px) il rumore atteso, separato per
    luminanza e colore. Tre modi:
    - *Automatico*: dal modello della camera e del formato (sotto), letti dal file della clip con lo stesso lettore di
-     Log MetaRaw: all'apertura del pannello se la clip non ha ancora i dati, o con il pulsante **Leggi dati camera**
-     (rilegge e scrive anche nel Media Pool, come *Rileggi metadata*);
+     Log MetaRaw: all'apertura del pannello se la clip non ha ancora i dati, o con il pulsante **Rileggi metadata**
+     in cima al pannello (come in Log MetaRaw: rilegge il file, scrive nel Media Pool, riporta *Ingresso* ad
+     Automatico e riattiva il nodo). L'ingresso segue la stessa regola di Log MetaRaw: se Resolve dà uno spazio colore
+     che il nodo non conosce (DaVinci YRGB), vale la codifica della camera letta dalla clip;
    - *Misurato*, con la **zona campione** (come Neat Video): *Mostra campione* disegna un riquadro giallo e nero
      tra due angoli che si trascinano nel viewer; **Usa il campione** misura il rumore nel riquadro per banda
      (mediana dei blocchi 8/16 px, corretta per la mediana di una chi quadro), luminanza e colore, e lo confronta con
@@ -102,7 +104,7 @@ vecchia Maschera rumore (stop sotto il grigio dove il rumore inizia e dove è pi
 
 1. Nodo **Log MetaRaw Noise** prima del nodo Log MetaRaw (o di CST/LUT), sull'immagine della camera.
 2. Lascia Profilo su Automatico: i dati della clip si leggono da soli (la riga *Da* dice camera, formato e ISO
-   usati, o perché mancano; **Leggi dati camera** li rilegge). Per tarare sul rumore vero: spunta **Mostra
+   usati, o perché mancano; **Rileggi metadata** li rilegge). Per tarare sul rumore vero: spunta **Mostra
    campione**, porta i due angoli del riquadro su una zona piatta e premi **Usa il campione**.
 3. Regola *Livello rumore* (quanto rumore il filtro si aspetta), poi Luminanza e Colore. *Vista: Rumore rimosso*
    mostra cosa toglie: deve sembrare grana senza contorni.

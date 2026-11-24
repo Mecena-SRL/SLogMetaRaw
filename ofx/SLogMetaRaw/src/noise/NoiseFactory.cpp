@@ -43,6 +43,10 @@ void NoiseFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     PageParamDescriptor* page = d.definePageParam("Controls");
     defineVersionButton(d, page);
     defineInfo(d, page, nullptr, "noiseInfo", "Noise", "Temporale + spaziale · prima di Log MetaRaw");
+    defineButton(d, page, "readCamera", "Rileggi metadata",
+                 "Come in Log MetaRaw: rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive "
+                 "nel Media Pool di Resolve, riporta Ingresso (IDT) ad Automatico e riattiva il nodo con il profilo "
+                 "della camera");
     defineButton(d, page, "skipAll", "Salta Noise ovunque",
                  "Spegne tutti i nodi Noise del progetto per lavorare veloce; un secondo clic li riaccende. Si "
                  "riaccendono da soli alla riapertura di Resolve. Prima dell'export controlla che la riga Noise non "
@@ -55,9 +59,6 @@ void NoiseFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "della camera corretto sulla zona campione (Usa il campione), o misurato sull'intero fotogramma "
                  "(Misura dal fotogramma). Manuale: un profilo generico, regolato solo da Livello rumore", prof);
     defineInfo(d, page, prof, "profileInfo", "Da", "—");
-    defineButton(d, page, "readCamera", "Leggi dati camera",
-                 "Rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive nel Media Pool di "
-                 "Resolve come Rileggi metadata di Log MetaRaw e aggiorna il profilo Automatico", prof);
     defineCheck(d, page, "sampleShow", "Mostra campione", false,
                 "Disegna la zona campione (riquadro giallo e nero) e i suoi due angoli nel viewer: trascinali su una "
                 "zona piatta, senza dettaglio (cielo, muro, fuori fuoco)", prof);
