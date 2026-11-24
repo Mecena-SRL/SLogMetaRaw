@@ -73,7 +73,9 @@ common/  (condiviso dai due nodi)
   (`sm_gamut_compress`, ACES RGC in AP1, riferimento o parametrica) e `gamutMapping` (`sm_gamut_map`, compressione
   saturazione nel gamut d'uscita, vale anche con Nessuno). La coppia che ogni rendering aveva incorporata è in
   `math/HostOnly.h` (`SM_DRT_GAMUT_*`): migrazione `settingsVersion` 7 e proposta quando si sceglie un rendering.
-  Con un rendering l'uscita è sempre una codifica di schermo (`sm_display_encoding`). ACES confrontati con
+  Il rendering è fatto per il gamut di schermo d'uscita, o per Rec.709 se l'uscita è di scena (DaVinci WG, ACES...),
+  poi portato nella codifica scelta: la luce di schermo resta invertibile con un CST senza tone mapping
+  (`sm_display_encoding` sostituisce solo la OETF Rec.709 con Gamma 2.4). ACES confrontati con
   OpenColorIO (test saltati se PyOpenColorIO manca, anche in CI), grigio 18% fissato analiticamente da log a
   Gamma 2.4, OpenDRT contro valori del DCTL originale, in `tests/test_display.py`.
 - **Esporta LUT** (`develop/DevelopLut.cpp` + `LutExport.{h,cpp}`): salva un .cube 3D campionando
