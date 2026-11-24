@@ -4,6 +4,7 @@ constexpr int W=400,H=224;
 #include "mock_host.hpp"
 #include "camera.hpp"
 #include "exposure.hpp"
+#include "blur.hpp"
 #include <array>
 #include <fstream>
 using Color=std::array<float,3>;
@@ -239,4 +240,17 @@ int main(int argc,char** argv){
     assert(inspect().find("10.0 → 20.0 ms · Posa dai metadati")!=std::string::npos);
 #endif
     assert(plugin->mainEntry(kOfxActionDestroyInstance,nullptr,nullptr,nullptr)==0);
+    // Grain level: white noise is measured, the textured room is not mistaken for it.
+    {
+        std::vector<float> room(size_t(4)*W*H),grainy(room.size());
+        unsigned seed=12345;
+        auto gauss=[&]{float s=0;for(int k=0;k<12;++k){seed=seed*1664525u+1013904223u;s+=float(seed>>8)/16777216.f;}return s-6.f;};
+        for(int y=0;y<H;++y)for(int x=0;x<W;++x){
+            auto c=backdrop(float(x),float(y));
+            for(int k=0;k<3;++k){room[4*(y*W+x)+k]=.5f*std::min(c[k],1.f);grainy[4*(y*W+x)+k]=room[4*(y*W+x)+k]+.006f*gauss();}
+        }
+        float clean=blur::grainLevel({room.data(),0,0,W,H,W*16}),noisy=blur::grainLevel({grainy.data(),0,0,W,H,W*16});
+        std::printf("Grain level: textured room %.5f, with 0.006 grain %.5f\n",clean,noisy);
+        assert(clean<.003f && std::abs(noisy-.006f)<.0015f);
+    }
 }

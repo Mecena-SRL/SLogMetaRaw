@@ -51,7 +51,36 @@ struct Job {
     bool draft = false;
     bool curved = false;
     const motion::CameraPair* camera = nullptr; // [prev,next] or null
+    float grain = 0; // grainLevel(center): 0 keeps the averaged (smoothed) grain
 };
+// Noise floor of the picture, in encoded values (green channel): the std of the
+// pixel-scale residual r = centre - mean of its four neighbours. For grain the
+// residuals of adjacent pixels anticorrelate (-0.4), for smooth texture and
+// gradients they correlate (~+1), so per 16x16 block
+// var(grain) ~ (E[r^2] - E[r r']) / 1.4. The quieter quarter of blocks sets the
+// level, so edges and fine detail do not count as grain.
+inline float grainLevel(const Image& im) {
+    if (im.w < 48 || im.h < 48) return 0.f;
+    std::vector<float> blocks;
+    blocks.reserve(size_t(im.w / 16) * (im.h / 16));
+    auto g = [&](int x, int y) { return im.at(im.x0 + x, im.y0 + y)[1]; };
+    auto r = [&](int x, int y) { return g(x, y) - .25f * (g(x - 1, y) + g(x + 1, y) + g(x, y - 1) + g(x, y + 1)); };
+    for (int by = 1; by + 19 < im.h; by += 16)
+        for (int bx = 1; bx + 19 < im.w; bx += 16) {
+            double rr = 0, lag = 0; int count = 0;
+            for (int y = by; y < by + 16; y += 2)
+                for (int x = bx; x < bx + 16; ++x, ++count) {
+                    float a = r(x, y);
+                    rr += a * a; lag += .5f * a * (r(x + 1, y) + r(x, y + 1));
+                }
+            blocks.push_back(float(std::max(0., (rr - lag) / count / 1.4)));
+        }
+    if (blocks.size() < 16) return 0.f;
+    auto quarter = blocks.begin() + blocks.size() / 4;
+    std::nth_element(blocks.begin(), quarter, blocks.end());
+    float sigma = std::sqrt(*quarter);
+    return sigma > 5.e-4f ? std::min(sigma, .02f) : 0.f;
+}
 
 inline gmc::GmGeometry geometry(int w, int h, bool draft) {
     gmc::GmGeometry g{};
@@ -85,7 +114,7 @@ inline gmc::GmParams params(const gmc::GmGeometry& g, const Job& job, int reach)
     gmc::GmParams p{};
     p.width = g.width; p.height = g.height; p.grid = g.grid; p.fieldW = g.fieldW[0]; p.fieldH = g.fieldH[0];
     p.hasPrev = job.prev != nullptr; p.hasNext = job.next != nullptr; p.curve = job.curve;
-    p.maxSamples = job.draft ? 24 : 256; p.curved = job.curved; p.reach = reach; p.exposure = job.exposure;
+    p.maxSamples = job.draft ? 24 : 256; p.curved = job.curved; p.reach = reach; p.exposure = job.exposure; p.grain = job.grain;
     p.camP = cameraOf(job.camera, 0); p.camN = cameraOf(job.camera, 1);
     return p;
 }
