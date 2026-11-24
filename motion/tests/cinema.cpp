@@ -197,12 +197,13 @@ int main(int argc,char** argv){
     flat(inputs[0],.95);flat(inputs[1],.01);flat(inputs[2],.95);draw();
     assert(output.v==inputs[1].v && inspect().find("Cambio scena")!=std::string::npos);
     // The nearest three pictures are unchanged when distant unrelated images appear.
-    // Insufficient background features provoke an adaptive, bounded context request.
+    // Insufficient background features provoke an adaptive, bounded context request,
+    // fetched on demand: the declared frames stay the adjacent ones.
     for(int i=0;i<3;++i)stripeExposure(inputs[i],(i-1)*40.,5.);
     draw();auto boundary=output.v;
     extendedTimeline=true;
     for(auto& outer:outerFrames)flat(outer,.98f);
-    draw();assert(farReads>0 && requested[0]==-2. && requested[1]==4.);
+    draw();assert(farReads>0 && requested[0]==0. && requested[1]==2.);
     assert(output.v==boundary);
     extendedTimeline=false;
     // Motion can begin, end, or turn within one exposure on a repeating pattern.

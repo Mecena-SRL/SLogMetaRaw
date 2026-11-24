@@ -667,11 +667,9 @@ OfxStatus entry(const char* action,const void* handle,OfxPropertySetHandle in,Of
             bool blur=plan.span>0, optical=opticalEnabled(e,t);
             if(temporal&&(blur||optical)){
                 auto src=clip(e,"Source");range(src,t,r);
-                if(blur && plan.cinema && !optical){
-                    OfxPropertySetHandle props;check(fx->clipGetPropertySet(src,&props));
-                    double bounds[2];check(prop->propGetDoubleN(props,kOfxImageEffectPropFrameRange,2,bounds));
-                    r[0]=std::max(t-3.,bounds[0]);r[1]=std::min(t+3.,bounds[1]);
-                }
+                // Only the adjacent pictures: declaring ±3 made Resolve render seven upstream
+                // frames (Stabilize included) for each one. The far context of an ambiguous
+                // camera fit is still fetched on demand in render().
                 if(blur&&optical){
                     double left[2],right[2];range(src,r[0],left);range(src,r[1],right);
                     r[0]=left[0];r[1]=right[1];
