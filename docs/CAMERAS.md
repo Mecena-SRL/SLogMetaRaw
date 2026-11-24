@@ -68,6 +68,9 @@ di code value è scritta la formula (`datalevel.FULL_SCALE_GAMMAS`).
 Il punto di grigio 18% di ogni curva (codifica di 0.18) coincide con i valori pubblicati dai produttori: V-Log 0.423,
 Apple Log 0.488, F-Log 0.459, N-Log 0.364, C-Log2 0.398, C-Log3 0.343, LogC3 0.391, LogC4 0.278, Gen 5 0.384.
 
+Le costanti di rumore per camera (soglia della *Maschera rumore*, ISO nativi, correzione per codec), misurate o
+stimate, sono in [NOISE.md](NOISE.md).
+
 ## D-Log M: stato e prossimo passo
 
 DJI distribuisce solo LUT D-Log M → Rec.709; la curva e il gamut non sono pubblicati e DaVinci Resolve 21.1 non ha

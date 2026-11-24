@@ -73,8 +73,11 @@ fazem parte dos projetos e ficam.
 Python próprio: instale o Python 3 de [python.org](https://www.python.org/downloads/), que o menu Workspace › Scripts
 precisa de qualquer forma. **Testado apenas no Resolve Studio 21.1 em macOS; Resolve 20 ainda não testado.**
 
-**Clipes:** Sony XAVC em `.MP4` ou `.MXF`. O script lê todos. Os nós revelam **S-Log3** (S-Gamut3.Cine ou S-Gamut3),
-**S-Log2** e **S-Log** (S-Gamut). Com outros perfis ficam neutros e avisam.
+**Clipes:** Sony XAVC em `.MP4` ou `.MXF`, mais as câmeras de [docs/CAMERAS.md](docs/CAMERAS.md) (Panasonic V-Log,
+Apple Log, DJI D-Log e D-Log M e outras), cada uma com a confiabilidade da sua leitura. O script lê todos. Os nós revelam
+**S-Log3** (S-Gamut3.Cine ou S-Gamut3), **S-Log2**, **S-Log** (S-Gamut) e as curvas dessas câmeras. Desde a 3.2.0 o DJI
+D-Log M usa a curva medida numa Osmo Action 6 ([docs/DJI_LOG.md](docs/DJI_LOG.md)): para as outras câmeras DJI é a
+melhor estimativa, não uma calibração. Com um perfil desconhecido ficam neutros e avisam.
 
 ---
 
@@ -137,7 +140,8 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 | **Punto bianco** (ponto branco) | o conta-gotas do Resolve: escolha na imagem um ponto que deve ser neutro e Temperatura e Tint se ajustam sozinhos, com a mesma matemática do render |
 | **Esposizione** (EI) | índice de exposição: o dobro do EI = +1 stop |
 | **False color** | uma caixa acima de Temperatura, uma abaixo de Tint e uma abaixo de Esposizione; veja abaixo |
-| **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
+| **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione e Mappatura gamut, Vibrance luci, Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
+| **Maschera rumore** (máscara de ruído) | **Maschera**: Spenta (desligada), Automatica, Personalizzata (**Inizio** início, **Sfumatura** transição); **Vedi maschera** (ver máscara); **Soglia** (limiar) mostra o limiar em uso. Escreve no alfa as zonas com ruído, as cores não mudam; veja abaixo |
 | **Toni** (tons) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* acrescenta Contrast, Shadows, Whites, Blacks, Vibrance e as **Zone** (Black, Shadow, Light, Specular com Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); aparecem sozinhos se o nó os usa |
 | **Dati di ripresa** (dados de gravação) | só leitura: objetiva, focal, abertura, foco, obturador, EI, WB, fps, ND, LUT da câmera |
 
@@ -166,6 +170,19 @@ A vista substitui a imagem: desligue-a antes de renderizar. [docs/FALSE_COLOR.md
 
 **Data level.** Se o Resolve decodifica um clipe na escala de code values errada, o nó corrige antes da curva log. A
 opção *Corrigir o Data Level* do script resolve isso para o projeto inteiro. [docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
+
+**Tone mapping com saída de cena (3.2.0).** Com um rendering (ACES 2.0, Filmico, OpenDRT…), um Spazio colore e uma
+Gamma de cena como DaVinci WG / DaVinci Intermediate não são mais substituídos por Rec.709 / Gamma 2.4: a imagem
+renderizada para Rec.709 viaja nessa codificação, para passá-la a outros plugins (Dehancer…), e um CST para Rec.709 /
+Gamma 2.4 sem tone mapping a devolve idêntica. As saídas de tela (Rec.709, P3, Rec.2020) não mudam.
+
+**Máscara de ruído (3.2.0).** O nó pode escrever no canal **alfa** as zonas onde a câmera, no EI escolhido, tem ruído
+visível, para que o Neat Video ou outro denoiser trabalhe só ali. *Automatica* usa um limiar por câmera, ISO nativo
+(também duplo) e codec (ProRes RAW e 8 bits o antecipam em meio stop); *Personalizzata* usa o Inizio e a Sfumatura que
+você escolher. Nos dois, cada stop de EI acima do nativo o aproxima um stop do cinza. *Vedi maschera* mostra a máscara no
+lugar da imagem. Cores e saída não mudam, bit a bit. **Ainda não testado no Resolve**: que o alfa chegue à entrada key do
+nó com o Neat Video. Se não chegar, um nó em paralelo com *Vedi maschera* e um qualifier de luminância. As constantes são
+medidas para algumas câmeras e estimadas para as outras: [docs/NOISE.md](docs/NOISE.md) (em italiano).
 
 **Sem metadados.** Um ProRes de gravador externo, ou um clipe que não pode ser lido, deixa o nó neutro. Marque
 *Spazio colore › Senza metadata › Sblocca controlli* e digite o EI, os Kelvin e o tint de gravação: os controles se ativam e o
@@ -242,7 +259,7 @@ ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaz
 - **Uma matemática, três implementações.** A matemática fica em `ofx/SLogMetaRaw/math` e é compilada como C++ e como
   Metal. Um modelo Python de referência verifica as duas: CPU e GPU concordam dentro de 2·10⁻⁴, com FMA desativado em
   todos os caminhos.
-- **Testes.** 322 testes automáticos: parsers, modelos de referência, C++, Metal, um host OpenFX em miniatura que carrega
+- **Testes.** 509 testes automáticos: parsers, modelos de referência, C++, Metal, um host OpenFX em miniatura que carrega
   os dois nós como o Resolve faz, e arquivos golden dos painéis.
 
 ---
@@ -318,11 +335,18 @@ compila os pacotes e instala o .deb/.rpm no Rocky 8/9, Ubuntu 20.04-24.04 e Debi
 
 **Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m).
 Escrito com o Claude (Anthropic): a 1.0 em 19 de setembro de 2026, a 1.1.0 em 22 de setembro, a 2.0.0 em 23 de setembro
-de 2026. A história completa está em [RELEASE_NOTES.md](RELEASE_NOTES.md) (em italiano).
+de 2026, a 3.2.0 em 24 de novembro de 2026. A história completa está em [RELEASE_NOTES.md](RELEASE_NOTES.md) (em italiano).
 
 Referências para as tags Sony: SMPTE RDD 18, [ExifTool](https://exiftool.org) e
 [telemetry-parser](https://github.com/AdrianEddy/telemetry-parser) de AdrianEddy (MIT), de onde vem parte da tabela de
 tags.
+
+Rendering e dados de câmera: o Output Transform ACES 2.0 é portado do OpenColorIO 2.6 e o ACES 1.3 é verificado
+contra as suas transformações embutidas (ACES: Academy of Motion Picture Arts and Sciences); o [OpenDRT](https://github.com/jedypod/open-display-transform)
+v1.1.0 é de Jed Smith (GPL-3.0), portado do seu DCTL. A curva e o gamut DJI D-Log M vêm das medições da Osmo Action 6
+em [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 e da LUT DJI da Action 6, usada só como referência e
+não distribuída; até a 3.1.x a curva era o ajuste de Thatcher Freeman. As constantes da máscara de ruído vêm do white
+paper de faixa dinâmica da ARRI e dos testes de laboratório da CineD ([docs/NOISE.md](docs/NOISE.md)).
 
 [GNU GPL v3.0 ou posterior](LICENSE). O SDK OpenFX é © The Open Effects Association (BSD-3). Sony, XAVC e Catalyst são
 marcas da Sony Group Corporation; DaVinci Resolve é uma marca da Blackmagic Design. Projeto independente, não afiliado nem
