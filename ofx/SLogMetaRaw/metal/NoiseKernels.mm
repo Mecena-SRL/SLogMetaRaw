@@ -128,7 +128,7 @@ public:
         buf(tmp, 0); buf(out, 1); bytes(a, 2); grid2(ps, a.W, a.H);
     }
     // the luma pyramid of an RGBA frame: full, 1/2, 1/4
-    void pyramid(id<MTLBuffer> frame, int rowPixels, NzArgs a, id<MTLBuffer> (&pyr)[3], int (&w)[3], int (&h)[3])
+    void pyramid(id<MTLBuffer> frame, int rowPixels, NzArgs a, __strong id<MTLBuffer> (&pyr)[3], int (&w)[3], int (&h)[3])
     {
         a.rowPixels = rowPixels;
         id<MTLComputePipelineState> ps = use("nz_luma");
