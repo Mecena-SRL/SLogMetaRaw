@@ -119,15 +119,19 @@ private:
 
 }  // namespace
 
-bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const float* const p_Inputs[3], float* p_Output)
+bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const float* const p_Inputs[3], float* p_Output,
+                        const CreativeParams* p_PrevParams, const float* const* p_PrevInputs)
 {
     const CreativeParams& p = p_Params;
     if (p.W <= 0 || p.H <= 0) return false;
     id<MTLCommandQueue> queue = (__bridge id<MTLCommandQueue>)p_CmdQ;
     id<MTLDevice> device = queue.device;
-    id<MTLBuffer> src[3];
+    id<MTLBuffer> src[3], prevSrc[3];
     for (int k = 0; k < 3; ++k) src[k] = (__bridge id<MTLBuffer>)(void*)p_Inputs[k];
     id<MTLBuffer> dst = (__bridge id<MTLBuffer>)(void*)p_Output;
+    const bool ghost = p.medium != CR_MEDIUM_NONE && p.mGhost > 0.0f && p_PrevParams && p_PrevInputs;
+    if (ghost)
+        for (int k = 0; k < 3; ++k) prevSrc[k] = (__bridge id<MTLBuffer>)(void*)p_PrevInputs[k];
     const size_t N = (size_t)p.W * p.H;
     const std::string key = std::to_string(p.W) + "x" + std::to_string(p.H);
     std::shared_ptr<Scratch> s = pool().acquire(device, key);
@@ -141,11 +145,17 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         return b;
     };
     const bool signal = p.kind != CR_KIND_PROCESS;
-    const size_t G = (size_t)p.bW * p.bH, Gh = (size_t)p.hW * p.hH;
+    const size_t G = (size_t)p.bW * p.bH, Gh = (size_t)p.hW * p.hH, Gm = (size_t)p.mGW * p.mGH;
     id<MTLBuffer> E = P("E", 3 * N);
     id<MTLBuffer> hal = p.halAmount > 0.0f ? P("hal", Gh) : E;
     id<MTLBuffer> bl = p.bloom > 0.0f ? P("bl", 3 * G) : E;
-    id<MTLBuffer> tmp = (p.halAmount > 0.0f || p.bloom > 0.0f) ? P("tmp", std::max(G, Gh)) : E;
+    id<MTLBuffer> tmp = (p.halAmount > 0.0f || p.bloom > 0.0f || p.mGlow > 0.0f) ? P("tmp", std::max(std::max(G, Gh), Gm)) : E;
+    id<MTLBuffer> soft = p.genSoft > 0.0f ? P("soft", N) : E;
+    if (!signal) {
+        s->planes.erase("V");   // planes of a signal chain of the same size, not needed here
+        s->planes.erase("T");
+    }
+    id<MTLBuffer> V = signal ? P("V", 3 * N) : E, T = signal ? P("T", 4 * N) : E;
 
     id<MTLCommandBuffer> commands = [queue commandBuffer];
     commands.label = @"SLogMetaRawCreative";
@@ -153,50 +163,74 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     if (!enc) return false;
     Encoder e(device, enc);
 
-    // 1. records
-    id<MTLComputePipelineState> ps = e.use("cr_record_k");
-    e.buf(src[0], 0); e.buf(src[1], 1); e.buf(src[2], 2); e.buf(E, 3); e.bytes(p, 4); e.grid(ps, p.W, p.H);
+    // steps 1-3: the finished picture of parameters q from the frames in into out (the same passes as the CPU)
+    auto picture = [&](const CreativeParams& q, id<MTLBuffer> const* in, id<MTLBuffer> out) {
+        // 1. records, and the duplicates' loss of sharpness
+        id<MTLComputePipelineState> ps = e.use("cr_record_k");
+        e.buf(in[0], 0); e.buf(in[1], 1); e.buf(in[2], 2); e.buf(E, 3); e.bytes(q, 4); e.grid(ps, q.W, q.H);
+        if (q.genSoft > 0.0f)
+            for (int k = 0; k < 3; ++k) {
+                e.blur(E, k * N, soft, 0, q.W, q.H, 0, q.genSoft, 0);
+                e.blur(soft, 0, E, k * N, q.W, q.H, 1, q.genSoft, 0);
+            }
 
-    // 2. glow
-    if (p.halAmount > 0.0f) e.glow(E, hal, 0, tmp, p.hS, p.hW, p.hH, 3, p.halSigma, p);
-    if (p.bloom > 0.0f)
-        for (int c = 0; c < 3; ++c) e.glow(E, bl, c * G, tmp, p.bS, p.bW, p.bH, c, p.bloomSigma, p);
+        // 2. glow
+        if (q.halAmount > 0.0f) e.glow(E, hal, 0, tmp, q.hS, q.hW, q.hH, 3, q.halSigma, q);
+        if (q.bloom > 0.0f)
+            for (int c = 0; c < 3; ++c) e.glow(E, bl, c * G, tmp, q.bS, q.bW, q.bH, c, q.bloomSigma, q);
 
-    // 3. output
-    if (!signal) {
-        s->planes.erase("V");   // planes of a signal chain of the same size, not needed here
-        s->planes.erase("T");
-        ps = e.use("cr_process_k");
-        e.buf(src[0], 0); e.buf(dst, 1); e.buf(E, 2); e.buf(hal, 3); e.buf(bl, 4); e.bytes(p, 5); e.grid(ps, p.W, p.H);
-    } else {
-        // V = Y Cb Cr; T = filtered luma (0), its blur (1), Cb (2), Cr (3); the same steps as the CPU
-        id<MTLBuffer> V = P("V", 3 * N), T = P("T", 4 * N);
+        // 3. output
+        if (!signal) {
+            ps = e.use("cr_process_k");
+            e.buf(in[0], 0); e.buf(out, 1); e.buf(E, 2); e.buf(hal, 3); e.buf(bl, 4); e.bytes(q, 5); e.grid(ps, q.W, q.H);
+            return;
+        }
+        // V = Y Cb Cr; T = filtered luma (0), its blur (1), Cb (2), Cr (3)
         ps = e.use("cr_signal_k");
-        e.buf(E, 0); e.buf(hal, 1); e.buf(bl, 2); e.buf(V, 3); e.bytes(p, 4); e.grid(ps, p.W, p.H);
+        e.buf(E, 0); e.buf(hal, 1); e.buf(bl, 2); e.buf(V, 3); e.bytes(q, 4); e.grid(ps, q.W, q.H);
         size_t Y = 0, Yb = N;   // offsets into T, or V for Yb when the luma is filtered along the lines only
         id<MTLBuffer> YbBuf = T;
-        e.blur(V, 0, T, 0, p.W, p.H, 0, p.lumaSigma, 0);
-        if (p.lumaAxes == 2) {
-            e.blur(T, 0, T, N, p.W, p.H, 1, p.lumaSigma, 0);
+        e.blur(V, 0, T, 0, q.W, q.H, 0, q.lumaSigma, 0);
+        if (q.lumaAxes == 2) {
+            e.blur(T, 0, T, N, q.W, q.H, 1, q.lumaSigma, 0);
             Y = N;
             Yb = 0;
         }
-        e.blur(T, Y, V, 0, p.W, p.H, 0, p.ringSigma, 0);
-        if (p.lumaAxes == 2) e.blur(V, 0, T, Yb, p.W, p.H, 1, p.ringSigma, 0);
+        e.blur(T, Y, V, 0, q.W, q.H, 0, q.ringSigma, 0);
+        if (q.lumaAxes == 2) e.blur(V, 0, T, Yb, q.W, q.H, 1, q.ringSigma, 0);
         else { YbBuf = V; Yb = 0; }
-        e.blur(V, N, T, 2 * N, p.W, p.H, 0, p.chromaSigma, p.chromaDelay);
-        e.blur(V, 2 * N, T, 3 * N, p.W, p.H, 0, p.chromaSigma, p.chromaDelay);
+        e.blur(V, N, T, 2 * N, q.W, q.H, 0, q.chromaSigma, q.chromaDelay);
+        e.blur(V, 2 * N, T, 3 * N, q.W, q.H, 0, q.chromaSigma, q.chromaDelay);
         ps = e.use("cr_signal_out_k");
-        e.buf(src[0], 0); e.buf(dst, 1); e.buf(T, 2, Y); e.buf(YbBuf, 3, Yb); e.buf(T, 4, 2 * N); e.buf(T, 5, 3 * N);
-        e.bytes(p, 6); e.grid(ps, p.W, p.H);
+        e.buf(in[0], 0); e.buf(out, 1); e.buf(T, 2, Y); e.buf(YbBuf, 3, Yb); e.buf(T, 4, 2 * N); e.buf(T, 5, 3 * N);
+        e.bytes(q, 6); e.grid(ps, q.W, q.H);
+    };
+
+    // an LCD's slow response: the previous frame's picture first (no medium), in the layout of dst
+    CreativeParams q = p;
+    id<MTLBuffer> prev = dst;
+    if (ghost) {
+        prev = P("prev", (size_t)p.dstRowPixels * 4 * p.H);
+        CreativeParams pp = *p_PrevParams;
+        pp.medium = CR_MEDIUM_NONE;
+        pp.rowPixels = p.rowPixels;
+        pp.dstRowPixels = p.dstRowPixels;
+        picture(pp, prevSrc, prev);
+    } else {
+        q.mGhost = 0.0f;
+        s->planes.erase("prev");
     }
+    picture(q, src, dst);
+
     // 4. viewing medium
-    if (p.medium != CR_MEDIUM_NONE) {
+    if (q.medium != CR_MEDIUM_NONE) {
         id<MTLBuffer> M = P("M", 3 * N);
-        ps = e.use("cr_medium_in_k");
-        e.buf(dst, 0); e.buf(M, 1); e.bytes(p, 2); e.grid(ps, p.W, p.H);
+        id<MTLBuffer> glow = q.mGlow > 0.0f ? P("mglow", Gm) : M;
+        id<MTLComputePipelineState> ps = e.use("cr_medium_in_k");
+        e.buf(dst, 0); e.buf(prev, 1); e.buf(M, 2); e.bytes(q, 3); e.grid(ps, q.W, q.H);
+        if (q.mGlow > 0.0f) e.glow(M, glow, 0, tmp, q.mGS, q.mGW, q.mGH, 4, q.mGlowSigma, q);
         ps = e.use("cr_medium_k");
-        e.buf(M, 0); e.buf(dst, 1); e.bytes(p, 2); e.grid(ps, p.W, p.H);
+        e.buf(M, 0); e.buf(glow, 1); e.buf(dst, 2); e.bytes(q, 3); e.grid(ps, q.W, q.H);
     } else {
         s->planes.erase("M");
     }

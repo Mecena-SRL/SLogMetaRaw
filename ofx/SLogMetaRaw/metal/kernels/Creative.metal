@@ -85,25 +85,27 @@ kernel void cr_signal_out_k(const device float* src [[buffer(0)]], device float*
 }
 
 // Viewing medium: the finished picture decoded into M, then shown through the screen or on paper (alpha kept).
-kernel void cr_medium_in_k(const device float* dst [[buffer(0)]], device float* M [[buffer(1)]],
-                           constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+kernel void cr_medium_in_k(const device float* dst [[buffer(0)]], const device float* prev [[buffer(1)]],
+                           device float* M [[buffer(2)]], constant CreativeParams& p [[buffer(3)]],
+                           uint2 id [[thread_position_in_grid]])
 {
     const int x = (int)id.x, y = (int)id.y;
     if (x >= p.W || y >= p.H) return;
     const int N = p.W * p.H, k = y * p.W + x;
-    const SMf3 v = cr_medium_in(dst, x, y, p);
+    const SMf3 v = cr_medium_in(dst, prev, x, y, p);
     M[k] = v.x;
     M[N + k] = v.y;
     M[2 * N + k] = v.z;
 }
 
-kernel void cr_medium_k(const device float* M [[buffer(0)]], device float* dst [[buffer(1)]],
-                        constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+kernel void cr_medium_k(const device float* M [[buffer(0)]], const device float* glow [[buffer(1)]],
+                        device float* dst [[buffer(2)]], constant CreativeParams& p [[buffer(3)]],
+                        uint2 id [[thread_position_in_grid]])
 {
     const int x = (int)id.x, y = (int)id.y;
     if (x >= p.W || y >= p.H) return;
     const int N = p.W * p.H;
-    const SMf3 o = cr_medium_at(M, M + N, M + 2 * N, x, y, p);
+    const SMf3 o = cr_medium_at(M, M + N, M + 2 * N, glow, x, y, p);
     const int d = (y * p.dstRowPixels + x) * 4;
     dst[d] = o.x;
     dst[d + 1] = o.y;

@@ -143,28 +143,36 @@ const Print kPrints[kCrPrintCount] = { { 1.00f, { 0, 0, 0 }, 2.0f, 0 },         
                                        { 1.50f, { 0.25f, 0.25f, 0.25f }, 4.4f, 0.3f } };   // printed lighter, as labs did
 
 // Generations between the camera negative and the print: grain each duplicate adds (share of the camera's, in its
-// size), the contrast and saturation they accumulate, and the print's grain size (a 16 mm print is enlarged more).
-struct Generation { float grain, size, contrast, sat, printSize; };
-const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00f, 1.0f },
-                                                      { 0.35f, 0.8f, 1.05f, 0.95f, 1.0f },
-                                                      { 0.45f, 1.6f, 1.08f, 0.92f, 1.8f },
-                                                      { 0.80f, 1.0f, 1.15f, 0.85f, 1.2f } };
+// size), the contrast and saturation they accumulate, the print's grain size (a 16 mm print is enlarged more) and
+// the sharpness each optical or contact step loses (Gaussian sigma, px at 1080).
+struct Generation { float grain, size, contrast, sat, printSize, soft; };
+const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00f, 1.0f, 0.0f },
+                                                      { 0.35f, 0.8f, 1.05f, 0.95f, 1.0f, 0.6f },
+                                                      { 0.45f, 1.6f, 1.08f, 0.92f, 1.8f, 1.3f },
+                                                      { 0.80f, 1.0f, 1.15f, 0.85f, 1.2f, 1.0f } };
 
 // Viewing media (VIDEO_ANALOGICO.md, PELLICOLE_E_SVILUPPO.md): kind, scan lines, glass curvature, beam sigma (in
 // lines) dark and bright, phosphor mask amount and type (0 stripes, 1 slots) and triads across the width, light
 // falloff to the corners, flicker, black (flare or paper Dmax), white (lamp or paper), unsteadiness (share of the
-// height), lens softness (px at 1080), corner radius and edge softness (share of the height).
+// height), lens softness (px at 1080), corner radius and edge softness (share of the height), glow of the glass or
+// the lens around bright areas (share of the light, radius as share of the height), and an LCD's slow response
+// (share of the previous frame still on the screen).
 struct Medium { int kind, lines; float curve, beamMin, beamMax, mask; int maskType; float triads, falloff, flicker,
-                black, white[3], unsteady, soft, corner, edge; };
+                black, white[3], unsteady, soft, corner, edge, glow, glowRadius, ghost; };
 const Medium kMedia[kCrMediumCount] = {
-    { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0 },
-    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.20f, 0.012f, 0.004f, { 1, 1, 1 }, 0.0012f, 0, 0.010f, 0.003f },
-    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.50f, 0.050f, 0.015f, { 1.0f, 0.92f, 0.78f }, 0.004f, 1.2f, 0.03f, 0.006f },
-    { CR_MEDIUM_SCREEN, 576, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.8f, 0.05f, 0.004f },
-    { CR_MEDIUM_SCREEN, 480, 0.06f, 0.22f, 0.45f, 0.35f, 1, 560, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.9f, 0.05f, 0.004f },
-    { CR_MEDIUM_SCREEN, 576, 0.02f, 0.18f, 0.38f, 0.25f, 0, 900, 0.06f, 0, 0.010f, { 1, 1, 1 }, 0, 0.4f, 0.02f, 0.002f },
-    { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0 },
-    { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, 0.008f, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0 } };
+    { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0 },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.20f, 0.012f, 0.004f, { 1, 1, 1 }, 0.0012f, 0, 0.010f, 0.003f,
+      0.015f, 0.02f, 0 },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.50f, 0.050f, 0.015f, { 1.0f, 0.92f, 0.78f }, 0.004f, 1.2f, 0.03f, 0.006f,
+      0.030f, 0.03f, 0 },
+    { CR_MEDIUM_SCREEN, 576, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.8f, 0.05f, 0.004f,
+      0.060f, 0.015f, 0 },
+    { CR_MEDIUM_SCREEN, 480, 0.06f, 0.22f, 0.45f, 0.35f, 1, 560, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.9f, 0.05f, 0.004f,
+      0.060f, 0.015f, 0 },
+    { CR_MEDIUM_SCREEN, 576, 0.02f, 0.18f, 0.38f, 0.25f, 0, 900, 0.06f, 0, 0.010f, { 1, 1, 1 }, 0, 0.4f, 0.02f, 0.002f,
+      0.030f, 0.010f, 0 },
+    { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0.45f },
+    { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, 0.008f, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0, 0, 0, 0 } };
 
 
 // Film formats: grain size and amount, halation radius, gate weave (share of the width), relative to Super 35.
@@ -259,6 +267,12 @@ void glowGrid(int W, int H, float sigma, int& s, int& w, int& h, float& onGrid)
 }
 
 }  // namespace
+
+bool creativeNeedsPrevious(const CreativeControls& c)
+{
+    const bool log = c.process == kCrColourNegative && c.output == CR_OUT_LOG;
+    return c.medium > 0 && c.medium < kCrMediumCount && kMedia[c.medium].ghost > 0.0f && c.mediumAmount > 0.0 && !log;
+}
 
 void creativeRecordTimes(const CreativeControls& c, double out[3])
 {
@@ -678,6 +692,14 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         p.genSize = (float)std::max(0.5, 1.1 * fmt.grainSize * gen.size * clampd(c.grainSize, 0.25, 4) * k1080);
         p.printGrain = (float)(0.010 * fmt.grainAmount * sqrt(gen.printSize) * clampd(c.printGrain, 0, 3));
         p.printGrainSize = (float)std::max(0.5, 0.8 * fmt.grainSize * gen.printSize * k1080);
+        // each duplicate is a little less sharp: the records are blurred, and with them the camera's grain (added
+        // later, so its size grows and its amplitude falls as a blurred noise's would)
+        p.genSoft = gen.soft * k1080;
+        if (p.genSoft > 0.0f) {
+            const float wide = std::sqrt(p.grainSize * p.grainSize + 4.0f * p.genSoft * p.genSoft);
+            p.grainAmount *= p.grainSize / wide;
+            p.grainSize = wide;
+        }
     }
     p.halAmount = (float)(hal * 0.12 * clampd(c.halation, 0, 3));
     if (p.kind != CR_KIND_PROCESS) p.halAmount = 0.0f;
@@ -760,6 +782,11 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         p.mPitch = std::max(3.0f, (float)W / md.triads);
     }
     if (md.kind == CR_MEDIUM_PAPER) p.mTexture = ma;
+    if (md.glow > 0.0f && ma > 0.0f) {
+        p.mGlow = md.glow * ma;
+        glowGrid(W, H, md.glowRadius * H, p.mGS, p.mGW, p.mGH, p.mGlowSigma);
+    }
+    p.mGhost = md.ghost * ma;
     if (md.kind == CR_MEDIUM_LCD) {   // 160 x 144, four shades of green (emulator values, [gen])
         p.mCols = 160;
         p.mRows = 144;

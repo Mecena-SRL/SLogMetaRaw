@@ -138,22 +138,22 @@ void CreativeEffect::updateProcess()
     auto show = [this](const char* name, bool on) {
         if (paramExists(name)) getParam(name)->setIsSecret(!on);
     };
+    const CreativeControls now = readControls(timeLineGetTime());
     bool used[kGrCount] = {};
     used[kGrProcess] = used[kGrColour] = true;
     for (const CrChoiceDef& c : kCrChoices) {
-        const bool on = (c.shows & bit) != 0;
+        const bool on = (c.shows & bit) != 0 && !crRowIdle(c.name, now);
         show(c.name, on);
         used[c.group] = used[c.group] || on;
     }
     for (const CrSliderDef& s : kCrSliders) {
-        const bool on = (s.shows & bit) != 0;
+        const bool on = (s.shows & bit) != 0 && !crRowIdle(s.name, now);
         show(s.name, on);
         used[s.group] = used[s.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
     if (paramExists("processInfo")) {   // the process, then the medium it is seen on
-        int medium = 0;
-        if (paramExists("medium")) fetchChoiceParam("medium")->getValue(medium);
+        const int medium = crRowIdle("medium", now) ? 0 : now.medium;
         std::string text = kCrProcessInfo[proc];
         if (medium > 0 && medium < kCrMediumCount) text += std::string(" · ") + kCrMediumInfo[medium];
         OFX::StringParam* info = fetchStringParam("processInfo");
@@ -200,7 +200,8 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs&, const std::st
     }
     if (p_ParamName == "creativeReset") resetAll();
     else if (p_ParamName == "nodeInput") refreshInfo();
-    else if (p_ParamName == "process" || p_ParamName == "medium") updateProcess();
+    else if (p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print" || p_ParamName == "output")
+        updateProcess();   // rows that depend on these choices
     m_Badge.refresh(false);
 }
 
@@ -227,8 +228,10 @@ void CreativeEffect::getFramesNeeded(const OFX::FramesNeededArguments& p_Args, O
     range.min = range.max = p_Args.time;
     if (m_Ready) {
         double t[3];
-        recordTimes(readControls(p_Args.time), p_Args.time, t);
+        const CreativeControls c = readControls(p_Args.time);
+        recordTimes(c, p_Args.time, t);
         for (double v : t) range.max = std::max(range.max, v);
+        if (creativeNeedsPrevious(c)) range.min = p_Args.time - 1;   // an LCD still shows the previous picture
     }
     p_Frames.setFramesNeeded(*m_SrcClip, range);
 }
@@ -306,6 +309,28 @@ CreativeEffect::~CreativeEffect()
     }
 }
 
+// The frames the records of time t are exposed from: `frame` (the image at t), or another frame of the clip when the
+// exposures are sequential (frame itself past the clip's end). keep holds the images fetched here.
+void CreativeEffect::fetchRecords(const CreativeControls& c, double t, const OFX::Image& layout, OFX::Image* frame,
+                                  std::unique_ptr<OFX::Image> keep[3], const float* out[3])
+{
+    double times[3];
+    recordTimes(c, t, times);
+    for (int k = 0; k < 3; ++k) {
+        out[k] = static_cast<const float*>(frame->getPixelData());
+        if (times[k] == t) continue;
+        int same = -1;
+        for (int j = 0; j < k; ++j)
+            if (times[j] == times[k]) same = j;
+        if (same >= 0) {
+            out[k] = out[same];
+            continue;
+        }
+        keep[k].reset(m_SrcClip->fetchImage(times[k]));
+        if (keep[k] && sameLayout(layout, *keep[k])) out[k] = static_cast<const float*>(keep[k]->getPixelData());
+    }
+}
+
 void CreativeEffect::render(const OFX::RenderArguments& p_Args)
 {
     if (!m_Ready) return;
@@ -333,22 +358,17 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
     }
     const CreativeControls controls = readControls(p_Args.time);
     // the records' frames: another frame of the clip when the exposures are sequential, this one past its end
-    double times[3];
-    recordTimes(controls, p_Args.time, times);
-    std::unique_ptr<OFX::Image> other[3];
+    std::unique_ptr<OFX::Image> other[6];
     const float* inputs[3];
-    for (int k = 0; k < 3; ++k) {
-        inputs[k] = static_cast<const float*>(src->getPixelData());
-        if (times[k] == p_Args.time) continue;
-        int same = -1;
-        for (int j = 0; j < k; ++j)
-            if (times[j] == times[k]) same = j;
-        if (same >= 0) {
-            inputs[k] = inputs[same];
-            continue;
-        }
-        other[k].reset(m_SrcClip->fetchImage(times[k]));
-        if (other[k] && sameLayout(*src, *other[k])) inputs[k] = static_cast<const float*>(other[k]->getPixelData());
+    const float* prevInputs[3];
+    fetchRecords(controls, p_Args.time, *src, src.get(), other, inputs);
+    // an LCD still shows part of the previous picture: that frame's records too (none before the clip starts)
+    std::unique_ptr<OFX::Image> before;
+    bool previous = creativeNeedsPrevious(controls);
+    if (previous) {
+        before.reset(m_SrcClip->fetchImage(p_Args.time - 1));
+        previous = before && sameLayout(*src, *before);
+        if (previous) fetchRecords(controls, p_Args.time - 1, *src, before.get(), other + 3, prevInputs);
     }
     // the whole frame arrives (no tiles), so its height is the reference of every radius: the same look at full
     // size, in proxy and in the viewer
@@ -356,9 +376,17 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
     creativePrepare(p, controls, W, H, (int)std::lround(p_Args.time), space, gamma);
     p.rowPixels = (int)(src->getRowBytes() / 16);
     p.dstRowPixels = (int)(dst->getRowBytes() / 16);
+    CreativePrevious prev;
+    if (previous) {
+        creativePrepare(prev.p, controls, W, H, (int)std::lround(p_Args.time) - 1, space, gamma);
+        prev.p.rowPixels = p.rowPixels;
+        prev.p.dstRowPixels = p.dstRowPixels;
+        for (int k = 0; k < 3; ++k) prev.src[k] = prevInputs[k];
+    }
 #ifdef __APPLE__
     if (p_Args.isEnabledMetalRender) {
-        if (!RunCreativeKernels(p_Args.pMetalCmdQ, p, inputs, static_cast<float*>(dst->getPixelData())))
+        if (!RunCreativeKernels(p_Args.pMetalCmdQ, p, inputs, static_cast<float*>(dst->getPixelData()),
+                                previous ? &prev.p : nullptr, previous ? prev.src : nullptr))
             OFX::throwSuiteStatusException(kOfxStatFailed);
         return;
     }
@@ -371,5 +399,5 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
     };
     ScratchLease scratch((size_t)W * H);
     creativeRenderCPU(p, inputs, (size_t)src->getRowBytes() / 4, static_cast<float*>(dst->getPixelData()),
-                      (size_t)dst->getRowBytes() / 4, parallel, *scratch);
+                      (size_t)dst->getRowBytes() / 4, parallel, *scratch, previous ? &prev : nullptr);
 }

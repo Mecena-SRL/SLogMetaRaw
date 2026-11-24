@@ -1517,12 +1517,14 @@ struct CreativeParams {
     int chromaDelay, lumaAxes, chromaBlockX, chromaBlockY;
     float clip, knee, contrast, highDesat, levels;
     // duplicates and print: grain of the intermediates (stops), of the print (density)
-    float genGrain, genSize, printGrain, printGrainSize;
+    float genGrain, genSize, printGrain, printGrainSize, genSoft;   // genSoft: the duplicates' blur (px)
     // viewing medium, on the finished picture (display-linear Rec.709)
     int medium, mLines, mMaskType, mCols, mRows;
     float mCurve, mBeamMin, mBeamMax, mMask, mPitch, mFalloff, mGain, mBlack, mWhite[3], mShiftX, mShiftY, mSoft;
     float mCorner, mEdge, mTexture, mScreenW, mScreenH, mBezel, mDither, mGrid;
     float mPalette[12], mUnlit[3], mBezelTint[3], mBodyTint[3];   // LCD: code values (Gamma 2.4)
+    int mGS, mGW, mGH;                     // the glow's grid (scale, size) of the picture's luminance
+    float mGlow, mGlowSigma, mGhost;       // mGhost: share of the previous picture an LCD still shows
 };
 
 SM_FN SMf3 cr_mul(SM_CPTR m, SMf3 c) {
@@ -1953,7 +1955,8 @@ SM_FN float cr_blur_at(CR_PLANE in, int w, int h, int x, int y, int axis, float 
     return sum / wsum;
 }
 
-// Mean of the s x s block of grid cell (i, j): record c of the planes E, or (c = 3) the halation source.
+// Mean of the s x s block of grid cell (i, j): record c of the planes E, (c = 3) the halation source, or (c = 4) the
+// luminance of a picture.
 SM_FN float cr_down_at(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, int i, int j, int s, int c, SM_CREF(CreativeParams) p) {
     float sum = 0.0f;
     int n = 0;
@@ -1961,7 +1964,7 @@ SM_FN float cr_down_at(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, int i, int j, int 
         for (int x = i * s; x < i * s + s && x < p.W; ++x) {
             const int k = y * p.W + x;
             const SMf3 v = smf3(E0[k], E1[k], E2[k]);
-            sum += c == 3 ? cr_halation_source(v, p) : cr_at(v, c);
+            sum += c == 3 ? cr_halation_source(v, p) : (c == 4 ? 0.2126f * v.x + 0.7152f * v.y + 0.0722f * v.z : cr_at(v, c));
             ++n;
         }
     return n > 0 ? sum / (float)n : 0.0f;
@@ -1999,10 +2002,17 @@ SM_FN SMf3 cr_signal_at(CR_PLANE Y, CR_PLANE Yb, CR_PLANE Cb, CR_PLANE Cr, int x
 
 // ---- viewing medium: the finished picture (planes M, display-linear Rec.709) as a screen or a print shows it
 
-// The picture to show at (x, y): the output's code values, decoded (Gamma 2.4).
-SM_FN SMf3 cr_medium_in(CR_PLANE dst, int x, int y, SM_CREF(CreativeParams) p) {
+// The picture to show at (x, y): the output's code values, decoded (Gamma 2.4); an LCD still shows part of the previous
+// picture (prev, the same layout; read only when mGhost > 0).
+SM_FN SMf3 cr_medium_in(CR_PLANE dst, CR_PLANE prev, int x, int y, SM_CREF(CreativeParams) p) {
     const int d = (y * p.dstRowPixels + x) * 4;
-    return smf3(sm_decode(dst[d], CR_GAMMA24), sm_decode(dst[d + 1], CR_GAMMA24), sm_decode(dst[d + 2], CR_GAMMA24));
+    SMf3 c = smf3(sm_decode(dst[d], CR_GAMMA24), sm_decode(dst[d + 1], CR_GAMMA24), sm_decode(dst[d + 2], CR_GAMMA24));
+    if (p.mGhost > 0.0f) {
+        const float g = p.mGhost;
+        c = smf3(c.x + (sm_decode(prev[d], CR_GAMMA24) - c.x) * g, c.y + (sm_decode(prev[d + 1], CR_GAMMA24) - c.y) * g,
+                 c.z + (sm_decode(prev[d + 2], CR_GAMMA24) - c.z) * g);
+    }
+    return c;
 }
 
 // The picture at the fractional pixel (u, v), bilinear, edges clamped.
@@ -2090,9 +2100,9 @@ SM_FN SMf3 cr_lcd(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, int x, int y, SM_CREF(C
 }
 
 // The medium at (x, y), as code values (Gamma 2.4): geometry (curved glass, unsteadiness), the screen's edge, the
-// raster or the lens, phosphors, paper fibres, light falloff and flicker, then black (flare, Dmax) and white (lamp,
-// paper).
-SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, int x, int y, SM_CREF(CreativeParams) p) {
+// raster or the lens, phosphors, the glow of glass or lens (grid of the picture's luminance; read only when mGlow > 0),
+// paper fibres, light falloff and flicker, then black (flare, Dmax) and white (lamp, paper).
+SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, CR_PLANE glow, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.medium == CR_MEDIUM_LCD) return cr_lcd(M0, M1, M2, x, y, p);
     const float W = (float)p.W, H = (float)p.H;
     const float u = ((float)x + 0.5f) / W * 2.0f - 1.0f, v = ((float)y + 0.5f) / H * 2.0f - 1.0f;
@@ -2116,6 +2126,11 @@ SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, int x, int y, SM_
         c = smf3(0.25f * (a.x + b.x + d.x + e.x), 0.25f * (a.y + b.y + d.y + e.y), 0.25f * (a.z + b.z + d.z + e.z));
     } else {
         c = cr_pic(M0, M1, M2, sx, sy, p);
+    }
+    if (p.mGlow > 0.0f) {   // light scattered in the glass or the lens around bright areas (neutral)
+        const float h = p.mGlow * cr_grid(glow, p.mGW, p.mGH, p.mGS, (int)sm_clamp(sx, 0.0f, W - 1.0f),
+                                          (int)sm_clamp(sy, 0.0f, H - 1.0f));
+        c = smf3(c.x * (1.0f - p.mGlow) + h, c.y * (1.0f - p.mGlow) + h, c.z * (1.0f - p.mGlow) + h);
     }
     float light = p.mGain * (1.0f - p.mFalloff * r2) * inside;
     if (p.mTexture > 0.0f) {   // paper fibres: still, the same on every frame

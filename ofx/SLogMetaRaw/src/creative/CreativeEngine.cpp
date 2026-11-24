@@ -19,9 +19,9 @@ void blur1(const CreativeParallel& par, const float* in, float* out, int w, int 
     });
 }
 
-// Grid of scale gs from the record planes (record c, 3 = halation source), then its separable Gaussian.
-void glowGrid(const CreativeParallel& par, CreativeScratch& s, Plane& grid, int gs, int gw, int gh, int c, float sigma,
-              const CreativeParams& p)
+// Grid of scale gs from the planes X (record c, 3 = halation source, 4 = luminance), then its separable Gaussian.
+void glowGrid(const CreativeParallel& par, CreativeScratch& s, const float* const X[3], Plane& grid, int gs, int gw,
+              int gh, int c, float sigma, const CreativeParams& p)
 {
     ensure(grid, (size_t)gw * gh);
     ensure(s.tmp, (size_t)gw * gh);
@@ -29,7 +29,7 @@ void glowGrid(const CreativeParallel& par, CreativeScratch& s, Plane& grid, int 
     par(gh, [&](int b, int e) {
         for (int j = b; j < e; ++j)
             for (int i = 0; i < gw; ++i)
-                g[(size_t)j * gw + i] = cr_down_at(s.E[0].data(), s.E[1].data(), s.E[2].data(), i, j, gs, c, p);
+                g[(size_t)j * gw + i] = cr_down_at(X[0], X[1], X[2], i, j, gs, c, p);
     });
     blur1(par, g, s.tmp.data(), gw, gh, 0, sigma, 0);
     blur1(par, s.tmp.data(), g, gw, gh, 1, sigma, 0);
@@ -56,10 +56,9 @@ void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeS
                  const float* hal, const float* const bl[3], const float* alpha, size_t srcRowFloats, float* dst,
                  size_t dstRowFloats);
 
-}  // namespace
-
-void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
-                       size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s)
+// Steps 1-3: the finished picture into dst.
+void renderPicture(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
+                   size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s)
 {
     const int W = p.W, H = p.H;
     const size_t N = (size_t)W * H;
@@ -79,12 +78,19 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
                 s.E[2][i] = e.z;
             }
     });
+    const float* E[3] = { s.E[0].data(), s.E[1].data(), s.E[2].data() };
+    if (q.genSoft > 0.0f) {   // the duplicates' loss of sharpness
+        ensure(s.tmp, N);
+        for (int k = 0; k < 3; ++k) {
+            blur1(par, E[k], s.tmp.data(), W, H, 0, q.genSoft, 0);
+            blur1(par, s.tmp.data(), s.E[k].data(), W, H, 1, q.genSoft, 0);
+        }
+    }
 
     // 2. glow
-    if (q.halAmount > 0.0f) glowGrid(par, s, s.hal, q.hS, q.hW, q.hH, 3, q.halSigma, q);
+    if (q.halAmount > 0.0f) glowGrid(par, s, E, s.hal, q.hS, q.hW, q.hH, 3, q.halSigma, q);
     if (q.bloom > 0.0f)
-        for (int c = 0; c < 3; ++c) glowGrid(par, s, s.bl[c], q.bS, q.bW, q.bH, c, q.bloomSigma, q);
-    const float* E[3] = { s.E[0].data(), s.E[1].data(), s.E[2].data() };
+        for (int c = 0; c < 3; ++c) glowGrid(par, s, E, s.bl[c], q.bS, q.bW, q.bH, c, q.bloomSigma, q);
     const float* hal = q.halAmount > 0.0f ? s.hal.data() : E[0];   // unused grids: never read
     const float* bl[3];
     for (int c = 0; c < 3; ++c) bl[c] = q.bloom > 0.0f ? s.bl[c].data() : E[c];
@@ -98,6 +104,29 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
         signalChain(par, q, s, E, hal, bl, src[0], srcRowFloats, dst, dstRowFloats);
     }
 
+}
+
+}  // namespace
+
+void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
+                       size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s, const CreativePrevious* prev)
+{
+    const int W = p.W, H = p.H;
+    const size_t N = (size_t)W * H;
+    CreativeParams q = p;
+    q.rowPixels = (int)(srcRowFloats / 4);
+    q.dstRowPixels = (int)(dstRowFloats / 4);
+    // an LCD's slow response: the previous frame's picture first (no medium), in the layout of dst
+    const bool ghost = q.medium != CR_MEDIUM_NONE && q.mGhost > 0.0f && prev != nullptr;
+    if (!ghost) q.mGhost = 0.0f;
+    if (ghost) {
+        ensure(s.prev, dstRowFloats * (size_t)H);
+        CreativeParams pp = prev->p;
+        pp.medium = CR_MEDIUM_NONE;
+        renderPicture(pp, prev->src, srcRowFloats, s.prev.data(), dstRowFloats, par, s);
+    }
+    renderPicture(q, src, srcRowFloats, dst, dstRowFloats, par, s);
+
     // 4. viewing medium: the finished picture, decoded into M, shown through the screen or on paper
     if (q.medium == CR_MEDIUM_NONE) return;
     ensure(s.M, 3 * N);
@@ -105,17 +134,20 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
             for (int x = 0; x < W; ++x) {
-                const SMf3 v = cr_medium_in(dst, x, y, q);
+                const SMf3 v = cr_medium_in(dst, ghost ? s.prev.data() : dst, x, y, q);
                 const size_t k = (size_t)y * W + x;
                 M[k] = v.x;
                 M[N + k] = v.y;
                 M[2 * N + k] = v.z;
             }
     });
+    const float* Mp[3] = { M, M + N, M + 2 * N };
+    if (q.mGlow > 0.0f) glowGrid(par, s, Mp, s.hal, q.mGS, q.mGW, q.mGH, 4, q.mGlowSigma, q);
+    const float* glow = q.mGlow > 0.0f ? s.hal.data() : M;   // unused: never read
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
             for (int x = 0; x < W; ++x) {
-                const SMf3 o = cr_medium_at(M, M + N, M + 2 * N, x, y, q);
+                const SMf3 o = cr_medium_at(M, M + N, M + 2 * N, glow, x, y, q);
                 float* d = dst + (size_t)y * dstRowFloats + (size_t)x * 4;
                 d[0] = o.x;
                 d[1] = o.y;

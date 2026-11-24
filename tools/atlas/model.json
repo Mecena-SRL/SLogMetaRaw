@@ -964,7 +964,7 @@
      "id": "cr.panel",
      "kind": "event",
      "label": "Processo e varianti",
-     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h).",
+     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h); alcune righe si nascondono anche quando un'altra scelta le rende inutili (crRowIdle: senza stampa niente generazioni, con uscita Log niente supporto).",
      "basis": "dedotto",
      "refs": [
       {
@@ -994,7 +994,7 @@
      "id": "cr.record",
      "kind": "function",
      "label": "Record",
-     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola.",
+     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola. Con le copie (Generazione) i record si sfocano come i duplicati.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1063,7 +1063,7 @@
      "id": "cr.medium",
      "kind": "function",
      "label": "Supporto di visione",
-     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log: proiezione in sala o di casa (caduta di luce, sfarfallio, instabilità, flare, lampada), televisore o monitor a tubo (vetro curvo, righe di scansione, fosfori), console LCD a quattro verdi, carta (bianco, Dmax, fibre).",
+     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log: proiezione in sala o di casa (caduta di luce, sfarfallio, instabilità, flare, lampada, bagliore dell'obiettivo), televisore o monitor a tubo (vetro curvo e il suo bagliore, righe di scansione, fosfori), console LCD a quattro verdi che tiene parte del fotogramma precedente (renderizzato anche lui), carta (bianco, Dmax, fibre).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1301,20 +1301,20 @@
   },
   "beh:creative.process": {
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "62c52b7d540f",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "c1c85e84d59b",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "97c0e8607e0a",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "fd64b9e99431",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "b1191ce6db9b",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "2d366cf560f9",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "1152803485a5",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "a65ff5a566a9",
-   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "8b04379ac9e4",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "9e09068a317b"
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "ae97c6204464",
+   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "a6c65cfe45c6"
   }
  }
 }

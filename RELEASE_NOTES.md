@@ -17,6 +17,8 @@
   duplicati e la **grana della stampa**; **Supporto di visione** dopo l'uscita: sala, proiettore di casa, televisore a
   tubo PAL e NTSC, monitor broadcast, console portatile LCD verde, carta fotografica. Motore più veloce: sorgente
   decodificata una volta, sfocature con meno esponenziali, video analogico circa 3 volte più rapido sulla CPU.
+  Poi: i duplicati perdono nitidezza; bagliore del vetro e dell'obiettivo attorno alle luci; la console tiene la scia
+  del fotogramma precedente; pannello più pulito (righe senza effetto nascoste, Azzera comandi in alto, «Visto su»).
 
 - **Motion Blur più veloce**: chiede a Resolve solo i fotogrammi accanto (prima ne chiedeva 3 per lato, quindi
   Resolve calcolava 7 fotogrammi a monte, Stabilize compreso, per ognuno). Il contesto lontano si legge solo quando

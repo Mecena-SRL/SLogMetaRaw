@@ -2,7 +2,8 @@
 // Runs the Creative node's CPU pipeline (src/creative/CreativeEngine.cpp) for tests/test_creative.py.
 // stdin:  W H space gamma frame frames threads
 //         name=value ... (panel controls by their OFX names, one line)
-//         frames * W*H lines "r g b" (encoded input; frame 0 is the current one, then the following ones)
+//         frames * W*H lines "r g b" (encoded input; frame 0 is the current one, then the following ones; when the
+//         medium shows the previous picture and frames > 1, the last frame is the previous one)
 // stdout: W*H lines "r g b"
 #include <cmath>
 #include <cstdio>
@@ -49,15 +50,22 @@ int main()
             if (!fgets(line, sizeof(line), stdin) || sscanf(line, "%f %f %f", px, px + 1, px + 2) != 3) return 2;
             px[3] = 1.0f;
         }
+    const bool previous = creativeNeedsPrevious(c) && frames > 1;
+    const int ahead = previous ? frames - 1 : frames;
     double t[3];
     creativeRecordTimes(c, t);
     const float* inputs[3];
     for (int k = 0; k < 3; ++k) {
         const int f = (int)std::lround(t[k]);
-        inputs[k] = src[f >= 0 && f < frames ? f : 0].data();   // past the clip's end: this frame, as the plugin
+        inputs[k] = src[f >= 0 && f < ahead ? f : 0].data();   // past the clip's end: this frame, as the plugin
     }
     CreativeParams p;
     creativePrepare(p, c, W, H, frame, space, gamma);
+    CreativePrevious prev;
+    if (previous) {
+        creativePrepare(prev.p, c, W, H, frame - 1, space, gamma);
+        for (int k = 0; k < 3; ++k) prev.src[k] = src[frames - 1].data();
+    }
     CreativeParallel par = [threads](int n, const std::function<void(int, int)>& fn) {
         std::vector<std::thread> pool;
         for (int i = 0; i < threads; ++i)
@@ -66,7 +74,7 @@ int main()
     };
     CreativeScratch s;
     std::vector<float> dst(N * 4);
-    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s);
+    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s, previous ? &prev : nullptr);
     for (size_t i = 0; i < N; ++i) printf("%.7g %.7g %.7g\n", dst[i * 4], dst[i * 4 + 1], dst[i * 4 + 2]);
     return 0;
 }

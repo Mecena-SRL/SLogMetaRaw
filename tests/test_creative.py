@@ -174,6 +174,37 @@ class Creative(unittest.TestCase):
         self.assertTrue(centre <= greens, centre - greens)
         self.assertGreater(len(centre), 1)   # grey is dithered between two shades
 
+    def test_duplicates_lose_sharpness(self):
+        w, h = 32, 1080   # the blur is in px at 1080
+        img = [[dm.encode1(0.18 * (4.0 if x >= 16 else 0.25), GAMMA)] * 3 for y in range(h) for x in range(w)]
+
+        def spread(out):   # the edge's width: share of the rise outside its two central pixels
+            row = [out[540 * w + x][1] for x in range(w)]
+            return 1 - (row[16] - row[15]) / (row[w - 1] - row[0])
+        ctl = {'process': NEGATIVE, 'grain': 0, 'printGrain': 0, 'halation': 0}
+        sharp = spread(self.render(dict(ctl, generation=0), [img], size=(w, h)))
+        soft = spread(self.render(dict(ctl, generation=2), [img], size=(w, h)))
+        self.assertGreater(soft, sharp + 0.2)
+
+    def test_screens_glow_around_bright_areas(self):
+        w, h = 64, 64
+        img = [[dm.encode1(0.18 * (16.0 if abs(x - 32) < 4 and abs(y - 32) < 4 else 0.02), GAMMA)] * 3
+               for y in range(h) for x in range(w)]
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': 1}
+        lit = self.render(ctl, [img], size=(w, h))
+        dark = self.render(dict(ctl, mediumAmount=0), [img], size=(w, h))
+        near = (32 * w + 40)   # beside the bright square
+        self.assertGreater(lit[near][1], dark[near][1])
+
+    def test_console_keeps_part_of_the_previous_picture(self):
+        w, h = 320, 288
+        black, white = self.flat(-6.0, w * h), self.flat(3.0, w * h)
+        ctl = {'process': NEGATIVE, 'medium': 6, 'grain': 0, 'printGrain': 0}
+        still = self.render(ctl, [white, white], size=(w, h))
+        trail = self.render(ctl, [white, black], size=(w, h))   # the last frame is the previous one
+        centre = lambda out: sum(out[y * w + x][1] for y in range(130, 158) for x in range(140, 180))  # noqa: E731
+        self.assertLess(centre(trail), centre(still))
+
     def test_paper_has_its_white_and_its_black(self):
         out = self.render({'process': NEGATIVE, 'medium': 7, 'mediumAmount': 1}, [ramp()])
         vals = [c for px in out for c in px]

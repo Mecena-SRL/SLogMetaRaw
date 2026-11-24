@@ -192,3 +192,5 @@ taratura dei numeri su riprese reali; rimandati grana anamorfica, DCT e smear CC
 Poi (stesso giorno, richiesta di Ivan): più pellicole, positivi e generazioni di copia con grana dei duplicati e della
 stampa, Supporto di visione (sala, proiettore, tubo, monitor, console LCD, carta) come ultimo passo su CPU e Metal,
 motore più veloce. Verificato come sopra; aperto: parità Metal del supporto (CI), aspetto su un 4K vero.
+Terzo giro: nitidezza dei duplicati, bagliore di vetro e obiettivo, scia dell'LCD (rende anche il fotogramma prima),
+righe del pannello nascoste quando non servono (crRowIdle).

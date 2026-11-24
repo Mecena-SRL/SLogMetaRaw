@@ -2,6 +2,8 @@
 // The Creative panel as data: every control, its group and the processes that show it. The factory describes it, the
 // effect reads it and shows each row only with its processes. Names are permanent (Resolve saves by name).
 #pragma once
+#include <cstring>
+
 #include "CreativeModel.h"
 
 #define CR_BIT(p) (1u << (p))
@@ -17,6 +19,7 @@ const unsigned kCrHalo = kCrFilm | CR_BIT(kCrCollodion);
 const unsigned kCrSeparate = CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2) | CR_BIT(kCrThreePlates) | CR_BIT(kCrKinemacolor);
 const unsigned kCrScreen = CR_BIT(kCrAutochrome) | CR_BIT(kCrDufay);
 const unsigned kCrPrinted = CR_BIT(kCrColourNegative) | CR_BIT(kCrBlackWhite);   // a negative printed on a positive
+const unsigned kCrColourPrint = CR_BIT(kCrColourNegative) | CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2);   // printer lights
 const unsigned kCrToned = CR_BIT(kCrDaguerreotype) | CR_BIT(kCrAlbumen) | CR_BIT(kCrCyanotype) | CR_BIT(kCrPlatinum);
 
 enum CreativeGroup { kGrProcess, kGrShot, kGrPrint, kGrTexture, kGrSeparation, kGrScreen, kGrPlate, kGrSignal,
@@ -76,7 +79,7 @@ static const CrChoiceDef kCrChoices[] = {
     { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
       "Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. "
       "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
-    { "medium", "Supporto", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
+    { "medium", "Visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
       "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
       "console portatile, carta. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView } };
 const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
@@ -107,11 +110,11 @@ static const CrSliderDef kCrSliders[] = {
     { "age", "Età", &CreativeControls::age, 0, 1, 0.01, kGrShot, kCrPhoto,
       "Decadimento: coloranti che sbiadiscono a ritmi diversi (il ciano per primo), base che ingiallisce" },
     // print
-    { "printR", "Luci di stampa R", &CreativeControls::printR, -24, 24, 1, kGrPrint, kCrPhoto,
+    { "printR", "Luci di stampa R", &CreativeControls::printR, -24, 24, 1, kGrPrint, kCrColourPrint,
       "Punti della stampatrice: 1 punto = 0,025 log E. Più rosso = stampa più ciano" },
-    { "printG", "Luci di stampa G", &CreativeControls::printG, -24, 24, 1, kGrPrint, kCrPhoto,
+    { "printG", "Luci di stampa G", &CreativeControls::printG, -24, 24, 1, kGrPrint, kCrColourPrint,
       "Più verde = stampa più magenta" },
-    { "printB", "Luci di stampa B", &CreativeControls::printB, -24, 24, 1, kGrPrint, kCrPhoto,
+    { "printB", "Luci di stampa B", &CreativeControls::printB, -24, 24, 1, kGrPrint, kCrColourPrint,
       "Più blu = stampa più gialla" },
     { "printContrast", "Contrasto", &CreativeControls::printContrast, 0.5, 2, 0.01, kGrPrint, kCrAll,
       "Il contrasto del positivo (o del segnale), moltiplicato su quello del processo" },
@@ -204,3 +207,15 @@ static const CrSliderDef kCrSliders[] = {
       "1 = com'è davvero. Sala e proiettore: caduta di luce, sfarfallio, instabilità. Tubo: curvatura, righe, "
       "fosfori. Console: retinatura e griglia. Carta: fibre, bianco e nero della carta" } };
 const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);
+
+// Rows that depend on another choice, hidden while it makes them do nothing: no print (scan or Log output) has no
+// generations or print grain; the Log output has no medium; no medium has no intensity.
+inline bool crRowIdle(const char* name, const CreativeControls& c)
+{
+    const bool log = c.process == kCrColourNegative && c.output == CR_OUT_LOG;
+    const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
+    if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;
+    if (!std::strcmp(name, "medium")) return log;
+    if (!std::strcmp(name, "mediumAmount")) return log || c.medium == 0;
+    return false;
+}

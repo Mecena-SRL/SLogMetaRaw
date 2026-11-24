@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <memory>
 #include <string>
 
 #include "ofxsImageEffect.h"
@@ -34,6 +35,8 @@ private:
     void refreshInfo();
     void updateProcess();   // the rows and groups of the chosen process
     void resetAll();
+    void fetchRecords(const CreativeControls& c, double t, const OFX::Image& layout, OFX::Image* frame,
+                      std::unique_ptr<OFX::Image> keep[3], const float* out[3]);
 
     bool m_Ready = false;
     UpdateBadge m_Badge;

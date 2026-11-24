@@ -60,6 +60,9 @@ struct CreativeControls
     double shadowHue = 200, shadowAmount = 0, highHue = 40, highAmount = 0, balance = 0, saturation = 1, density = 0;
 };
 
+// Whether the picture of the previous frame is needed too (an LCD's slow response).
+bool creativeNeedsPrevious(const CreativeControls& c);
+
 // Time offsets (frames) of the three records' exposures: sequential plates and two-colour cameras read other frames.
 void creativeRecordTimes(const CreativeControls& c, double out[3]);
 

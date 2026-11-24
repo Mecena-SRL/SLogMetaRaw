@@ -64,7 +64,7 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
             p->setDigits(s.inc >= 1 ? 0 : (s.inc >= 0.1 ? 1 : 2));
     }
     defineButton(d, page, "creativeReset", "Azzera comandi",
-                 "Riporta ai valori del processo tutti i comandi; processo e varianti restano", groups[kGrColour]);
+                 "Riporta ai valori del processo tutti i comandi; processo e varianti restano", groups[kGrProcess]);
 
     if (claimName("boundPath")) hideParam(d.defineStringParam("boundPath"), page);
     defineHiddenInt(d, page, "camSpace", -1);
