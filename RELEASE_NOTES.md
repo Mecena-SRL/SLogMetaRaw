@@ -1,6 +1,6 @@
 # Changelog
 
-## Prossima versione
+## Log MetaRaw 3.2.0
 
 - **Maschera rumore** (nodo Develop, gruppo nuovo): scrive nel canale alpha le zone dove la camera ha rumore all'EI
   scelto, per far lavorare Neat Video solo lì. Automatica (soglia per camera, ISO nativo, doppio ISO e codec:
