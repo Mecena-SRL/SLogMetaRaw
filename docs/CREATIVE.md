@@ -1,0 +1,60 @@
+# Log MetaRaw Creative
+
+Il secondo nodo del bundle (lo slot e l'identificatore `com.slogmetaraw.SLogMetaRawDetail` del vecchio Detail, sostituito
+per intero il 2026-11-24). Sviluppo creativo: un solo motore rifà **il procedimento** fotografico o elettronico, non
+un'imitazione del suo risultato. Nessun profilo, LUT o dato di prodotto: modelli parametrici nostri, con numeri stimati
+dalle ricerche in [`docs/creative/`](creative/).
+
+## Dove va
+
+Dopo Log MetaRaw. Decodifica in luce lineare la codifica che riceve (Ingresso (IDT): dichiarato, da Resolve, dalla clip,
+presunto S-Gamut3.Cine/S-Log3; uno spazio non riconosciuto rende il nodo neutro) e la porta in Rec.2020 lineare. L'uscita è
+Rec.709 · Gamma 2.4, la stampa vista in proiezione; con il Negativo colore e *Uscita Log* è la scansione del negativo
+riscritta nella codifica d'ingresso, da gradare come un DI. Spaziale: Generate LUT lo esclude. Temporale solo per le pose
+in sequenza (Tre lastre, Kinemacolor), che leggono i fotogrammi successivi.
+
+## Il motore (`math/Creative.h`, CPU `src/creative/CreativeEngine.cpp`, Metal `metal/kernels/Creative.metal`)
+
+| Passo | Cosa fa |
+|---|---|
+| Record | fino a tre (strati, strisce, lastre): pesi spettrali su Rec.2020 lineare, letti ognuno nel suo punto (registro, aberrazione radiale, instabilità del quadro) e nel suo istante; esposizione, preflash, vignettatura |
+| Alone e diffusione | su griglie ridotte (box, gaussiana separabile con σ/s ≤ 6, ritorno bilineare): la luce che torna dal supporto nei record, il filtro di diffusione |
+| Curva | per record, in stop dal grigio: pendenza e offset H&D (sviluppo), piede e spalla softplus, interimage, grana (value noise per strato), polvere e graffi, luci di stampa, curva del positivo (Naka-Rushton) |
+| Immagine | sottrattiva (densità dei coloranti per una matrice di assorbimenti, chiave K, argento trattenuto, sbiadimento, macchia), additiva (filtri per mosaico di grani o rete) o monocroma (carta · 10^(−D·K), specchio, ossidazione, bordo) |
+| Segnale | video analogico e digitale: Y Cb Cr, banda del luma (lungo la riga; 2D per le ottiche digitali), peaking, banda e ritardo del colore, blocchi di colore, rumore, testine, dropout, clip, knee, banding |
+
+Il rumore è un hash intero deterministico: stessi bit su CPU e Metal, a ogni render, diverso per fotogramma. I raggi
+seguono l'altezza del fotogramma: stesso aspetto in proxy e a piena risoluzione.
+
+## I dati (`src/creative/CreativeModel.cpp`, pannello `src/creative/CreativePanel.h`)
+
+Ogni processo è un caso di `creativePrepare` e righe di tabelle: negativi (14), invertibili (3), B/N (3) con sensibilità e
+filtri, stampe (5), formati (12, da 8 mm a IMAX 15/70), nastri (11), camere (10). Le tabelle crescono solo in coda: Resolve
+salva l'indice delle scelte. Il pannello è una tabella di righe con il gruppo e i processi che le mostrano; i nomi OFX
+sono permanenti (`tests/golden/params_detail.txt`).
+
+| Processo | Fonte delle scelte | Stato dei numeri |
+|---|---|---|
+| Negativo colore, invertibile, B/N, sviluppo, stampa | [PELLICOLE_E_SVILUPPO](creative/PELLICOLE_E_SVILUPPO.md) | stime da curve pubblicate e letteratura; da tarare |
+| Pellicole dell'Est, formati grandi e ridotti | [FORMATI_E_PELLICOLE_RARE](creative/FORMATI_E_PELLICOLE_RARE.md) | stime [gen]; date e sensibilità sovietiche in parte non verificate |
+| Technicolor, Autochrome, Dufay, tre lastre, Kinemacolor, dagherrotipo, collodio, stampe antiche | [PROCESSI_STORICI](creative/PROCESSI_STORICI.md) | strutture documentate, pesi e coloranti stimati |
+| Video analogico | [VIDEO_ANALOGICO](creative/VIDEO_ANALOGICO.md) | bande e ritardi da specifiche di formato; rumore e difetti stimati |
+| Camere digitali d'epoca | [CAMERE_DIGITALI](creative/CAMERE_DIGITALI.md) | categorie generiche, non camere precise; stimati |
+| Panoramica dei plugin del mercato | [RICERCA_PLUGIN_CREATIVI](creative/RICERCA_PLUGIN_CREATIVI.md) | solo per capire cosa offrire; nessun dato copiato |
+
+## Verifiche
+
+- `tests/test_creative.py`: ogni processo dà un'immagine finita in [0, 1]; la scala dei toni sale con la luce; Esposizione
+  alza il grigio; il B/N resta neutro; le tre lastre separano ciò che si muove e con Intervallo 0 leggono solo il
+  fotogramma corrente; l'uscita Log è più piatta della stampa e attorno al codice del grigio; stesso risultato con 1 e 4
+  thread, diverso fra fotogrammi; il VHS sbava il colore più del broadcast.
+- `tests/test_metal.py::CreativeMetal`: parità CPU/Metal per ogni processo (solo nella CI macOS).
+- `tests/test_ofx_host.py`: pannello, nodo Detail salvato che si apre come Creative, comandi visibili per processo.
+
+## Aperto
+
+- Non provato in Resolve; Metal non eseguito fuori dalla CI.
+- Tutti i pesi spettrali, le matrici dei coloranti e le curve sono stime: vanno tarati su riprese vere (carte colore,
+  scale di grigi), non su LUT altrui.
+- Rimandati: grana ellittica e ottiche anamorfiche, compressione DCT a blocchi e smear dei CCD, CRT, infrarosso e falso
+  colore, Polaroid, lith, redscale, variabilità di lotto delle pellicole dell'Est.

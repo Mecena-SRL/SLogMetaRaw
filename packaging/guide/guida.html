@@ -119,14 +119,13 @@
     <tr><td class="k">Mostra tutti i controlli</td><td>Contrast, Shadows, Whites, Blacks, Vibrance, Azzera toni</td><td class="pg">6</td></tr>
     <tr><td class="k">Zone</td><td>Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; False color: zone</td><td class="pg">6</td></tr>
     <tr><td class="k">Dati di ripresa</td><td>Obiettivo, focale, diaframma, fuoco, shutter, ISO/EI, WB, fps, ND, LUT camera</td><td class="pg">4</td></tr>
-    <tr class="grp"><td colspan="3">Nodo Log MetaRaw Detail <span>· subito dopo · spaziale, escluso da Generate LUT</span></td></tr>
-    <tr><td class="k">Modalità · Fase</td><td>Zonale, Split grade, Unito; tre fasi, un nodo ciascuna o tutte in uno</td><td class="pg">8</td></tr>
-    <tr><td class="k">Ingresso (IDT) · Destinazione (ODT)</td><td>Codifica che entra; dove cadono nero (zona 0) e bianco (zona X)</td><td class="pg">8</td></tr>
-    <tr><td class="k">Misura</td><td>Ombra, Luce, Misura zone, Misura automatica, Ombra sulla zona, Luci sulla zona</td><td class="pg">8</td></tr>
-    <tr><td class="k">Split grade · Provino</td><td>Luci morbide, Ombre dure, Grado, Unione; provino e Usa la cella</td><td class="pg">8</td></tr>
-    <tr><td class="k">Gamma dinamica</td><td>Local Contrast, Local Highlights, Local Shadows, Brucia i bordi; viste</td><td class="pg">8</td></tr>
-    <tr><td class="k">Presenza · Avanzate · Velo</td><td>Texture, Clarity, Dehaze; raggio, soglie, Bianco; livello e colore del velo</td><td class="pg">8</td></tr>
-    <tr><td class="k">Guida</td><td>Per la fase scelta: scopo, tre passi, passo dopo</td><td class="pg">8</td></tr>
+    <tr class="grp"><td colspan="3">Nodo Log MetaRaw Creative <span>· subito dopo · spaziale, escluso da Generate LUT</span></td></tr>
+    <tr><td class="k">Processo</td><td>16 procedimenti: negativo, invertibile, B/N, Technicolor, Autochrome, Dufay, tre lastre, Kinemacolor, dagherrotipo, collodio, stampe, video analogico, digitale</td><td class="pg">8</td></tr>
+    <tr><td class="k">Varianti</td><td>Pellicola, Stampa, Uscita, Sensibilità, Filtro di presa, Epoca, Supporto, Carta, Formato, Formato video, Camera</td><td class="pg">8</td></tr>
+    <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Esposizione, Temperatura, Tinta, Sviluppo, Argento, Preflash, Età; luci di stampa R G B, Contrasto</td><td class="pg">8</td></tr>
+    <tr><td class="k">Grana e ottica</td><td>Grana, Alone, Diffusione, Aberrazione, Vignettatura, Instabilità, Sfarfallio, Polvere, Graffi</td><td class="pg">8</td></tr>
+    <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registro, Intervallo, Chiave K; mosaico; specchio, UV, ossidazione, bordo, viraggio; nastro, testine, rumore, clip</td><td class="pg">8</td></tr>
+    <tr><td class="k">Colore</td><td>Ombre e luci (tinta, quantità), Bilanciamento, Saturazione, Densità colore, Azzera comandi</td><td class="pg">8</td></tr>
   </table>
   <div class="premise"><b>Non è raw.</b> Un MP4 log è già compresso, a 8 o 10 bit, con la riduzione rumore della camera:
   in luce lineare si comporta in un modo che ricorda un RAW, ma ciò che la camera non ha registrato non torna. Esporre bene
@@ -145,7 +144,7 @@
         <li>Apri <b>SLogMetaRaw-@VERSION@.dmg</b>, doppio clic su <b>Installa Log MetaRaw.pkg</b>. Non è firmato con un
             certificato Apple: la prima volta tasto destro › <b>Apri</b>. Chiede la password (cartella di sistema).</li>
         <li>L'installer sostituisce per intero la versione precedente e cancella la cache dei plugin di Resolve
-            (<code>OFXPluginCacheV2.xml</code>): senza, Resolve mostrerebbe il pannello vecchio e non il nodo Detail.</li>
+            (<code>OFXPluginCacheV2.xml</code>): senza, Resolve mostrerebbe il pannello vecchio e non il nodo Creative.</li>
         <li><b>Riavvia DaVinci Resolve.</b></li>
       </ol>
       <table>
@@ -180,16 +179,15 @@
             relativo, un bilanciamento Custom resta com'è).</li>
         <li>Correggi <b>bilanciamento</b> ed <b>esposizione</b> aiutandoti con i <b>false color</b>; spegnili prima di
             renderizzare.</li>
-        <li>Dai forma ai <b>Toni</b>. Per recupero locale, Texture, Clarity o Dehaze aggiungi <b>Log MetaRaw Detail</b>
-            subito dopo.</li>
+        <li>Dai forma ai <b>Toni</b>. Per il look di una pellicola, di un procedimento antico, di un nastro o di una camera
+            d'epoca aggiungi <b>Log MetaRaw Creative</b> subito dopo.</li>
         <li>Poi il grade e, <b>per ultimo</b>, CST, LUT o DRT d'uscita; oppure il tone mapping del nodo stesso.</li>
       </ol>
       <div class="box"><b>Due catene consigliate</b><br>
-        <b>In DaVinci Wide Gamut:</b> Log MetaRaw con Uscita <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail con
-        Ingresso <i>DaVinci WG/Intermediate</i> → grade → CST DaVinci WG → Rec.709 · Gamma 2.4 con tone mapping. Con un tone
-        mapping dopo, il <b>Bianco</b> dei due nodi va a 4-5 stop.<br>
-        <b>Tutto in log:</b> Log MetaRaw su <i>Timeline</i> → Detail su <i>Automatico</i> → CST S-Gamut3.Cine/S-Log3 →
-        Rec.709 o DWG.</div>
+        <b>Look finito:</b> Log MetaRaw su <i>Timeline</i> → Creative su <i>Automatico</i> (esce Rec.709 · Gamma 2.4, come
+        la stampa proiettata) → ritocchi in Rec.709.<br>
+        <b>Scansione del negativo:</b> Creative con Processo <i>Negativo colore</i>, Stampa <i>Nessuna</i> e Uscita
+        <i>Log d'ingresso</i> → grade → CST o DRT d'uscita, come in un DI.</div>
       <h2>Da sapere</h2>
       <ul>
         <li>Con profili non log Sony (Cine, S-Cinetone) il nodo sviluppa la clip come video; con un file senza camera né
@@ -400,9 +398,9 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
     <div>
       <figure><img src="img/local_vs_point_it.svg" alt="">
-        <figcaption><b>Il limite di un nodo puntuale</b> (illustrazione 1D, non il filtro del Detail): un'area chiara con
-        texture fine compressa da Highlights −100. Puntuale, la texture scende con la pendenza della curva; per aree
-        (curva sulla base, dettaglio aggiunto dopo) resta intera. Per questo il recupero locale è nel nodo Detail.</figcaption></figure>
+        <figcaption><b>Il limite di un nodo puntuale</b> (illustrazione 1D): un'area chiara con texture fine compressa da
+        Highlights −100. Puntuale, la texture scende con la pendenza della curva; per aree (curva sulla base, dettaglio
+        aggiunto dopo) resta intera.</figcaption></figure>
     </div>
   </div>
   <div class="sci"><b>La scienza in una riga.</b> In un operatore puntuale vale <code>∇out = T′(ℓ) · ∇in</code>: dove la
@@ -511,7 +509,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <div class="formula" style="white-space:normal">scena → tone mapping (reso per Rec.709) → DaVinci WG /
       Intermediate → altri plugin → CST senza TM → Rec.709 · Gamma 2.4</div>
       <div class="warn">Con Resolve che gestisce il colore (RCM, ACES) e un tone mapping attivo, Resolve applica la sua
-      trasformazione dopo il nodo: <i>Rilevato</i> avvisa della doppia trasformazione. Il nodo Detail va <b>prima</b> di un
+      trasformazione dopo il nodo: <i>Rilevato</i> avvisa della doppia trasformazione. Il nodo Creative va <b>prima</b> di un
       nodo con tone mapping.</div>
     </div>
   </div>
@@ -519,69 +517,64 @@ full → video:  x' = x · 1023/876 − 64/876</div>
 <footer><span>Log MetaRaw @VERSION@ · nodo Develop (4)</span><span>7 / 10</span></footer>
 </section>
 
-<!-- ======================= 8 · DETAIL ======================= -->
+<!-- ======================= 8 · CREATIVE ======================= -->
 <section class="page"><div class="content">
-  <div class="part"><h1>Il nodo Log MetaRaw Detail</h1><span class="where">Color › OpenFX · dopo Log MetaRaw, prima di CST/LUT/DRT</span></div>
-  <p>Il nodo creativo: lavora <b>per aree</b>, su una base che segue i bordi (guided filter), e muove le grandi aree senza
-  appiattire il dettaglio fine. Tre metodi della camera oscura, ognuno in tre <b>fasi</b>: un nodo per fase in serie, o
-  tutte in uno. La <b>Guida</b> in fondo al pannello dà, per la fase scelta, lo scopo, tre passi e il passo dopo.</p>
-  <figure><img src="img/zones_it.svg" alt="">
-    <figcaption><b>Il sistema zonale</b> (Ansel Adams): zona V = grigio 18%, zona 0 = nero e zona X = bianco della
-    <b>Destinazione (ODT)</b>, cinque zone per lato. Le zone dipendono dall'uscita: con Rec.709 CST una zona vale mezzo stop
-    sopra il grigio e 0,9 sotto; con la scena DaVinci WG quasi due. Colori della <i>Vista: zone</i>, da
-    <code>tests/model/detail.py</code>.</figcaption></figure>
+  <div class="part"><h1>Il nodo Log MetaRaw Creative</h1><span class="where">Color › OpenFX · dopo Log MetaRaw</span></div>
+  <p>Lo sviluppo creativo: un solo motore che rifà <b>il procedimento</b>, non un'imitazione del risultato. La luce di scena
+  (decodificata in lineare Rec.2020) diventa fino a tre <b>record</b> con la loro sensibilità spettrale, ognuno esposto sulla
+  curva del materiale e poi trasformato in immagine come faceva quel processo: coloranti sottrattivi, filtri additivi, un
+  deposito d'argento o di platino sulla carta, un segnale video. Ogni processo è una tabella di numeri; il pannello mostra
+  solo i comandi che contano per il processo scelto.</p>
   <div class="cols">
     <div>
-      <h2>Sviluppo e spazio colore</h2>
+      <h2>I processi</h2>
       <table>
-        <tr><td class="k">Modalità</td><td><b>Zonale</b> (Ansel Adams) · <b>Split grade</b> (stampa) · <b>Unito</b> (Split
-          grade + Auto zone + BTZS).</td></tr>
-        <tr><td class="k">Fase</td><td>Zonale: 1 · Sviluppo, 2 · Stampa, 3 · Presenza. Split grade: 1 · Esposizioni,
-          2 · Locale, 3 · Presenza. Oppure <i>Un nodo (tutte le fasi)</i>. Copia il nodo, incollalo dopo, cambia solo Fase.</td></tr>
-        <tr><td class="k">Ingresso (IDT)</td><td>Automatico, DaVinci WG/Intermediate, S-Gamut3.Cine/S-Log3, S-Gamut3/S-Log3,
-          S-Gamut/S-Log2, ACES AP1/ACEScct: decodifica in lineare e riscrive uguale.</td></tr>
-        <tr><td class="k">Destinazione (ODT)</td><td>Non converte: dichiara dove arrivano nero e bianco. <i>Dal Bianco
-          (manuale)</i> usa Avanzate › Bianco.</td></tr>
-      </table>
-      <h2>I tre metodi</h2>
-      <table>
-        <tr><td class="k">Zonale</td><td>Metti <b>Ombra</b> e <b>Luce</b> sul viewer, <b>Misura zone</b>, poi <b>Ombra sulla
-          zona</b> (esposizione, III) e <b>Luci sulla zona</b> (sviluppo N+/N−, VIII). Lo Sviluppo è una curva sul pixel:
-          niente aloni, pendenza 0,25-4.</td></tr>
-        <tr><td class="k">Split grade</td><td><b>Luci morbide</b> (grado 0) porta le luci sulla VIII, <b>Ombre dure</b> (grado 5)
-          le ombre sulla III, in stop; <b>Grado</b> legge il risultato. <b>Unione</b>: Curva o Due strati. <b>Provino</b>:
-          strisce, matrice o unioni; <b>Usa la cella</b>.</td></tr>
-        <tr><td class="k">Unito</td><td>Il soggetto è confrontato con la scala della carta (zone III-VIII): lo sviluppo N± lo
-          avvicina, la stampa a due esposizioni fa il resto.</td></tr>
-        <tr><td class="k">Misura automatica</td><td>In ogni modalità: 2° e 98° percentile della luminanza come ombra e luce.</td></tr>
+        <tr><td class="k">Negativo colore</td><td>Tre strati con contrasto, piede e spalla propri, interimage, grana per strato,
+          alone dal supporto, stampa positiva con luci R G B. 14 pellicole, anche Est: Sovcolor, ORWO, Svema, Gevacolor.
+          <i>Uscita Log</i> = la scansione del negativo.</td></tr>
+        <tr><td class="k">Invertibile · B/N</td><td>Diapositiva: un passaggio, neri densi. B/N: sensibilità (blu, orto, pan) e
+          filtro di presa compensato.</td></tr>
+        <tr><td class="k">Technicolor</td><td>Tre strisce: tre negativi dal prisma, matrici per imbibizione, chiave K fino al
+          1944. Due colori: rosso e verde, niente gialli puri.</td></tr>
+        <tr><td class="k">Autochrome · Dufay</td><td>Mosaico additivo di grani di fecola o rete regolare, vista in trasparenza:
+          tre quarti della luce restano nei filtri.</td></tr>
+        <tr><td class="k">Tre lastre · Kinemacolor</td><td>Pose in sequenza: con <b>Intervallo</b> &gt; 0 il nodo legge i fotogrammi
+          successivi, e ciò che si muove si separa nei colori, come nelle lastre di Prokudin-Gorskij.</td></tr>
+        <tr><td class="k">Dagherrotipo · Collodio</td><td>Sensibili al blu e all'UV: i rossi vengono neri. Specchio rovesciato e
+          ossidazione; vetro su nero o ferro laccato con il bordo del collodio.</td></tr>
+        <tr><td class="k">Stampe antiche</td><td>Carta salata e albumina (viraggio all'oro), cianotipia, platino e palladio.</td></tr>
+        <tr><td class="k">Video analogico</td><td>11 formati, dal broadcast al VHS LP e al Betacam SP: banda di luma e colore,
+          ritardo del colore, peaking, rumore, cambio testine, dropout.</td></tr>
+        <tr><td class="k">Digitale d'epoca</td><td>10 camere: clip e knee, nitidezza elettronica, rumore, sottocampionamento e
+          banding.</td></tr>
       </table>
     </div>
     <div>
-      <h2>Gamma dinamica, Presenza, Avanzate</h2>
+      <h2>I comandi</h2>
       <table>
-        <tr><td class="k">Local Highlights</td><td>Comprime le grandi aree luminose e tiene, anzi rinforza, la texture: il cielo
-          si scurisce, le nuvole restano.</td></tr>
-        <tr><td class="k">Local Shadows · Contrast</td><td>Apre o chiude le ombre per aree (100 = 2 stop); contrasto delle
-          grandi aree.</td></tr>
-        <tr><td class="k">Brucia i bordi · Ampiezza</td><td>Scurisce i margini, solo per posizione: nessun alone.</td></tr>
-        <tr><td class="k">Viste</td><td><i>guadagno</i> (arancio alza, blu abbassa), <i>base</i>, <i>zone</i>, <i>zone in
-          grigi</i>, con legenda 0-X.</td></tr>
-        <tr><td class="k">Texture · Clarity · Dehaze</td><td>Dettaglio fine (la grana sotto la soglia rumore non sale);
-          contrasto locale sui mezzitoni; toglie o aggiunge velo. Piene nelle zone II-VIII.</td></tr>
-        <tr><td class="k">Avanzate · Velo</td><td>Preserva dettaglio, Raggio (% altezza), Soglia bordi, Soglia rumore, Clarity:
-          centro, Bianco; Livello e Colore del velo, decisi da te, mai stimati.</td></tr>
+        <tr><td class="k">Ripresa e sviluppo</td><td>Esposizione e bilanciamento della luce; <b>Sviluppo</b> spinto o tirato,
+          <b>Argento trattenuto</b> (bleach bypass), Preflash, Età (coloranti che sbiadiscono, base che ingiallisce).</td></tr>
+        <tr><td class="k">Stampa</td><td>Punti della stampatrice (1 punto = 0,025 log E) e contrasto del positivo.</td></tr>
+        <tr><td class="k">Grana e ottica</td><td>In multipli di quella del materiale e del <b>Formato</b> (da 8 mm a IMAX 15/70):
+          1 = com'era. Alone, diffusione, aberrazione, vignettatura, instabilità del quadro, polvere e graffi.</td></tr>
+        <tr><td class="k">Separazioni</td><td>Registro di strisce e lastre, Intervallo fra le pose, Chiave K, densità dei coloranti.</td></tr>
+        <tr><td class="k">Lastra e carta</td><td>Angolo di visione dello specchio, UV, ossidazione, bordo, viraggio.</td></tr>
+        <tr><td class="k">Segnale</td><td>Usura, testine, instabilità, sbavatura del colore, rumore, nitidezza; per il digitale
+          gamma dinamica, spalla, compressione.</td></tr>
+        <tr><td class="k">Colore</td><td>Ombre e luci con tinta e quantità, saturazione, densità colore. <b>Azzera comandi</b>
+          torna ai valori del processo.</td></tr>
       </table>
-      <div class="sci"><b>Base e dettaglio.</b> <code>L = log2(N/0,18)</code>; una base B segue i bordi forti e ignora la
-      grana; i toni locali muovono B e il dettaglio <code>L − B</code> passa con pendenza 1. I raggi seguono l'altezza:
-      stesso aspetto in proxy e a piena risoluzione; nessuna statistica per fotogramma, niente flicker.</div>
-      <div class="warn"><b>Limiti misurati</b>: Local Shadows ±100 su un bordo netto di 1 stop, alone circa 12% del gradino
-      (4-6% su 2-3 stop): abbassa <i>Soglia bordi</i>. Local Highlights −100: sotto il 3%. Grana 1,25-1,7× vicino ai
-      bordi forti. È spaziale: Generate LUT lo esclude. Metal: UHD 6-18 ms. <b>Non provato in Resolve; Metal non
-      eseguito</b>; grado, percentili e limiti dello sviluppo sono ipotesi, non verificate con BTZS o stampe vere.</div>
+      <div class="sci"><b>Il motore.</b> Per record: <code>s = log2(E/0,18)</code>, curva H&amp;D con piede e spalla morbidi,
+      grana per strato, poi la curva del positivo (Naka-Rushton). Sottrattivo: densità dei coloranti per una matrice di
+      assorbimenti; additivo: filtri per mosaico; monocromo: carta · 10<sup>−D·K</sup>. Rumore deterministico: stessi bit su CPU
+      e Metal, a ogni render. I raggi seguono l'altezza: stesso aspetto in proxy.</div>
+      <div class="warn">I numeri delle tabelle sono <b>stime</b> dalle ricerche (<code>docs/CREATIVE.md</code>), non profili di
+      prodotti: vanno tarati su riprese vere. Spaziale: Generate LUT lo esclude. <b>Non provato in Resolve; Metal verificato solo
+      dai test della CI macOS.</b></div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Detail</span><span>8 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Creative</span><span>8 / 10</span></footer>
 </section>
 
 <!-- ======================= 9 · NOISE, STABILIZE, MOTION BLUR ======================= -->
@@ -691,7 +684,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <li>S-Log2 segue il documento Sony; la curva S-Log2 di Resolve differisce di circa 0,15 stop.</li>
         <li>Da verificare su più file: XAVC HS (HEVC), HLG, S-Cinetone, zoom motorizzati; Input Color Space per le camere
             non Sony.</li>
-        <li><b>Non provati in Resolve</b>: i nodi Noise, Stabilize e Motion Blur della 4.0, modalità e fasi del Detail,
+        <li><b>Non provati in Resolve</b>: i nodi Noise, Stabilize e Motion Blur della 4.0, il nodo Creative (aspetto da tarare su riprese reali),
             tone mapping della 3.1; <b>Metal non eseguito</b> per queste parti (parità CPU/modello verificata dai test). Resolve 20, Linux
             e Windows non provati.</li>
         <li>Progetto hobbistico e indipendente, distribuito così com'è, <b>senza garanzie</b> né responsabilità per l'uso

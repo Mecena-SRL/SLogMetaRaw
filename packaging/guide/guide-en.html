@@ -119,14 +119,13 @@
     <tr><td class="k">Mostra tutti i controlli</td><td>Show all: Contrast, Shadows, Whites, Blacks, Vibrance, Azzera toni</td><td class="pg">6</td></tr>
     <tr><td class="k">Zone</td><td>Zones Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; zone view</td><td class="pg">6</td></tr>
     <tr><td class="k">Dati di ripresa</td><td>Shooting data: lens, focal length, iris, focus, shutter, ISO/EI, WB, fps, ND</td><td class="pg">4</td></tr>
-    <tr class="grp"><td colspan="3">Log MetaRaw Detail node <span>· right after · spatial, left out of Generate LUT</span></td></tr>
-    <tr><td class="k">Modalità · Fase</td><td>Mode: Zonale, Split grade, Unito; phase: three phases, one node each</td><td class="pg">8</td></tr>
-    <tr><td class="k">Ingresso (IDT) · Destinazione (ODT)</td><td>Input encoding; where black (zone 0) and white (zone X) land</td><td class="pg">8</td></tr>
-    <tr><td class="k">Misura</td><td>Measure: Ombra, Luce, Misura zone, Misura automatica, zone placement</td><td class="pg">8</td></tr>
-    <tr><td class="k">Split grade · Provino</td><td>Luci morbide, Ombre dure, Grado, Unione; test strip and Usa la cella</td><td class="pg">8</td></tr>
-    <tr><td class="k">Gamma dinamica</td><td>Dynamic range: Local Contrast, Highlights, Shadows, Brucia i bordi; views</td><td class="pg">8</td></tr>
-    <tr><td class="k">Presenza · Avanzate · Velo</td><td>Texture, Clarity, Dehaze; radius, thresholds, Bianco; haze level and colour</td><td class="pg">8</td></tr>
-    <tr><td class="k">Guida</td><td>Guide: for the chosen phase, purpose, three steps, next step</td><td class="pg">8</td></tr>
+    <tr class="grp"><td colspan="3">Log MetaRaw Creative node <span>· right after · spatial, left out of Generate LUT</span></td></tr>
+    <tr><td class="k">Processo</td><td>Process: 16 of them, colour negative, reversal, B&amp;W, Technicolor, Autochrome, Dufay, three plates, Kinemacolor, daguerreotype, collodion, prints, analog video, digital</td><td class="pg">8</td></tr>
+    <tr><td class="k">Varianti</td><td>Variants: stock, print, output, sensitivity, taking filter, era, support, paper, format, video format, camera</td><td class="pg">8</td></tr>
+    <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Exposure, temperature, tint, push/pull, silver, flash, age; printer lights R G B, contrast</td><td class="pg">8</td></tr>
+    <tr><td class="k">Grana e ottica</td><td>Grain, halation, diffusion, aberration, vignette, gate weave, flicker, dust, scratches</td><td class="pg">8</td></tr>
+    <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registration, interval, K key; mosaic; mirror, UV, oxidation, border, toning; tape, heads, noise, clip</td><td class="pg">8</td></tr>
+    <tr><td class="k">Colore</td><td>Shadows and highlights (hue, amount), balance, saturation, colour density, reset</td><td class="pg">8</td></tr>
   </table>
   <div class="premise"><b>It is not raw.</b> A log MP4 is already compressed, 8 or 10 bit, with the camera's noise
   reduction baked in: in linear light it behaves in a way that reminds you of raw, but what the camera did not record does
@@ -145,7 +144,7 @@
         <li>Open <b>SLogMetaRaw-@VERSION@.dmg</b> and double-click <b>Installa Log MetaRaw.pkg</b>. It is not signed with an
             Apple certificate: the first time, right-click › <b>Open</b>. It asks for the password (system folder).</li>
         <li>The installer replaces the previous version entirely and deletes Resolve's plugin cache
-            (<code>OFXPluginCacheV2.xml</code>): without that, Resolve would show the old panel and no Detail node.</li>
+            (<code>OFXPluginCacheV2.xml</code>): without that, Resolve would show the old panel and no Creative node.</li>
         <li><b>Restart DaVinci Resolve.</b></li>
       </ol>
       <table>
@@ -180,16 +179,15 @@
             stays relative, a Custom balance stays as it is).</li>
         <li>Fix <b>white balance</b> and <b>exposure</b> with the help of the <b>false colour</b> views; turn them off
             before rendering.</li>
-        <li>Shape the <b>Toni</b> (tones). For local recovery, Texture, Clarity or Dehaze add <b>Log MetaRaw Detail</b>
-            right after.</li>
+        <li>Shape the <b>Toni</b> (tones). For the look of a film stock, an early process, a tape or a vintage camera add
+            <b>Log MetaRaw Creative</b> right after.</li>
         <li>Then the grade and, <b>last</b>, the output CST, LUT or DRT, or the node's own tone mapping.</li>
       </ol>
       <div class="box"><b>Two recommended chains</b><br>
-        <b>In DaVinci Wide Gamut:</b> Log MetaRaw with output <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail with
-        Ingresso <i>DaVinci WG/Intermediate</i> → grade → CST DaVinci WG → Rec.709 · Gamma 2.4 with tone mapping. With tone
-        mapping after, set <b>Bianco</b> of both nodes to 4-5 stops.<br>
-        <b>All in log:</b> Log MetaRaw on <i>Timeline</i> → Detail on <i>Automatico</i> → CST S-Gamut3.Cine/S-Log3 →
-        Rec.709 or DWG.</div>
+        <b>Finished look:</b> Log MetaRaw on <i>Timeline</i> → Creative on <i>Automatico</i> (Rec.709 · Gamma 2.4 out, like
+        the projected print) → touch-ups in Rec.709.<br>
+        <b>Negative scan:</b> Creative with process <i>Negativo colore</i>, print <i>Nessuna</i> and output
+        <i>Log d'ingresso</i> → grade → output CST or DRT, as in a DI.</div>
       <h2>Good to know</h2>
       <ul>
         <li>With Sony non-log profiles (Cine, S-Cinetone) the node develops the clip as video; with a file that has neither
@@ -401,9 +399,9 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
     <div>
       <figure><img src="img/local_vs_point_en.svg" alt="">
-        <figcaption><b>The limit of a pointwise node</b> (a 1-D illustration, not the Detail filter): a bright area with fine
-        texture compressed by Highlights −100. Pointwise, the texture shrinks with the slope of the curve; by areas (curve on
-        the base, detail added back) it stays whole. That is why local recovery lives in the Detail node.</figcaption></figure>
+        <figcaption><b>The limit of a pointwise node</b> (a 1-D illustration): a bright area with fine texture compressed by
+        Highlights −100. Pointwise, the texture shrinks with the slope of the curve; by areas (curve on the base, detail
+        added back) it stays whole.</figcaption></figure>
     </div>
   </div>
   <div class="sci"><b>The science in one line.</b> In a pointwise operator <code>∇out = T′(ℓ) · ∇in</code>: where the curve
@@ -513,7 +511,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <div class="formula" style="white-space:normal">scene → tone mapping (rendered for Rec.709) → DaVinci WG /
       Intermediate → other plugins → CST without TM → Rec.709 · Gamma 2.4</div>
       <div class="warn">When Resolve manages colour (RCM, ACES) and a tone mapping is on, Resolve applies its own output
-      transform after the node: <i>Rilevato</i> warns about the double transform. The Detail node goes <b>before</b> a node
+      transform after the node: <i>Rilevato</i> warns about the double transform. The Creative node goes <b>before</b> a node
       with tone mapping.</div>
     </div>
   </div>
@@ -521,71 +519,63 @@ full → video:  x' = x · 1023/876 − 64/876</div>
 <footer><span>Log MetaRaw @VERSION@ · Develop node (4)</span><span>7 / 10</span></footer>
 </section>
 
-<!-- ======================= 8 · DETAIL ======================= -->
+<!-- ======================= 8 · CREATIVE ======================= -->
 <section class="page"><div class="content">
-  <div class="part"><h1>The Log MetaRaw Detail node</h1><span class="where">Color › OpenFX · after Log MetaRaw, before CST/LUT/DRT</span></div>
-  <p>The creative node: it works <b>by areas</b>, over an edge-aware base (guided filter), and moves large areas without
-  flattening fine detail. Three darkroom methods, each in three <b>phases</b>: one node per phase in series, or all in
-  one. The <b>Guida</b> (guide) at the bottom of the panel gives the purpose, three steps and the next step.</p>
-  <figure><img src="img/zones_en.svg" alt="">
-    <figcaption><b>The zone system</b> (Ansel Adams): zone V = 18% grey, zone 0 = black and zone X = white of the
-    <b>Destinazione (ODT)</b>, five zones on each side. Zones depend on the output: with Rec.709 CST a zone is half a stop
-    above grey and 0.9 below; with DaVinci WG scene almost two. Colours of <i>Vista: zone</i>, from
-    <code>tests/model/detail.py</code>.</figcaption></figure>
+  <div class="part"><h1>The Log MetaRaw Creative node</h1><span class="where">Color › OpenFX · after Log MetaRaw</span></div>
+  <p>Creative development: one engine that redoes <b>the process</b> rather than imitating its result. Scene light (decoded to
+  linear Rec.2020) becomes up to three <b>records</b> with their spectral sensitivity, each exposed on the material's curve and
+  then turned into a picture the way that process did: subtractive dyes, additive filters, a silver or platinum deposit on
+  paper, a video signal. Each process is a table of numbers; the panel shows only the controls that matter for the chosen one.</p>
   <div class="cols">
     <div>
-      <h2>Sviluppo e spazio colore (development)</h2>
+      <h2>The processes</h2>
       <table>
-        <tr><td class="k">Modalità</td><td>Mode: <b>Zonale</b> (Ansel Adams) · <b>Split grade</b> (print) · <b>Unito</b>
-          (Split grade + auto zones + BTZS).</td></tr>
-        <tr><td class="k">Fase</td><td>Phase. Zonale: 1 · Sviluppo, 2 · Stampa, 3 · Presenza (develop, print, presence). Split
-          grade: 1 · Esposizioni, 2 · Locale, 3 · Presenza. Or <i>Un nodo (tutte le fasi)</i>. Copy the node, paste it after,
-          change only Fase.</td></tr>
-        <tr><td class="k">Ingresso (IDT)</td><td>Input: Automatico, DaVinci WG/Intermediate, S-Gamut3.Cine/S-Log3,
-          S-Gamut3/S-Log3, S-Gamut/S-Log2, ACES AP1/ACEScct: decoded to linear and written back the same.</td></tr>
-        <tr><td class="k">Destinazione (ODT)</td><td>Destination: it does not convert, it declares where black and white land.
-          <i>Dal Bianco (manuale)</i> uses Avanzate › Bianco.</td></tr>
-      </table>
-      <h2>The three methods</h2>
-      <table>
-        <tr><td class="k">Zonale</td><td>Put <b>Ombra</b> and <b>Luce</b> (shadow, light) on the viewer, <b>Misura zone</b>,
-          then <b>Ombra sulla zona</b> (exposure, III) and <b>Luci sulla zona</b> (development N+/N−, VIII). Development is a
-          per-pixel curve: no halos, slope 0.25-4.</td></tr>
-        <tr><td class="k">Split grade</td><td><b>Luci morbide</b> (soft, grade 0) brings the highlights to VIII, <b>Ombre
-          dure</b> (hard, grade 5) the shadows to III, in stops; <b>Grado</b> reads the result. <b>Unione</b>: Curva or Due
-          strati. <b>Provino</b> (test strip): strips, matrix or unions; <b>Usa la cella</b>.</td></tr>
-        <tr><td class="k">Unito</td><td>The subject range is compared with the paper scale (zones III-VIII): development N±
-          brings it closer, the two-exposure print does the rest.</td></tr>
-        <tr><td class="k">Misura automatica</td><td>In every mode: 2nd and 98th luminance percentiles as shadow and light.</td></tr>
+        <tr><td class="k">Colour negative</td><td>Three layers with their own contrast, toe and shoulder, interimage, grain per
+          layer, halation from the base, a positive print with R G B lights. 14 stocks, Eastern ones too: Sovcolor, ORWO,
+          Svema, Gevacolor. <i>Log output</i> = the negative scan.</td></tr>
+        <tr><td class="k">Reversal · B&amp;W</td><td>Slide film: one pass, dense blacks. B&amp;W: sensitivity (blue, ortho, pan) and
+          a compensated taking filter.</td></tr>
+        <tr><td class="k">Technicolor</td><td>Three-strip: three negatives from the prism, dye-transfer matrices, K key until
+          1944. Two-colour: red and green, no pure yellows.</td></tr>
+        <tr><td class="k">Autochrome · Dufay</td><td>An additive mosaic of starch grains or a regular réseau, seen by
+          transmission: three quarters of the light stay in the filters.</td></tr>
+        <tr><td class="k">Three plates · Kinemacolor</td><td>Sequential exposures: with <b>Intervallo</b> &gt; 0 the node reads the
+          following frames, and whatever moves separates into colours, as in Prokudin-Gorsky's plates.</td></tr>
+        <tr><td class="k">Daguerreotype · Collodion</td><td>Blue and UV sensitive: reds turn black. A reversed mirror and
+          oxidation; glass on black or lacquered iron with the collodion's border.</td></tr>
+        <tr><td class="k">Early prints</td><td>Salt and albumen paper (gold toning), cyanotype, platinum and palladium.</td></tr>
+        <tr><td class="k">Analog video</td><td>11 formats, from broadcast to VHS LP and Betacam SP: luma and chroma bandwidth,
+          chroma delay, peaking, noise, head switching, dropouts.</td></tr>
+        <tr><td class="k">Vintage digital</td><td>10 cameras: clip and knee, electronic sharpening, noise, chroma subsampling and
+          banding.</td></tr>
       </table>
     </div>
     <div>
-      <h2>Gamma dinamica, Presenza, Avanzate</h2>
+      <h2>The controls</h2>
       <table>
-        <tr><td class="k">Local Highlights</td><td>Compresses the large bright areas and keeps, even strengthens, texture: the
-          sky gets deeper, the clouds stay.</td></tr>
-        <tr><td class="k">Local Shadows · Contrast</td><td>Opens or closes shadows by areas (100 = 2 stops); contrast of the
-          large areas.</td></tr>
-        <tr><td class="k">Brucia i bordi · Ampiezza</td><td>Edge burn: darkens the frame margins, by position only: no
-          halo.</td></tr>
-        <tr><td class="k">Views</td><td><i>Vista: guadagno</i> (gain: orange up, blue down), <i>base</i>, <i>zone</i>,
-          <i>zone in grigi</i> (greys), with a 0-X legend.</td></tr>
-        <tr><td class="k">Texture · Clarity · Dehaze</td><td>Fine detail (grain below the noise threshold is not raised);
-          local contrast on midtones; removes or adds haze. Full in zones II-VIII.</td></tr>
-        <tr><td class="k">Avanzate · Velo</td><td>Advanced: detail preservation, radius (% height), edge and noise thresholds,
-          Clarity centre, Bianco; haze level and colour, set by you, never guessed.</td></tr>
+        <tr><td class="k">Ripresa e sviluppo</td><td>Exposure and light balance; <b>push</b> or pull, <b>retained silver</b> (bleach
+          bypass), flash, age (fading dyes, yellowing base).</td></tr>
+        <tr><td class="k">Stampa</td><td>Printer points (1 point = 0.025 log E) and the positive's contrast.</td></tr>
+        <tr><td class="k">Grana e ottica</td><td>In multiples of the material's and the <b>format</b>'s own (8 mm to IMAX 15/70):
+          1 = as it was. Halation, diffusion, aberration, vignette, gate weave, dust and scratches.</td></tr>
+        <tr><td class="k">Separazioni</td><td>Registration of strips and plates, interval between exposures, K key, dye density.</td></tr>
+        <tr><td class="k">Lastra e carta</td><td>Mirror viewing angle, UV, oxidation, border, toning.</td></tr>
+        <tr><td class="k">Segnale</td><td>Wear, heads, instability, colour bleed, noise, sharpness; for digital, dynamic range,
+          shoulder, compression.</td></tr>
+        <tr><td class="k">Colore</td><td>Shadows and highlights with hue and amount, saturation, colour density. <b>Azzera
+          comandi</b> returns to the process's values.</td></tr>
       </table>
-      <div class="sci"><b>Base and detail.</b> <code>L = log2(N/0.18)</code>; a base B follows strong edges and ignores
-      grain; local tones move B and the detail <code>L − B</code> passes with slope 1. Radii follow the frame height: the
-      same look in proxy and at full resolution; no per-frame statistics, no flicker.</div>
-      <div class="warn"><b>Measured limits</b>: Local Shadows ±100 on a hard 1-stop edge, halo about 12% of the step (4-6% on
-      2-3 stops): lower <i>Soglia bordi</i>. Local Highlights −100: under 3%. Grain 1.25-1.7× next to strong edges. It is
-      spatial: Generate LUT leaves it out. Metal: UHD 6-18 ms. <b>Not tried in Resolve; Metal not run</b>; grade,
-      percentiles and development limits are assumptions, not checked against BTZS or real prints.</div>
+      <div class="sci"><b>The engine.</b> Per record: <code>s = log2(E/0.18)</code>, an H&amp;D curve with soft toe and shoulder,
+      grain per layer, then the positive's curve (Naka-Rushton). Subtractive: dye densities through an absorption matrix;
+      additive: filters through a mosaic; monochrome: paper · 10<sup>−D·K</sup>. Deterministic noise: the same bits on CPU and
+      Metal, every render. Radii follow the height: the same look in proxy.</div>
+      <div class="warn">The tables' numbers are <b>estimates</b> from the research (<code>docs/CREATIVE.md</code>), not product
+      profiles: they need tuning on real footage. Spatial: Generate LUT leaves it out. <b>Not tried in Resolve; Metal verified
+      only by the macOS CI tests.</b></div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Detail node</span><span>8 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Creative node</span><span>8 / 10</span></footer>
 </section>
 
 <!-- ======================= 9 · NOISE, STABILIZE, MOTION BLUR ======================= -->
@@ -696,7 +686,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <li>S-Log2 follows the Sony paper; Resolve's S-Log2 curve differs by about 0.15 stop.</li>
         <li>Still to check on more files: XAVC HS (HEVC), HLG, S-Cinetone, power zooms; Input Color Space for non-Sony
             cameras.</li>
-        <li><b>Not tried in Resolve</b>: the 4.0 Noise, Stabilize and Motion Blur nodes, Detail modes and phases, the 3.1 tone mappings;
+        <li><b>Not tried in Resolve</b>: the 4.0 Noise, Stabilize and Motion Blur nodes, the Creative node (look still to be tuned on real footage), the 3.1 tone mappings;
             <b>Metal not run</b> for these parts (CPU/model parity checked by tests). Resolve 20, Linux and Windows not
             tested.</li>
         <li>An independent hobby project, distributed as is, <b>with no warranty</b> and no liability for professional use.</li>

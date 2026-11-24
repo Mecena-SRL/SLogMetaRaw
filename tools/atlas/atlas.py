@@ -389,7 +389,7 @@ def build(run=False):
              'coverage': {'problems': problems, 'stale': stale, 'unreviewed': unreviewed, 'modules_unassigned': uncovered,
                           'tests_run': bool(run), 'graphify': graphify_freshness(facts),
                           'extracted': ['widget della finestra dello script (AST di ui.py)',
-                                        'parametri dei pannelli Develop e Detail (tests/golden, verificati dal '
+                                        'parametri dei pannelli Develop, Creative e Noise (tests/golden, verificati dal '
                                         'test host sul plugin compilato) e posizione nel C++ (ricerca testuale)',
                                         'catalogo componenti: tipi UIManager e helper define* di ParamDefs.h',
                                         'funzioni Python (nome, righe, impronta)', 'chiamate fra funzioni Python',

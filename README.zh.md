@@ -24,7 +24,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 | **1 · Log MetaRaw Noise** 节点 | Color › OpenFX | 在 log 画面上降噪，依据摄影机、ISO 与格式的预期噪声；时域与空域，Metal GPU |
 | **2 · Stabilize**、**3 · Motion Blur** | Color › OpenFX › Log MetaRaw | 陀螺仪稳定（内置 Gyroflow）与基于光流重建的运动模糊；仅限 Apple 芯片 Mac |
 | **4 · Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
-| **5 · Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
+| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机 |
 
 不转码任何文件，也从不写入任何原始文件。
 
@@ -44,7 +44,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
-安装程序还会删除 Resolve 的插件缓存（`OFXPluginCacheV2.xml`），Resolve 会在下次启动时重建。否则 Resolve 会继续显示旧面板，也看不到 Detail 节点。
+安装程序还会删除 Resolve 的插件缓存（`OFXPluginCacheV2.xml`），Resolve 会在下次启动时重建。否则 Resolve 会继续显示旧面板，也看不到 Creative 节点。
 
 | 安装内容 | 路径 |
 |---|---|
@@ -67,11 +67,11 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 1. 导入素材。**Workspace › Scripts › Log MetaRaw**：先点 **1 · 读取元数据**，再点 **2 · 写入 Resolve**。
 2. 在 Color 页面把 **Log MetaRaw** 放在**第一个节点**。它会取得片段的 EI、开尔文值和色调，在这些数值下画面不变。
 3. 在节点中校正白平衡和曝光，伪色视图会有帮助。
-4. 用 **Toni**（影调）塑造影调。需要局部恢复、Texture、Clarity 或 Dehaze 时，在其后添加 **Log MetaRaw Detail** 节点。
+4. 用 **Toni**（影调）塑造影调。想要某种胶片、古老工艺、录像带或老式相机的质感时，在其后添加 **Log MetaRaw Creative** 节点。
 5. 然后再接你的 CST、LUT 或 DRT。
 
 ```
-Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
+Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Creative  →  CST / LUT / DRT  →  其余调色
 ```
 
 ---
@@ -132,37 +132,26 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 
 ---
 
-## Log MetaRaw Detail 节点
+## Log MetaRaw Creative 节点
 
-这是创意节点。它在保留边缘的基础层上**按区域**工作，调整大块区域而不压平细节。这正是 Lightroom 的 Highlights 和 Shadows 中逐点节点无法复制的部分。
+一个引擎重做**工艺本身**，而不是模仿结果。场景光解码为线性 Rec.2020 后，变成最多三个带光谱灵敏度的**记录**；每个记录在材料的曲线上曝光，再按该工艺的方式成像：减色染料、加色滤光、纸上的银或铂沉积，或视频信号。每种工艺是一张数字表，面板只显示所选工艺用得到的控件。
 
-| 分组 | 控件 |
+| 工艺 | 模拟内容 |
 |---|---|
-| **Sviluppo e spazio colore**（显影与色彩空间） | **Modalità**（Zonale、Split grade、Unito）、**Fase**（阶段）、**Ingresso (IDT)**、**Destinazione (ODT)** |
-| **Misura**（测量） | 检视器中的 *Ombra* 与 *Luce* 点、**Misura zone**、**Misura automatica**、*Ombra sulla zona*、*Luci sulla zona* |
-| **Split grade** | *Luci morbide*、*Ombre dure*、*Grado*、**Unione**（Curva 或 Due strati）、**Provino**（试样条） |
-| **Gamma dinamica**（动态范围） | Local Contrast、Local Highlights、Local Shadows；*增益*和*基础层*视图。Local Highlights 压缩大面积的明亮区域，同时保留甚至加强细节纹理：天空变深，云层保持细节。主节点的 Highlights 则像胶片一样柔化高光纹理 |
-| **Presenza**（质感） | Texture、Clarity、Dehaze |
-| **Avanzate**（高级） | 细节保留、半径、边缘与噪声阈值、Clarity 中心、Local Highlights 的 **Bianco** |
-| **Velo**（雾霭） | Dehaze 去除的雾霭的亮度和颜色：由你设定，从不逐帧估计 |
+| **彩色负片与拷贝** | 三层各自的反差、趾部与肩部、层间效应、分层颗粒、光晕、带 R G B 印片光的正片；14 种胶片，包括东欧的 Sovcolor、ORWO、Svema、Gevacolor。*Log 输出*给出负片扫描 |
+| **反转片**、**黑白** | 幻灯片；黑白可选蓝敏、正色或全色以及补偿后的拍摄滤镜 |
+| **Technicolor** 三条与双色 | 分光棱镜的三张负片、染印矩阵、1944 年前的 K 键；双色只有红与绿 |
+| **Autochrome**、**Dufaycolor** | 染色淀粉颗粒或规则网屏的加色马赛克，透射观看 |
+| **三版分色**、**Kinemacolor** | 顺序曝光：*Intervallo* > 0 时节点读取后续帧，运动的物体分离成彩色（Prokudin-Gorsky） |
+| **达盖尔银版**、**火棉胶**、盐纸与蛋白、蓝晒、铂金 | 蓝敏与紫外敏感的沉积、镜面与氧化、片基、边缘、调色 |
+| **模拟录像** | 11 种格式，从广播到 VHS LP 与 Betacam SP：亮度与色度带宽、色度延迟、峰化、噪声、磁头切换、掉码 |
+| **老式数码** | 10 款相机：削波与拐点、电子锐化、噪声、色度子采样、色带 |
 
-**模式（3.0.0）。** 三种暗房方法，每种分三个**阶段**，每个阶段一个节点串联（也可全部放在一个节点）。面板底部的 **Guida** 为每个阶段给出目的、三个步骤和下一步（复制节点、粘贴到后面、切换 Fase）。2.4.0 中以 Standard 或 Cinematografico 保存的节点会以 Zonale 打开，外观会改变。
+- 放在 Log MetaRaw **之后**。它解码为线性光，输出 Rec.709 · Gamma 2.4（放映拷贝），选 *Log 输出*时保持输入编码。
+- 它是**空间**节点，Generate LUT 会排除它。半径随帧高变化；噪声是确定性的，CPU 与 Metal 画面一致。
+- 它在同一位置取代了 Detail 节点：用 Detail 保存的调色会以全新的 Creative 打开。
 
-- **Destinazione (ODT)** 告诉节点其后是哪种变换，从而知道白（X 区）和黑（0 区）落在哪里。它从不转换图像。*Dal Bianco (manuale)* 使用 Avanzate › Bianco；其他选项固定它：Rec.709 CST 灰之上 +2.5／之下 −4.5 档，Rec.709 DRT（ACES、AgX、DaVinci）+4.5/−6，HDR PQ 1000 nit +6.5/−7，*Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9。
-- **Zonale**（安塞尔·亚当斯）：把 *Ombra* 和 *Luce* 放在要保留细节的位置，按 **Misura zone**，再设置 *Ombra sulla zona*（曝光，默认 III）和 *Luci sulla zona*（显影 N+/N−，默认 VIII）。阶段：*1 · Sviluppo*（逐像素曲线，无光晕）、*2 · Stampa*（按区域的 Local Shadows、Highlights、Contrast，**Brucia i bordi**）、*3 · Presenza*（Texture、Clarity、Dehaze，在 II–VIII 区全量作用）。
-- **Split grade**（双次曝光放印）：**Luci morbide**（软曝光，0 号）把亮部带到 VIII 区，**Ombre dure**（硬曝光，5 号）把暗部带到 III 区，单位为档；**Grado** 显示结果。**Unione**：*Curva*（单条曲线）或 *Due strati*（软、硬两层，如同相纸）。**Provino** 在图像上显示试样（条带、软 × 硬矩阵，或两种合成方式对比）：移动 *Provino: cella* 并按 **Usa la cella**。阶段：*Esposizioni*、*Locale*、*Presenza*。
-- **Unito**（Split grade + 自动分区 + BTZS）：把主体的亮度范围与相纸刻度（目标的 III–VIII 区）比较；显影（N±）使其接近，双次曝光放印完成其余部分。
-- **Misura automatica** 在任何模式下读取整帧，取第 2 和第 98 百分位作为暗部和亮部。
-- **Vista: zone**（11 种颜色）和 **Vista: zone in grigi**（11 级灰）显示节点之后每个区域落在哪一区，并附 0–X 图例。
-
-尚未在 Resolve 中试用，Metal 未运行。号数公式、百分位和显影限制是本实现的假设，未经 BTZS 或真实照片验证。[docs/DETAIL.md](docs/DETAIL.md)
-
-- 把它放在 Log MetaRaw **之后**、CST、LUT 或 DRT 之前。它把接收到的画面解码为线性光，再按相同编码写回，因此必须放在任何转换之前：请让主节点的 Color Space 和 Gamma 保持为 Timeline。
-- 它是**空间**处理的，因此 Generate LUT 会排除它及其所在节点的其余调整。请把它放在单独的节点中。
-- 半径随画面高度缩放。全分辨率、代理和检视器中的效果一致。不做逐帧统计，因此不会闪烁。
-- 在 Metal 上处理一帧 UHD 约需 6–18 毫秒（在 Apple 芯片上测得）。CPU 备用路径要慢得多。
-
-**它的局限（实测）。** Local Highlights 为 −100 时，边缘暗侧的光晕低于台阶的 3%。Local Shadows 为 ±100 时，一档的硬边缘处光晕约为台阶的 12%，2–3 档的边缘约为 4–6%。如果看到光晕，请降低 *Soglia bordi*（边缘阈值）。Texture 不会提升低于噪声阈值的颗粒，但在强边缘附近颗粒可能增大 1.25–1.7 倍。Dehaze 需要画面中真的有雾霭可去。[docs/DETAIL.md](docs/DETAIL.md)
+数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
 
 ---
 
@@ -222,7 +211,7 @@ motion/              Mecena Motion：Stabilize、Motion Blur、mecena-clipdb（R
 tools/               矩阵、图标和图表生成器
 tests/               测试与参考模型（示例片段不在仓库中）
 packaging/           安装程序、指南、卸载程序
-docs/                TONE_MAPPING、DETAIL、DENOISE、FALSE_COLOR、DATA_LEVELS
+docs/                TONE_MAPPING、CREATIVE、DENOISE、FALSE_COLOR、DATA_LEVELS
 ```
 
 ### Linux 与 Windows（CPU 渲染，实验性）

@@ -46,3 +46,18 @@ class NoiseMetal(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CreativeMetal(unittest.TestCase):
+    """The Creative node on Metal: the same picture as creativeRenderCPU for every process."""
+
+    def test_kernels_match_cpu(self):
+        exe = test_bin('creative_metal_test')
+        if not exe:
+            self.skipTest('binari di test non compilabili qui')
+        res = subprocess.run([exe], capture_output=True, text=True, timeout=600)
+        out = res.stdout.strip()
+        if out == 'NO_DEVICE':
+            self.skipTest('no Metal device')
+        self.assertTrue(out.startswith('MAXDIFF'), out + res.stderr)
+        self.assertLess(float(out.split()[1]), 2e-4, res.stderr)

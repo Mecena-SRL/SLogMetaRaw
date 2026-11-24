@@ -9,7 +9,7 @@ The grid is indexed by the node's input encoding (the camera log), red fastest, 
 
   python3 tools/export_lut.py out.cube --size 33 --k 5600 --ei 1600 --set toneContrast=20
 
-Only what the node does per pixel lands in the LUT. Detail (Texture, Clarity, Dehaze), false
+Only what the node does per pixel lands in the LUT. Creative (film, video, processes), false
 colour views and the data-level auto-fix (needs the clip) do not: this prototype leaves them off.
 """
 import argparse

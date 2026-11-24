@@ -1,0 +1,191 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The Creative panel as data: every control, its group and the processes that show it. The factory describes it, the
+// effect reads it and shows each row only with its processes. Names are permanent (Resolve saves by name).
+#pragma once
+#include "CreativeModel.h"
+
+#define CR_BIT(p) (1u << (p))
+const unsigned kCrAll = (1u << kCrProcessCount) - 1;
+const unsigned kCrSignal = CR_BIT(kCrAnalog) | CR_BIT(kCrDigital);
+const unsigned kCrPhoto = kCrAll & ~kCrSignal;                               // film and plates: every process kind
+const unsigned kCrFilm = CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite) | CR_BIT(kCrTechni3)
+                         | CR_BIT(kCrTechni2) | CR_BIT(kCrAutochrome) | CR_BIT(kCrDufay) | CR_BIT(kCrThreePlates)
+                         | CR_BIT(kCrKinemacolor);                           // moving film: gate, scratches
+const unsigned kCrDeveloped = CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite)
+                              | CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2) | CR_BIT(kCrKinemacolor);   // push, silver
+const unsigned kCrHalo = kCrFilm | CR_BIT(kCrCollodion);
+const unsigned kCrSeparate = CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2) | CR_BIT(kCrThreePlates) | CR_BIT(kCrKinemacolor);
+const unsigned kCrScreen = CR_BIT(kCrAutochrome) | CR_BIT(kCrDufay);
+const unsigned kCrToned = CR_BIT(kCrDaguerreotype) | CR_BIT(kCrAlbumen) | CR_BIT(kCrCyanotype) | CR_BIT(kCrPlatinum);
+
+enum CreativeGroup { kGrProcess, kGrShot, kGrPrint, kGrTexture, kGrSeparation, kGrScreen, kGrPlate, kGrSignal,
+                     kGrColour, kGrCount };
+struct CrGroupDef { const char* name; const char* label; bool open; };
+static const CrGroupDef kCrGroups[kGrCount] = {
+    { "processGroup", "Processo", true },       { "shotGroup", "Ripresa e sviluppo", true },
+    { "printGroup", "Stampa", false },          { "textureGroup", "Grana e ottica", true },
+    { "separationGroup", "Separazioni", true }, { "screenGroup", "Mosaico", true },
+    { "plateGroup", "Lastra e carta", true },   { "signalGroup", "Segnale", true },
+    { "colourGroup", "Colore", false } };
+
+static const char* const kCrOutputNames[2] = { "Rec.709 Gamma 2.4 (stampa)", "Log d'ingresso (scansione del negativo)" };
+
+struct CrChoiceDef
+{
+    const char* name;
+    const char* label;
+    int CreativeControls::*field;
+    const char* const* options;
+    int count;
+    unsigned shows;
+    const char* hint;
+};
+static const CrChoiceDef kCrChoices[] = {
+    { "negative", "Pellicola", &CreativeControls::negative, kCrNegativeNames, kCrNegativeCount,
+      CR_BIT(kCrColourNegative), "Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti" },
+    { "print", "Stampa", &CreativeControls::print, kCrPrintNames, kCrPrintCount, CR_BIT(kCrColourNegative),
+      "Il positivo su cui si stampa il negativo. Nessuna = il negativo scansionato, piatto" },
+    { "output", "Uscita", &CreativeControls::output, kCrOutputNames, 2, CR_BIT(kCrColourNegative),
+      "Rec.709: la stampa vista in proiezione. Log: la scansione del negativo, riscritta nella codifica d'ingresso, "
+      "per gradare dopo come un DI" },
+    { "reversal", "Pellicola", &CreativeControls::reversal, kCrReversalNames, kCrReversalCount, CR_BIT(kCrReversal),
+      "L'invertibile: un solo passaggio, il positivo è la pellicola stessa" },
+    { "bwStock", "Pellicola", &CreativeControls::bwStock, kCrBWStockNames, kCrBWStockCount, CR_BIT(kCrBlackWhite),
+      "Contrasto e grana dell'emulsione" },
+    { "sensitivity", "Sensibilità", &CreativeControls::sensitivity, kCrSensitivityNames, kCrSensitivityCount,
+      CR_BIT(kCrBlackWhite), "A quali colori è sensibile l'emulsione: blu = cieli bianchi e rossi neri; "
+      "ortocromatica = rossi scuri; pancromatica = tutti" },
+    { "filter", "Filtro di presa", &CreativeControls::filter, kCrFilterNames, kCrFilterCount, CR_BIT(kCrBlackWhite),
+      "Il filtro davanti all'obiettivo, compensato in esposizione: giallo-rosso scuriscono il cielo, verde schiarisce "
+      "le foglie" },
+    { "techniEra", "Epoca", &CreativeControls::techniEra, kCrTechniEraNames, kCrTechniEraCount, CR_BIT(kCrTechni3),
+      "Fino al 1944 la stampa aveva una chiave nera (K); dal 1955 le matrici vengono da un negativo monopack" },
+    { "collodion", "Supporto", &CreativeControls::collodion, kCrCollodionNames, kCrCollodionCount,
+      CR_BIT(kCrCollodion), "Vetro su fondo nero o ferro laccato: il nero dietro l'argento" },
+    { "paper", "Carta", &CreativeControls::paper, kCrPaperNames, kCrPaperCount, CR_BIT(kCrAlbumen),
+      "Salata: opaca, nelle fibre. Albumina: lucida, neri più profondi" },
+    { "format", "Formato", &CreativeControls::format, kCrFormatNames, kCrFormatCount, kCrPhoto,
+      "Le dimensioni del fotogramma: più piccolo = grana, alone e instabilità più grandi sull'immagine" },
+    { "analog", "Formato video", &CreativeControls::analog, kCrAnalogNames, kCrAnalogCount, CR_BIT(kCrAnalog),
+      "Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato" },
+    { "digital", "Camera", &CreativeControls::digital, kCrDigitalNames, kCrDigitalCount, CR_BIT(kCrDigital),
+      "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera" } };
+const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
+
+struct CrSliderDef
+{
+    const char* name;
+    const char* label;
+    double CreativeControls::*field;   // its default is CreativeControls()'s
+    double lo, hi, inc;
+    int group;
+    unsigned shows;
+    const char* hint;
+};
+static const CrSliderDef kCrSliders[] = {
+    // shot and development
+    { "exposure", "Esposizione (stop)", &CreativeControls::exposure, -6, 6, 0.05, kGrShot, kCrAll,
+      "La luce che arriva al materiale: sotto = ombre nel piede, sopra = luci nella spalla" },
+    { "temperature", "Temperatura", &CreativeControls::temperature, -1, 1, 0.01, kGrShot, kCrAll,
+      "Luce più calda (positivo) o più fredda di quella per cui il materiale è bilanciato" },
+    { "tint", "Tinta", &CreativeControls::tint, -1, 1, 0.01, kGrShot, kCrAll, "Verde (negativo) o magenta" },
+    { "push", "Sviluppo (stop)", &CreativeControls::push, -2, 3, 0.1, kGrShot, kCrDeveloped,
+      "Spinto (positivo): più contrasto, più grana, ombre più dense. Tirato: più morbido" },
+    { "silver", "Argento trattenuto", &CreativeControls::silver, 0, 1, 0.01, kGrShot, kCrDeveloped,
+      "Salto della sbianca (bleach bypass): l'argento resta con i coloranti, neri densi e colori spenti" },
+    { "flash", "Preflash", &CreativeControls::flash, 0, 0.3, 0.005, kGrShot, kCrPhoto,
+      "Una luce uniforme prima o dopo la posa: apre le ombre e abbassa il contrasto" },
+    { "age", "Età", &CreativeControls::age, 0, 1, 0.01, kGrShot, kCrPhoto,
+      "Decadimento: coloranti che sbiadiscono a ritmi diversi (il ciano per primo), base che ingiallisce" },
+    // print
+    { "printR", "Luci di stampa R", &CreativeControls::printR, -24, 24, 1, kGrPrint, kCrPhoto,
+      "Punti della stampatrice: 1 punto = 0,025 log E. Più rosso = stampa più ciano" },
+    { "printG", "Luci di stampa G", &CreativeControls::printG, -24, 24, 1, kGrPrint, kCrPhoto,
+      "Più verde = stampa più magenta" },
+    { "printB", "Luci di stampa B", &CreativeControls::printB, -24, 24, 1, kGrPrint, kCrPhoto,
+      "Più blu = stampa più gialla" },
+    { "printContrast", "Contrasto", &CreativeControls::printContrast, 0.5, 2, 0.01, kGrPrint, kCrAll,
+      "Il contrasto del positivo (o del segnale), moltiplicato su quello del processo" },
+    // texture and optics
+    { "grain", "Grana", &CreativeControls::grain, 0, 3, 0.01, kGrTexture, kCrPhoto,
+      "Quantità rispetto a quella del materiale e del formato: 1 = com'era" },
+    { "grainSize", "Dimensione grana", &CreativeControls::grainSize, 0.25, 4, 0.01, kGrTexture, kCrPhoto,
+      "Rispetto a quella del materiale e del formato" },
+    { "halation", "Alone", &CreativeControls::halation, 0, 3, 0.01, kGrTexture, kCrHalo,
+      "La luce che attraversa l'emulsione e torna dal supporto: rosso attorno alle luci forti" },
+    { "bloom", "Diffusione", &CreativeControls::bloom, 0, 1, 0.01, kGrTexture, kCrAll,
+      "Un filtro di diffusione davanti all'obiettivo: le luci si allargano sulle zone vicine" },
+    { "bloomRadius", "Raggio diffusione (%)", &CreativeControls::bloomRadius, 0.2, 10, 0.1, kGrTexture, kCrAll,
+      "Raggio in percentuale dell'altezza" },
+    { "aberration", "Aberrazione cromatica", &CreativeControls::aberration, 0, 1, 0.01, kGrTexture, kCrAll,
+      "Rosso e blu a ingrandimenti diversi verso i bordi, come un obiettivo d'epoca" },
+    { "vignette", "Vignettatura (stop)", &CreativeControls::vignette, -1, 3, 0.05, kGrTexture, kCrAll,
+      "Caduta di luce agli angoli, prima della curva" },
+    { "weave", "Instabilità del quadro", &CreativeControls::weave, 0, 1, 0.01, kGrTexture, kCrFilm,
+      "Il fotogramma oscilla nel passo della macchina, in proporzione al formato" },
+    { "breath", "Sfarfallio", &CreativeControls::breath, 0, 1, 0.01, kGrTexture, kCrPhoto,
+      "Densità e colore che cambiano un poco da un fotogramma all'altro" },
+    { "dust", "Polvere", &CreativeControls::dust, 0, 1, 0.01, kGrTexture, kCrPhoto,
+      "Granelli e peli, diversi a ogni fotogramma: bianchi se sul negativo, neri se sul positivo" },
+    { "scratches", "Graffi", &CreativeControls::scratches, 0, 1, 0.01, kGrTexture, kCrFilm,
+      "Righe verticali lasciate dal passaggio nella macchina" },
+    // separations
+    { "registration", "Registro (px a 1080)", &CreativeControls::registration, 0, 20, 0.1, kGrSeparation, kCrSeparate,
+      "Ogni record (striscia, matrice o lastra) spostato del suo errore: frange colorate sui bordi" },
+    { "interval", "Intervallo fra le pose (fotogrammi)", &CreativeControls::interval, 0, 48, 1, kGrSeparation,
+      CR_BIT(kCrThreePlates) | CR_BIT(kCrKinemacolor),
+      "Le pose sono in sequenza: ciò che si muove fra una e l'altra si separa nei colori. 0 = simultanee" },
+    { "keyImage", "Chiave K (-1 = dell'epoca)", &CreativeControls::keyImage, -1, 1, 0.01, kGrSeparation,
+      CR_BIT(kCrTechni3), "Immagine argento nera stampata sotto le tre matrici: contorni e neri più profondi" },
+    { "dyeDensity", "Densità coloranti", &CreativeControls::dyeDensity, 0.6, 1.4, 0.01, kGrSeparation,
+      CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2), "Quanta tinta prendono le matrici nell'imbibizione" },
+    // screens
+    { "mosaicScale", "Dimensione mosaico", &CreativeControls::mosaicScale, 0.25, 4, 0.01, kGrScreen, kCrScreen,
+      "Grani di fecola o maglia della rete, rispetto alla lastra vera" },
+    { "clump", "Ammassi", &CreativeControls::clump, 0, 1, 0.01, kGrScreen, CR_BIT(kCrAutochrome),
+      "I grani dello stesso colore che si raggruppano in macchie" },
+    { "viewLight", "Luce di visione", &CreativeControls::viewLight, 0.1, 1.2, 0.01, kGrScreen, kCrScreen,
+      "Quanto è forte la luce dietro la lastra: il mosaico assorbe due terzi della luce" },
+    // plates and papers
+    { "viewAngle", "Angolo di visione", &CreativeControls::viewAngle, -1, 1, 0.01, kGrPlate, CR_BIT(kCrDaguerreotype),
+      "Lo specchio riflette la stanza: da 1 (positivo) a -1 (negativo, l'immagine si rovescia)" },
+    { "uv", "Ultravioletto", &CreativeControls::uv, 0, 1, 0.01, kGrPlate,
+      CR_BIT(kCrBlackWhite) | CR_BIT(kCrDaguerreotype) | CR_BIT(kCrCollodion) | CR_BIT(kCrAlbumen),
+      "Quanto UV c'è nella luce: cieli e luci bluastre si bruciano prima. B/N: solo con sensibilità Blu" },
+    { "oxidation", "Ossidazione", &CreativeControls::oxidation, 0, 1, 0.01, kGrPlate, CR_BIT(kCrDaguerreotype),
+      "L'alone iridescente che entra dai bordi della lastra" },
+    { "border", "Bordo", &CreativeControls::border, 0, 1, 0.01, kGrPlate,
+      CR_BIT(kCrCollodion) | CR_BIT(kCrCyanotype) | CR_BIT(kCrPlatinum),
+      "Il bordo irregolare dove il collodio o la soluzione non è arrivata" },
+    { "toning", "Viraggio", &CreativeControls::toning, 0, 1, 0.01, kGrPlate, kCrToned,
+      "Oro (dagherrotipo, albumina), tannino (cianotipia), palladio (platino): il colore dell'immagine" },
+    // signal
+    { "wear", "Usura del nastro", &CreativeControls::wear, 0, 1, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "Nastro copiato e ripassato: più rumore, meno colore, dropout" },
+    { "heads", "Cambio testine", &CreativeControls::heads, 0, 1, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "La banda disturbata in fondo al quadro dove una testina passa all'altra" },
+    { "instability", "Instabilità", &CreativeControls::instability, 0, 1, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "Le righe ondeggiano: tensione del nastro e base dei tempi" },
+    { "colourBleed", "Sbavatura colore", &CreativeControls::colourBleed, 0, 2, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "Banda e ritardo del colore, rispetto a quelli del formato" },
+    { "noise", "Rumore", &CreativeControls::noise, 0, 2, 0.01, kGrSignal, kCrSignal,
+      "Rispetto a quello del formato o della camera: 1 = tipico" },
+    { "sharpness", "Nitidezza elettronica", &CreativeControls::sharpness, -1, 1, 0.01, kGrSignal, kCrSignal,
+      "Il peaking della camera: contorni chiari attorno ai bordi" },
+    { "range", "Gamma dinamica (stop)", &CreativeControls::range, -3, 3, 0.05, kGrSignal, CR_BIT(kCrDigital),
+      "Sposta il punto di clip della camera" },
+    { "highlights", "Spalla", &CreativeControls::highlights, 0, 1, 0.01, kGrSignal, CR_BIT(kCrDigital),
+      "0 = clip netto, 1 = knee morbido" },
+    { "compression", "Compressione", &CreativeControls::compression, 0, 2, 0.01, kGrSignal, CR_BIT(kCrDigital),
+      "Sottocampionamento del colore e banding del codec" },
+    // colour
+    { "shadowHue", "Ombre: tinta", &CreativeControls::shadowHue, 0, 360, 1, kGrColour, kCrAll, "Gradi" },
+    { "shadowAmount", "Ombre: quantità", &CreativeControls::shadowAmount, 0, 1, 0.01, kGrColour, kCrAll, nullptr },
+    { "highHue", "Luci: tinta", &CreativeControls::highHue, 0, 360, 1, kGrColour, kCrAll, "Gradi" },
+    { "highAmount", "Luci: quantità", &CreativeControls::highAmount, 0, 1, 0.01, kGrColour, kCrAll, nullptr },
+    { "balance", "Bilanciamento (stop)", &CreativeControls::balance, -3, 3, 0.05, kGrColour, kCrAll,
+      "Dove passano le ombre alle luci, in stop dal grigio" },
+    { "saturation", "Saturazione", &CreativeControls::saturation, 0, 2, 0.01, kGrColour, kCrAll, nullptr },
+    { "density", "Densità colore", &CreativeControls::density, 0, 1, 0.01, kGrColour, kCrAll,
+      "Colori saturi più scuri, come i coloranti veri" } };
+const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);

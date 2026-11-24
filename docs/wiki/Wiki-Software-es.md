@@ -16,7 +16,7 @@ Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archi
 5. [El nodo Log MetaRaw](#5-el-nodo-s-log-metaraw)
 6. [Falso color](#6-falso-color)
 7. [Tonos y Zonas](#7-tonos-y-zonas)
-8. [El nodo Log MetaRaw Detail](#8-el-nodo-s-log-metaraw-detail)
+8. [El nodo Log MetaRaw Creative](#8-el-nodo-log-metaraw-creative)
 9. [Flujos de trabajo: dónde va cada nodo](#9-flujos-de-trabajo-dónde-va-cada-nodo)
 10. [Recetas](#10-recetas)
 11. [Casos especiales](#11-casos-especiales)
@@ -36,7 +36,7 @@ Tres herramientas, una sola instalación:
 |---|---|---|
 | **Script** | Workspace › Scripts › Log MetaRaw | Lee los metadatos de todos los clips y los escribe en el Media Pool. Corrige el Data Level de cada clip. |
 | Nodo **Log MetaRaw** | Color › OpenFX — **primer nodo** | Revela un clip a partir de sus valores de rodaje: balance de blancos, exposición, espacio de color, tonos por zonas, falso color. |
-| Nodo **Log MetaRaw Detail** | Color › OpenFX — **justo después** | El nodo creativo, con los modos del cuarto oscuro (Zonale, Split grade, Unito): recuperación local de altas luces/sombras, Texture, Clarity, Dehaze. |
+| Nodo **5 · Log MetaRaw Creative** | Color › OpenFX | revelado creativo: 16 procesos fotográficos (negativos y copias, inversibles, blanco y negro, Technicolor, Autochrome, tres placas, daguerrotipo, colodión, copias antiguas), vídeo analógico y cámaras digitales de época |
 
 Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapping.
 
@@ -56,7 +56,7 @@ Los archivos originales **nunca se modifican**: ni transcodificación ni rewrapp
 
 3. **Reinicia DaVinci Resolve.**
 
-El instalador también borra la caché de plugins de Resolve (`OFXPluginCacheV2.xml`); Resolve la reconstruye en el siguiente arranque. Sin eso, Resolve seguiría mostrando el panel antiguo y no vería el nodo Detail.
+El instalador también borra la caché de plugins de Resolve (`OFXPluginCacheV2.xml`); Resolve la reconstruye en el siguiente arranque. Sin eso, Resolve seguiría mostrando el panel antiguo y no vería el nodo Creative.
 
 Cada instalación empieza limpia: el plugin y la biblioteca anteriores se sustituyen por completo, y las instalaciones de desarrollo se eliminan.
 
@@ -79,11 +79,12 @@ Cada instalación empieza limpia: el plugin y la biblioteca anteriores se sustit
 1. Importa el material. Abre **Workspace › Scripts › Log MetaRaw**, pulsa **1 · Leer metadatos** y luego **2 · Escribir en Resolve**.
 2. En la página Color, añade **Log MetaRaw** como **primer nodo**. Toma el EI, los Kelvin y el tinte del clip: con esos valores no cambia nada.
 3. Corrige el balance de blancos y la exposición en el nodo, con ayuda de las vistas de falso color.
-4. Da forma a los tonos con **Toni**. Para recuperación local, Texture, Clarity o Dehaze, añade **Log MetaRaw Detail** como nodo siguiente.
+4. Da forma a los tonos con **Toni** (Tonos). Para el aspecto de una película, un proceso antiguo, una cinta o una
+   cámara de época añade **Log MetaRaw Creative** como nodo siguiente.
 5. Después, el resto del etalonaje y, al final, tu CST / LUT / DRT de salida.
 
 ```
-Log MetaRaw  →  Log MetaRaw Detail  →  resto del etalonaje  →  CST / LUT / DRT de salida
+Log MetaRaw  →  Log MetaRaw Creative  →  resto del etalonaje  →  CST / LUT / DRT de salida
 ```
 
 ![Árbol de nodos recomendado](images/08-node-tree.png)
@@ -165,7 +166,7 @@ El nodo es **puntual**: cada píxel depende solo de sí mismo. Nunca crea halos,
 - **Ingresso › Stato** (estado) — lo que detectó el nodo; también avisa cuando hay una vista de falso color activada.
 - **Senza metadata › Sblocca controlli** — ver [§11](#11-casos-especiales).
 
-> La **salida Rec.709** del nodo con Tone mapping *Nessuno (CST)* es un CST simple (las altas luces por encima de Bianco se cortan), y cualquier conversión de salida excluye el nodo Detail. Mejor un CST de salida al final del árbol de nodos.
+> La **salida Rec.709** del nodo con Tone mapping *Nessuno (CST)* es un CST simple (las altas luces por encima de Bianco se cortan), y cualquier conversión de salida excluye el nodo Creative. Mejor un CST de salida al final del árbol de nodos.
 
 **Tone mapping con salida de escena (3.2.0).** Con un rendering (ACES 2.0, Filmico, OpenDRT…), un Spazio colore y una Gamma de escena como DaVinci WG / DaVinci Intermediate ya no se sustituyen por Rec.709 / Gamma 2.4: la imagen renderizada para Rec.709 viaja en esa codificación, para pasarla a otros plugins (Dehancer…), y un CST a Rec.709 / Gamma 2.4 sin tone mapping la devuelve idéntica. Las salidas de pantalla (Rec.709, P3, Rec.2020) no cambian.
 
@@ -239,7 +240,7 @@ Todos los deslizadores van de −100 a +100, en el orden de Camera Raw. Highligh
 
 ![Curva de tonos](https://raw.githubusercontent.com/Mecena-SRL/SLogMetaRaw/main/docs/tone_curve.png)
 
-> **El coste honesto de un nodo puntual:** lo que comprime, lo comprime también en la textura que hay dentro. La recuperación que conserva la textura vive en el nodo Detail.
+> **El coste honesto de un nodo puntual:** lo que comprime, lo comprime también en la textura que hay dentro.
 
 ### Zone (Zonas)
 
@@ -261,56 +262,33 @@ Para profundizar (en italiano): [docs/TONE_MAPPING.md](https://github.com/Mecena
 
 ---
 
-## 8. El nodo Log MetaRaw Detail
+## 8. El nodo Log MetaRaw Creative
 
-**Color › OpenFX › Log MetaRaw Detail** — justo después de Log MetaRaw, antes de cualquier CST / LUT / DRT.
+Un único motor que rehace **el proceso**, no una imitación de su resultado. La luz de escena, decodificada a Rec.2020
+lineal, se convierte en hasta tres **registros** con su sensibilidad espectral. Cada uno se expone en la curva del material
+y se convierte en imagen como lo hacía ese proceso: colorantes sustractivos, filtros aditivos, un depósito de plata o de
+platino sobre papel, una señal de vídeo. Cada proceso es una tabla de números y el panel muestra solo los controles del
+proceso elegido.
 
-Trabaja **por áreas**, sobre una base que respeta los bordes: mueve grandes áreas de luz sin aplanar el detalle fino — la parte de Highlights/Shadows de Lightroom que un nodo puntual no puede hacer.
-
-![Panel del nodo Detail](images/16-detail-panel.png)
-
-| Grupo | Controles |
+| Proceso | Qué modela |
 |---|---|
-| **Sviluppo e spazio colore** (revelado y espacio de color) | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
-| **Misura** (medición) | puntos *Ombra* y *Luce* en el visor, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
-| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** (tira de prueba) |
-| **Gamma dinamica** (rango dinámico) | Local Contrast, Local Highlights, Local Shadows; vistas de comprobación *gain* y *base*. |
-| **Presenza** (presencia) | **Texture** (detalle fino; no sube el grano por debajo del umbral de ruido), **Clarity** (contraste local de escala media), **Dehaze**. |
-| **Avanzate** (avanzado) | Preservación del detalle, radio, umbral de bordes (*Soglia bordi*), umbral de ruido, centro de Clarity, **Bianco** de Local Highlights. |
-| **Velo** (neblina) | Nivel y color de la neblina que quita Dehaze. Los fijas tú; nunca se estiman fotograma a fotograma → sin parpadeo. |
+| **Negativo color y copia** | tres capas con su contraste, pie y hombro, interimagen, grano por capa, halo, copia positiva con luces R G B; 14 películas, también del Este (Sovcolor, ORWO, Svema, Gevacolor). *Salida Log* da el escaneo del negativo |
+| **Inversible**, **Blanco y negro** | diapositiva; B/N con sensibilidad azul, orto o pan y filtro de toma compensado |
+| **Technicolor** tres tiras y dos colores | tres negativos del prisma, matrices por imbibición, clave K hasta 1944; solo rojo y verde |
+| **Autochrome**, **Dufaycolor** | mosaico aditivo de granos de fécula teñidos o retícula regular, visto por transparencia |
+| **Tres placas**, **Kinemacolor** | exposiciones en secuencia: con *Intervallo* > 0 el nodo lee los fotogramas siguientes y lo que se mueve se separa en colores (Prokudin-Gorski) |
+| **Daguerrotipo**, **Colodión**, papel salado y albúmina, cianotipia, platino | depósitos sensibles al azul y al UV, espejo y oxidación, soporte, borde, virado |
+| **Vídeo analógico** | 11 formatos, de broadcast a VHS LP y Betacam SP: ancho de banda de luma y color, retardo del color, peaking, ruido, cambio de cabezas, dropouts |
+| **Digital de época** | 10 cámaras: clip y knee, nitidez electrónica, ruido, submuestreo, banding |
 
-**Modos (3.0.0).** Tres métodos del cuarto oscuro, cada uno en tres **fases**, un nodo por fase en serie (o todas en un nodo). La **Guida**, al final del panel, da para cada fase el objetivo, tres pasos y qué hacer después (copia el nodo, pégalo detrás, cambia Fase). Los nodos guardados con la 2.4.0 en Standard o Cinematografico se abren como Zonale y cambian de aspecto.
+- Va **justo después** de Log MetaRaw. Decodifica a luz lineal y sale en Rec.709 · Gamma 2.4 (la copia proyectada), o en
+  la codificación de entrada con *Salida Log*.
+- Es **espacial**: Generate LUT lo excluye. Los radios siguen la altura del fotograma. Ruido determinista: CPU y Metal
+  dan la misma imagen.
+- Sustituye al nodo Detail en el mismo lugar: un etalonaje guardado con el Detail se abre como un Creative nuevo.
 
-- **Destinazione (ODT)** indica al nodo qué transformación viene después, para saber dónde quedan el blanco (zona X) y el negro (zona 0). Nunca convierte la imagen. *Dal Bianco (manuale)* usa Avanzate › Bianco; las demás lo fijan: Rec.709 CST +2,5/−4,5 pasos alrededor del gris, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (Ansel Adams): pon *Ombra* y *Luce* sobre detalles que quieras conservar, pulsa **Misura zone** y luego *Ombra sulla zona* (exposición, III por defecto) y *Luci sulla zona* (revelado N+/N−, VIII por defecto). Fases: *1 · Sviluppo* (curva por píxel, sin halos), *2 · Stampa* (Local Shadows, Highlights, Contrast por áreas, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, plenas en las zonas II–VIII).
-- **Split grade** (copia con dos exposiciones): **Luci morbide** (exposición suave, grado 0) lleva las luces a la zona VIII y **Ombre dure** (dura, grado 5) las sombras a la III, en pasos; **Grado** lee el resultado. **Unione**: *Curva* (una sola curva) o *Due strati* (una capa suave y una dura, como en el papel). **Provino** muestra una tira de prueba sobre la imagen (tiras, matriz suave × dura o las dos uniones comparadas): mueve *Provino: cella* y pulsa **Usa la cella**. Fases: *Esposizioni*, *Locale*, *Presenza*.
-- **Unito** (Split grade + zonas automáticas + BTZS): el rango del sujeto se compara con la escala del papel (zonas III–VIII del destino); el revelado (N±) lo acerca y la copia con dos exposiciones hace el resto.
-- **Misura automatica**, en cualquier modo, lee todo el fotograma y toma los percentiles 2 y 98 como sombra y luz.
-- **Vista: zone** (11 colores) y **Vista: zone in grigi** (11 grises) muestran en qué zona cae cada área tras el nodo, con la leyenda 0–X.
-
-Aún no probado en Resolve y Metal no ejecutado. La fórmula del grado, los percentiles y los límites del revelado son hipótesis de esta implementación, no verificadas con el BTZS ni en copias reales. [docs/DETAIL.md](docs/DETAIL.md)
-
-**Azzera dettaglio** reinicia el nodo.
-
-**Local Highlights frente a Highlights.** Local Highlights comprime las grandes áreas luminosas y conserva — incluso refuerza — la textura fina: el cielo se oscurece y las nubes mantienen su detalle. El Highlights del nodo principal suaviza la textura de las altas luces, como la película. Local Highlights tiene su propio **Bianco** en Avanzate y no conoce el EI elegido en el nodo principal: si cambias mucho el EI, ajústalo.
-
-![Local Highlights sobre un cielo, antes/después](images/17-detail-before-after.png)
-
-**Reglas**
-
-- Decodifica a luz lineal lo que recibe y lo vuelve a escribir en la **misma codificación**. Solo acepta codificaciones scene-log: S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct. **No** Rec.709, Gamma 2.4 ni sRGB.
-- Es **espacial**: Generate LUT lo deja fuera, junto con el resto de su nodo. Tenlo en un nodo propio.
-- Los radios siguen la altura del fotograma: mismo aspecto a resolución completa, en proxy y en el visor. Sin estadísticas por fotograma → sin parpadeo.
-- Metal: entre ~6 y 18 ms por fotograma UHD en Apple silicon. La alternativa por CPU es mucho más lenta.
-
-**Límites medidos**
-
-- Local Highlights a −100: halo en el lado oscuro de un borde por debajo del 3% del escalón.
-- Local Shadows a ±100: ~12% en un borde nítido de 1 paso, 4–6% en bordes de 2–3 pasos. Si lo ves, baja *Soglia bordi*.
-- Texture cerca de bordes fuertes puede aumentar el grano 1,25–1,7×.
-- Dehaze necesita una neblina real que quitar.
-
-Para profundizar (en italiano): [docs/DETAIL.md](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DETAIL.md)
+Los números son estimaciones de la investigación en [docs/CREATIVE.md](docs/CREATIVE.md), no perfiles de productos: hay
+que ajustarlos con material real. Aún no probado en Resolve; Metal verificado por los tests de la CI de macOS.
 
 ---
 
@@ -344,18 +322,16 @@ Ninguno de los tres nodos se ha probado todavía en Resolve con clips reales.
 
 ```
 Log MetaRaw          Color Space/Gamma: DaVinci WG · DaVinci Intermediate
-  → Detail             Ingresso nodo: DaVinci WG/Intermediate
   → tu etalonaje (DWG)
   → CST de salida       DaVinci WG/Intermediate → Rec.709 · Gamma 2.4, tone mapping de DaVinci
 ```
 
-Con un tone mapping después, pon **Bianco en 4–5 en ambos nodos**. En una timeline sin gestión de color debes declarar la entrada del nodo Detail.
+Con un tone mapping después, pon **Bianco en 4–5**. **Creative**, si lo usas, va justo después de Log MetaRaw y sale en Rec.709 · Gamma 2.4 (o en la codificación de entrada con *Uscita Log*): en un etalonaje DWG ponlo al final, en lugar del CST de salida.
 
 ### B — Todo en log
 
 ```
 Log MetaRaw          Color Space/Gamma: Timeline
-  → Detail             Ingresso nodo: Automatico (usa el S-Log3 del clip)
   → tu etalonaje
   → CST / LUT          S-Gamut3.Cine/S-Log3 → tu salida
 ```
@@ -371,12 +347,10 @@ Deja Color Space/Gamma en **Timeline** en el nodo principal. Activa *Establecer 
 | Problema | Dónde | Ajuste |
 |---|---|---|
 | Cielo o ventanas quemados | Main › Toni | Highlights −50…−100 (con un DRT después: Bianco 4–5) |
-| …y conservar la textura de las nubes | Detail › Gamma dinamica | Local Highlights |
 | Cara a contraluz en sombra | Main › Toni | Shadows +30…+60, Blacks −20…−40 |
 | Look más "de película" | Main › Toni | Contrast +20…+30, Highlights −60 |
 | Sombras saturadas y con ruido | Main › Zone | Shadow Sat −30…−50 |
 | Reflejos especulares | Main › Zone | Specular Exp −1…−2 |
-| Paisaje plano y con neblina | Detail › Presenza + Velo | Dehaze; fija el nivel/color de la neblina a mano |
 
 ---
 
@@ -429,7 +403,7 @@ Ejecútalo con `--dry-run` para ver qué eliminaría sin tocar nada. Los metadat
 
 ## 14. Solución de problemas / FAQ
 
-**Falta el nodo Detail / el panel se ve viejo.**
+**Falta el nodo Creative / el panel se ve viejo.**
 Resolve está usando su caché de plugins antigua. Cierra Resolve, borra `OFXPluginCacheV2.xml` (el instalador normalmente lo hace), reinicia.
 
 **El nodo no hace nada.**
@@ -439,10 +413,7 @@ Es lo esperado con los valores de rodaje. Comprueba que *Decodifica* está en **
 Se quedó una vista encendida. Apaga todas las vistas de falso color antes de renderizar.
 
 **Las altas luces se ven comprimidas dos veces / apagadas.**
-Tienes un DRT (ACES, AgX, DaVinci tone mapping) después del nodo: sube **Bianco** a 4–5 (también en el nodo Detail).
-
-**Halos alrededor de los bordes con el nodo Detail.**
-Baja *Avanzate › Soglia bordi*, o reduce Local Shadows .
+Tienes un DRT (ACES, AgX, DaVinci tone mapping) después del nodo: sube **Bianco** a 4–5.
 
 **El script se saltó un clip.**
 Lee la columna *Estado*: dice por qué (archivo no soportado, disco que no responde, etc.).

@@ -13,10 +13,9 @@ own reference models, so a figure cannot drift from what the node does:
   tone_curves    tests/model/tone.py     set_tone, tone5
   drt_curves     tests/model/display.py  render (ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT)
   gamut_rgc      tests/model/display.py  compress (ACES 1.3 Reference Gamut Compression)
-  zones          tests/model/detail.py   DEST_WHITE, DEST_BLACK, ZONE_RGB, zone_of
   dlogm          tests/develop_model.py  DLM (17-node D-Log M table, Osmo Action 6)
 
-One figure is an illustration, and says so in its caption: local_vs_point (a 1-D signal, not the Detail filter).
+One figure is an illustration, and says so in its caption: local_vs_point (a 1-D signal, not a node's filter).
 The block diagrams (flow, develop_chain) are drawn by hand from the order of sm_develop.
 """
 import math
@@ -29,7 +28,6 @@ sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import develop_model as dm  # noqa: E402
 from model import tone as T  # noqa: E402
 from model import display as D  # noqa: E402
-from model import detail as DT  # noqa: E402
 import make_falsecolor_chart as FC  # noqa: E402
 
 FULL, HALF = 736, 356          # px; the guide prints 1 px = 0.25 mm (184 mm and 89 mm columns)
@@ -65,10 +63,6 @@ TXT = {
     'yellow': ('giallo (0,880 → 1,312)', 'yellow (0.880 → 1.312)'),
     'identity': ('nessuna compressione', 'no compression'),
     'zone_dest': ('Destinazione (ODT)', 'Destinazione (ODT)'),
-    'cst_dest': ('Rec.709 · CST (−4,5 / +2,5)', 'Rec.709 · CST (−4.5 / +2.5)'),
-    'drt_dest': ('Rec.709 · DRT (−6 / +4,5)', 'Rec.709 · DRT (−6 / +4.5)'),
-    'pq_dest': ('HDR PQ 1000 nit (−7 / +6,5)', 'HDR PQ 1000 nit (−7 / +6.5)'),
-    'dwg_dest': ('Scena DaVinci WG (−9 / +9)', 'Scene DaVinci WG (−9 / +9)'),
     'pointwise': ('puntuale (nodo principale)', 'pointwise (main node)'),
     'local': ('per aree (base + dettaglio)', 'by areas (base + detail)'),
     'input': ('ingresso', 'input'),
@@ -378,38 +372,6 @@ def fig_gamut_rgc(path):
     s.save(path)
 
 
-def fig_zones(path):
-    s = Svg(FULL, 152)
-    x0, x1 = 196, FULL - 14
-    lo, hi = -9.5, 9.5
-
-    def px(v):
-        return x0 + (v - lo) / (hi - lo) * (x1 - x0)
-    dests = ((1, 'cst_dest'), (2, 'drt_dest'), (3, 'pq_dest'), (4, 'dwg_dest'))
-    for r, (d, key) in enumerate(dests):
-        white, black = DT.DEST_WHITE[d], DT.DEST_BLACK[d]
-        y = 8 + r * 30
-        s.text(x0 - 8, y + 15, t(key), 10, 'end', INK)
-        for z in range(11):
-            a = DT.zone_L(z - 0.5, white, black) if z > 0 else -black - 0.6
-            b = DT.zone_L(z + 0.5, white, black) if z < 10 else white + 0.6
-            a, b = max(a, -black - 0.6), min(b, white + 0.6)
-            col = DT.ZONE_RGB[z]
-            s.rect(px(a), y, px(b) - px(a), 20, hexc(col), '#ffffff' if z < 10 else '#9aa0aa', sw=0.6)
-            lum = 0.3 * col[0] + 0.59 * col[1] + 0.11 * col[2]
-            roman = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][z]
-            if px(b) - px(a) > 14:
-                s.text((px(a) + px(b)) / 2, y + 14, roman, 9, 'middle', '#ffffff' if lum < 0.5 else INK, 'bold')
-    yb = 8 + 4 * 30
-    for v in range(-9, 10, 1):
-        s.line(px(v), yb - 4, px(v), yb, MUTED, 0.8)
-        if v % 3 == 0:
-            s.text(px(v), yb + 10, num(v, 0), 9, 'middle', MUTED)
-    s.line(px(0), 4, px(0), yb - 4, INK, 0.9, '2,2')
-    s.text(px(0), yb + 22, t('stops_grey'), 10, 'middle', INK)
-    s.save(path)
-
-
 def fig_dlogm(path):
     s = Svg(HALF, 250)
     p = Plot(s, (44, 14, HALF - 10, 196), (-8, 5), (0, 1.05), t('stops_grey'), t('code'),
@@ -526,11 +488,11 @@ def boxes(s, items, y, h, x0, x1, gap=14, fill=SOFT, size=10.5):
 FLOW = {
     0: [('Script', 'Workspace › Scripts', INK), ('1 · Noise', 'rumore, sul log', '#7a8fa6'),
         ('2 · Stabilize', 'giroscopio', '#7a8fa6'), ('3 · Motion\nBlur', 'mosso', '#7a8fa6'),
-        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Detail', 'spaziale', COOL),
+        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Creative', 'pellicola, video', COOL),
         ('grade ·\nCST / LUT', 'per ultimo', INK)],
     1: [('Script', 'Workspace › Scripts', INK), ('1 · Noise', 'noise, on log', '#7a8fa6'),
         ('2 · Stabilize', 'gyro', '#7a8fa6'), ('3 · Motion\nBlur', 'motion blur', '#7a8fa6'),
-        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Detail', 'spatial', COOL),
+        ('4 · Log\nMetaRaw', 'Develop', WARM), ('5 · Creative', 'film, video', COOL),
         ('grade ·\nCST / LUT', 'last', INK)],
 }
 CACHE = ('metadata → Media Pool + record JSON per clip', 'metadata → Media Pool + one JSON record per clip')
@@ -566,7 +528,7 @@ def fig_develop_chain(path):
 
 FIGURES = [('log_curves', fig_log_curves), ('wb_locus', fig_wb_locus), ('false_color', fig_false_color),
            ('tone_curves', fig_tone_curves), ('drt_curves', fig_drt_curves), ('gamut_rgc', fig_gamut_rgc),
-           ('zones', fig_zones), ('dlogm', fig_dlogm), ('local_vs_point', fig_local_vs_point),
+           ('dlogm', fig_dlogm), ('local_vs_point', fig_local_vs_point),
            ('flow', fig_flow), ('develop_chain', fig_develop_chain), ('data_levels', fig_data_levels),
            ('curve_tops', fig_curve_tops)]
 

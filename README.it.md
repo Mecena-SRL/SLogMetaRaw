@@ -24,7 +24,7 @@ Log MetaRaw legge questi dati e li usa. È fatto di uno script e cinque nodi, nu
 | Nodo **1 · Log MetaRaw Noise** | Color › OpenFX | riduzione rumore sull'immagine log, con il rumore atteso per camera, ISO e formato; temporale e spaziale, GPU Metal |
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | stabilizzazione dal giroscopio (Gyroflow integrato) e mosso ricostruito dal flusso ottico; solo Mac Apple silicon |
 | Nodo **4 · Log MetaRaw** | Color › OpenFX | sviluppa una clip partendo dai valori di ripresa: bilanciamento, esposizione, spazio colore, toni per zone, false color |
-| Nodo **5 · Log MetaRaw Detail** | Color › OpenFX | il nodo creativo, con le modalità della camera oscura (Zonale, Split grade, Unito): recupero locale dei toni, Texture, Clarity, Dehaze |
+| Nodo **5 · Log MetaRaw Creative** | Color › OpenFX | sviluppo creativo: 16 procedimenti fotografici (negativi e stampe, invertibili, bianco e nero, Technicolor, Autochrome, tre lastre, dagherrotipo, collodio, stampe antiche), video analogico e camere digitali d'epoca |
 
 Nessun file viene transcodificato, nessun originale viene mai scritto.
 
@@ -53,7 +53,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 3. Riavvia DaVinci Resolve.
 
 L'installer cancella anche la cache dei plugin di Resolve (`OFXPluginCacheV2.xml`), che Resolve ricostruisce al
-prossimo avvio. Senza, Resolve mostrerebbe ancora il pannello vecchio e non vedrebbe il nodo Detail.
+prossimo avvio. Senza, Resolve mostrerebbe ancora il pannello vecchio e non vedrebbe il nodo Creative.
 
 | Installato | Percorso |
 |---|---|
@@ -89,12 +89,12 @@ DJI è la stima migliore, non una taratura. Con un profilo sconosciuto restano n
 2. Nella pagina Color metti **Log MetaRaw** come **primo nodo**. Prende EI, Kelvin e tinta della clip. A quei valori non
    cambia niente.
 3. Correggi bilanciamento ed esposizione nel nodo. Le viste false color aiutano.
-4. Modella i toni con **Toni**. Per recupero locale, Texture, Clarity o Dehaze aggiungi **Log MetaRaw Detail** come
-   nodo successivo.
+4. Modella i toni con **Toni**. Per il look di una pellicola, di un procedimento antico, di un nastro o di una camera
+   d'epoca aggiungi **Log MetaRaw Creative** come nodo successivo.
 5. Poi il tuo CST, LUT o DRT.
 
 ```
-Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  resto del grade
+Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Creative  →  CST / LUT / DRT  →  resto del grade
 ```
 
 ---
@@ -187,44 +187,39 @@ lento finisce in background, con un limite di 15 secondi. *Rileggi* risponde in 
 
 ---
 
-## Il nodo Log MetaRaw Detail
+## Il nodo Log MetaRaw Creative
 
-È il nodo creativo. Lavora **per aree**, su una base che rispetta i bordi, e regola le grandi aree senza appiattire il
-dettaglio fine. È la parte di Highlights e Shadows di Lightroom che un nodo puntuale non può copiare.
+Un solo motore che rifà **il procedimento**, non un'imitazione del risultato. La luce di scena, decodificata in lineare
+Rec.2020, diventa fino a tre **record** con la loro sensibilità spettrale. Ognuno è esposto sulla curva del materiale e
+trasformato in immagine come faceva quel processo: coloranti sottrattivi, filtri additivi, un deposito d'argento o di
+platino sulla carta, un segnale video. Ogni processo è una tabella di numeri e il pannello mostra solo i comandi che
+contano per quello scelto.
 
-| Gruppo | Controlli |
+| Processo | Cosa modella |
 |---|---|
-| **Sviluppo e spazio colore** | **Modalità** (Zonale, Split grade, Unito), **Fase**, **Ingresso (IDT)**, **Destinazione (ODT)** |
-| **Misura** | punti *Ombra* e *Luce* nel viewer, **Misura zone**, **Misura automatica**, *Ombra sulla zona*, *Luci sulla zona* |
-| **Split grade** | *Luci morbide*, *Ombre dure*, *Grado*, **Unione** (Curva o Due strati), **Provino** |
-| **Gamma dinamica** | Local Contrast, Local Highlights, Local Shadows; viste *guadagno* e *base*. Local Highlights comprime le grandi aree luminose e tiene, anzi rinforza, la texture fine: il cielo si scurisce e le nuvole restano dettagliate. L'Highlights del nodo principale invece ammorbidisce la texture delle alte luci, come la pellicola |
-| **Presenza** | Texture, Clarity, Dehaze |
-| **Avanzate** | preservazione del dettaglio, raggio, soglie bordi e rumore, centro di Clarity, **Bianco** di Local Highlights |
-| **Velo** | livello e colore del velo che Dehaze toglie: li decidi tu, non vengono mai stimati fotogramma per fotogramma |
+| **Negativo colore e stampa** | tre strati con contrasto, piede e spalla propri, interimage, grana per strato, alone, stampa positiva con le luci R G B; 14 pellicole, anche dell'Est (Sovcolor, ORWO, Svema, Gevacolor). *Uscita Log* dà la scansione del negativo, nella codifica d'ingresso |
+| **Invertibile**, **Bianco e nero** | diapositiva; B/N con sensibilità blu, orto o pan e filtro di presa compensato |
+| **Technicolor** tre strisce e due colori | tre negativi dal prisma, matrici per imbibizione, chiave K fino al 1944; solo rosso e verde |
+| **Autochrome**, **Dufaycolor** | mosaico additivo di grani di fecola tinti o rete regolare, visto in trasparenza |
+| **Tre lastre**, **Kinemacolor** | pose in sequenza: con *Intervallo* > 0 il nodo legge i fotogrammi successivi e ciò che si muove si separa nei colori (Prokudin-Gorskij) |
+| **Dagherrotipo**, **Collodio**, carta salata e albumina, cianotipia, platino | depositi sensibili al blu e all'UV, specchio e ossidazione, supporto, bordo, viraggio |
+| **Video analogico** | 11 formati, dal broadcast al VHS LP e al Betacam SP: banda di luma e colore, ritardo del colore, peaking, rumore, cambio testine, dropout |
+| **Digitale d'epoca** | 10 camere: clip e knee, nitidezza elettronica, rumore, sottocampionamento, banding |
 
-**Modalità (3.0.0).** Tre metodi della camera oscura, ognuno in tre **fasi**, un nodo per fase in serie (o tutte in un nodo). La **Guida** in fondo al pannello dà per ogni fase lo scopo, tre passi e cosa fare dopo (copia il nodo, incollalo dopo, cambia Fase). I nodi salvati con la 2.4.0 in Standard o Cinematografico si aprono come Zonale e cambiano aspetto.
+Comandi, per gruppi: **Ripresa e sviluppo** (esposizione, bilanciamento della luce, sviluppo spinto o tirato, argento
+trattenuto, preflash, età), **Stampa** (punti della stampatrice, contrasto), **Grana e ottica** (grana, alone, diffusione,
+aberrazione, vignettatura, instabilità del quadro, sfarfallio, polvere, graffi; in multipli di quelli del materiale e del
+**Formato**, da 8 mm a IMAX 15/70), **Separazioni**, **Mosaico**, **Lastra e carta**, **Segnale**, **Colore** (viraggio di
+ombre e luci, saturazione, densità colore).
 
-- **Destinazione (ODT)** dice al nodo quale trasformazione viene dopo, così sa dove arrivano il bianco (zona X) e il nero (zona 0). Non converte mai l'immagine. *Dal Bianco (manuale)* usa Avanzate › Bianco; le altre lo fissano: Rec.709 CST +2,5/−4,5 stop attorno al grigio, Rec.709 DRT (ACES, AgX, DaVinci) +4,5/−6, HDR PQ 1000 nit +6,5/−7, *Scena · DaVinci WG/Intermediate (ODT dopo)* +9/−9.
-- **Zonale** (Ansel Adams): metti *Ombra* e *Luce* su dettagli da conservare, premi **Misura zone**, poi *Ombra sulla zona* (esposizione, default III) e *Luci sulla zona* (sviluppo N+/N−, default VIII). Fasi: *1 · Sviluppo* (curva sul singolo pixel, senza aloni), *2 · Stampa* (Local Shadows, Highlights, Contrast per aree, **Brucia i bordi**), *3 · Presenza* (Texture, Clarity, Dehaze, piene nelle zone II–VIII).
-- **Split grade** (stampa a due esposizioni): **Luci morbide** (esposizione morbida, grado 0) porta le luci sulla zona VIII e **Ombre dure** (dura, grado 5) le ombre sulla III, in stop; **Grado** legge il risultato. **Unione**: *Curva* (una curva sola) o *Due strati* (uno morbido e uno duro, come sulla carta). **Provino** mostra sull'immagine un provino (strisce, matrice morbida × dura, o le due unioni a confronto): sposta *Provino: cella* e premi **Usa la cella**. Fasi: *Esposizioni*, *Locale*, *Presenza*.
-- **Unito** (Split grade + zone automatiche + BTZS): l'estensione del soggetto si confronta con la scala della carta (zone III–VIII della Destinazione); lo sviluppo (N±) la avvicina, la stampa a due esposizioni fa il resto.
-- **Misura automatica**, in ogni modalità, legge tutto il fotogramma e prende il 2° e il 98° percentile come ombra e luce.
-- **Vista: zone** (11 colori) e **Vista: zone in grigi** (11 grigi) mostrano in che zona cade ogni area dopo il nodo, con la legenda 0–X.
+- Va **subito dopo** Log MetaRaw. Decodifica in luce lineare ciò che riceve ed esce in Rec.709 · Gamma 2.4 (la stampa
+  proiettata), o nella codifica d'ingresso con *Uscita Log*.
+- È **spaziale**: Generate LUT lo esclude. I raggi seguono l'altezza del fotogramma: stesso aspetto in proxy. Il rumore è
+  deterministico, quindi CPU e Metal danno la stessa immagine a ogni render.
+- Sostituisce il nodo Detail nello stesso posto: un grade salvato con il Detail si apre come un Creative nuovo.
 
-Non ancora provato in Resolve e Metal non eseguito. La formula del grado, i percentili e i limiti dello sviluppo sono ipotesi di questa implementazione, non verificate col BTZS né su stampe vere. [docs/DETAIL.md](docs/DETAIL.md)
-
-- Mettilo **subito dopo** Log MetaRaw, prima di CST, LUT o DRT. Decodifica in luce lineare quello che riceve e lo riscrive
-  nella stessa codifica, quindi va prima di ogni conversione: lascia Color Space e Gamma del nodo principale su Timeline.
-- È **spaziale**, quindi Generate LUT lo esclude, insieme al resto del suo nodo. Tienilo in un nodo tutto suo.
-- I raggi seguono l'altezza del fotogramma. Il look è lo stesso a piena risoluzione, in proxy e nel viewer. Nessuna
-  statistica per fotogramma, quindi niente flicker.
-- Su Metal un fotogramma UHD richiede circa 6–18 ms, misurati su Apple silicon. Il ripiego su CPU è molto più lento.
-
-**I suoi limiti, misurati.** Con Local Highlights −100 l'alone sul lato scuro di un bordo resta sotto il 3% del gradino.
-Con Local Shadows a ±100, su un bordo netto di uno stop l'alone arriva a circa il 12% del gradino, al 4–6%
-su gradini di 2–3 stop. Se lo vedi, abbassa *Soglia bordi*. Texture non alza la grana sotto la soglia rumore, ma vicino
-ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di un velo vero da togliere.
-[docs/DETAIL.md](docs/DETAIL.md)
+I numeri sono stime dalle ricerche in [docs/CREATIVE.md](docs/CREATIVE.md), non profili di prodotti: vanno tarati su
+riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI macOS.
 
 ---
 
@@ -298,7 +293,7 @@ motion/              Mecena Motion: Stabilize, Motion Blur, mecena-clipdb (Rust 
 tools/               generatori di matrici, icone e grafici
 tests/               test e modelli di riferimento (le clip di prova non sono nel repository)
 packaging/           installer, guide, disinstallatore
-docs/                TONE_MAPPING, DETAIL, DENOISE, FALSE_COLOR, DATA_LEVELS
+docs/                TONE_MAPPING, CREATIVE, DENOISE, FALSE_COLOR, DATA_LEVELS
 ```
 
 ### Linux e Windows (render su CPU, sperimentale)

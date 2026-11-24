@@ -93,11 +93,11 @@ bool DevelopEffect::buildParams(double p_Time, DevelopParams& p, std::string* p_
     if (p.drt) sm_display_encoding(&p.outGamma);
     const bool sceneOut = p.drt && !(p.outSpace >= 1 && p.outSpace <= 5 && p.outGamma >= 2 && p.outGamma <= 6);
     p.convert = (p.drt || p.outSpace != nodeSpace || p.outGamma != nodeGamma) ? 1 : 0;
-    // the Detail node reads the timeline's encoding, not this node's: after a conversion it would misread
+    // the Creative node reads the timeline's encoding, not this node's: after a conversion it would misread
     if (p_NodeInfo && p.convert)
         *p_NodeInfo += std::string(" · Uscita: ") + kSpaceNames[p.outSpace] + " / " + kGammaNames[p.outGamma]
                      + (sceneOut ? " (immagine gia resa: per vederla, un CST verso lo schermo senza tone mapping)" : "")
-                     + " (Log MetaRaw Detail va messo prima di questa conversione)"
+                     + " (Log MetaRaw Creative va messo prima di questa conversione)"
                      + (p.drt && !hostCs.empty() && hostCs.compare(0, 3, "g24") && hostCs.compare(0, 4, "rec1")
                             && hostCs.compare(0, 4, "srgb") && hostCs.compare(0, 3, "g22")
                         ? " · ATTENZIONE: Resolve gestisce il colore (" + hostCs + ") e dopo il nodo applica la sua "
