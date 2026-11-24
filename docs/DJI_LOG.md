@@ -198,8 +198,10 @@ e [DroneDJ 2024](https://dronedj.com/2024/06/27/dji-drone-camera-d-log/) (non ve
 
 ## 6. Il plugin oggi e le lacune
 
-Stato (`slogmetaraw/dji.py`, `math/Transfer.h`, `docs/CAMERAS.md`): curva 13 D-Log M = Freeman, 14 D-Log = white paper;
-gamut 13 D-Gamut, 19 D-Log M stimato; lettore `djmd` con percorsi della Action 5 Pro.
+**Aggiornamento 24/11/2026 (su richiesta di Ivan):** curva 13 e gamut 19 sostituiti dalla tabella a 17 nodi della curva
+Action 6 misurata e dalle primarie della matrice OA6 (§3); i punti 2 e 3 qui sotto restano aperti per le altre camere.
+
+Stato prima dell'aggiornamento: curva 13 D-Log M = Freeman, 14 D-Log = white paper; gamut 13 D-Gamut, 19 D-Log M stimato; lettore `djmd` con percorsi della Action 5 Pro.
 
 1. **D-Log2 / D-Gamut2 assenti.** Né curva né gamut né codice del modo colore. Resolve 21.1 li ha: la priorità è la
    coerenza con la CST di Resolve.
