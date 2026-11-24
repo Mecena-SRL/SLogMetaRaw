@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Creative node's Metal kernels against its CPU pipeline on a synthetic clip, every process.
-// Prints "MAXDIFF x" (code values; a difference negligible in light near black is not counted).
+// Prints "MAXDIFF x" (code values; a difference negligible in light is not counted: near black the display curve
+// turns a last-bit difference of the transcendental functions into a large code step, as in the other Metal tests).
 #import <Metal/Metal.h>
 #include <algorithm>
 #include <cmath>
@@ -87,13 +88,18 @@ int main()
         [sync waitUntilCompleted];
         const float* gpu = (const float*)out.contents;
         double here = 0.0;
+        size_t at = 0;
+        const int outGamma = p.output == CR_OUT_LOG ? 9 : CR_GAMMA24;   // the encoding written
         for (size_t i = 0; i < cpu.size(); ++i) {
             if (i % 4 == 3) { if (gpu[i] != img[0][i]) { printf("ALPHA_MISMATCH %d\n", k); return 1; } continue; }
             if (std::isnan(cpu[i]) && std::isnan(gpu[i])) continue;
+            if (fabsf(sm_decode(cpu[i], outGamma) - sm_decode(gpu[i], outGamma)) <= 2e-6f) continue;
             const double d = fabs((double)cpu[i] - gpu[i]);
-            if (d > here) here = d;
+            if (d > here) { here = d; at = i; }
         }
-        if (here > 2e-4) fprintf(stderr, "case %d (process %d): %.6f\n", k, c.process, here);
+        if (here > 2e-4)
+            fprintf(stderr, "case %d (process %d): %.6f at x %zu y %zu (cpu %.6f gpu %.6f)\n", k, c.process, here,
+                    (at / 4) % W, (at / 4) / W, cpu[at], gpu[at]);
         worst = std::max(worst, here);
     }
     printf("MAXDIFF %.8f\n", worst);
