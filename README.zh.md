@@ -38,7 +38,7 @@ Log MetaRaw 读取并使用这些数据，由三部分组成：
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-3.1.2.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-3.2.0.dmg` 并打开。
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -50,13 +50,13 @@ Log MetaRaw 读取并使用这些数据，由三部分组成：
 | Python 库 | `/Library/Application Support/SLogMetaRaw/lib/slogmetaraw` |
 | 菜单脚本 | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
-运行时，它会在 `~/Library/Application Support/SLogMetaRaw/cache` 中为每个片段保存一个小的 JSON 记录。磁盘映像中还有三页的意大利语和英语指南。
+运行时，它会在 `~/Library/Application Support/SLogMetaRaw/cache` 中为每个片段保存一个小的 JSON 记录。磁盘映像中还有十页的意大利语和英语图解指南。
 
 **干净安装与卸载。** 每次安装都从干净状态开始：安装程序会完整替换之前的插件和库，并移除开发版安装，不会留下旧版本的任何文件。磁盘映像中的 **Disinstalla Log MetaRaw.command**（第一次请右键 › 打开）会移除所有已安装的版本（包括 1.x 和 2.x）以及缓存、设置和日志。它在动手之前会列出全部内容，要求你关闭 Resolve，并询问是否同时删除导出的 CSV。已经写入 Resolve 项目的元数据属于项目本身，会保留。
 
 **系统要求：** macOS 12 或更高版本，Apple 芯片或 Intel，以及 DaVinci Resolve 21 或 20。Resolve 20 不自带 Python：请从 [python.org](https://www.python.org/downloads/) 安装 Python 3（其 Workspace › Scripts 菜单本来也需要）。**仅在 macOS 上的 Resolve Studio 21.1 中测试过；Resolve 20 尚未测试。**
 
-**片段：** `.MP4` 或 `.MXF` 格式的索尼 XAVC。脚本全部可以读取。节点可显影 **S-Log3**（S-Gamut3.Cine 或 S-Gamut3）、**S-Log2** 和 **S-Log**（S-Gamut）。遇到其他配置时节点保持中性并给出提示。
+**片段：** `.MP4` 或 `.MXF` 格式的索尼 XAVC，以及 [docs/CAMERAS.md](docs/CAMERAS.md) 中列出的摄影机（Panasonic V-Log、Apple Log、DJI D-Log 与 D-Log M 等），每种都注明读取的可靠程度。脚本全部可以读取。节点可显影 **S-Log3**（S-Gamut3.Cine 或 S-Gamut3）、**S-Log2**、**S-Log**（S-Gamut）以及这些摄影机的曲线。自 3.2.0 起 DJI D-Log M 使用在 Osmo Action 6 上实测的曲线（[docs/DJI_LOG.md](docs/DJI_LOG.md)）：对其他 DJI 摄影机这是最佳估计，而非校准。遇到未知配置时节点保持中性并给出提示。
 
 ---
 
@@ -99,14 +99,15 @@ Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v3.1.2`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v3.2.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
 | **Punto bianco**（白点） | Resolve 的吸管：在图像上选一个应为中性的点，Temperatura 和 Tint 自动调整，与渲染使用相同的数学 |
 | **Esposizione**（EI） | 曝光指数：EI 加倍 = +1 档 |
 | **False color** | Temperatura 上方、Tint 下方和 Esposizione 下方各一个复选框；见下文 |
-| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Spazio colore**（色彩空间） | 三个子组。**Ingresso**（输入）：进入节点的 Spazio colore 和 Gamma、Rilevato（检测到的）与 *Ripristina da camera*、Data level、Livello 与 *Ripristina da clip*。**Senza metadata**：*Sblocca controlli* 和拍摄参考值。**Uscita**（输出）：**Tone mapping**（Nessuno/CST、ACES 2.0、Luminanza、Filmico、ACES 1.3、OpenDRT）、Compressione 与 Mappatura gamut、Vibrance luci、Spazio colore 和 Gamma（类似 Color Space Transform；*Timeline* 不转换）、LUT 大小与导出 |
+| **Maschera rumore**（噪点遮罩） | **Maschera**：Spenta（关）、Automatica（自动）、Personalizzata（自定义：**Inizio** 起点、**Sfumatura** 过渡）；**Vedi maschera**（查看遮罩）；**Soglia**（阈值）显示当前阈值。把噪点区域写入 alpha，颜色不变；见下文 |
 | **Toni**（色调） | Highlights、**Bianco**（档）、Soft Clip、Saturation（−100…+100）。*Mostra tutti i controlli* 加入 Contrast、Shadows、Whites、Blacks、Vibrance 和 **Zone**（Black、Shadow、Light、Specular 的 Exp、Sat、Range 和 Falloff，Contrast Pivot，*Zone* false color）；节点使用它们时会自动出现 |
 | **Dati di ripresa**（拍摄数据） | 只读：镜头、焦距、光圈、对焦、快门、EI、白平衡、帧率、ND、机内 LUT |
 
@@ -121,6 +122,10 @@ Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 伪色视图会替换画面：渲染前请关闭。[docs/FALSE_COLOR.md](docs/FALSE_COLOR.md)
 
 **数据电平。** 如果 Resolve 用错误的码值范围解码片段，节点会在 Log 曲线之前进行校正。脚本的*修正数据电平*选项可以为整个项目修正。[docs/DATA_LEVELS.md](docs/DATA_LEVELS.md)
+
+**带场景输出的 tone mapping（3.2.0）。** 选用渲染（ACES 2.0、Filmico、OpenDRT…）时，DaVinci WG / DaVinci Intermediate 这类场景 Spazio colore 和 Gamma 不再被替换为 Rec.709 / Gamma 2.4：为 Rec.709 渲染的画面以该编码传递，便于交给其他插件（Dehancer…）；之后用不带 tone mapping 的 CST 转到 Rec.709 / Gamma 2.4 即可完全还原。显示输出（Rec.709、P3、Rec.2020）不变。
+
+**噪点遮罩（3.2.0）。** 节点可以把摄影机在所选 EI 下出现可见噪点的区域写入 **alpha** 通道，让 Neat Video 或其他降噪器只在那里工作。*Automatica* 按摄影机、原生 ISO（含双原生 ISO）和编码设定阈值（ProRes RAW 和 8 位提前半档）；*Personalizzata* 使用你设定的 Inizio 和 Sfumatura。两种模式下，所选 EI 每高出原生 ISO 一档，阈值就向灰点靠近一档。*Vedi maschera* 用遮罩代替画面显示。颜色和输出逐位不变。**尚未在 Resolve 中测试**：alpha 能否到达 Neat Video 节点的 key 输入。若不能，可用一个并行节点，开启 *Vedi maschera* 并加亮度限定器。部分摄影机的常数为实测，其余为估计：[docs/NOISE.md](docs/NOISE.md)（意大利语）。
 
 **没有元数据时。** 外部记录器录制的 ProRes 或无法读取的片段会让节点保持中性。勾选 *Spazio colore › Senza metadata › Sblocca controlli* 并输入拍摄时的 EI、开尔文值和色调：控件随即启用，节点从中性状态开始。
 
@@ -164,7 +169,7 @@ Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/3.1.2`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/3.2.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
@@ -176,7 +181,7 @@ Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 - **从脚本到节点。** 每个片段在缓存中有一条 JSON 记录。节点通过 Resolve 提供的源文件路径找到文件，读取该记录；若记录缺失，则在后台生成。
 - **色彩数学。** 处理链为：解码摄影机曲线，按 EI 比例调整，从普朗克轨迹出发进行 Bradford 白平衡（色调在 CIE 1960 uv 中垂直于轨迹），然后以像素各通道范数计算的单一增益处理影调（色度保持不变），再处理色彩，最后输出。全部在线性光中进行，使用索尼公开的曲线与色域。
 - **一套数学，三种实现。** 数学代码位于 `ofx/SLogMetaRaw/math`，同时编译为 C++ 和 Metal。一个 Python 参考模型对两者进行校验：CPU 与 GPU 的差异在 2·10⁻⁴ 以内，所有路径均禁用 FMA。
-- **测试。** 322 项自动化测试：解析器、参考模型、C++、Metal、一个像 Resolve 一样加载两个节点的微型 OpenFX 宿主，以及面板的 golden 文件。
+- **测试。** 509 项自动化测试：解析器、参考模型、C++、Metal、一个像 Resolve 一样加载两个节点的微型 OpenFX 宿主，以及面板的 golden 文件。
 
 ---
 
@@ -247,8 +252,10 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 ## 致谢与许可
 
 **Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m)。
-与 Claude（Anthropic）共同编写：1.0 于 2026 年 9 月 19 日，1.1.0 于 9 月 22 日，2.0.0 于 2026 年 9 月 23 日。完整历史见 [RELEASE_NOTES.md](RELEASE_NOTES.md)（意大利语）。
+与 Claude（Anthropic）共同编写：1.0 于 2026 年 9 月 19 日，1.1.0 于 9 月 22 日，2.0.0 于 2026 年 9 月 23 日，3.2.0 于 2026 年 11 月 24 日。完整历史见 [RELEASE_NOTES.md](RELEASE_NOTES.md)（意大利语）。
 
 索尼标签参考：SMPTE RDD 18、[ExifTool](https://exiftool.org) 以及 AdrianEddy 的 [telemetry-parser](https://github.com/AdrianEddy/telemetry-parser)（MIT），部分标签表来自后者。
+
+渲染与摄影机数据：ACES 2.0 Output Transform 移植自 OpenColorIO 2.6，ACES 1.3 以其内置变换核对（ACES：Academy of Motion Picture Arts and Sciences）；[OpenDRT](https://github.com/jedypod/open-display-transform) v1.1.0 由 Jed Smith 编写（GPL-3.0），移植自其 DCTL。DJI D-Log M 的曲线和色域来自 [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 中 Osmo Action 6 的实测，以及 DJI 的 Action 6 LUT（仅作参考，不随项目分发）；3.1.x 及之前的曲线是 Thatcher Freeman 的拟合。噪点遮罩的常数来自 ARRI 动态范围白皮书和 CineD 的实验室测试（[docs/NOISE.md](docs/NOISE.md)）。
 
 [GNU GPL v3.0 或更高版本](LICENSE)。OpenFX SDK 版权归 The Open Effects Association 所有（BSD-3）。Sony、XAVC 和 Catalyst 是 Sony Group Corporation 的商标；DaVinci Resolve 是 Blackmagic Design 的商标。本项目为独立项目，与上述两家公司无隶属关系，也未获其认可。

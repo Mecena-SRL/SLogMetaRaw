@@ -71,4 +71,7 @@ struct DevelopParams {
     float gcLim[3];    // its distance limit per channel
     float gcPwr;       // its power
     int gmOn;          // Mappatura gamut: 1 = saturation compression into the output gamut before the rendering
+    int nmOn;          // Maschera rumore (develop/NoiseMask.cpp): 0 off, 1 in the alpha, 2 shown as the picture
+    float nmEdge;      // where it starts: log2(Y / 0.18) after Exposure
+    float nmInvFade;   // 1 / the stops it takes to reach 1
 };

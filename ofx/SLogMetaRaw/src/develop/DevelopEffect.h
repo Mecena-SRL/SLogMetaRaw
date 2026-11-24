@@ -7,6 +7,7 @@
 #include "../../gen/DevelopMath.h"
 #include "ClipMeta.h"
 #include "../common/UpdateBadge.h"
+#include "NoiseMask.h"
 #include "ToneParams.h"
 
 const int kSettingsVersion = 7;   // bump when the meaning of a saved parameter changes
@@ -46,13 +47,14 @@ private:
     void rescaleExposure(double p_Ratio);
     // BuildParams.cpp
     bool buildParams(double p_Time, DevelopParams& p_Params, std::string* p_NodeInfo = nullptr,
-                     std::string* p_LevelInfo = nullptr);
+                     std::string* p_LevelInfo = nullptr, std::string* p_NoiseInfo = nullptr);
 
     bool m_Ready = false;   // false when a parameter is missing: the node then stays transparent
     UpdateBadge m_Badge;
     ToneParamSet m_Tones;
     // what the Camera line and Stato say, composed in one place (composeStatus)
     std::string m_CameraName, m_Detail;
+    NoiseCamera m_NoiseCamera = noiseCamera(-1, "", "");   // set with the metadata, read by every render
     MetaOutcome m_Outcome = MetaOutcome::Missing;
     bool m_NotLog = false, m_FoundWhileManual = false;
     double m_RefEI = 800.0;      // the reference before the user's edit, to rescale Exposure
@@ -88,6 +90,11 @@ private:
     OFX::StringParam* m_NodeInfo = nullptr;
     OFX::ChoiceParam* m_DataLevel = nullptr;
     OFX::StringParam* m_LevelInfo = nullptr;
+    OFX::ChoiceParam* m_NoiseMask = nullptr;
+    OFX::DoubleParam* m_NoiseStart = nullptr;
+    OFX::DoubleParam* m_NoiseFade = nullptr;
+    OFX::BooleanParam* m_NoiseView = nullptr;
+    OFX::StringParam* m_NoiseInfo = nullptr;
     // hidden, saved with the grade
     OFX::StringParam* m_BoundPath = nullptr;
     OFX::StringParam* m_BoundId = nullptr;

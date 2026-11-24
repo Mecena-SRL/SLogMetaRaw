@@ -51,6 +51,11 @@ DevelopEffect::DevelopEffect(OfxImageEffectHandle p_Handle)
         m_NodeInfo = fetchStringParam("nodeInfo");
         m_DataLevel = fetchChoiceParam("dataLevel");
         m_LevelInfo = fetchStringParam("levelInfo");
+        m_NoiseMask = fetchChoiceParam("noiseMask");
+        m_NoiseStart = fetchDoubleParam("noiseStart");
+        m_NoiseFade = fetchDoubleParam("noiseFade");
+        m_NoiseView = fetchBooleanParam("noiseView");
+        m_NoiseInfo = fetchStringParam("noiseInfo");
         m_BoundPath = fetchStringParam("boundPath");
         m_BoundId = fetchStringParam("boundId");
         m_ShotTemp = fetchDoubleParam("shotTemp");
@@ -141,6 +146,10 @@ void DevelopEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const s
         refreshNodeInfo();
     } else if (p_ParamName == "gamutCompress") {
         updateEnabledness();
+    } else if (p_ParamName == "noiseMask" || p_ParamName == "noiseStart" || p_ParamName == "noiseFade"
+               || p_ParamName == "noiseView" || p_ParamName == "exposure") {
+        if (p_ParamName == "noiseMask") updateEnabledness();
+        refreshNodeInfo();
     } else if (p_ParamName == "tonesMore") {
         updateEnabledness();
     } else if (p_ParamName == "decodeUsing") {
@@ -196,7 +205,7 @@ bool DevelopEffect::isIdentity(const OFX::IsIdentityArguments& p_Args, OFX::Clip
     }
     DevelopParams p;
     buildParams(p_Args.time, p);
-    const bool neutral = p.levelFix == 0 && p.fcMode == 0
+    const bool neutral = p.levelFix == 0 && p.fcMode == 0 && p.nmOn == 0
                          && (p.bypass || (p.convert == 0 && std::fabs(p.expo - 1.0f) < 1e-6f
                          && std::fabs(p.ratioL - 1.0f) < 1e-6f && std::fabs(p.ratioM - 1.0f) < 1e-6f
                          && std::fabs(p.ratioS - 1.0f) < 1e-6f

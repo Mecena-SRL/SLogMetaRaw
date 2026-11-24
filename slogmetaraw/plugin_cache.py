@@ -66,6 +66,21 @@ def _join(*parts):
     return ' · '.join(str(p) for p in parts if p not in (None, ''))
 
 
+def noise_codec(m):
+    """How the recording treats shadow noise, for the node's Maschera rumore: raw (ProRes RAW, no in-camera
+    noise reduction), intra (ProRes, XAVC Intra / S-I), long (10-bit Long GOP), long8 (8 bit); '' unknown."""
+    fourcc = m.get('v_fourcc') or ''
+    if fourcc in ('aprn', 'aprh'):
+        return 'raw'
+    if fourcc.startswith('ap'):
+        return 'intra'
+    if 'Intra' in (m.get('format_name') or '') or 'S-I' in (m.get('format_name') or ''):
+        return 'intra'
+    if m.get('v_bit_depth') == 8:
+        return 'long8'
+    return 'long' if m.get('v_codec') or m.get('video_codec') else ''
+
+
 def _record(r):
     """Flat record with the values the plugin shows and uses (strings and numbers only)."""
     m, d = r['meta'], r['display']
@@ -124,6 +139,7 @@ def _record(r):
         'cam_space': camera.SPACE_CODE.get(cam_gamut, -1),
         'cam_gamma': camera.GAMMA_CODE.get(cam_gamma, -1),
         'model': m.get('model') or '',
+        'noise_codec': noise_codec(m),
         'color_space': m.get('color_space') or '',
         # shown by the plugin (read-only fields)
         'camera_name': ('%s %s' % (m.get('manufacturer') or '', model)).strip()

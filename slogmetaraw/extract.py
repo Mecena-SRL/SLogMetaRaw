@@ -234,6 +234,8 @@ def _read_mp4(f, out, interval, max_samples, deadline, lut):
     if video:
         info = codec.parse_sample_entry(video.sample_entry)
         meta.update({'v_' + k: v for k, v in info.items()})
+        if video.codec:
+            meta['v_fourcc'] = video.codec.decode('latin1')
         meta['frames'] = video.sample_count()
         stts = video.tables.get(b'stts')
         if stts and len(stts) >= 16 and video.timescale:

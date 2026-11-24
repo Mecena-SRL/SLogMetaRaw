@@ -14,6 +14,7 @@ bool writeCubeLut(const DevelopParams& params, int size, const std::string& titl
     }
     DevelopParams p = params;
     p.fcMode = 0;   // a LUT of the false colour view would be a lie
+    p.nmOn = 0;     // nor of the noise mask view, and a .cube has no alpha
     FILE* f = openFile(path, "wb");
     if (!f) {
         error = "impossibile scrivere il file";

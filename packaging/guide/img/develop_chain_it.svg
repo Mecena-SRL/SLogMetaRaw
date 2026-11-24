@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="736" height="86" viewBox="0 0 736 86" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="4.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="40.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">decodifica</text>
+<text x="40.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">curva → lineare</text>
+<rect x="86.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="122.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Data level</text>
+<text x="122.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">code value</text>
+<line x1="77.0" y1="31.0" x2="85.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="85.0,31.0 78.6,33.7 78.6,28.3" fill="#6b7280"/>
+<rect x="168.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#e8893a" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="204.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">EI</text>
+<text x="204.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">× 2^stop</text>
+<line x1="159.0" y1="31.0" x2="167.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="167.0,31.0 160.6,33.7 160.6,28.3" fill="#6b7280"/>
+<rect x="250.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#e8893a" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="286.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Bradford</text>
+<text x="286.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">Temp. · Tint</text>
+<line x1="241.0" y1="31.0" x2="249.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="249.0,31.0 242.6,33.7 242.6,28.3" fill="#6b7280"/>
+<rect x="332.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#2e9e5b" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="368.0" y="21.5" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">maschera</text>
+<text x="368.0" y="34.5" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">rumore</text>
+<text x="368.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">→ alpha</text>
+<line x1="323.0" y1="31.0" x2="331.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="331.0,31.0 324.6,33.7 324.6,28.3" fill="#6b7280"/>
+<rect x="414.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#3d7bff" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="450.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Toni · Zone</text>
+<text x="450.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">1 guadagno</text>
+<line x1="405.0" y1="31.0" x2="413.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="413.0,31.0 406.6,33.7 406.6,28.3" fill="#6b7280"/>
+<rect x="496.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#3d7bff" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="532.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">gamut</text>
+<text x="532.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">RGC · mappa</text>
+<line x1="487.0" y1="31.0" x2="495.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="495.0,31.0 488.6,33.7 488.6,28.3" fill="#6b7280"/>
+<rect x="578.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="614.0" y="21.5" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">tone</text>
+<text x="614.0" y="34.5" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">mapping</text>
+<text x="614.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">o CST</text>
+<line x1="569.0" y1="31.0" x2="577.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="577.0,31.0 570.6,33.7 570.6,28.3" fill="#6b7280"/>
+<rect x="660.00" y="6.00" width="72.00" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="696.0" y="28.0" font-size="9.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">codifica</text>
+<text x="696.0" y="49.0" font-size="8" text-anchor="middle" fill="#6b7280" font-weight="normal">uscita</text>
+<line x1="651.0" y1="31.0" x2="659.0" y2="31.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="659.0,31.0 652.6,33.7 652.6,28.3" fill="#6b7280"/>
+<text x="286.0" y="76.0" font-size="9" text-anchor="middle" fill="#6b7280" font-weight="normal" font-style="italic">False color: sostituisce l'immagine dopo il bilanciamento</text>
+</svg>

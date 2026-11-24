@@ -2,296 +2,723 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Log MetaRaw – guide</title>
+<title>Log MetaRaw – illustrated guide</title>
 <style>
-  @page { size: A4; margin: 0; }
-  :root { --ink: #1c1f26; --muted: #5b6270; --warm: #e8893a; --cool: #3d7bff; --line: #e3e5ea; --soft: #f6f7f9; }
+  @page { size: A4; margin: 11mm 13mm 9mm; }
+  :root { --ink: #1c1f26; --muted: #5b6270; --warm: #e8893a; --cool: #3d7bff; --green: #2e9e5b; --line: #e3e5ea;
+          --soft: #f6f7f9; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; color: var(--ink);
-         font-size: 8.7pt; line-height: 1.36; }
-  .page { width: 210mm; height: 297mm; padding: 10mm 12mm 7mm; display: flex; flex-direction: column; overflow: hidden;
-          break-after: page; }
-  .page:last-child { break-after: auto; }
-  header { display: flex; align-items: center; gap: 4.5mm; padding-bottom: 3mm;
-           border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
-  header img { width: 17mm; height: 17mm; }
-  h1 { font-size: 18pt; margin: 0; letter-spacing: -0.3px; }
-  .sub { color: var(--muted); font-size: 8.8pt; margin-top: 0.8mm; }
-  .part { display: flex; align-items: baseline; gap: 2.5mm; padding-bottom: 1.6mm; margin-bottom: 0.6mm;
-          border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
-  .part h1 { font-size: 13pt; }
-  .part .where { color: var(--muted); font-size: 8.4pt; }
-  .half { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; }
-  .half + .half { margin-top: 3.5mm; }
-  h2 { font-size: 9.4pt; margin: 2.4mm 0 0.9mm; display: flex; align-items: center; gap: 1.8mm; }
-  h2 .n { display: inline-flex; width: 4.6mm; height: 4.6mm; border-radius: 50%; background: var(--ink); color: #fff;
-          font-size: 7.2pt; align-items: center; justify-content: center; }
-  p { margin: 0.8mm 0; }
-  ul, ol { margin: 0.6mm 0; padding-left: 4.5mm; }
-  li { margin: 0.45mm 0; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3mm; }
-  .card { background: var(--soft); border: 1px solid var(--line); border-radius: 2.5mm; padding: 2.2mm 2.8mm; font-size: 8.4pt; }
-  .card h3 { margin: 0 0 0.6mm; font-size: 8.8pt; }
-  .card .where { color: var(--muted); font-size: 7.4pt; margin-bottom: 0.8mm; }
-  .premise { background: linear-gradient(90deg, #fff6ef, #eef4ff); border: 1px solid var(--line);
-             border-radius: 2.5mm; padding: 2.4mm 3.2mm; }
-  .premise p { margin: 0.6mm 0; }
-  .chain { font-family: "SF Mono", Menlo, monospace; font-size: 7.8pt; background: var(--soft); border: 1px solid var(--line);
-           border-radius: 2mm; padding: 1.6mm 2.4mm; margin: 1.2mm 0; text-align: center; }
-  code { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: #eceef2; padding: 0.2mm 1mm; border-radius: 1mm; }
-  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
-  td { padding: 0.8mm 1.3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
-  td:first-child { font-weight: 600; white-space: nowrap; width: 35mm; }
-  table.narrow td:first-child { width: 20mm; }
+  html, body { margin: 0; }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 9.6pt;
+         line-height: 1.34; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 184mm; height: 276mm; display: flex; flex-direction: column; overflow: hidden;
+          break-before: page; }
+  .page:first-child { break-before: auto; }
+  .content { flex: 1 1 auto; min-height: 0; }
+  header.top { display: flex; align-items: center; gap: 4mm; padding-bottom: 2.4mm; margin-bottom: 2mm;
+               border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  header.top img { width: 15mm; height: 15mm; }
+  header.top h1 { font-size: 19pt; margin: 0; letter-spacing: -0.3px; }
+  header.top .sub { color: var(--muted); font-size: 9.4pt; margin-top: 0.6mm; }
+  .part { display: flex; align-items: baseline; justify-content: space-between; gap: 3mm; padding-bottom: 1.6mm;
+          margin-bottom: 2mm; border-bottom: 2px solid transparent;
+          border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  .part h1 { font-size: 15pt; margin: 0; letter-spacing: -0.2px; }
+  .part .where { color: var(--muted); font-size: 8.8pt; text-align: right; }
+  h2 { font-size: 11pt; margin: 2.6mm 0 1mm; }
+  h3 { font-size: 9.8pt; margin: 1.8mm 0 0.6mm; }
+  p { margin: 0.9mm 0; }
+  ul, ol { margin: 0.6mm 0; padding-left: 4.6mm; }
+  li { margin: 0.4mm 0; }
+  .cols { display: grid; grid-template-columns: 89mm 89mm; column-gap: 6mm; }
+  .cols > div { min-width: 0; }
+  figure { margin: 1.2mm 0 1.6mm; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 8.3pt; color: var(--muted); line-height: 1.28; margin-top: 0.6mm; }
+  figcaption b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; line-height: 1.28; }
+  th { text-align: left; font-size: 8.2pt; color: var(--muted); font-weight: 600; padding: 0.6mm 1.2mm;
+       border-bottom: 1.2px solid #c9cdd5; }
+  td { padding: 0.65mm 1.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.k { font-weight: 600; white-space: nowrap; }
+  td.pg { color: var(--muted); text-align: right; white-space: nowrap; width: 7mm; }
+  tr.grp td { background: var(--soft); font-weight: 700; font-size: 8.8pt; border-bottom: 1px solid #c9cdd5;
+              padding-top: 0.9mm; }
+  tr.grp td span { font-weight: 400; color: var(--muted); }
+  .sum td { padding: 0.45mm 1.2mm; font-size: 8.7pt; }
+  .sum td.k { width: 47mm; }
   .note { color: var(--muted); }
-  .tip { border-left: 2px solid var(--warm); padding: 0.4mm 0 0.4mm 2.4mm; margin: 1.2mm 0; }
-  .sw { display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 0.6mm; vertical-align: -0.35mm; margin-right: 0.6mm; }
-  footer { margin-top: auto; padding-top: 2.2mm; border-top: 1px solid var(--line); display: flex; justify-content: space-between;
-           color: var(--muted); font-size: 7.6pt; }
+  .new { display: inline-block; font-size: 7pt; font-weight: 700; color: #fff; background: var(--green);
+         border-radius: 1mm; padding: 0 1mm; vertical-align: 0.3mm; margin-left: 0.8mm; }
+  .box { background: var(--soft); border: 1px solid var(--line); border-radius: 2mm; padding: 1.8mm 2.6mm; margin: 1.4mm 0; }
+  .premise { background: linear-gradient(90deg, #fff6ef, #eef4ff); border: 1px solid var(--line); border-radius: 2mm;
+             padding: 1.8mm 2.8mm; margin: 1.2mm 0; }
+  .sci { border-left: 2.5px solid var(--cool); background: #f3f7ff; padding: 1.3mm 2.4mm; margin: 1.4mm 0;
+         font-size: 9pt; }
+  .sci b:first-child { color: #2a5fd6; }
+  .warn { border-left: 2.5px solid var(--warm); background: #fff7f0; padding: 1.3mm 2.4mm; margin: 1.4mm 0; font-size: 9pt; }
+  .formula { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.4pt; background: var(--soft);
+             border: 1px solid var(--line); border-radius: 1.5mm; padding: 1.2mm 2.2mm; margin: 1mm 0; white-space: pre; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.2pt; background: #eceef2; padding: 0.1mm 0.8mm;
+         border-radius: 0.8mm; }
+  .fc td:first-child { white-space: nowrap; }
+  .sw { display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 0.5mm; vertical-align: -0.35mm; margin-right: 0.5mm; }
+  footer { margin-top: auto; padding-top: 1.6mm; border-top: 1px solid var(--line); display: flex;
+           justify-content: space-between; color: var(--muted); font-size: 8pt; }
 </style>
 </head>
 <body>
 
-<!-- ============ 1 · OVERVIEW ============ -->
-<div class="page">
-  <header>
+<!-- ======================= 1 · SUMMARY ======================= -->
+<section class="page"><div class="content">
+  <header class="top">
     <img src="icon.png" alt="">
     <div>
       <h1>Log MetaRaw</h1>
-      <div class="sub">Sony metadata and development controls for DaVinci Resolve 21 · guide · v@VERSION@</div>
+      <div class="sub">Camera metadata and scene-referred development for DaVinci Resolve 20 and 21 · illustrated guide · v@VERSION@</div>
     </div>
   </header>
+  <p>Cameras write into the file how each shot was taken (Kelvin, tint, EI, lens, log profile). <b>Log MetaRaw reads
+  that data and uses it</b>, in linear light, with published curves and gamuts. Three tools, in this order:</p>
+  <figure><img src="img/flow_en.svg" alt=""></figure>
 
-  <h2><span class="n">1</span>What it is, and what it is not</h2>
-  <div class="premise">
-    <p>Sony cameras write the shooting setup into every file: Kelvin, tint, EI, lens, aperture, shutter, colour profile.
-    Resolve uses that data only for FX6 and FX9 MXF files; for MP4 (FX30, FX3, a7 and a6000 series) it ignores it.
-    <b>Log MetaRaw reads it and uses it</b>: exposure and white balance start from the as-shot values and work in linear
-    light, with the curves and gamuts Sony publishes.</p>
-    <p><b>It is not raw.</b> Colour science applied rigorously makes the image behave in a way that reminds you of a raw
-    file: white balance shifts cleanly, exposure moves like a stop of light. But a log MP4 is already compressed, 8 or 10
-    bit, with the camera's noise reduction applied. On heavy work colour science alone is not enough: as soon as you push
-    past the camera's limits, the missing information in the image shows (banding, noise in lifted shadows, clipped
-    highlights that stay clipped). Exposing well at the camera is still what matters most.</p>
-  </div>
-
-  <h2><span class="n">2</span>The three tools</h2>
-  <div class="grid3">
-    <div class="card"><h3>Script</h3><div class="where">Workspace › Scripts › Log MetaRaw</div>
-      Reads the metadata of <b>every clip in the project</b> and writes it into the Media Pool: Metadata panel, columns,
-      keywords for smart bins, data burn-in, CSV. Fixes the clips' Data Level. <i>Page 2.</i></div>
-    <div class="card"><h3>Log MetaRaw node</h3><div class="where">Color › OpenFX · first node</div>
-      Develops one clip from its as-shot values: white balance, exposure, colour space, <b>tones by zones</b> and false
-      colour. Pointwise: Generate LUT exports it. <i>Pages 2-3.</i></div>
-    <div class="card"><h3>Log MetaRaw Detail node</h3><div class="where">Color › OpenFX · right after</div>
-      The creative node: highlight and shadow recovery <b>by areas</b>, Texture, Clarity, Dehaze. Spatial: Generate LUT
-      leaves it out. <i>Page 3.</i></div>
-  </div>
-
-  <h2><span class="n">3</span>Install</h2>
-  <div class="grid">
-    <ol>
-      <li>Double-click <b>Installa Log MetaRaw.pkg</b>. It is not signed with an Apple certificate: the first time,
-          right-click › <b>Open</b>. It asks for the Mac password (the plugin goes in a system folder).</li>
-      <li>The installer deletes Resolve's plugin cache, so the new panel and the Detail node show up.</li>
-      <li><b>Restart DaVinci Resolve.</b> Every install starts clean. To remove every version:
-          <b>Disinstalla Log MetaRaw.command</b> (right-click › Open; your CSV exports stay unless you ask).</li>
-    </ol>
-    <table class="narrow">
-      <tr><td>Nodes</td><td><code>/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle</code></td></tr>
-      <tr><td>Script</td><td>Resolve's Fusion › Scripts › Utility</td></tr>
-      <tr><td>Library</td><td><code>/Library/Application Support/SLogMetaRaw</code></td></tr>
-      <tr><td>Needs</td><td>macOS 12+, Apple silicon or Intel, DaVinci Resolve 21</td></tr>
-      <tr><td>Clips</td><td>Sony XAVC <code>.MP4</code> / <code>.MXF</code>; the nodes develop S-Log3, S-Log2, S-Log</td></tr>
-    </table>
-  </div>
-
-  <h2><span class="n">4</span>Workflow</h2>
-  <ol>
-    <li><b>Import</b> the footage and open the <b>script</b>: <b>1 · Read metadata</b>, then <b>2 · Write to Resolve</b>.</li>
-    <li>On the <b>Color</b> page put <b>Log MetaRaw</b> first: it takes the clip's EI, Kelvin and tint, and at those
-        values it changes nothing. Copied onto another clip, it resets itself with that clip's data.</li>
-    <li>Correct <b>white balance and exposure</b> in the node, with the false colour views. Then the <b>Toni</b> (tones).</li>
-    <li>For local recovery, Texture, Clarity or Dehaze, add <b>Log MetaRaw Detail</b> right after.</li>
-    <li>Then the rest of the grade and, <b>last</b>, the output CST, LUT or DRT. Until there, stay in log or DWG (page 3).</li>
-  </ol>
-  <div class="chain">Log MetaRaw &nbsp;→&nbsp; Log MetaRaw Detail &nbsp;→&nbsp; rest of the grade &nbsp;→&nbsp; output CST / LUT / DRT</div>
-
-  <h2><span class="n">5</span>Good to know</h2>
-  <ul>
-    <li>Original files are <b>never modified</b>: no transcoding, no rewrapping.</li>
-    <li>With non-log profiles (Cine, HLG, S-Cinetone) the nodes stay neutral and say so. For ProRes from external recorders
-        there is <i>Spazio colore › Senza metadata › Sblocca controlli</i> (unlock without metadata).</li>
-    <li>False colour views <b>replace the image</b>: turn them off before you render.</li>
-    <li>The version sits at the top of the nodes: once a day it asks GitHub whether there is a newer one (the request carries
-        only the version number) and turns <b>🟢</b> if so; a click opens the download in the browser. To turn it off,
-        create the file <code>~/Library/Application Support/SLogMetaRaw/no_update_check</code>.</li>
-    <li><b>Tested only on DaVinci Resolve Studio 21.1 on macOS.</b> An independent hobby project, distributed as is, with no
-        warranty and no liability for professional use. Open code, GNU GPL v3 licence.</li>
-  </ul>
-
-  <footer>
-    <span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · github.com/ivan-94m · @ivan_94m</span>
-    <span>1 / 3 · Not affiliated with Sony or Blackmagic Design</span>
-  </footer>
+  <table class="sum">
+    <tr><th>Function (label in the program)</th><th>What it does</th><th class="pg">page</th></tr>
+    <tr class="grp"><td colspan="3">Script <span>· Workspace › Scripts › Log MetaRaw · follows Resolve's language</span></td></tr>
+    <tr><td class="k">Source</td><td>Whole Media Pool, or the selected clips</td><td class="pg">3</td></tr>
+    <tr><td class="k">1 · Read metadata</td><td>One row per clip: camera, lens, EI, WB, profile, data level, status</td><td class="pg">3</td></tr>
+    <tr><td class="k">2 · Write to Resolve</td><td>Metadata, columns, keywords, Camera Notes, data burn in the Media Pool</td><td class="pg">3</td></tr>
+    <tr><td class="k">Export CSV</td><td>Fields Resolve lacks (EI, tint, focus…), to import as metadata</td><td class="pg">3</td></tr>
+    <tr><td class="k">Copy to clips without metadata</td><td>Copies the values of read clips onto an external recorder's ProRes</td><td class="pg">3</td></tr>
+    <tr><td class="k">Options</td><td>Camera tag · Overwrite metadata · Correct the Data Level · Also set Input Color Space</td><td class="pg">3</td></tr>
+    <tr class="grp"><td colspan="3">Log MetaRaw node (Develop) <span>· Color › OpenFX, first node · pointwise, exportable as a LUT · Italian labels</span></td></tr>
+    <tr><td class="k">Version · Camera · Rileggi metadata</td><td>Update check; camera read; <i>re-read</i> resets to the shot values</td><td class="pg">4</td></tr>
+    <tr><td class="k">Ripresa › Decodifica</td><td>Shot › Decode: <i>Clip</i> (free) or <i>Camera metadata</i> (locked to shot values)</td><td class="pg">4</td></tr>
+    <tr><td class="k">Bilanciamento · Temperatura · Tint</td><td>Balance: As shot or preset; Bradford adaptation in linear light</td><td class="pg">4</td></tr>
+    <tr><td class="k">Punto bianco</td><td>White point eyedropper: the picked point turns neutral</td><td class="pg">4</td></tr>
+    <tr><td class="k">Esposizione › EI</td><td>Exposure: double the shot EI = +1 stop, a linear gain before any curve</td><td class="pg">4</td></tr>
+    <tr><td class="k">False color (×3)</td><td>Exposure (ARRI bands), temperature and tint views (as in CineMatch)</td><td class="pg">5</td></tr>
+    <tr><td class="k">Spazio colore › Ingresso</td><td>Colour space › Input: space, gamma, detected, data level, reset</td><td class="pg">5</td></tr>
+    <tr><td class="k">Spazio colore › Senza metadata</td><td>Without metadata: Sblocca controlli, type shot EI, Kelvin, tint</td><td class="pg">5</td></tr>
+    <tr><td class="k">Uscita › Tone mapping</td><td>Output: Nessuno (CST), ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT</td><td class="pg">7</td></tr>
+    <tr><td class="k">Compressione · Mappatura gamut</td><td>Gamut compression (ACES RGC) and gamut mapping (saturation)</td><td class="pg">7</td></tr>
+    <tr><td class="k">Vibrance luci</td><td>Highlight vibrance: colour back into bright, pale highlights after rendering</td><td class="pg">7</td></tr>
+    <tr><td class="k">Uscita › Spazio colore · Gamma</td><td>Like a CST; scene encodings too: DaVinci WG / Intermediate <span class="new">3.2</span></td><td class="pg">7</td></tr>
+    <tr><td class="k">Dimensione LUT · Esporta LUT (.cube)</td><td>LUT size 17/33/65 and export of the whole node</td><td class="pg">5</td></tr>
+    <tr><td class="k">Maschera rumore <span class="new">3.2</span></td><td>Noise mask: Maschera, Inizio, Sfumatura, Vedi maschera, Soglia → alpha</td><td class="pg">8</td></tr>
+    <tr><td class="k">Toni</td><td>Tones: Highlights (film shoulder), Bianco (white, stops), Soft Clip, Saturation</td><td class="pg">6</td></tr>
+    <tr><td class="k">Mostra tutti i controlli</td><td>Show all: Contrast, Shadows, Whites, Blacks, Vibrance, Azzera toni</td><td class="pg">6</td></tr>
+    <tr><td class="k">Zone</td><td>Zones Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; zone view</td><td class="pg">6</td></tr>
+    <tr><td class="k">Dati di ripresa</td><td>Shooting data: lens, focal length, iris, focus, shutter, ISO/EI, WB, fps, ND</td><td class="pg">4</td></tr>
+    <tr class="grp"><td colspan="3">Log MetaRaw Detail node <span>· right after · spatial, left out of Generate LUT</span></td></tr>
+    <tr><td class="k">Modalità · Fase</td><td>Mode: Zonale, Split grade, Unito; phase: three phases, one node each</td><td class="pg">9</td></tr>
+    <tr><td class="k">Ingresso (IDT) · Destinazione (ODT)</td><td>Input encoding; where black (zone 0) and white (zone X) land</td><td class="pg">9</td></tr>
+    <tr><td class="k">Misura</td><td>Measure: Ombra, Luce, Misura zone, Misura automatica, zone placement</td><td class="pg">9</td></tr>
+    <tr><td class="k">Split grade · Provino</td><td>Luci morbide, Ombre dure, Grado, Unione; test strip and Usa la cella</td><td class="pg">9</td></tr>
+    <tr><td class="k">Gamma dinamica</td><td>Dynamic range: Local Contrast, Highlights, Shadows, Brucia i bordi; views</td><td class="pg">9</td></tr>
+    <tr><td class="k">Presenza · Avanzate · Velo</td><td>Texture, Clarity, Dehaze; radius, thresholds, Bianco; haze level and colour</td><td class="pg">9</td></tr>
+    <tr><td class="k">Guida</td><td>Guide: for the chosen phase, purpose, three steps, next step</td><td class="pg">9</td></tr>
+  </table>
+  <div class="premise"><b>It is not raw.</b> A log MP4 is already compressed, 8 or 10 bit, with the camera's noise
+  reduction baked in: in linear light it behaves in a way that reminds you of raw, but what the camera did not record does
+  not come back. Exposing well matters most. Original files are never modified.</div>
 </div>
+<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 10 · Summary of every function</span></footer>
+</section>
 
-<!-- ============ 2 · SCRIPT + NODE (1) ============ -->
-<div class="page">
-  <div class="half">
-    <div class="part"><h1>The script</h1><span class="where">Workspace › Scripts › Log MetaRaw</span></div>
-    <p>One row of buttons, one row of options, the clip list and, below it, everything read from the selected clip, grouped
-    as in Catalyst Browse. The script reads the files; it never modifies them. Its window follows Resolve's language; the nodes' panels are in
-    Italian, so their labels appear here with a translation.</p>
-    <table>
-      <tr><td>Clips</td><td><i>Whole Media Pool</i>, or <i>Selected clips in the Media Pool</i>.</td></tr>
-      <tr><td>1 · Read metadata</td><td>One row per clip: camera, lens, aperture, shutter, EI, WB, colour space, data level.
-        The <b>Status</b> column says <i>read</i>, what changed during the take (<i>changed: aperture, focus</i>) or why a clip
-        was skipped. Click a row to see everything.</td></tr>
-      <tr><td>2 · Write to Resolve</td><td>Fills the Media Pool fields: Metadata, columns, keywords, <i>Camera Notes</i>,
-        data burn-in. Fixes values Resolve reads wrong from MXF (e.g. <i>Camera Aperture</i> F53343 on the FX6).</td></tr>
-      <tr><td>Export CSV</td><td>The values Resolve has no field for (EI, tint, WB mode, focus distance, capture gamma…).
-        In Resolve: <i>File › Import › Metadata</i>, with <i>create custom fields</i> on.</td></tr>
-      <tr><td>Camera tag</td><td><span class="note">off</span> · adds camera, gamma and primaries to the keywords.</td></tr>
-      <tr><td>Overwrite metadata</td><td><span class="note">on</span> · replaces values Resolve already wrote; off, it fills
-        only the empty fields.</td></tr>
-      <tr><td>Correct the Data Level</td><td><span class="note">on</span> · sets each clip's <i>Data Level</i> to Full (log) or
-        Video (709, Cine, HLG). This is the real fix: it holds for the whole project, scopes and exports included.</td></tr>
-      <tr><td>Also set Input Color Space</td><td><span class="note">off</span> · for colour-managed projects. Careful: a script
-        cannot set it back to <i>Project</i>, only you can, by hand.</td></tr>
-      <tr><td>Version</td><td>Bottom right: click it to check GitHub; it turns green when there is a newer release.</td></tr>
-    </table>
-    <div class="tip">It reads at most 24 samples of the metadata track per clip, within one second: nothing is decoded,
-    and a multi-GB file costs about 100 KB of reading. A disk that does not answer is skipped once, with a message (10 s
-    for the first clip of a volume, 6 s for the others). Running it right after import means the nodes find the data
-    ready.</div>
+<!-- ======================= 2 · INSTALL ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Install and quick start</h1><span class="where">macOS · Linux and Windows experimental</span></div>
+  <div class="cols">
+    <div>
+      <h2>macOS</h2>
+      <ol>
+        <li>Open <b>SLogMetaRaw-@VERSION@.dmg</b> and double-click <b>Installa Log MetaRaw.pkg</b>. It is not signed with an
+            Apple certificate: the first time, right-click › <b>Open</b>. It asks for the password (system folder).</li>
+        <li>The installer replaces the previous version entirely and deletes Resolve's plugin cache
+            (<code>OFXPluginCacheV2.xml</code>): without that, Resolve would show the old panel and no Detail node.</li>
+        <li><b>Restart DaVinci Resolve.</b></li>
+      </ol>
+      <table>
+        <tr><td class="k">Nodes</td><td><code>/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle</code></td></tr>
+        <tr><td class="k">Library</td><td><code>/Library/Application Support/SLogMetaRaw/lib</code></td></tr>
+        <tr><td class="k">Script</td><td>Fusion › Scripts › Utility › <code>Log MetaRaw.py</code></td></tr>
+        <tr><td class="k">Requirements</td><td>macOS 12+, Apple silicon or Intel, Resolve 21 or 20 (20 needs Python 3 from python.org)</td></tr>
+      </table>
+      <p><b>Disinstalla Log MetaRaw.command</b>, on the disk image, removes every installed version (1.x and 2.x too),
+      cache, settings and logs: it lists everything first, asks you to close Resolve and asks before deleting exported CSVs.
+      Metadata already written into projects stays.</p>
+
+      <h2>Linux and Windows</h2>
+      <p>CMake builds that render on the CPU (no Metal, CUDA or OpenCL), <b>not tried inside Resolve</b>. Linux:
+      <code>.deb</code>, <code>.rpm</code>, <code>.run</code>, <code>.tar.gz</code> (glibc 2.28: Rocky/RHEL 8+, Ubuntu
+      20.04+, Debian 10+); the plugin goes to <code>/usr/OFX/Plugins</code>. Windows: zip or setup <code>.exe</code>. State
+      lives in <code>~/.local/share/SLogMetaRaw</code> or <code>%APPDATA%\SLogMetaRaw</code>.</p>
+
+      <h2>Updates and privacy</h2>
+      <p>The version sits at the top of the nodes: at most once a day they ask GitHub for the latest release; the request
+      carries only the version number. If there is a newer one it shows <b>🟢</b> and a click opens the download in the
+      browser: nothing installs itself. The script checks only when you click its version. To turn the check off, create the
+      empty file <code>~/Library/Application Support/SLogMetaRaw/no_update_check</code>.</p>
+    </div>
+    <div>
+      <h2>Quick start</h2>
+      <ol>
+        <li><b>Import</b> the footage. <b>Workspace › Scripts › Log MetaRaw</b>: <b>1 · Read metadata</b>, then
+            <b>2 · Write to Resolve</b>. Leave <i>Correct the Data Level</i> on.</li>
+        <li>On the <b>Color</b> page put <b>Log MetaRaw</b> as the <b>first node</b>. It picks up the clip's EI, Kelvin and
+            tint, and at those values it <b>changes nothing</b>. Copied to another clip it resets to that clip's data (EI
+            stays relative, a Custom balance stays as it is).</li>
+        <li>Fix <b>white balance</b> and <b>exposure</b> with the help of the <b>false colour</b> views; turn them off
+            before rendering.</li>
+        <li>Shape the <b>Toni</b> (tones). For local recovery, Texture, Clarity or Dehaze add <b>Log MetaRaw Detail</b>
+            right after.</li>
+        <li>Then the grade and, <b>last</b>, the output CST, LUT or DRT, or the node's own tone mapping.</li>
+      </ol>
+      <div class="box"><b>Two recommended chains</b><br>
+        <b>In DaVinci Wide Gamut:</b> Log MetaRaw with output <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail with
+        Ingresso <i>DaVinci WG/Intermediate</i> → grade → CST DaVinci WG → Rec.709 · Gamma 2.4 with tone mapping. With tone
+        mapping after, set <b>Bianco</b> of both nodes to 4-5 stops.<br>
+        <b>All in log:</b> Log MetaRaw on <i>Timeline</i> → Detail on <i>Automatico</i> → CST S-Gamut3.Cine/S-Log3 →
+        Rec.709 or DWG.</div>
+      <h2>Good to know</h2>
+      <ul>
+        <li>With Sony non-log profiles (Cine, S-Cinetone) the node develops the clip as video; with a file that has neither
+            camera nor profile it stays neutral and says so: use <i>Spazio colore › Senza metadata</i>.</li>
+        <li>Opening a project reads no file. Opening the panel waits at most half a second; a slow disk finishes in the
+            background, within 15 s. <i>Rileggi metadata</i> answers within about 2 s.</li>
+        <li>Each clip has a small JSON record in the cache
+            (<code>~/Library/Application Support/SLogMetaRaw/cache</code>): the script creates it, the node reads it and
+            creates it in the background when missing.</li>
+        <li>Language: the script follows Resolve (English, Italian, Spanish, Portuguese, Chinese); the node panels are in
+            Italian, glossed in this guide.</li>
+        <li><b>Tested only on DaVinci Resolve Studio 21.1 on macOS.</b> Resolve 20, Linux and Windows not tested.</li>
+      </ul>
+    </div>
   </div>
-
-  <div class="half">
-    <div class="part"><h1>The Log MetaRaw node</h1><span class="where">Color › OpenFX · first node, before CST and LUT</span></div>
-    <p>It shows the camera at the top and sets Temperatura, Tint and Esposizione to the as-shot values: there it <b>changes
-    nothing</b>. It is a starting point, not a look. Settings are saved per clip; <b>Rileggi metadata</b> (re-read) resets
-    everything to the camera values and writes that clip's metadata into the Media Pool.</p>
-    <table>
-      <tr><td>Ripresa · Decodifica</td><td>The shot group. <i>Clip</i> lets you change the controls; <i>Camera
-        metadata</i> locks them to the as-shot values.</td></tr>
-      <tr><td>Bilanciamento</td><td><i>As shot</i> or presets (Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash); moving
-        a slider switches it to <i>Custom</i>.</td></tr>
-      <tr><td>Temperatura · Tint</td><td>Bradford chromatic adaptation in linear light, from the white the camera recorded.
-        Higher Temperatura warms; positive Tint goes towards magenta.</td></tr>
-      <tr><td>Punto bianco</td><td>Resolve's eyedropper: pick a point that should be neutral and Temperatura and Tint set
-        themselves, with the same maths as the render.</td></tr>
-      <tr><td>Esposizione (EI)</td><td>Double the EI is exactly +1 stop, in linear light, before any curve.</td></tr>
-      <tr><td>Spazio colore</td><td><b>Ingresso</b>: input Spazio colore and Gamma (Automatico asks Resolve), Rilevato,
-        Data level and Livello, with <i>Ripristina</i> buttons. <b>Senza metadata</b>: see page 3. <b>Uscita</b>: output
-        Spazio colore and Gamma, like a Color Space Transform; <i>Timeline</i> does not convert. To grade in DWG:
-        <i>DaVinci WG</i> · <i>DaVinci Intermediate</i>. Also LUT size and <i>Esporta LUT (.cube)</i>.</td></tr>
-    </table>
-    <h2>False colour: one view per control, above its slider</h2>
-    <table>
-      <tr><td>Exposure</td><td>Bands in stops around 18% grey, ARRI style:
-        <span class="sw" style="background:#21d133"></span>middle grey ·
-        <span class="sw" style="background:#ff8fb8"></span>one stop over (skin) ·
-        <span class="sw" style="background:#ffe01f"></span>near clip ·
-        <span class="sw" style="background:#f5291a"></span>clip ·
-        <span class="sw" style="background:#1a47e0"></span>deep shadow ·
-        <span class="sw" style="background:#6b1f9e"></span>black. The rest in grey.</td></tr>
-      <tr><td>Temperature</td><td>As in CineMatch: the picture turns grey,
-        <span class="sw" style="background:#3d82d6"></span>blue = cool cast, raise Temperatura;
-        <span class="sw" style="background:#e3882e"></span>orange = warm, lower it.
-        Near-neutral casts are boosted up to 8×.</td></tr>
-      <tr><td>Tint</td><td><span class="sw" style="background:#5cc23d"></span>green = raise Tint;
-        <span class="sw" style="background:#c43dba"></span>magenta = lower it. Each view reacts only to its own slider.</td></tr>
-    </table>
-    <div class="tip">Pick a surface that should be neutral and move the slider <b>until it stays grey</b>; alternate Temperatura
-    and Tint a couple of times. For exposure: middle grey in green, skin in pink. The view replaces the image: turn it off
-    before you render.</div>
-  </div>
-
-  <footer>
-    <span>Log MetaRaw @VERSION@ · the script and the main node</span>
-    <span>2 / 3</span>
-  </footer>
 </div>
+<footer><span>Log MetaRaw @VERSION@ · install</span><span>2 / 10</span></footer>
+</section>
 
-<!-- ============ 3 · NODE (2) + DETAIL ============ -->
-<div class="page">
-  <div class="half">
-    <div class="part"><h1>The Log MetaRaw node</h1><span class="where">Toni (tones), Zone, Senza metadata</span></div>
-    <p><b>Tones</b> shows Highlights, Bianco, Soft Clip and Saturation; <i>Mostra tutti i controlli</i> adds the rest
-    and the Zone (they also appear by themselves when the node uses them). Highlights is a <b>film shoulder</b>; the others are <b>exposures for a zone</b>, in stops from 18% grey,
-    where the image moves as with an exposure and texture is kept. No combination can solarise.</p>
-    <table>
-      <tr><td>Contrast</td><td>Turns around the Pivot; at +100 the slope doubles, at −100 it halves, with bounded ends.</td></tr>
-      <tr><td>Highlights</td><td>Negative: compresses the highlights with a slope that falls towards the top, like film; at
-        −100 the recorded maximum lands on <b>Bianco</b>, with no grey veil and no clip. Grey and below stay put. Positive:
-        more snap.</td></tr>
-      <tr><td>Bianco (stop)</td><td>Where that maximum lands, and Soft Clip's roof. 2.5 = Rec.709 white through a CST without
-        tone mapping; with a DRT (ACES, AgX, DaVinci) raise it to 4-5.</td></tr>
-      <tr><td>Shadows · Whites</td><td>Shadows: the tones below −1 stop, 100 = 2 stops; lifts black too, hold it with Blacks.
-        Whites: from +3.5 stops to clip, 100 = 1 stop.</td></tr>
-      <tr><td>Blacks</td><td>A linear veil: moves black (−3 / +1 stop) without moving grey.</td></tr>
-      <tr><td>Vibrance · Saturation</td><td>Around luminance, the same in every colour space. Vibrance protects skin
-        tones.</td></tr>
-      <tr><td>Zone <span class="note">(closed)</span></td><td>Black, Shadow, Light, Specular: Exp (stops), Sat, Range (edge),
-        Falloff (transition). <b>Soft Clip</b> folds the highlights under a roof: containment, not recovery.
-        <b>Zone false colour</b> shows which zone moves each pixel.</td></tr>
-      <tr><td>Senza metadata</td><td><b>Sblocca controlli</b>: for ProRes or unreadable clips, type the shooting EI, Kelvin
-        and tint and the controls come alive.</td></tr>
-    </table>
-    <div class="tip"><b>Recipes</b> · burning highlights: Highlights −50…−100 (with a DRT after, Bianco at 4-5) ·
-    backlight: Shadows +30…+60 and Blacks −20…−40 · film look: Contrast +20…+30, Highlights −60 · noisy shadows: Shadow Sat
-    −30…−50.
-    <br><b>The limit, plainly</b>: a pointwise node that compresses a band also compresses its texture. Recovery that keeps
-    it lives in the Detail node. Generate LUT exports this node: 65 points is best.</div>
+<!-- ======================= 3 · SCRIPT ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>The script</h1><span class="where">Workspace › Scripts › Log MetaRaw · reads files, never modifies them</span></div>
+  <p>One row of buttons, one of options, the clip list and, below it, everything read from the selected clip, grouped as
+  in Catalyst Browse.</p>
+  <table>
+    <tr><th style="width:46mm">Command</th><th>What it does</th></tr>
+    <tr><td class="k">Source</td><td><i>Whole Media Pool</i> or <i>Selected clips in the Media Pool</i>.</td></tr>
+    <tr><td class="k">1 · Read metadata</td><td>One row per clip: camera, lens, aperture, shutter, EI, WB, colour space, data
+      level. The <b>Status</b> column says <i>read</i>, what changed during the take (aperture, focus…) or why a clip was
+      skipped. Click a row: everything that was read.</td></tr>
+    <tr><td class="k">2 · Write to Resolve</td><td>Fills the Media Pool fields: Metadata panel, columns, keywords for smart
+      bins, <i>Camera Notes</i>, data burn-in. Fixes values Resolve reads wrong from MXF (e.g. <i>Camera Aperture</i>
+      <code>F53343</code> on the FX6).</td></tr>
+    <tr><td class="k">Export CSV</td><td>Values with no field in Resolve (EI, tint, WB mode, focus distance, capture gamma…),
+      in Resolve's metadata CSV format: <i>File › Import › Metadata</i>, with custom fields.</td></tr>
+    <tr><td class="k">Copy to clips without metadata</td><td>For an external recorder's ProRes: copies the values of the clips
+      just read onto the recorder's clips, in name order (the first is the anchor). One-off, on request only.</td></tr>
+    <tr><td class="k">Camera tag <span class="note">off</span></td><td>Adds camera, gamma and primaries to the keywords.</td></tr>
+    <tr><td class="k">Overwrite metadata <span class="note">on</span></td><td>Replaces values Resolve already filled in; off, it
+      fills only empty fields.</td></tr>
+    <tr><td class="k">Correct the Data Level <span class="note">on</span></td><td>Sets each clip's <i>Data Level</i> to Full or
+      Video as its capture gamma needs. This is the real fix: it applies to the whole project, scopes and export.</td></tr>
+    <tr><td class="k">Also set Input Color Space <span class="note">off</span></td><td>For colour-managed projects. A script
+      cannot put it back to <i>Project</i>: only you can, by hand.</td></tr>
+    <tr><td class="k">Version</td><td>Bottom right: click it to check GitHub.</td></tr>
+  </table>
+
+  <div class="cols" style="margin-top:2mm">
+    <div>
+      <h2>What it reads, and what it costs</h2>
+      <p>Pure-Python parsers with no dependencies: per-frame SMPTE RDD 18 acquisition metadata (MP4 <code>rtmd</code> track,
+      MXF ST 436 packets), Sony NonRealTimeMeta XML, the H.264/HEVC SPS and the MXF descriptor; for other makes, QuickTime
+      keys, DJI's <code>djmd</code> track, the profile name or the codec's colour description. Script and node say which
+      reading was used: <b>calibrated</b> (<i>tarata</i>), <b>compatible</b> or <b>estimated</b> (page 10).</p>
+      <p>It reads at most <b>24 samples</b> of the metadata track per clip, within one second, decoding nothing: a
+      multi-gigabyte file costs about <b>100 KB</b> of reading. A volume that stops answering is skipped once, with a
+      message, instead of blocking the list.</p>
+      <p>Formats: Sony XAVC <code>.MP4</code>/<code>.MXF</code>; <code>.MOV</code>, <code>.MPG</code>,
+      <code>.MTS</code>/<code>.M2TS</code> from other cameras.</p>
+    </div>
+    <div>
+      <h2>Why the Data Level matters</h2>
+      <p>A Sony log curve is written on the <b>full</b> scale (code values read unscaled): S-Log3 black sits at code
+      <b>95</b>/1023 (about 9% on the waveform), 18% grey at <b>420</b>, 90% white at <b>598</b>. Video curves (Rec.709,
+      Cine) use the <b>video</b> scale, black 64 and white 940.</p>
+      <div class="formula">video → full:  x' = x · 876/1023 + 64/1023
+full → video:  x' = x · 1023/876 − 64/876</div>
+      <table>
+        <tr><th>Mistake</th><th>What you see</th></tr>
+        <tr><td>log read as Video</td><td>64–940 stretched to 0–1023: black below zero, crushed shadows</td></tr>
+        <tr><td>video read as Full</td><td>black stuck at 6.3%: lifted blacks, washed-out picture</td></tr>
+      </table>
+      <figure><img src="img/data_levels_en.svg" alt="">
+        <figcaption><b>The same S-Log3 codes</b> on the right scale and stretched as video: black drops below the curve's
+        black, the top ends in super-white.</figcaption></figure>
+      <p class="note">An S-Log black at 9% is correct: log is flat by design. If Resolve picks the wrong scale the node
+      corrects it before the curve (Spazio colore › Ingresso › Data level); the script fixes it for the whole project.
+      Details: <code>docs/DATA_LEVELS.md</code>.</p>
+    </div>
   </div>
-
-  <div class="half" style="flex-grow: 1.25">
-    <div class="part"><h1>The Log MetaRaw Detail node</h1><span class="where">Color › OpenFX · after Log MetaRaw, before the output CST</span></div>
-    <p>The creative node: three darkroom methods, each in three <b>phases</b> (<i>Fase</i>), one node per phase in series or
-    all in one. The <b>Guida</b> at the bottom of the panel gives each phase's purpose, three steps and the next step.
-    <b>Destinazione (ODT)</b> declares the transform after the node (it never converts): it sets where zone 0 (black) and
-    zone X (white) land. <b>Misura automatica</b> reads the frame (2nd/98th percentile) in every mode.
-    Input: scene log only (S-Log3, S-Log2, DaVinci WG/Intermediate, ACEScct), written back in the same encoding.</p>
-    <table style="margin-bottom: 1.8mm">
-      <tr><td>Zonale</td><td>Ansel Adams. Put <i>Ombra</i> and <i>Luce</i> on the viewer, <b>Misura zone</b>, then <i>Ombra sulla
-        zona</i> (exposure, III) and <i>Luci sulla zona</i> (development N±, VIII). Phases: Sviluppo (per-pixel curve, no
-        halos) · Stampa (local tones, <b>Brucia i bordi</b>) · Presenza.</td></tr>
-      <tr><td>Split grade</td><td>Two-exposure print: <b>Luci morbide</b> (grade 0) puts the highlights on VIII, <b>Ombre
-        dure</b> (grade 5) the shadows on III; <b>Unione</b> Curva or Due strati. <b>Provino</b>: a test strip on the image;
-        pick a cell and <b>Usa la cella</b>.</td></tr>
-      <tr><td>Unito</td><td>Split grade + automatic zones + BTZS: development (N±) brings the subject towards the paper scale
-        (zones III–VIII), the print does the rest.</td></tr>
-    </table>
-    <table style="margin-bottom: 1.8mm">
-      <tr><td>Recommended</td><td>Main node on <i>DaVinci WG</i> · <i>DaVinci Intermediate</i> → Detail with <i>Ingresso
-        (IDT)</i> on <i>DaVinci WG/Intermediate</i> → grade in DWG →
-        last, an <b>output CST</b> DaVinci WG/Intermediate → Rec.709 · Gamma 2.4, DaVinci tone mapping. With tone mapping
-        after, set <b>Bianco</b> to 4-5 in both nodes.</td></tr>
-      <tr><td>All in log</td><td>Main node on Timeline → Detail on Automatic (uses the clip's S-Log3) → CST
-        S-Gamut3.Cine/S-Log3 → Rec.709 or DWG.</td></tr>
-    </table>
-    <table>
-      <tr><td>Gamma dinamica</td><td><span class="note">dynamic range</span> · <i>Vista: zone</i> (colours or greys, 0–X legend) · <b>Local Highlights</b> compresses the large bright areas and keeps, even strengthens,
-        the texture: the sky gets deeper and the clouds stay defined. <b>Local
-        Shadows</b> opens (+) or closes (−) shadows; <b>Local Contrast</b> the contrast of large areas. <i>Gain</i> and
-        <i>base</i> views.</td></tr>
-      <tr><td>Presenza</td><td><span class="note">presence</span> · <b>Texture</b>: fine detail; does not raise grain below the noise threshold; negative
-        smooths. <b>Clarity</b>: local contrast on the midtones. <b>Dehaze</b>: removes (+) or adds (−) haze.</td></tr>
-      <tr><td>Avanzate · Velo</td><td><span class="note">advanced · haze</span> · detail preservation, radius, <b>Soglia bordi</b> (edge threshold), noise threshold,
-        Clarity centre, <b>Bianco</b> for Local Highlights. You set the haze (level and colour): never guessed per frame.</td></tr>
-    </table>
-    <div class="tip"><b>Measured limits</b> · halo under 3% with Local Highlights −100, up to 12% on a hard one-stop edge
-    with Local Shadows ±100: lower <i>Soglia bordi</i>. Grain can grow 1.25-1.7× next to strong edges. It is <b>spatial</b>:
-    Generate LUT leaves out its whole node. On Metal a UHD frame costs about 6-18 ms.</div>
-  </div>
-
-  <footer>
-    <span>Log MetaRaw @VERSION@ · more in docs/ on github.com/Mecena-SRL/SLogMetaRaw</span>
-    <span>3 / 3 · GNU GPL v3 licence</span>
-  </footer>
 </div>
+<footer><span>Log MetaRaw @VERSION@ · the script</span><span>3 / 10</span></footer>
+</section>
+
+<!-- ======================= 4 · DEVELOP: DECODE, EI, BALANCE ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>The Log MetaRaw node · decode, EI, white balance</h1><span class="where">Color › OpenFX · first node</span></div>
+  <figure><img src="img/develop_chain_en.svg" alt="">
+    <figcaption><b>The node's chain</b>, in code order (<code>math/Develop.h</code>). Every step works in scene-linear
+    light; the node is <b>pointwise</b> (each pixel depends only on itself): no halos, and Generate LUT can export it. CPU
+    and Metal follow the same reference model within 2·10⁻⁴.</figcaption></figure>
+  <div class="cols">
+    <div>
+      <figure><img src="img/log_curves_en.svg" alt="">
+        <figcaption><b>Log encoding and middle grey.</b> Code value of each curve against stops from 18% grey, computed by
+        <code>tests/develop_model.py</code>; the legend gives grey's code value. Rec.709 ends at +2.5 stops, S-Log3 records
+        beyond +6.</figcaption></figure>
+      <div class="sci"><b>Why log.</b> Light doubles with every stop, but vision and noise work in ratios: a log curve gives
+      every stop about the same number of code values. In S-Log3 one stop above grey is about <b>76</b> codes out of 1023,
+      against Rec.709's 190, which however ends after 2.5 stops. Decoding the curve brings the signal back to <b>linear
+      light</b>, where exposure and white balance are plain multiplications.</div>
+      <table>
+        <tr><td class="k">Camera · Rileggi metadata</td><td>The camera that was read. <i>Rileggi</i> (re-read) reads the file
+          again, writes the clip's metadata into the Media Pool and resets the controls to the camera values.</td></tr>
+        <tr><td class="k">Decodifica</td><td>Decode. <i>Clip</i>: free controls. <i>Camera metadata</i>: locked to the shot
+          values.</td></tr>
+        <tr><td class="k">Esposizione › EI</td><td>25–409600. Linear gain <code>EI / shot EI</code>: doubling it is exactly
+          +1 stop, before any curve.</td></tr>
+      </table>
+    </div>
+    <div>
+      <figure><img src="img/wb_locus_en.svg" alt="">
+        <figcaption><b>White balance.</b> The shot white lies on the Planckian locus (Krystek 1985) in the CIE 1960 uv
+        plane; Tint moves the white perpendicular to it (towards green with Tint +, so the picture goes magenta). Below, the
+        Bradford cone gains for a clip shot at 5600 K (before luminance normalisation).</figcaption></figure>
+      <div class="sci"><b>Von Kries in Bradford space.</b> The pixel goes to XYZ, then to Bradford's three "cones" LMS; each
+      is multiplied by the ratio between the shot white and the chosen one, then back to XYZ. This is the chromatic
+      adaptation of the ICC standards: it works in linear light, so a neutral stays neutral at every exposure. Higher
+      Temperatura = the assumed white is bluer = a warmer picture.</div>
+      <table>
+        <tr><td class="k">Bilanciamento</td><td>Balance: <i>As shot</i> or a preset: Daylight 5600, Cloudy 6500, Shade 7500,
+          Tungsten 3200, Fluorescent 4000, Flash 5500 K; moving a slider turns it <i>Custom</i>.</td></tr>
+        <tr><td class="k">Temperatura · Tint</td><td>2000–15000 K; Tint −100…+100, perpendicular to the Planckian locus.</td></tr>
+        <tr><td class="k">Punto bianco</td><td>White point: Resolve's eyedropper; the picked colour turns neutral, with the
+          same maths as the render (checked by tests).</td></tr>
+        <tr><td class="k">Dati di ripresa</td><td>Shooting data, read only: lens, focal length, iris, focus, shutter, ISO/EI,
+          WB, colour, fps, ND/stabiliser, camera LUT, file.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (1)</span><span>4 / 10</span></footer>
+</section>
+
+<!-- ======================= 5 · DEVELOP: FALSE COLOUR, COLOUR SPACE ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>False colour and colour space</h1><span class="where">Log MetaRaw node · Ripresa, Spazio colore</span></div>
+  <figure><img src="img/false_color_en.svg" alt="">
+    <figcaption><b>The three views</b>, computed with the node's code (<code>tests/develop_model.py</code>) on a neutral
+    surface pushed off by known amounts: exposure from −8 to +6 stops, light from 1200 K warmer to 1200 K cooler than the
+    slider, tint from −35 to +35. Each view sits next to its slider and reacts only to it.</figcaption></figure>
+  <figure><img src="img/curve_tops_en.svg" alt="">
+    <figcaption><b>Where each curve ends</b> (code 1.0, from the model): short curves (orange) never reach the red band,
+    so the top of the curve counts too.</figcaption></figure>
+  <div class="cols">
+    <div>
+      <h2>Exposure: bands in stops, ARRI style</h2>
+      <table class="fc">
+        <tr><th>Colour</th><th>Stops from 18% grey</th><th>Meaning</th></tr>
+        <tr><td><span class="sw" style="background:#f5291a"></span>red</td><td>≥ +5.5, or a channel at the top of the curve</td><td>clip</td></tr>
+        <tr><td><span class="sw" style="background:#ffe01f"></span>yellow</td><td>+4.0…+5.5, or within ¼ stop of the top</td><td>near clip</td></tr>
+        <tr><td><span class="sw" style="background:#ff8fb8"></span>pink</td><td>+0.70…+1.30</td><td>skin</td></tr>
+        <tr><td><span class="sw" style="background:#21d133"></span>green</td><td>−0.33…+0.33</td><td>middle grey</td></tr>
+        <tr><td><span class="sw" style="background:#1a47e0"></span>blue</td><td>−6.0…−4.0</td><td>deep shadow</td></tr>
+        <tr><td><span class="sw" style="background:#6b1f9e"></span>purple</td><td>≤ −6.0</td><td>black</td></tr>
+      </table>
+      <p>Everything else stays in greys, readable. Stops are measured on <b>linear luminance</b>, not on the signal: the
+      reading does not change between S-Log2, S-Log3 or V-Log. On short curves (Rec.709 at +2.5, D-Log M at +4.1, HLG at
+      +4.4) the <b>top of the curve</b> counts too: a blown white stays red at any EI.</p>
+      <h2>Temperature and Tint: as in CineMatch</h2>
+      <p>The picture turns grey; casts get coloured: <span class="sw" style="background:#3d82d6"></span>blue = cool, raise
+      Temperatura; <span class="sw" style="background:#e3882e"></span>orange = warm, lower it;
+      <span class="sw" style="background:#5cc23d"></span>green = raise Tint; <span class="sw" style="background:#c43dba"></span>magenta
+      = lower it. Near-neutral casts are boosted up to <b>8×</b> so they show.</p>
+      <div class="warn"><b>How to use it:</b> pick a surface that should be neutral and move the slider until it stays grey;
+      alternate Temperatura and Tint a couple of times. The view <b>replaces the picture</b>: turn it off before you
+      render.</div>
+    </div>
+    <div>
+      <h2>Spazio colore › Ingresso (input)</h2>
+      <table>
+        <tr><td class="k">Spazio colore · Gamma</td><td>What enters the node. <i>Automatico</i> asks Resolve or reads it from
+          the camera; change it only if it is wrong. 20 gamuts and 25 curves.</td></tr>
+        <tr><td class="k">Rilevato</td><td>Detected: what the node decided, with warnings (e.g. Resolve manages colour and a
+          tone mapping is on: double transform).</td></tr>
+        <tr><td class="k">Ripristina da camera</td><td>Reset from camera: Spazio colore and Gamma back to Automatico.</td></tr>
+        <tr><td class="k">Data level · Livello</td><td>Automatico (uses the clip attribute), Full (0-1023), Video (64-940),
+          Nessuna correzione (none). <i>Ripristina da clip</i>.</td></tr>
+      </table>
+      <h2>Spazio colore › Senza metadata (no metadata)</h2>
+      <p>A ProRes from an external recorder, or an unreadable clip, leaves the node neutral. Tick <b>Sblocca controlli</b>
+      (unlock) and type <b>EI di ripresa</b>, <b>Kelvin di ripresa</b>, <b>Tint di ripresa</b> (shot EI, Kelvin, tint): the
+      sliders' zero, not a change to the picture.</p>
+      <h2>Spazio colore › Uscita (output)</h2>
+      <p>Output <b>Spazio colore</b> and <b>Gamma</b> work like a Color Space Transform; <i>Timeline</i> does not convert.
+      Tone mapping and gamut are on page 7.</p>
+      <table>
+        <tr><td class="k">Dimensione LUT</td><td>LUT size: 17, 33 or 65 points per side; 33 is fine almost always, 65 is more
+          faithful.</td></tr>
+        <tr><td class="k">Esporta LUT (.cube)</td><td>Export LUT: a 3D LUT with balance, exposure, tones and the node's
+          conversion; its input is the signal entering the node. The node is pointwise, so Resolve's <i>Generate LUT</i>
+          exports it too (best at 65).</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (2)</span><span>5 / 10</span></footer>
+</section>
+
+<!-- ======================= 6 · DEVELOP: TONES AND ZONES ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Toni and Zone: exposure by zones, in stops</h1><span class="where">Log MetaRaw node · Toni (tones), Zone (zones)</span></div>
+  <div class="cols">
+    <div>
+      <figure><img src="img/tone_curves_en.svg" alt="">
+        <figcaption><b>Tone curves</b> from the reference model (<code>tests/model/tone.py</code>), on neutrals. With
+        Highlights −100 grey stays put, +1 stop moves by 0.05 stop and the recorded top (+6) lands on Bianco (2.5). No
+        combination of sliders can solarise.</figcaption></figure>
+    </div>
+    <div>
+      <figure><img src="img/local_vs_point_en.svg" alt="">
+        <figcaption><b>The limit of a pointwise node</b> (a 1-D illustration, not the Detail filter): a bright area with fine
+        texture compressed by Highlights −100. Pointwise, the texture shrinks with the slope of the curve; by areas (curve on
+        the base, detail added back) it stays whole. That is why local recovery lives in the Detail node.</figcaption></figure>
+    </div>
+  </div>
+  <div class="sci"><b>The science in one line.</b> In a pointwise operator <code>∇out = T′(ℓ) · ∇in</code>: where the curve
+  compresses with slope 0.35, texture drops to 0.35 too. That is why the tones are <b>exposures by zone</b>: inside a zone
+  the slope is 1 (the zone moves like an exposure and texture is kept), and compression happens only in a declared
+  transition band. Each pixel gets <b>one gain</b> (from a norm of its three channels): chromaticity is kept, black stays
+  black. Slope between 0.35 and 2 (2.86 in the Zones).</div>
+  <div class="cols">
+    <div>
+      <h2>Toni (always shown)</h2>
+      <table>
+        <tr><td class="k">Highlights</td><td>Negative: a <b>film shoulder</b>; at −100 the recorded top lands on Bianco, with
+          no veil and no clip, and the most compressed highlights drift to white at constant hue. Positive: more snap.</td></tr>
+        <tr><td class="k">Bianco (stop)</td><td>White, 1–10, default 2.5 = Rec.709 white through a CST without tone mapping.
+          With a DRT after (ACES, AgX, DaVinci) raise it to 4-5, or highlights are compressed twice.</td></tr>
+        <tr><td class="k">Soft Clip</td><td>Folds highlights under Bianco, a roof they never reach: containment, not
+          recovery.</td></tr>
+        <tr><td class="k">Saturation</td><td>At constant luminance, the same in every colour space.</td></tr>
+      </table>
+      <h2>Mostra tutti i controlli (show all)</h2>
+      <table>
+        <tr><td class="k">Contrast</td><td>Around the Pivot: slope ×2 at +100, ×½ at −100, bounded ends.</td></tr>
+        <tr><td class="k">Shadows</td><td>Exposure of the tones below −1 stop; 100 = 2 stops. It lifts black too: hold it
+          with Blacks.</td></tr>
+        <tr><td class="k">Whites</td><td>From +3.5 stops to clip; 100 = 1 stop.</td></tr>
+        <tr><td class="k">Blacks</td><td>Linear veil 5 stops below grey: −100 = black down 3 stops, +100 up 1; grey
+          fixed.</td></tr>
+        <tr><td class="k">Vibrance</td><td>Saturation weighted on the less saturated colours, skin protected.</td></tr>
+        <tr><td class="k">Azzera toni</td><td>Reset tones to zero; EI, balance and Bianco stay.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Zone (closed group)</h2>
+      <p><b>Black</b> (edge −4), <b>Shadow</b> (+1), <b>Light</b> (−1), <b>Specular</b> (+4), each with <b>Exp</b>
+      (stops, ±6), <b>Sat</b>, <b>Range</b> (edge, in stops from grey) and <b>Falloff</b> (width of the transition).
+      <b>Contrast Pivot</b> moves Contrast's centre; <b>Soft Clip Color</b> decides whether folded highlights keep their
+      colour or go the way of film. <b>False color: zone</b> paints each pixel with the zone that moves it. <b>Azzera
+      zone</b> resets them.</p>
+      <h2>Recipes</h2>
+      <table>
+        <tr><td class="k">Burning highlights</td><td>Highlights −50…−100 (with a DRT after, Bianco 4-5)</td></tr>
+        <tr><td class="k">Backlight</td><td>Shadows +30…+60, Blacks −20…−40</td></tr>
+        <tr><td class="k">Film look</td><td>Contrast +20…+30, Highlights −60</td></tr>
+        <tr><td class="k">Noisy shadows</td><td>Shadow Sat −30…−50 (or the noise mask, page 8)</td></tr>
+      </table>
+      <div class="warn"><b>Physical cost</b>: lifting shadows by 1.5 stops pointwise needs a transition of about 3 stops.
+      No "auto" from the picture: it would flicker. Formulas: <code>docs/TONE_MAPPING.md</code>.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (3)</span><span>6 / 10</span></footer>
+</section>
+
+<!-- ======================= 7 · DEVELOP: TONE MAPPING AND GAMUT ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Tone mapping, gamut and scene output</h1><span class="where">Log MetaRaw node · Spazio colore › Uscita</span></div>
+  <div class="cols">
+    <div>
+      <figure><img src="img/drt_curves_en.svg" alt="">
+        <figcaption><b>From scene to display</b>, on neutrals, from <code>tests/model/display.py</code>: Rec.709 · Gamma 2.4
+        code value. The CST clips at +2.47 stops; the tone mappings put 18% grey at 0.383 (10 nit) or 0.390 (ACES 1.3) and
+        approach white without touching it.</figcaption></figure>
+    </div>
+    <div>
+      <figure><img src="img/gamut_rgc_en.svg" alt="">
+        <figcaption><b>ACES 1.3 gamut compression (RGC)</b>, per channel: the distance from achromatic is untouched up to the
+        threshold, then compressed so that the limit lands on the gamut boundary (1.0). Reference values: thresholds
+        0.815/0.803/0.880, limits 1.147/1.264/1.312, power 1.2.</figcaption></figure>
+    </div>
+  </div>
+  <div class="sci"><b>Why tone mapping.</b> A scene holds 12-14 stops, an SDR display about 6-7 above black. A CST only
+  converts: beyond white the channels clip one at a time, and a saturated light changes hue (a sky turns cyan, a flame
+  yellow). A rendering compresses highlights with a shoulder and moves very saturated colours towards white; gamut
+  compression brings the camera's out-of-gamut colours (LEDs, signs) back inside before the curve.</div>
+  <table>
+    <tr><th style="width:44mm">Tone mapping</th><th>What it does · verification status</th></tr>
+    <tr><td class="k">Nessuno (CST)</td><td>None: plain conversion, the default; saved nodes do not change.</td></tr>
+    <tr><td class="k">ACES 2.0</td><td>Output Transform SDR 100 nit, Rec.709 limiting gamut, D65: OpenColorIO 2.6 built-in
+      values within 10⁻⁴ (tests).</td></tr>
+    <tr><td class="k">Luminanza (stile DaVinci)</td><td>Luminance, DaVinci style: a curve on luminance with hues kept,
+      saturation compression, path to white. It <b>approximates</b> DaVinci tone mapping: Resolve's formula is not public.</td></tr>
+    <tr><td class="k">Filmico</td><td>Filmic: a per-channel curve on an inset gamut, like film (AgX idea, ACES 2.0 / OpenDRT
+      curve): saturated highlights fade into white without bands.</td></tr>
+    <tr><td class="k">ACES 1.3</td><td>Reference Gamut Compression, RRT and ODT Rec.709 100 nit: OpenColorIO within 10⁻⁵ (tests).</td></tr>
+    <tr><td class="k">OpenDRT</td><td>OpenDRT v1.1.0 by Jed Smith (GPL-3), Standard look, Rec.1886 100 nit: a port of the DCTL,
+      within 5·10⁻⁶ of the compiled DCTL; not compared inside Resolve.</td></tr>
+  </table>
+  <div class="cols" style="margin-top:1.4mm">
+    <div>
+      <table>
+        <tr><td class="k">Compressione gamut</td><td>Gamut compression, like the CST's <i>Gamut Compress Type</i>, in ACES AP1
+          before the tone mapping: Nessuna, ACES riferimento (RGC), ACES parametrica (Soglia/threshold, Limite/limit for cyan,
+          magenta, yellow; Potenza/power).</td></tr>
+        <tr><td class="k">Mappatura gamut</td><td>Gamut mapping, like <i>Gamut Mapping Method</i>: Nessuna or Compressione
+          saturazione (same hue, knee at 90%). Useful with Nessuno (CST) too: on a V-Log to Rec.709 test clip 28% of the
+          pixels had a negative channel.</td></tr>
+        <tr><td class="k">Vibrance luci</td><td>Highlight vibrance, 0-100, only with a tone mapping: colour back into bright,
+          pale highlights (an overexposed sky) without pushing those already saturated; luminance unchanged.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Scene output <span class="new">3.2</span></h3>
+      <p>With a tone mapping and output Spazio colore / Gamma <b>DaVinci WG</b> / <b>DaVinci Intermediate</b>, the picture
+      rendered for Rec.709 travels in that scene encoding, to hand it to plugins that want it (Dehancer…). A CST to Rec.709 ·
+      Gamma 2.4 <b>without tone mapping</b> brings it back identical. Display outputs (Rec.709, P3, Rec.2020) are unchanged
+      bit for bit; <i>Timeline</i> = Rec.709 / Gamma 2.4.</p>
+      <div class="formula" style="white-space:normal">scene → tone mapping (rendered for Rec.709) → DaVinci WG /
+      Intermediate → other plugins → CST without TM → Rec.709 · Gamma 2.4</div>
+      <div class="warn">When Resolve manages colour (RCM, ACES) and a tone mapping is on, Resolve applies its own output
+      transform after the node: <i>Rilevato</i> warns about the double transform. The Detail node goes <b>before</b> a node
+      with tone mapping.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (4)</span><span>7 / 10</span></footer>
+</section>
+
+<!-- ======================= 8 · DEVELOP: NOISE MASK ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Maschera rumore (noise mask) <span class="new">3.2</span></h1><span class="where">Log MetaRaw node · for Neat Video and other denoisers</span></div>
+  <p>The node can write into the <b>alpha</b> channel the areas where the camera, at the chosen EI, shows visible noise,
+  so the denoiser works only there. <b>Colours and output do not change</b>: RGB identical bit for bit with the mask on
+  and off, with every tone mapping (checked by tests).</p>
+  <div class="cols">
+    <div>
+      <figure><img src="img/noise_snr_en.svg" alt="">
+        <figcaption><b>Where noise comes from</b> (an illustrative model: photon shot noise + 3 e⁻ read noise, parameters
+        chosen to reproduce ARRI's table). Raising EI by one stop gives the sensor one stop less light for the same grey:
+        the floor (SNR = 1) moves one stop closer. ARRI measures 6.9 / 5.9 / 4.9 stops at EI 800 / 1600 / 3200.</figcaption></figure>
+    </div>
+    <div>
+      <figure><img src="img/noise_mask_en.svg" alt="">
+        <figcaption><b>The mask</b>, with the node's formula (<code>NoiseMask.cpp</code>) and the FX6 constants (start 3.5,
+        full 5 stops, natives 800/12800): EI 3200 on native 800 moves it 2 stops earlier; the high native costs half a stop;
+        an 8-bit codec as much.</figcaption></figure>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="sci"><b>Physics.</b> Photons arrive at random (Poisson statistics): with S electrons the shot noise is √S.
+      A fixed read noise σ adds to it. <code>SNR = S / √(S + σ²)</code>: in the highlights shot noise dominates and SNR falls
+      half a stop per stop; in the shadows read noise dominates and it falls a stop per stop. Raising EI adds no light: it
+      amplifies, so the whole curve moves towards grey.</div>
+      <div class="formula">s      = log2(Y/0.18) after EI and balance
+start  = D − 0.5 (high native) + codec
+thresh = max(0, start − log2(EI / native))
+alpha  = smoothstep from −thresh (0)
+         to −(thresh + fade) (1)</div>
+      <p><b>Codec</b>: ProRes RAW −0.5 stop (FX6: 0.3-0.7 stop less at SNR = 2 without in-camera noise reduction); 8 bit
+      −0.5 (estimate: blocks and banding); Intra, ProRes, Long GOP 10 bit 0.</p>
+    </div>
+    <div>
+      <figure><img src="img/noise_ei_en.svg" alt="">
+        <figcaption><b>Threshold against EI</b>: one stop of EI = one stop of threshold, as in ARRI's measurement. An FX6
+        shot at the high native starts half a stop closer to grey than its native.</figcaption></figure>
+      <table>
+        <tr><td class="k">Maschera</td><td>Mask: Spenta (off), <b>Automatica</b> (threshold per camera, native ISO, codec),
+          <b>Personalizzata</b> (custom).</td></tr>
+        <tr><td class="k">Inizio · Sfumatura</td><td>Start · fade (custom): stops below grey at native ISO (default 3) and
+          stops to reach full (1.5). EI and codec still apply.</td></tr>
+        <tr><td class="k">Vedi maschera</td><td>Show mask instead of the picture (white = to clean). For checking only.</td></tr>
+        <tr><td class="k">Soglia</td><td>Threshold: shows the threshold in use, camera, native, codec, measured or estimated.</td></tr>
+      </table>
+    </div>
+  </div>
+  <p><b>Camera constants</b> (start / full, stops below grey at native): FX6 3.5/5 <i>measured</i> · A7S III, A7 IV,
+  S5/S5 II 3/4.5 <i>measured</i> · GH6 2.5/4 <i>measured</i> · FX30, FX3, other S-Log 3/4.5 <i>estimated</i> · LogC3
+  5.3/6.9 and LogC4 6.1/7.7 <i>derived from ARRI</i> · Apple Log 1.5/3 <i>derived</i> · D-Log M, D-Log 2/3, HLG 2/3.5,
+  Canon, Fujifilm, Nikon, RED, Blackmagic 3.5/5 <i>estimated</i>. Sources (ARRI, CineD) in <code>docs/NOISE.md</code>.</p>
+  <div class="warn"><b>Not tried in Resolve</b>: that the node's alpha reaches the key input of the node with Neat Video.
+  If it does not: a parallel node with <i>Vedi maschera</i> and a luminance qualifier. Clip records written before 3.2
+  do not know the codec until you press <i>Rileggi metadata</i>.</div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Develop node (5)</span><span>8 / 10</span></footer>
+</section>
+
+<!-- ======================= 9 · DETAIL ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>The Log MetaRaw Detail node</h1><span class="where">Color › OpenFX · after Log MetaRaw, before CST/LUT/DRT</span></div>
+  <p>The creative node: it works <b>by areas</b>, over an edge-aware base (guided filter), and moves large areas without
+  flattening fine detail. Three darkroom methods, each in three <b>phases</b>: one node per phase in series, or all in
+  one. The <b>Guida</b> (guide) at the bottom of the panel gives the purpose, three steps and the next step.</p>
+  <figure><img src="img/zones_en.svg" alt="">
+    <figcaption><b>The zone system</b> (Ansel Adams): zone V = 18% grey, zone 0 = black and zone X = white of the
+    <b>Destinazione (ODT)</b>, five zones on each side. Zones depend on the output: with Rec.709 CST a zone is half a stop
+    above grey and 0.9 below; with DaVinci WG scene almost two. Colours of <i>Vista: zone</i>, from
+    <code>tests/model/detail.py</code>.</figcaption></figure>
+  <div class="cols">
+    <div>
+      <h2>Sviluppo e spazio colore (development)</h2>
+      <table>
+        <tr><td class="k">Modalità</td><td>Mode: <b>Zonale</b> (Ansel Adams) · <b>Split grade</b> (print) · <b>Unito</b>
+          (Split grade + auto zones + BTZS).</td></tr>
+        <tr><td class="k">Fase</td><td>Phase. Zonale: 1 · Sviluppo, 2 · Stampa, 3 · Presenza (develop, print, presence). Split
+          grade: 1 · Esposizioni, 2 · Locale, 3 · Presenza. Or <i>Un nodo (tutte le fasi)</i>. Copy the node, paste it after,
+          change only Fase.</td></tr>
+        <tr><td class="k">Ingresso (IDT)</td><td>Input: Automatico, DaVinci WG/Intermediate, S-Gamut3.Cine/S-Log3,
+          S-Gamut3/S-Log3, S-Gamut/S-Log2, ACES AP1/ACEScct: decoded to linear and written back the same.</td></tr>
+        <tr><td class="k">Destinazione (ODT)</td><td>Destination: it does not convert, it declares where black and white land.
+          <i>Dal Bianco (manuale)</i> uses Avanzate › Bianco.</td></tr>
+      </table>
+      <h2>The three methods</h2>
+      <table>
+        <tr><td class="k">Zonale</td><td>Put <b>Ombra</b> and <b>Luce</b> (shadow, light) on the viewer, <b>Misura zone</b>,
+          then <b>Ombra sulla zona</b> (exposure, III) and <b>Luci sulla zona</b> (development N+/N−, VIII). Development is a
+          per-pixel curve: no halos, slope 0.25-4.</td></tr>
+        <tr><td class="k">Split grade</td><td><b>Luci morbide</b> (soft, grade 0) brings the highlights to VIII, <b>Ombre
+          dure</b> (hard, grade 5) the shadows to III, in stops; <b>Grado</b> reads the result. <b>Unione</b>: Curva or Due
+          strati. <b>Provino</b> (test strip): strips, matrix or unions; <b>Usa la cella</b>.</td></tr>
+        <tr><td class="k">Unito</td><td>The subject range is compared with the paper scale (zones III-VIII): development N±
+          brings it closer, the two-exposure print does the rest.</td></tr>
+        <tr><td class="k">Misura automatica</td><td>In every mode: 2nd and 98th luminance percentiles as shadow and light.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Gamma dinamica, Presenza, Avanzate</h2>
+      <table>
+        <tr><td class="k">Local Highlights</td><td>Compresses the large bright areas and keeps, even strengthens, texture: the
+          sky gets deeper, the clouds stay.</td></tr>
+        <tr><td class="k">Local Shadows · Contrast</td><td>Opens or closes shadows by areas (100 = 2 stops); contrast of the
+          large areas.</td></tr>
+        <tr><td class="k">Brucia i bordi · Ampiezza</td><td>Edge burn: darkens the frame margins, by position only: no
+          halo.</td></tr>
+        <tr><td class="k">Views</td><td><i>Vista: guadagno</i> (gain: orange up, blue down), <i>base</i>, <i>zone</i>,
+          <i>zone in grigi</i> (greys), with a 0-X legend.</td></tr>
+        <tr><td class="k">Texture · Clarity · Dehaze</td><td>Fine detail (grain below the noise threshold is not raised);
+          local contrast on midtones; removes or adds haze. Full in zones II-VIII.</td></tr>
+        <tr><td class="k">Avanzate · Velo</td><td>Advanced: detail preservation, radius (% height), edge and noise thresholds,
+          Clarity centre, Bianco; haze level and colour, set by you, never guessed.</td></tr>
+      </table>
+      <div class="sci"><b>Base and detail.</b> <code>L = log2(N/0.18)</code>; a base B follows strong edges and ignores
+      grain; local tones move B and the detail <code>L − B</code> passes with slope 1. Radii follow the frame height: the
+      same look in proxy and at full resolution; no per-frame statistics, no flicker.</div>
+      <div class="warn"><b>Measured limits</b>: Local Shadows ±100 on a hard 1-stop edge, halo about 12% of the step (4-6% on
+      2-3 stops): lower <i>Soglia bordi</i>. Local Highlights −100: under 3%. Grain 1.25-1.7× next to strong edges. It is
+      spatial: Generate LUT leaves it out. Metal: UHD 6-18 ms. <b>Not tried in Resolve; Metal not run</b>; grade,
+      percentiles and development limits are assumptions, not checked against BTZS or real prints.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Detail node</span><span>9 / 10</span></footer>
+</section>
+
+<!-- ======================= 10 · CAMERAS, LIMITS, CREDITS ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Cameras and curves, limits, credits</h1><span class="where">details in docs/CAMERAS.md, docs/DJI_LOG.md</span></div>
+  <div class="cols">
+    <div>
+      <table class="sum">
+        <tr><th>Curve</th><th>18% grey</th><th>Top (stops)</th><th>Scale</th></tr>
+        <tr><td class="k">S-Log3 (Sony)</td><td>0.411</td><td>+7.7</td><td>Full</td></tr>
+        <tr><td class="k">S-Log2 (Sony)</td><td>0.340</td><td>+6.3</td><td>Full</td></tr>
+        <tr><td class="k">S-Log (Sony)</td><td>0.385</td><td>+5.8</td><td>Full</td></tr>
+        <tr><td class="k">V-Log (Panasonic)</td><td>0.423</td><td>+8.0</td><td>Full</td></tr>
+        <tr><td class="k">Apple Log</td><td>0.488</td><td>+6.1</td><td>Video</td></tr>
+        <tr><td class="k">D-Log M (DJI) <span class="new">3.2</span></td><td>0.415</td><td>+4.1</td><td>Video</td></tr>
+        <tr><td class="k">D-Log (DJI)</td><td>0.399</td><td>+7.9</td><td>Full</td></tr>
+        <tr><td class="k">F-Log (Fujifilm)</td><td>0.459</td><td>+5.3</td><td>Full</td></tr>
+        <tr><td class="k">F-Log2 (Fujifilm)</td><td>0.391</td><td>+8.3</td><td>Full</td></tr>
+        <tr><td class="k">N-Log (Nikon)</td><td>0.364</td><td>+6.4</td><td>Full</td></tr>
+        <tr><td class="k">C-Log2 (Canon)</td><td>0.398</td><td>+8.4</td><td>Video</td></tr>
+        <tr><td class="k">C-Log3 (Canon)</td><td>0.343</td><td>+6.4</td><td>Video</td></tr>
+        <tr><td class="k">LogC3 EI 800 (ARRI)</td><td>0.391</td><td>+8.3</td><td>Full</td></tr>
+        <tr><td class="k">LogC4 (ARRI)</td><td>0.278</td><td>+11.4</td><td>Full</td></tr>
+        <tr><td class="k">Log3G10 (RED)</td><td>0.333</td><td>+10.0</td><td>Full</td></tr>
+        <tr><td class="k">BMD Film Gen5</td><td>0.384</td><td>+10.3</td><td>Full</td></tr>
+        <tr><td class="k">HLG</td><td>0.380</td><td>+4.4</td><td>Video</td></tr>
+        <tr><td class="k">Rec.709</td><td>0.409</td><td>+2.5</td><td>Video</td></tr>
+      </table>
+      <p class="note">From the node's model: code value of 18% grey and stops above grey at code 1.0; the greys match the
+      values the manufacturers publish.</p>
+    </div>
+    <div>
+      <figure><img src="img/dlogm_en.svg" alt="">
+        <figcaption><b>D-Log M, new curve.</b> DJI publishes neither formula nor gamut. Since 3.2 the curve is a 17-node
+        table of the Osmo Action 6 measured with a ColorChecker: grey at 0.4147 instead of 0.400, highlights up to +4.1 stops
+        instead of +3.7; it is an S-curve, not a log. The gamut is the one implied by DJI's Action 6 LUT. D-Log M clips
+        change: midtones about 0.1 stop darker, greens less pushed, blues more. One camera measured: for Action 4/5 Pro,
+        Pocket 3 and drones it is the best estimate, not a calibration.</figcaption></figure>
+      <p><b>Readings.</b> <i>Calibrated</i> (tried on real clips): Sony XAVC (FX, Alpha, handycam), Panasonic DC-S5, iPhone
+      17 Pro with Blackmagic Camera (Apple Log 2), DJI Osmo Action 5 Pro. <i>Compatible</i>: the profile name in the
+      metadata. <i>Estimated</i>: the codec's colour description; without make or model the node does not use it.</p>
+      <p class="note">Gamuts: S-Gamut/3/3.Cine, V-Gamut, Apple Wide Gamut, D-Gamut, Cinema Gamut, ARRI WG3/WG4, RED WG,
+      BMD WG Gen5, DJI D-Log M Gamut (deduced), plus Rec.709/2020, P3, ACES, DaVinci WG.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h2>Known limits</h2>
+      <ul>
+        <li>It is not raw: no demosaicing, no more bits or latitude than were recorded.</li>
+        <li>Resolve's Camera Raw panel and gyro stabilisation cannot be unlocked for MP4: they live inside Resolve's
+            decoders.</li>
+        <li>Some cameras (e.g. a6300) record no Kelvin: it is estimated from the lighting preset and flagged.</li>
+        <li>S-Log2 follows the Sony paper; Resolve's S-Log2 curve differs by about 0.15 stop.</li>
+        <li>Still to check on more files: XAVC HS (HEVC), HLG, S-Cinetone, power zooms; Input Color Space for non-Sony
+            cameras.</li>
+        <li><b>Not tried in Resolve</b>: noise mask → Neat Video key, Detail modes and phases, the 3.1 tone mappings;
+            <b>Metal not run</b> for these parts (CPU/model parity checked by tests). Resolve 20, Linux and Windows not
+            tested.</li>
+        <li>An independent hobby project, distributed as is, <b>with no warranty</b> and no liability for professional use.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Credits and licence</h2>
+      <p><b>Ivan Mazzone + Claude</b> (Anthropic) · github.com/ivan-94m · @ivan_94m. Open source,
+      <b>GNU GPL v3.0 or later</b>. Full history in <code>RELEASE_NOTES.md</code> (Italian).</p>
+      <ul>
+        <li>Sony tags: SMPTE RDD 18, ExifTool, and telemetry-parser by AdrianEddy (MIT), from which part of the tag table
+            comes.</li>
+        <li>OpenFX SDK © The Open Effects Association (BSD-3).</li>
+        <li>OpenDRT v1.1.0 by Jed Smith (GPL-3), ported from the DCTL.</li>
+        <li>ACES 1.3 and 2.0 values compared with OpenColorIO; curves and gamuts from the manufacturers' papers.</li>
+        <li>D-Log M: Osmo Action 6 measurement from <code>jens-krause/dlogm-dctl</code>; earlier fit by Thatcher Freeman.</li>
+        <li>Noise: ARRI dynamic range white paper, CineD lab tests.</li>
+      </ul>
+      <p class="note">Sony, XAVC and Catalyst are trademarks of Sony Group Corporation; DaVinci Resolve is a trademark of
+      Blackmagic Design. An independent project, not affiliated with or endorsed by either. Figures:
+      <code>tools/make_guide_figures.py</code>.</p>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>10 / 10 · GNU GPL v3 licence</span></footer>
+</section>
 
 </body>
 </html>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="736" height="92" viewBox="0 0 736 92" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="6.00" y="8.00" width="133.60" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="72.8" y="30.0" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Script</text>
+<text x="72.8" y="51.0" font-size="8.5" text-anchor="middle" fill="#6b7280" font-weight="normal">Workspace › Scripts</text>
+<rect x="153.60" y="8.00" width="133.60" height="50.00" fill="#f6f7f9" stroke="#e8893a" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="220.4" y="30.0" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Log MetaRaw</text>
+<text x="220.4" y="51.0" font-size="8.5" text-anchor="middle" fill="#6b7280" font-weight="normal">Develop · 1° nodo</text>
+<line x1="140.6" y1="33.0" x2="152.6" y2="33.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="152.6,33.0 146.2,35.7 146.2,30.3" fill="#6b7280"/>
+<rect x="301.20" y="8.00" width="133.60" height="50.00" fill="#f6f7f9" stroke="#3d7bff" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="368.0" y="23.5" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Log MetaRaw</text>
+<text x="368.0" y="36.5" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">Detail</text>
+<text x="368.0" y="51.0" font-size="8.5" text-anchor="middle" fill="#6b7280" font-weight="normal">spaziale · 2° nodo</text>
+<line x1="288.2" y1="33.0" x2="300.2" y2="33.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="300.2,33.0 293.8,35.7 293.8,30.3" fill="#6b7280"/>
+<rect x="448.80" y="8.00" width="133.60" height="50.00" fill="#f6f7f9" stroke="#9aa0aa" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="515.6" y="30.0" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">grade</text>
+<text x="515.6" y="51.0" font-size="8.5" text-anchor="middle" fill="#6b7280" font-weight="normal">altri nodi</text>
+<line x1="435.8" y1="33.0" x2="447.8" y2="33.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="447.8,33.0 441.4,35.7 441.4,30.3" fill="#6b7280"/>
+<rect x="596.40" y="8.00" width="133.60" height="50.00" fill="#f6f7f9" stroke="#1c1f26" stroke-width="1.4" rx="5" fill-opacity="1"/>
+<text x="663.2" y="23.5" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">CST / LUT /</text>
+<text x="663.2" y="36.5" font-size="10.5" text-anchor="middle" fill="#1c1f26" font-weight="bold">DRT</text>
+<text x="663.2" y="51.0" font-size="8.5" text-anchor="middle" fill="#6b7280" font-weight="normal">per ultimo</text>
+<line x1="583.4" y1="33.0" x2="595.4" y2="33.0" stroke="#6b7280" stroke-width="1.2"/>
+<polygon points="595.4,33.0 589.0,35.7 589.0,30.3" fill="#6b7280"/>
+<text x="72.8" y="78.0" font-size="9" text-anchor="start" fill="#6b7280" font-weight="normal" font-style="italic">metadata → Media Pool + record JSON per clip</text>
+</svg>

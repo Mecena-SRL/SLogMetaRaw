@@ -11,6 +11,7 @@
 #define SM_CONST constant
 #define SM_CPTR constant float*
 #define SM_CREF(T) constant T&
+#define SM_OUT(T) thread T&
 // Metal's default math functions stay fast even under MTLMathModeSafe: parity needs precise::.
 #define SM_POW precise::pow
 #define SM_LOG2 precise::log2
@@ -30,6 +31,7 @@
 #define SM_CONST static const
 #define SM_CPTR const float*
 #define SM_CREF(T) const T&
+#define SM_OUT(T) T&
 #define SM_POW powf
 #define SM_LOG2 log2f
 #define SM_LOG10 log10f
@@ -121,6 +123,9 @@ struct DevelopParams {
     float gcLim[3];    // its distance limit per channel
     float gcPwr;       // its power
     int gmOn;          // Mappatura gamut: 1 = saturation compression into the output gamut before the rendering
+    int nmOn;          // Maschera rumore (develop/NoiseMask.cpp): 0 off, 1 in the alpha, 2 shown as the picture
+    float nmEdge;      // where it starts: log2(Y / 0.18) after Exposure
+    float nmInvFade;   // 1 / the stops it takes to reach 1
 };
 
 // ---- math/Transfer.h
@@ -1394,7 +1399,15 @@ SM_FN SMf3 sm_highlight_vibrance(SMf3 c, float a, int space) {
 // ---- math/Develop.h
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
+// Maschera rumore: 0 above the edge, 1 a fade below it, smoothstep between. It reads the picture, never writes it.
+SM_FN float sm_noise_mask(float y, SM_CREF(DevelopParams) p) {
+    const float t = sm_clamp((p.nmEdge - SM_LOG2(SM_MAX(y, 1e-10f) / 0.18f)) * p.nmInvFade, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// The developed pixel; mask is the Maschera rumore when p.nmOn, else 0.
+SM_FN SMf3 sm_develop_a(SMf3 in, SM_CREF(DevelopParams) p, SM_OUT(float) mask) {
+    mask = 0.0f;
     if (p.bypass != 0 && p.levelFix == 0) return in;
     SMf3 lin = smf3(sm_decode(in.x, p.nodeGamma), sm_decode(in.y, p.nodeGamma),
                     sm_decode(in.z, p.nodeGamma));
@@ -1410,6 +1423,10 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     lms = smf3(lms.x * p.ratioL, lms.y * p.ratioM, lms.z * p.ratioS);
     xyz = sm_mul(SM_BRADFORD, 9, lms);
     xyz = smf3(xyz.x * p.norm, xyz.y * p.norm, xyz.z * p.norm);
+    if (p.nmOn != 0) {
+        mask = sm_noise_mask(xyz.y, p);
+        if (p.nmOn == 2) return smf3(mask, mask, mask);
+    }
 
     if (p.fcMode != 0) return sm_fc_emit(sm_false_color(xyz, sm_fc_headroom(lin, p), p), p);
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
@@ -1427,6 +1444,11 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     SMf3 o = sm_from_xyz(xyz, space);
     if (p.gmOn != 0) o = sm_gamut_map(o);
     return smf3(sm_encode(o.x, gamma), sm_encode(o.y, gamma), sm_encode(o.z, gamma));
+}
+
+SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
+    float mask;
+    return sm_develop_a(in, p, mask);
 }
 
 // ---- math/Detail.h
