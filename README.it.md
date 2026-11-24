@@ -47,7 +47,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-4.0.3.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-4.0.4.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -134,7 +134,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v4.0.3`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v4.0.4`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -244,7 +244,7 @@ Lavorano sull'immagine della camera, prima di **Log MetaRaw**.
   - Su Mac gira tutto su GPU Metal, e i test verificano che dia lo stesso risultato della CPU. Altrove gira su CPU.
   - I profili sono stime finché non vengono tarati su campioni reali. [docs/DENOISE.md](docs/DENOISE.md)
 - **Stabilize** legge il giroscopio della clip (Gyroflow integrato). Ha stili dal micromosso al crane e un **MASTER**
-  animabile. **Motion Blur** ricostruisce l'otturatore dal flusso ottico, per esempio da 50p a 90° a 25p a 180°.
+  animabile. **Motion Blur** ricostruisce l'otturatore dal flusso ottico, per esempio da 50p a 90° a 25p a 180°, e lascia la grana del sensore nelle zone mosse.
   Vengono entrambi da Mecena Motion (`motion/`) e li installa il pacchetto macOS, solo Apple silicon.
 - **Acquisizione profonda**, una spunta nella finestra dello script: salva il giroscopio e l'obiettivo di ogni
   fotogramma nel MecenaClipDB, per Stabilize.
@@ -254,7 +254,7 @@ Nessuno dei tre nodi è ancora stato provato in Resolve su clip reali.
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.0.3`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.0.4`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

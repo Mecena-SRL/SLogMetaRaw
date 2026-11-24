@@ -40,7 +40,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-4.0.3.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-4.0.4.dmg` 并打开。
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -101,7 +101,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v4.0.3`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v4.0.4`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
@@ -178,7 +178,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
   - 在 Mac 上全部在 Metal GPU 上运行，测试验证其结果与 CPU 一致；其他系统在 CPU 上运行。
   - 配置在用真实样本校准之前都是估计值。[docs/DENOISE.md](docs/DENOISE.md)
 - **Stabilize** 读取片段的陀螺仪数据（内置 Gyroflow），提供从微抖到摇臂的风格，以及可设关键帧的 **MASTER**。
-  **Motion Blur** 基于光流重建快门，例如从 50p 90° 到 25p 180°。两者都来自 Mecena Motion（`motion/`），由 macOS 安装包
+  **Motion Blur** 基于光流重建快门，例如从 50p 90° 到 25p 180°，并在模糊区域保留传感器颗粒。两者都来自 Mecena Motion（`motion/`），由 macOS 安装包
   安装，仅限 Apple 芯片。
 - **深度采集**是脚本窗口中的一个勾选项：把每一帧的陀螺仪和镜头数据存入 MecenaClipDB，供 Stabilize 使用。
 
@@ -186,7 +186,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Deta
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.0.3`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.0.4`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
