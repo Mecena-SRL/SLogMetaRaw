@@ -30,9 +30,11 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
     if (p.toneOn != 0 || p.colorOn != 0 || p.curve.roofOn != 0) xyz = sm_tone5(xyz, p);
 
     if (p.gcOn != 0) xyz = sm_gamut_compress(xyz, p);
-    if (p.drt != 0) {   // to the display: outSpace / outGamma are a display gamut and curve
-        SMf3 d = sm_display(xyz, p.drt, p.outSpace, p.gmOn);
-        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, p.outSpace);
+    if (p.drt != 0) {   // rendered for a display gamut: the output one, else Rec.709 carried in the output space
+        const int ds = p.outSpace >= 1 && p.outSpace <= 5 ? p.outSpace : 1;
+        SMf3 d = sm_display(xyz, p.drt, ds, p.gmOn);
+        if (p.hlVib > 0.0f) d = sm_highlight_vibrance(d, p.hlVib, ds);
+        if (ds != p.outSpace) d = sm_from_xyz(sm_to_xyz(d, ds), p.outSpace);
         return smf3(sm_encode(d.x, p.outGamma), sm_encode(d.y, p.outGamma), sm_encode(d.z, p.outGamma));
     }
     const int space = p.convert != 0 ? p.outSpace : p.nodeSpace;

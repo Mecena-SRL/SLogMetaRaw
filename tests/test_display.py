@@ -209,6 +209,20 @@ class GamutSteps(unittest.TestCase):
                                        % (drt, gc, gm, rgb, g, exp))
 
 
+class SceneOutput(unittest.TestCase):
+    def test_a_scene_encoding_carries_the_rendered_picture(self):
+        """Rendering with DaVinci WG / Intermediate out: a CST back to Rec.709 / Gamma 2.4 without tone mapping gives
+        the picture rendered for Rec.709, so the look can feed other plugins in a wide encoding."""
+        rnd = random.Random(5)
+        for i in range(200):
+            rgb, drt = [rnd.uniform(0.05, 0.98) for _ in range(3)], 1 + i % 5
+            want = dm.develop(rgb, SGAMUT3CINE, SLOG3, out_space=REC709, out_gamma=G24, drt=drt)
+            wide = dm.develop(rgb, SGAMUT3CINE, SLOG3, out_space=0, out_gamma=0, drt=drt)
+            lin = dm.mul(dm.MATS[REC709][1], dm.mul(dm.MATS[0][0], [dm.decode1(v, 0) for v in wide]))
+            for a, b in zip(want, (dm.encode1(v, G24) for v in lin)):
+                self.assertAlmostEqual(a, b, delta=1e-5, msg='modo %d, %s' % (drt, rgb))
+
+
 class MidGrey(unittest.TestCase):
     """End to end, log code value in -> Rec.709 / Gamma 2.4 code value out: 18% grey of every camera curve lands
     where the ACES Output Transforms put it. ACES 1.3: the RRT spline maps 0.18 to 4.8 nit (of 48), the ODT spline keeps
@@ -281,7 +295,7 @@ class DisplayKernel(unittest.TestCase):
         cases = []
         for i in range(300):
             rgb = [rnd.uniform(0.1, 0.95) for _ in range(3)]
-            out = rnd.choice([(REC709, G24), (REC709, 5), (P3D65, G24), (REC2020, 6)])
+            out = rnd.choice([(REC709, G24), (REC709, 5), (P3D65, G24), (REC2020, 6), (0, 0), (9, 1)])
             shot = (rnd.choice([3200, 5600]), 0.0, 800)
             panel = random_panel(rnd, rnd.choice([0.0, 0.3]))
             cases.append((rgb, out, shot, rnd.uniform(400, 3200), panel, 1 + i % 5, rnd.choice([0.0, 0.5, 1.0])))
