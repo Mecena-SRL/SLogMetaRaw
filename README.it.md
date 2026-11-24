@@ -249,7 +249,7 @@ ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di 
 - **Una matematica, tre implementazioni.** La matematica sta in `ofx/SLogMetaRaw/math` e si compila sia come C++ sia come
   Metal. Un modello Python di riferimento le verifica: CPU e GPU concordano entro 2·10⁻⁴, con l'FMA disattivato su ogni
   percorso.
-- **Test.** 507 test automatici: parser, modelli di riferimento, C++, Metal, un host OpenFX in miniatura che carica i due
+- **Test.** 520 test automatici: parser, modelli di riferimento, C++, Metal, un host OpenFX in miniatura che carica i due
   nodi come fa Resolve, e i file golden dei pannelli.
 
 ---

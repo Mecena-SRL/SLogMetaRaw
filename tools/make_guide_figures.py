@@ -17,7 +17,7 @@ own reference models, so a figure cannot drift from what the node does:
   dlogm          tests/develop_model.py  DLM (17-node D-Log M table, Osmo Action 6)
 
 One figure is an illustration, and says so in its caption: local_vs_point (a 1-D signal, not the Detail filter).
-The block diagrams (flow, develop_chain) are drawn by hand from the order of sm_develop_a.
+The block diagrams (flow, develop_chain) are drawn by hand from the order of sm_develop.
 """
 import math
 import os

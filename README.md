@@ -245,7 +245,7 @@ but next to strong edges grain can grow 1.25–1.7×. Dehaze needs a real haze t
   chromaticity is kept), then colour, then output. Everything is in linear light, with Sony's published curves and gamuts.
 - **One maths, three implementations.** The maths lives in `ofx/SLogMetaRaw/math` and compiles both as C++ and as
   Metal. A Python reference model checks both: CPU and GPU agree within 2·10⁻⁴, with FMA disabled on every path.
-- **Tests.** 507 automated tests: parsers, reference models, C++, Metal, a miniature OpenFX host that loads both
+- **Tests.** 520 automated tests: parsers, reference models, C++, Metal, a miniature OpenFX host that loads both
   nodes the way Resolve does, and golden files of the panels.
 
 ---

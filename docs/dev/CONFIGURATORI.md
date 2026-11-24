@@ -171,6 +171,11 @@ alpha del nodo come key del nodo Neat Video, Metal non eseguito. Aperto: tarare 
 X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.
 Rimossa nella 4.0.0 su richiesta di Ivan (in Resolve l'immagine restava strana anche col nodo maschera della 3.2.1,
 causa non diagnosticata): tabella, modello e fonti passano al plugin Noise. Resta `noise_codec` nel record della clip.
+Plugin Noise (24/11/2026): nodo `noise/` su CPU e GPU Metal (`docs/DENOISE.md`, proposta iniziale in
+`docs/proposals/NOISE_PLUGIN.md`), verificato su fotogrammi sintetici (`tests/test_noise.py`) e GPU contro CPU
+(`tests/noise_metal_test.mm`, CI macOS). Spaziale con soglia sul vicinato 3×3 (NeighShrink). Provato e scartato:
+secondo stadio Wiener su pilota (−5% di errore al doppio del costo). Aperto: prova in Resolve (accesso temporale su
+GPU, cache, Salta ovunque, Misura in modalità Metal), taratura dei profili sui campioni di Ivan, CUDA, CPU più rapida.
 Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).

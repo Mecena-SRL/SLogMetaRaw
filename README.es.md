@@ -253,7 +253,7 @@ quitar. [docs/DETAIL.md](docs/DETAIL.md)
 - **Una matemática, tres implementaciones.** La matemática está en `ofx/SLogMetaRaw/math` y se compila como C++ y como
   Metal. Un modelo Python de referencia verifica ambas: CPU y GPU coinciden dentro de 2·10⁻⁴, con FMA desactivado en todas
   las rutas.
-- **Tests.** 507 tests automáticos: parsers, modelos de referencia, C++, Metal, un host OpenFX en miniatura que carga los
+- **Tests.** 520 tests automáticos: parsers, modelos de referencia, C++, Metal, un host OpenFX en miniatura que carga los
   dos nodos como lo hace Resolve, y archivos golden de los paneles.
 
 ---

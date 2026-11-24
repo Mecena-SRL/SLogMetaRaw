@@ -86,7 +86,7 @@ add_custom_target(slogmetaraw_gen DEPENDS ${GEN_OUT})
 
 # ---- plugin sources: the CPU path renders everywhere, Metal is added on macOS
 file(GLOB PLUGIN_SRCS CONFIGURE_DEPENDS
-  src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp)
+  src/*.cpp src/common/*.cpp src/develop/*.cpp src/detail/*.cpp src/noise/*.cpp)
 if(NOT WIN32)
   list(FILTER PLUGIN_SRCS EXCLUDE REGEX "ChildWin\\.cpp$")
 endif()
@@ -94,6 +94,7 @@ if(APPLE)
   file(GLOB MM_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/metal/*.mm")
   list(APPEND PLUGIN_SRCS ${MM_SRCS})
   set_source_files_properties(${MM_SRCS} "${REPO_ROOT}/tests/metal_test.mm" "${REPO_ROOT}/tests/detail_metal_test.mm"
+                              "${REPO_ROOT}/tests/noise_metal_test.mm"
                               PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 endif()
 
@@ -143,7 +144,8 @@ else()
   set(OFX_ARCH_DIR "Linux-x86-64")
 endif()
 set(BUNDLE_DIR "${CMAKE_BINARY_DIR}/SLogMetaRaw.ofx.bundle")
-set(RESOURCES com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png fc_exposure.png fc_temperature.png
+set(RESOURCES com.slogmetaraw.SLogMetaRaw.png com.slogmetaraw.SLogMetaRawDetail.png com.slogmetaraw.SLogMetaRawNoise.png
+             fc_exposure.png fc_temperature.png
               fc_tint.png fc_zones.png view_gain.png view_base.png
               view_zones.png view_zones_grey.png)
 set(_res_copy)
@@ -195,6 +197,7 @@ if(SLOGMETARAW_BUILD_TESTS)
   endif()
   slog_test(ofx_math_test "${REPO_ROOT}/tests/ofx_math_test.cpp")
   slog_test(detail_test "${REPO_ROOT}/tests/detail_test.cpp" src/detail/DetailPasses.cpp)
+  slog_test(noise_test "${REPO_ROOT}/tests/noise_test.cpp" src/noise/NoiseEngine.cpp src/noise/NoiseProfiles.cpp)
   if(WIN32)
     set(_child ${_common}/ChildWin.cpp)
   else()
@@ -211,7 +214,9 @@ if(SLOGMETARAW_BUILD_TESTS)
               "${CMAKE_CURRENT_SOURCE_DIR}/metal/DevelopKernel.mm")
     slog_test(detail_metal_test "${REPO_ROOT}/tests/detail_metal_test.mm" src/detail/DetailPasses.cpp
               "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/DetailKernels.mm")
-    foreach(t metal_test detail_metal_test)
+    slog_test(noise_metal_test "${REPO_ROOT}/tests/noise_metal_test.mm" src/noise/NoiseEngine.cpp
+              "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/NoiseKernels.mm")
+    foreach(t metal_test detail_metal_test noise_metal_test)
       target_link_libraries(${t} PRIVATE "-framework Metal" "-framework Foundation")
     endforeach()
   endif()

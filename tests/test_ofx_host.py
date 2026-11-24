@@ -20,7 +20,8 @@ sys.path.insert(0, ROOT)
 from slogmetaraw import __version__  # noqa: E402
 
 GOLDEN = {0: os.path.join(ROOT, 'tests', 'golden', 'params_develop.txt'),
-          1: os.path.join(ROOT, 'tests', 'golden', 'params_detail.txt')}
+          1: os.path.join(ROOT, 'tests', 'golden', 'params_detail.txt'),
+          2: os.path.join(ROOT, 'tests', 'golden', 'params_noise.txt')}
 
 
 # Parameters removed on purpose after 2.4.0 (Detail: Standard and Cinematografico are gone, decided with the owner,
@@ -227,12 +228,16 @@ class OfxHost(unittest.TestCase):
         a LUT: a spatial one declaring otherwise would corrupt Generate LUT without a warning."""
         first = self.host('--plugin', '0', '--no-reload')
         second = self.host('--plugin', '1', '--no-reload')
-        self.assertIn('plugins=2', first)
+        third = self.host('--plugin', '2', '--no-reload')
+        self.assertIn('plugins=3', first)
         self.assertIn('plugin: com.slogmetaraw.SLogMetaRaw v', first)
         self.assertIn('noSpatialAwareness=true', first)
         self.assertIn('plugin: com.slogmetaraw.SLogMetaRawDetail v1.0', second)
         self.assertIn('noSpatialAwareness=false', second)
         self.assertIn('identity=1', second)
+        # the Noise node: appended third, spatial and temporal
+        self.assertIn('plugin: com.slogmetaraw.SLogMetaRawNoise v1.0', third)
+        self.assertIn('noSpatialAwareness=false', third)
 
     def test_instance_without_a_clip_stays_neutral(self):
         """No source path (a compound clip, for instance): the node must still build."""

@@ -250,7 +250,7 @@ ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaz
 - **Uma matemática, três implementações.** A matemática fica em `ofx/SLogMetaRaw/math` e é compilada como C++ e como
   Metal. Um modelo Python de referência verifica as duas: CPU e GPU concordam dentro de 2·10⁻⁴, com FMA desativado em
   todos os caminhos.
-- **Testes.** 507 testes automáticos: parsers, modelos de referência, C++, Metal, um host OpenFX em miniatura que carrega
+- **Testes.** 520 testes automáticos: parsers, modelos de referência, C++, Metal, um host OpenFX em miniatura que carrega
   os dois nós como o Resolve faz, e arquivos golden dos painéis.
 
 ---
