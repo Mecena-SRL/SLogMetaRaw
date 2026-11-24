@@ -352,6 +352,7 @@ static OfxStatus effectGetParamSet(OfxImageEffectHandle effect, OfxParamSetHandl
 }
 
 static std::map<std::string, PropSet*> g_clips;   // one property set per clip name
+static const char* g_colourspace = NULL;          // "--colourspace NAME": what Resolve reports on the source clip
 
 static OfxStatus clipDefine(OfxImageEffectHandle, const char* name, OfxPropertySetHandle* out)
 {
@@ -359,6 +360,8 @@ static OfxStatus clipDefine(OfxImageEffectHandle, const char* name, OfxPropertyS
     if (!p) {
         p = newProps();
         propSetString(handleOf(p), kOfxPropName, 0, name);
+        if (g_colourspace && !strcmp(name, kOfxImageEffectSimpleSourceClipName))
+            propSetString(handleOf(p), "OfxImageClipPropColourspace", 0, g_colourspace);
     }
     if (out) *out = handleOf(p);
     return kOfxStatOK;
@@ -682,6 +685,7 @@ int main(int argc, char** argv)
         else if (!strcmp(argv[i], "--no-reload")) g_noReload = true;
         else if (!strcmp(argv[i], "--begin-edit")) g_beginEdit = true;
         else if (!strcmp(argv[i], "--plugin") && i + 1 < argc) g_pluginIndex = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--colourspace") && i + 1 < argc) g_colourspace = argv[++i];
         else if (!strcmp(argv[i], "--change") && i + 1 < argc) g_changes.push_back(argv[++i]);
         else if (!strcmp(argv[i], "--set") && i + 1 < argc) {
             std::string kv = argv[++i];

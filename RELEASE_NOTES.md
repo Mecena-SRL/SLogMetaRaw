@@ -1,5 +1,15 @@
 # Changelog
 
+## Log MetaRaw 4.0.3
+
+- **Noise si attiva come Log MetaRaw**: se Resolve passa al nodo uno spazio colore che il nodo non conosce (DaVinci
+  YRGB e altri), ora vale la codifica della camera letta dalla clip, come in Log MetaRaw. Prima il nodo restava
+  neutro con «ingresso non riconosciuto» anche su clip già lette dallo script (segnalato su una FX6). Se resta
+  neutro, la riga Noise dice il nome che Resolve ha dato.
+- **Rileggi metadata in cima al pannello Noise**: il tasto (prima *Leggi dati camera*, nel gruppo Profilo) sta sotto
+  la riga Noise, con lo stesso nome e lo stesso comportamento di Log MetaRaw: rilegge il file, scrive nel Media
+  Pool, riporta *Ingresso (IDT)* ad Automatico e riattiva il nodo.
+
 ## Log MetaRaw 4.0.2
 
 - **Noise, zona campione** (come Neat Video): spunta **Mostra campione**, trascina nel viewer i due angoli del
