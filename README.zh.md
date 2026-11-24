@@ -16,13 +16,15 @@ Ivan Mazzone + Claude · <a href="https://github.com/ivan-94m">github.com/ivan-9
 会读取 FX6、FX9 的 MXF 文件中的这些数据，并为其提供 *Camera Raw* 面板；但对于 FX30、FX3、a7 或 a6000 系列的 MP4
 文件，它会忽略这些数据。
 
-Log MetaRaw 读取并使用这些数据，由三部分组成：
+Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成，图标上的编号即串联顺序：
 
 | | 位置 | 作用 |
 |---|---|---|
 | **脚本** | Workspace › Scripts › Log MetaRaw | 读取项目中所有片段的元数据并写入媒体池 |
-| **Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
-| **Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
+| **1 · Log MetaRaw Noise** 节点 | Color › OpenFX | 在 log 画面上降噪，依据摄影机、ISO 与格式的预期噪声；时域与空域，Metal GPU |
+| **2 · Stabilize**、**3 · Motion Blur** | Color › OpenFX › Log MetaRaw | 陀螺仪稳定（内置 Gyroflow）与基于光流重建的运动模糊；仅限 Apple 芯片 Mac |
+| **4 · Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
+| **5 · Log MetaRaw Detail** 节点 | Color › OpenFX | 创意节点，含暗房模式（Zonale、Split grade、Unito）：局部影调恢复、Texture、Clarity、Dehaze |
 
 不转码任何文件，也从不写入任何原始文件。
 
@@ -69,7 +71,7 @@ Log MetaRaw 读取并使用这些数据，由三部分组成：
 5. 然后再接你的 CST、LUT 或 DRT。
 
 ```
-Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
+Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 ```
 
 ---
@@ -164,6 +166,25 @@ Log MetaRaw  →  Log MetaRaw Detail  →  CST / LUT / DRT  →  其余调色
 
 ---
 
+## Noise、Stabilize 与 Motion Blur 节点（4.0.0）
+
+它们处理摄影机画面，位于 **Log MetaRaw** 之前。
+
+- **Log MetaRaw Noise** 知道该预期多少噪声、出现在哪里。它从脚本记录中读取摄影机、ISO（或 EI 与原生 ISO）、编码、每像素
+  比特数与 4:2:0，并为 Sony FX6、FX30、iPhone 17 Pro、DJI Osmo Action 4 和 5 Pro 提供配置。也可以从含平坦区域的帧中
+  测量噪声。
+  - *时域*：±1 至 ±3 个相邻帧，按块对齐并逐像素加权，运动部分和剪辑点不会糊在一起。
+  - *空域*：亮度与色彩分开处理，分 5 个小波频带。每个系数与其邻域的能量比较，从而保留纹理。
+  - 提供已去除噪声的视图、细节与肤色保护，以及在剪辑时关闭所有 Noise 节点的 **Salta Noise ovunque**。
+  - 在 Mac 上全部在 Metal GPU 上运行，测试验证其结果与 CPU 一致；其他系统在 CPU 上运行。
+  - 配置在用真实样本校准之前都是估计值。[docs/DENOISE.md](docs/DENOISE.md)
+- **Stabilize** 读取片段的陀螺仪数据（内置 Gyroflow），提供从微抖到摇臂的风格，以及可设关键帧的 **MASTER**。
+  **Motion Blur** 基于光流重建快门，例如从 50p 90° 到 25p 180°。两者都来自 Mecena Motion（`motion/`），由 macOS 安装包
+  安装，仅限 Apple 芯片。
+- **深度采集**是脚本窗口中的一个勾选项：把每一帧的陀螺仪和镜头数据存入 MecenaClipDB，供 Stabilize 使用。
+
+这三个节点都尚未在 Resolve 中用真实片段测试。
+
 ## 更新与隐私
 
 - **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.0.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
@@ -196,11 +217,12 @@ python3 -m slogmetaraw clip.MP4             # 命令行中以 Catalyst 风格显
 ```
 slogmetaraw/         解析器、写入 Resolve、脚本窗口、更新检查
 resolve_script/      Workspace › Scripts 的启动器
-ofx/SLogMetaRaw/     math/（CPU/Metal 共用）、src/（common、develop、detail）、metal/
+ofx/SLogMetaRaw/     math/（CPU/Metal 共用）、src/（common、develop、detail、noise）、metal/
+motion/              Mecena Motion：Stabilize、Motion Blur、mecena-clipdb（Rust + C++，macOS）
 tools/               矩阵、图标和图表生成器
 tests/               测试与参考模型（示例片段不在仓库中）
 packaging/           安装程序、指南、卸载程序
-docs/                TONE_MAPPING、DETAIL、FALSE_COLOR、DATA_LEVELS
+docs/                TONE_MAPPING、DETAIL、DENOISE、FALSE_COLOR、DATA_LEVELS
 ```
 
 ### Linux 与 Windows（CPU 渲染，实验性）
@@ -238,7 +260,7 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 
 ## 已知限制
 
-- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁：它们位于 Resolve 的解码器内部。Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
+- Resolve 自带的 Camera Raw 面板和陀螺仪稳定无法为 MP4 解锁（陀螺仪稳定可用 Stabilize 节点）：它们位于 Resolve 的解码器内部。Log MetaRaw 重建的是色彩控件，并不是打开 Resolve 内部的某扇门。
 - 部分摄影机（包括 a6300）不记录开尔文值：此时根据光源预设估算，并加以标注。
 - S-Log2 按照索尼文档实现。Resolve 自带的 S-Log2 曲线与之相差约 0.15 档。
 - 尚需在更多文件上验证：XAVC HS（HEVC）、HLG、S-Cinetone、电动变焦。
@@ -249,10 +271,12 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 ## 致谢与许可
 
 **Ivan Mazzone + Claude** · [github.com/ivan-94m](https://github.com/ivan-94m) · [@ivan_94m](https://instagram.com/ivan_94m)。
-与 Claude（Anthropic）共同编写：1.0 于 2026 年 9 月 19 日，1.1.0 于 9 月 22 日，2.0.0 于 2026 年 9 月 23 日，3.2.0 于 2026 年 11 月 24 日。完整历史见 [RELEASE_NOTES.md](RELEASE_NOTES.md)（意大利语）。
+与 Claude（Anthropic）共同编写：1.0 于 2026 年 9 月 19 日，1.1.0 于 9 月 22 日，2.0.0 于 2026 年 9 月 23 日，3.2.0 与 4.0.0 于 2026 年 11 月 24 日。完整历史见 [RELEASE_NOTES.md](RELEASE_NOTES.md)（意大利语）。
 
 索尼标签参考：SMPTE RDD 18、[ExifTool](https://exiftool.org) 以及 AdrianEddy 的 [telemetry-parser](https://github.com/AdrianEddy/telemetry-parser)（MIT），部分标签表来自后者。
 
 渲染与摄影机数据：ACES 2.0 Output Transform 移植自 OpenColorIO 2.6，ACES 1.3 以其内置变换核对（ACES：Academy of Motion Picture Arts and Sciences）；[OpenDRT](https://github.com/jedypod/open-display-transform) v1.1.0 由 Jed Smith 编写（GPL-3.0），移植自其 DCTL。DJI D-Log M 的曲线和色域来自 [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 中 Osmo Action 6 的实测，以及 DJI 的 Action 6 LUT（仅作参考，不随项目分发）；3.1.x 及之前的曲线是 Thatcher Freeman 的拟合。
+
+Stabilize 基于 AdrianEddy 及贡献者的 [Gyroflow](https://github.com/gyroflow/gyroflow)（GPL-3.0）及其镜头库。Noise 节点的空域滤波参考 NeighShrink（Chen、Bui、Krzyżak，2004）。
 
 [GNU GPL v3.0 或更高版本](LICENSE)。OpenFX SDK 版权归 The Open Effects Association 所有（BSD-3）。Sony、XAVC 和 Catalyst 是 Sony Group Corporation 的商标；DaVinci Resolve 是 Blackmagic Design 的商标。本项目为独立项目，与上述两家公司无隶属关系，也未获其认可。

@@ -166,7 +166,7 @@ P-002 (riselezionare la clip dopo una nuova lettura) resta proposta: serve un'AP
   D-Log M per famiglia di camere (misure Action 6 / 360 II diverse da Freeman), percorsi `djmd` per schema dei droni.
 
 Maschera rumore (24/11/2026): gruppo nuovo del Develop, alpha con le zone rumorose per camera, ISO nativo, codec ed
-EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`); RGB invariato, verificato dai test. Da provare in Resolve:
+EI scelto (`develop/NoiseMask.cpp`, `docs/NOISE.md`, entrambi rimossi in 4.0.0); RGB invariato, verificato dai test. Da provare in Resolve:
 alpha del nodo come key del nodo Neat Video, Metal non eseguito. Aperto: tarare le costanti stimate (C70, Z8,
 X-H2S, Komodo, Pocket, FX3/FX30, DJI) con una scala di esposizioni su un grigio.
 Rimossa nella 4.0.0 su richiesta di Ivan (in Resolve l'immagine restava strana anche col nodo maschera della 3.2.1,

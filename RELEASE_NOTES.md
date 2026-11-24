@@ -13,7 +13,8 @@
 - **Maschera rumore rimossa** dal nodo Develop (gruppo, controlli e calcolo): anche come nodo maschera (3.2.1) in Resolve
   l'immagine restava strana. Il modello del rumore per camera (ISO nativi, EI, codec) passa al nodo
   Noise. I progetti salvati con la maschera accesa dovrebbero riaprirsi con il nodo che sviluppa (non provato).
-- Guide: tolta la pagina della maschera (9 pagine).
+- **Guide** (10 pagine, prima pagina di sintesi): tolta la pagina della maschera, nuova pagina su Noise, Stabilize e
+  Motion Blur, schema della catena con i 5 nodi numerati. README nelle 5 lingue, wiki e crediti (Gyroflow) aggiornati.
 - **Acquisizione profonda (IMU)**, nuova spunta nella finestra (e `--deep` da riga di comando): con Mecena Motion
   installato, ogni clip letta passa anche da `mecena-clipdb`, che salva giroscopio, accelerometro, orientamento,
   tempo di lettura del sensore e obiettivo di ogni fotogramma nel **MecenaClipDB**, lo stesso database che legge
