@@ -24,7 +24,7 @@ Log MetaRaw reads that data and uses it. It is a script and five nodes, numbered
 | **1 · Log MetaRaw Noise** node | Color › OpenFX | noise reduction on the log image, with the expected noise of the camera, ISO and format; temporal and spatial, Metal GPU |
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | gyro stabilisation (built-in Gyroflow) and motion blur rebuilt from optical flow; Apple silicon Macs only |
 | **4 · Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
-| **5 · Log MetaRaw Creative** node | Color › OpenFX | creative development: 16 photographic processes (film negatives and prints, reversal, black and white, Technicolor, Autochrome, three plates, daguerreotype, collodion, early prints), analog video and vintage digital cameras |
+| **5 · Log MetaRaw Creative** node | Color › OpenFX | creative development: 16 photographic processes (film negatives and prints, reversal, black and white, Technicolor, Autochrome, three plates, daguerreotype, collodion, early prints), analog video and vintage digital cameras; prints and print generations; a viewing medium (cinema, home projector, CRT TV, handheld LCD, paper) |
 
 No file is transcoded and no original file is ever written.
 

@@ -190,6 +190,16 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         e.buf(src[0], 0); e.buf(dst, 1); e.buf(T, 2, Y); e.buf(YbBuf, 3, Yb); e.buf(T, 4, 2 * N); e.buf(T, 5, 3 * N);
         e.bytes(p, 6); e.grid(ps, p.W, p.H);
     }
+    // 4. viewing medium
+    if (p.medium != CR_MEDIUM_NONE) {
+        id<MTLBuffer> M = P("M", 3 * N);
+        ps = e.use("cr_medium_in_k");
+        e.buf(dst, 0); e.buf(M, 1); e.bytes(p, 2); e.grid(ps, p.W, p.H);
+        ps = e.use("cr_medium_k");
+        e.buf(M, 0); e.buf(dst, 1); e.bytes(p, 2); e.grid(ps, p.W, p.H);
+    } else {
+        s->planes.erase("M");
+    }
     [enc endEncoding];
     if (!e.ok || !allocated) return false;
     [commands addCompletedHandler:^(id<MTLCommandBuffer>) { pool().release(device, key, s); }];

@@ -140,18 +140,26 @@ void CreativeEffect::updateProcess()
     };
     bool used[kGrCount] = {};
     used[kGrProcess] = used[kGrColour] = true;
-    for (const CrChoiceDef& c : kCrChoices) show(c.name, (c.shows & bit) != 0);
+    for (const CrChoiceDef& c : kCrChoices) {
+        const bool on = (c.shows & bit) != 0;
+        show(c.name, on);
+        used[c.group] = used[c.group] || on;
+    }
     for (const CrSliderDef& s : kCrSliders) {
         const bool on = (s.shows & bit) != 0;
         show(s.name, on);
         used[s.group] = used[s.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
-    if (paramExists("processInfo")) {
+    if (paramExists("processInfo")) {   // the process, then the medium it is seen on
+        int medium = 0;
+        if (paramExists("medium")) fetchChoiceParam("medium")->getValue(medium);
+        std::string text = kCrProcessInfo[proc];
+        if (medium > 0 && medium < kCrMediumCount) text += std::string(" · ") + kCrMediumInfo[medium];
         OFX::StringParam* info = fetchStringParam("processInfo");
         std::string cur;
         info->getValue(cur);
-        if (cur != kCrProcessInfo[proc]) info->setValue(kCrProcessInfo[proc]);
+        if (cur != text) info->setValue(text);
     }
 }
 
@@ -192,7 +200,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs&, const std::st
     }
     if (p_ParamName == "creativeReset") resetAll();
     else if (p_ParamName == "nodeInput") refreshInfo();
-    else if (p_ParamName == "process") updateProcess();
+    else if (p_ParamName == "process" || p_ParamName == "medium") updateProcess();
     m_Badge.refresh(false);
 }
 

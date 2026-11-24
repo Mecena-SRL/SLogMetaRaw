@@ -16,17 +16,18 @@ const unsigned kCrDeveloped = CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | 
 const unsigned kCrHalo = kCrFilm | CR_BIT(kCrCollodion);
 const unsigned kCrSeparate = CR_BIT(kCrTechni3) | CR_BIT(kCrTechni2) | CR_BIT(kCrThreePlates) | CR_BIT(kCrKinemacolor);
 const unsigned kCrScreen = CR_BIT(kCrAutochrome) | CR_BIT(kCrDufay);
+const unsigned kCrPrinted = CR_BIT(kCrColourNegative) | CR_BIT(kCrBlackWhite);   // a negative printed on a positive
 const unsigned kCrToned = CR_BIT(kCrDaguerreotype) | CR_BIT(kCrAlbumen) | CR_BIT(kCrCyanotype) | CR_BIT(kCrPlatinum);
 
 enum CreativeGroup { kGrProcess, kGrShot, kGrPrint, kGrTexture, kGrSeparation, kGrScreen, kGrPlate, kGrSignal,
-                     kGrColour, kGrCount };
+                     kGrColour, kGrView, kGrCount };
 struct CrGroupDef { const char* name; const char* label; bool open; };
 static const CrGroupDef kCrGroups[kGrCount] = {
     { "processGroup", "Processo", true },       { "shotGroup", "Ripresa e sviluppo", true },
-    { "printGroup", "Stampa", false },          { "textureGroup", "Grana e ottica", true },
+    { "printGroup", "Stampa e copie", true },          { "textureGroup", "Grana e ottica", true },
     { "separationGroup", "Separazioni", true }, { "screenGroup", "Mosaico", true },
     { "plateGroup", "Lastra e carta", true },   { "signalGroup", "Segnale", true },
-    { "colourGroup", "Colore", false } };
+    { "colourGroup", "Colore", false },        { "viewGroup", "Supporto di visione", true } };
 
 static const char* const kCrOutputNames[2] = { "Rec.709 Gamma 2.4 (stampa)", "Log d'ingresso (scansione del negativo)" };
 
@@ -39,12 +40,14 @@ struct CrChoiceDef
     int count;
     unsigned shows;
     const char* hint;
+    int group = kGrProcess;
 };
 static const CrChoiceDef kCrChoices[] = {
     { "negative", "Pellicola", &CreativeControls::negative, kCrNegativeNames, kCrNegativeCount,
       CR_BIT(kCrColourNegative), "Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti" },
-    { "print", "Stampa", &CreativeControls::print, kCrPrintNames, kCrPrintCount, CR_BIT(kCrColourNegative),
-      "Il positivo su cui si stampa il negativo. Nessuna = il negativo scansionato, piatto" },
+    { "print", "Positivo", &CreativeControls::print, kCrPrintNames, kCrPrintCount, CR_BIT(kCrColourNegative),
+      "La pellicola positiva su cui si stampa il negativo: contrasto, dominante, nero. Nessuna = il negativo "
+      "scansionato, piatto", kGrPrint },
     { "output", "Uscita", &CreativeControls::output, kCrOutputNames, 2, CR_BIT(kCrColourNegative),
       "Rec.709: la stampa vista in proiezione. Log: la scansione del negativo, riscritta nella codifica d'ingresso, "
       "per gradare dopo come un DI" },
@@ -69,7 +72,13 @@ static const CrChoiceDef kCrChoices[] = {
     { "analog", "Formato video", &CreativeControls::analog, kCrAnalogNames, kCrAnalogCount, CR_BIT(kCrAnalog),
       "Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato" },
     { "digital", "Camera", &CreativeControls::digital, kCrDigitalNames, kCrDigitalCount, CR_BIT(kCrDigital),
-      "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera" } };
+      "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera" },
+    { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
+      "Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. "
+      "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
+    { "medium", "Supporto", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
+      "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
+      "console portatile, carta. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView } };
 const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
 
 struct CrSliderDef
@@ -106,6 +115,8 @@ static const CrSliderDef kCrSliders[] = {
       "Più blu = stampa più gialla" },
     { "printContrast", "Contrasto", &CreativeControls::printContrast, 0.5, 2, 0.01, kGrPrint, kCrAll,
       "Il contrasto del positivo (o del segnale), moltiplicato su quello del processo" },
+    { "printGrain", "Grana della stampa", &CreativeControls::printGrain, 0, 3, 0.01, kGrPrint, kCrPrinted,
+      "La grana propria del positivo, nelle sue densità, più fine di quella del negativo: 1 = com'era" },
     // texture and optics
     { "grain", "Grana", &CreativeControls::grain, 0, 3, 0.01, kGrTexture, kCrPhoto,
       "Quantità rispetto a quella del materiale e del formato: 1 = com'era" },
@@ -187,5 +198,9 @@ static const CrSliderDef kCrSliders[] = {
       "Dove passano le ombre alle luci, in stop dal grigio" },
     { "saturation", "Saturazione", &CreativeControls::saturation, 0, 2, 0.01, kGrColour, kCrAll, nullptr },
     { "density", "Densità colore", &CreativeControls::density, 0, 1, 0.01, kGrColour, kCrAll,
-      "Colori saturi più scuri, come i coloranti veri" } };
+      "Colori saturi più scuri, come i coloranti veri" },
+    // viewing medium
+    { "mediumAmount", "Intensità del supporto", &CreativeControls::mediumAmount, 0, 1, 0.01, kGrView, kCrAll,
+      "1 = com'è davvero. Sala e proiettore: caduta di luce, sfarfallio, instabilità. Tubo: curvatura, righe, "
+      "fosfori. Console: retinatura e griglia. Carta: fibre, bianco e nero della carta" } };
 const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);

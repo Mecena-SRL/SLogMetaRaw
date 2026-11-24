@@ -188,4 +188,7 @@ Creative (24/11/2026, non rilasciato): scelta di Ivan, il Detail (Zonale, Split 
 è sostituito per intero dal nodo Creative nello stesso slot (P-004 nell'Atlante). Ricerche in `docs/creative/`, motore e
 tabelle in `docs/CREATIVE.md`. Verificato: test CPU (`tests/test_creative.py`), host OFX, golden del pannello, controllo
 sintattico del codice Metal con spazi d'indirizzo simulati. Aperto: prova in Resolve, parità Metal (solo CI macOS),
-taratura dei numeri su riprese reali; rimandati grana anamorfica, DCT e smear CCD, CRT, infrarosso, Polaroid, lith.
+taratura dei numeri su riprese reali; rimandati grana anamorfica, DCT e smear CCD, infrarosso, Polaroid, lith.
+Poi (stesso giorno, richiesta di Ivan): più pellicole, positivi e generazioni di copia con grana dei duplicati e della
+stampa, Supporto di visione (sala, proiettore, tubo, monitor, console LCD, carta) come ultimo passo su CPU e Metal,
+motore più veloce. Verificato come sopra; aperto: parità Metal del supporto (CI), aspetto su un 4K vero.

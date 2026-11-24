@@ -62,6 +62,10 @@ int main()
         c.highAmount = 0.4;
         c.age = 0.4;
         c.silver = 0.5;
+        c.generation = k % kCrGenerationCount;
+        c.printGrain = 2;
+        c.medium = k % kCrMediumCount;   // the console's four shades are thresholds: a rounding apart flips one
+        if (c.medium == 6) c.medium = 3;
         if (k == kCrProcessCount) { c.process = kCrColourNegative; c.output = 1; c.print = 0; }
         if (k == kCrProcessCount + 1) { c.process = kCrAnalog; c.analog = 2; c.wear = 1; c.heads = 1; }
         double t[3];

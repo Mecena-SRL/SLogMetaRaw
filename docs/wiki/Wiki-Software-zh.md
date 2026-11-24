@@ -36,7 +36,7 @@ Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文�
 |---|---|---|
 | **脚本** | Workspace › Scripts › Log MetaRaw | 读取每个片段的元数据并写入媒体池。修正每个片段的 Data Level。 |
 | **Log MetaRaw** 节点 | Color › OpenFX —— **第一个节点** | 以拍摄时的数值为起点显影片段：白平衡、曝光、色彩空间、分区影调、伪色。 |
-| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机 |
+| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；观看介质（影院、家用放映机、CRT 电视、掌机 LCD、相纸） |
 
 原始文件**绝不会被修改**：不转码，不重新封装。
 

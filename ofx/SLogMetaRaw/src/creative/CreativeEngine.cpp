@@ -52,6 +52,10 @@ void writeOut(const CreativeParallel& par, const CreativeParams& p, const float*
     });
 }
 
+void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeScratch& s, const float* const E[3],
+                 const float* hal, const float* const bl[3], const float* alpha, size_t srcRowFloats, float* dst,
+                 size_t dstRowFloats);
+
 }  // namespace
 
 void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
@@ -61,13 +65,19 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
     const size_t N = (size_t)W * H;
     CreativeParams q = p;
     q.rowPixels = (int)(srcRowFloats / 4);
+    q.dstRowPixels = (int)(dstRowFloats / 4);
 
     // 1. records
     for (int k = 0; k < 3; ++k) ensure(s.E[k], N);
     par(H, [&](int b, int e) {
         for (int y = b; y < e; ++y)
-            for (int x = 0; x < W; ++x)
-                for (int k = 0; k < 3; ++k) s.E[k][(size_t)y * W + x] = cr_record(src[k], k, x, y, q);
+            for (int x = 0; x < W; ++x) {
+                const SMf3 e = cr_records(src[0], src[1], src[2], x, y, q);
+                const size_t i = (size_t)y * W + x;
+                s.E[0][i] = e.x;
+                s.E[1][i] = e.y;
+                s.E[2][i] = e.z;
+            }
     });
 
     // 2. glow
@@ -84,8 +94,45 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
         writeOut(par, q, src[0], srcRowFloats, dst, dstRowFloats, [&](int x, int y) {
             return cr_process(cr_glow_at(E[0], E[1], E[2], hal, bl[0], bl[1], bl[2], x, y, q), x, y, q);
         });
-        return;
+    } else {
+        signalChain(par, q, s, E, hal, bl, src[0], srcRowFloats, dst, dstRowFloats);
     }
+
+    // 4. viewing medium: the finished picture, decoded into M, shown through the screen or on paper
+    if (q.medium == CR_MEDIUM_NONE) return;
+    ensure(s.M, 3 * N);
+    float* M = s.M.data();
+    par(H, [&](int b, int e) {
+        for (int y = b; y < e; ++y)
+            for (int x = 0; x < W; ++x) {
+                const SMf3 v = cr_medium_in(dst, x, y, q);
+                const size_t k = (size_t)y * W + x;
+                M[k] = v.x;
+                M[N + k] = v.y;
+                M[2 * N + k] = v.z;
+            }
+    });
+    par(H, [&](int b, int e) {
+        for (int y = b; y < e; ++y)
+            for (int x = 0; x < W; ++x) {
+                const SMf3 o = cr_medium_at(M, M + N, M + 2 * N, x, y, q);
+                float* d = dst + (size_t)y * dstRowFloats + (size_t)x * 4;
+                d[0] = o.x;
+                d[1] = o.y;
+                d[2] = o.z;
+            }
+    });
+}
+
+namespace {
+
+// Signal chains: Y Cb Cr planes, their filters, then per pixel.
+void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeScratch& s, const float* const E[3],
+                 const float* hal, const float* const bl[3], const float* alpha, size_t srcRowFloats, float* dst,
+                 size_t dstRowFloats)
+{
+    const int W = q.W, H = q.H;
+    const size_t N = (size_t)W * H;
     for (int c = 0; c < 3; ++c) ensure(s.V[c], N);
     for (int c = 0; c < 4; ++c) ensure(s.T[c], N);
     par(H, [&](int b, int e) {
@@ -115,6 +162,8 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
     blur1(par, s.V[2].data(), s.T[3].data(), W, H, 0, q.chromaSigma, q.chromaDelay);
     const float* Yc = Y;
     const float* Ybc = Yb;
-    writeOut(par, q, src[0], srcRowFloats, dst, dstRowFloats,
+    writeOut(par, q, alpha, srcRowFloats, dst, dstRowFloats,
              [&](int x, int y) { return cr_signal_at(Yc, Ybc, s.T[2].data(), s.T[3].data(), x, y, q); });
 }
+
+}  // namespace

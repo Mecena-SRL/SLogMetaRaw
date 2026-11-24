@@ -31,9 +31,15 @@ const char* const kCrNegativeNames[kCrNegativeCount] = {
     "Cinema lenta, pulita", "Cinema veloce tungsteno", "Veloce senza remjet (alone forte)", "Fredda a basso contrasto",
     "Vivida ad alto contrasto", "Ritratto morbida", "Amatoriale calda", "Amatoriale fredda-verde",
     "Archivio Est Europa anni '70", "Monopack anni '50 (assorbimenti forti)", "Sovcolor anni '50",
-    "ORWO NC anni '70", "Svema anni '70-'80", "Gevacolor anni '50" };
-const char* const kCrReversalNames[kCrReversalCount] = { "Ultra-satura", "Neutra", "Coloranti aggiunti in sviluppo" };
-const char* const kCrBWStockNames[kCrBWStockCount] = { "Cinema classica", "Veloce da reportage", "Tabulare finissima" };
+    "ORWO NC anni '70", "Svema anni '70-'80", "Gevacolor anni '50", "Diurna 50, grana finissima",
+    "Tungsteno 200, media", "Fotografica 400 (negativo still)", "Fotografica ritratto 160", "Amatoriale 800, notturna",
+    "Negativo anni '80 (prima dei tabulari)" };
+const char* const kCrReversalNames[kCrReversalCount] = { "Ultra-satura", "Neutra", "Coloranti aggiunti in sviluppo",
+                                                          "Super 8 tungsteno anni '70", "Fredda moderna da proiezione",
+                                                          "Scaduta (contrasto basso)" };
+const char* const kCrBWStockNames[kCrBWStockCount] = { "Cinema classica", "Veloce da reportage", "Tabulare finissima",
+                                                       "Lenta 25, grana finissima", "Spinta a 3200",
+                                                       "Positiva usata in ripresa (contrasto alto)" };
 const char* const kCrSensitivityNames[kCrSensitivityCount] = { "Blu (prima del 1880)", "Ortocromatica",
                                                                "Pancromatica precoce", "Pancromatica moderna" };
 const char* const kCrFilterNames[kCrFilterCount] = { "Nessuno", "Giallo", "Arancio", "Rosso", "Verde" };
@@ -42,7 +48,28 @@ const char* const kCrTechniEraNames[kCrTechniEraCount] = { "1935-1944 con chiave
 const char* const kCrCollodionNames[kCrCollodionCount] = { "Ambrotipo (vetro su nero)", "Ferrotipo (ferro laccato)" };
 const char* const kCrPaperNames[kCrPaperCount] = { "Carta salata", "Albumina" };
 const char* const kCrPrintNames[kCrPrintCount] = { "Nessuna (scansione del negativo)", "Positivo standard",
-                                                   "Positivo a contrasto alto", "Positivo freddo", "Positivo morbido" };
+                                                   "Positivo a contrasto alto", "Positivo freddo", "Positivo morbido",
+                                                   "Positivo caldo anni '70", "Positivo Est Europa (poca densità)",
+                                                   "Positivo a basso contrasto per telecinema",
+                                                   "Positivo con argento trattenuto (bypass in stampa)" };
+const char* const kCrGenerationNames[kCrGenerationCount] = { "Copia campione dal negativo",
+                                                             "Copia di distribuzione (interpositivo e internegativo)",
+                                                             "Riduzione 16 mm da 35 mm",
+                                                             "Controtipo di controtipo (archivio)" };
+const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)", "Proiezione in sala (xeno)",
+                                                     "Proiettore domestico 8/16 mm (alogena)",
+                                                     "Televisore a tubo PAL (576 righe)", "Televisore a tubo NTSC (480 righe)",
+                                                     "Monitor broadcast a tubo", "Console portatile LCD verde (160x144)",
+                                                     "Stampa fotografica su carta" };
+const char* const kCrMediumInfo[kCrMediumCount] = {
+    "",
+    "Sala: luce che cade del 20% agli angoli, nero sollevato dalla luce diffusa, leggero sfarfallio e instabilità",
+    "Proiettore di casa: lampada calda, angoli scuri, sfarfallio a 18 fotogrammi, fuoco morbido ai bordi",
+    "Tubo PAL: vetro curvo, 576 righe di scansione che si allargano nelle luci, maschera di fosfori a fessure",
+    "Tubo NTSC: come il PAL ma 480 righe, più spesse",
+    "Monitor da regia: vetro quasi piatto, righe sottili, griglia di fosfori a strisce",
+    "LCD riflettente 160x144 a quattro toni di verde, retinatura ordinata, griglia fra i pixel, cornice",
+    "Carta: bianco della carta e nero massimo (Dmax 2,1), fibre, luce della lampada che cala ai bordi" };
 const char* const kCrFormatNames[kCrFormatCount] = { "Super 8", "16 mm", "Super 35", "65 mm (Todd-AO, Panavision 70)",
                                                      "IMAX 15/70", "Lastra 9x12", "Super 16", "8 mm",
                                                      "9,5 mm Pathé-Baby", "35 mm anamorfico", "Techniscope",
@@ -78,17 +105,28 @@ const Negative kNegatives[kCrNegativeCount] = {
     { { 0.58f, 0.60f, 0.55f }, 3.0f, 4.5f, 0.5f, 16, 1.25f, 0.72f, { 0.02f, 0.03f, -0.03f }, 1.10f },
     { { 0.60f, 0.62f, 0.58f }, 2.8f, 5.0f, 0.6f, 14, 1.0f, 0.78f, { 0, 0.02f, -0.02f }, 0.95f },
     { { 0.58f, 0.62f, 0.60f }, 2.6f, 5.0f, 0.7f, 13, 1.0f, 0.82f, { -0.01f, 0.03f, -0.01f }, 0.80f },
-    { { 0.60f, 0.60f, 0.55f }, 3.0f, 4.6f, 0.6f, 15, 1.1f, 0.78f, { 0.03f, 0.01f, -0.03f }, 1.00f } };
+    { { 0.60f, 0.60f, 0.55f }, 3.0f, 4.6f, 0.6f, 15, 1.1f, 0.78f, { 0.03f, 0.01f, -0.03f }, 1.00f },
+    // generic modern stocks by speed and use (PELLICOLE_E_SVILUPPO.md): grain grows about with the square root of speed
+    { { 0.62f, 0.62f, 0.63f }, 3.0f, 7.5f, 1.1f, 4.5f, 0.9f, 1.05f, { 0, 0, 0 }, 0 },
+    { { 0.60f, 0.60f, 0.61f }, 3.0f, 7.0f, 1.0f, 8, 1.0f, 1.00f, { 0.01f, 0, -0.01f }, 0 },
+    { { 0.60f, 0.62f, 0.62f }, 2.5f, 6.5f, 1.2f, 12, 1.0f, 1.10f, { 0.02f, 0.01f, -0.03f }, 0 },
+    { { 0.55f, 0.56f, 0.57f }, 3.5f, 8.0f, 0.9f, 7, 0.9f, 0.92f, { 0.02f, 0, -0.02f }, 0 },
+    { { 0.58f, 0.60f, 0.62f }, 2.0f, 5.5f, 1.0f, 18, 1.2f, 1.00f, { 0.03f, 0.02f, -0.04f }, 0 },
+    { { 0.62f, 0.63f, 0.62f }, 2.5f, 6.0f, 1.0f, 14, 1.1f, 1.00f, { 0.02f, 0.01f, -0.02f }, 0.2f } };
 
 // Reversals: gamma (positive), toe, shoulder, interimage, grain, saturation.
 struct Reversal { float g, toe, shoulder, iie, rms, sat; };
 const Reversal kReversals[kCrReversalCount] = { { 1.80f, 1.0f, 2.0f, 1.8f, 8, 1.35f },
                                                 { 1.60f, 1.3f, 2.5f, 1.3f, 9, 1.05f },
-                                                { 1.75f, 1.0f, 2.0f, 1.2f, 9, 1.15f } };
+                                                { 1.75f, 1.0f, 2.0f, 1.2f, 9, 1.15f },
+                                                { 1.70f, 1.0f, 2.0f, 1.2f, 12, 1.10f },
+                                                { 1.65f, 1.2f, 2.4f, 1.4f, 7, 1.20f },
+                                                { 1.35f, 1.5f, 2.0f, 0.9f, 11, 0.85f } };
 
 // Black and white: gamma, toe, shoulder, grain.
 struct BWStock { float g, toe, shoulder, rms; };
-const BWStock kBWStocks[kCrBWStockCount] = { { 0.67f, 2.5f, 6.0f, 14 }, { 0.58f, 2.5f, 6.0f, 17 }, { 0.60f, 2.5f, 6.5f, 7 } };
+const BWStock kBWStocks[kCrBWStockCount] = { { 0.67f, 2.5f, 6.0f, 14 }, { 0.58f, 2.5f, 6.0f, 17 }, { 0.60f, 2.5f, 6.5f, 7 },
+                                             { 0.70f, 2.5f, 6.5f, 5 },  { 0.55f, 2.0f, 5.5f, 24 }, { 1.00f, 1.5f, 4.0f, 6 } };
 // Spectral sensitivity as Rec.709 weights (sum 1), and the taking filters' transmissions.
 const float kSensitivity[kCrSensitivityCount][3] = { { 0.00f, 0.12f, 0.88f }, { 0.04f, 0.52f, 0.44f },
                                                      { 0.18f, 0.46f, 0.36f }, { 0.27f, 0.48f, 0.25f } };
@@ -96,10 +134,38 @@ const float kFilters[kCrFilterCount][3] = { { 1, 1, 1 }, { 1.0f, 0.95f, 0.35f },
                                             { 1.0f, 0.15f, 0.03f }, { 0.3f, 1.0f, 0.3f } };
 
 // Prints: contrast of the positive curve (1 = scan), cast (stops), black density.
-struct Print { float contrast, cast[3], dmax; };
-const Print kPrints[kCrPrintCount] = { { 1.00f, { 0, 0, 0 }, 2.0f }, { 1.45f, { 0, 0, 0 }, 3.8f },
-                                       { 1.65f, { 0, 0, 0 }, 4.1f }, { 1.45f, { -0.04f, 0, 0.05f }, 3.7f },
-                                       { 1.30f, { 0.01f, 0, -0.01f }, 3.5f } };
+// Prints: contrast of the positive curve (1 = scan), cast (stops), black density, silver kept in the print.
+struct Print { float contrast, cast[3], dmax, silver; };
+const Print kPrints[kCrPrintCount] = { { 1.00f, { 0, 0, 0 }, 2.0f, 0 },          { 1.45f, { 0, 0, 0 }, 3.8f, 0 },
+                                       { 1.65f, { 0, 0, 0 }, 4.1f, 0 },          { 1.45f, { -0.04f, 0, 0.05f }, 3.7f, 0 },
+                                       { 1.30f, { 0.01f, 0, -0.01f }, 3.5f, 0 }, { 1.40f, { 0.03f, 0, -0.04f }, 3.6f, 0 },
+                                       { 1.30f, { 0.01f, 0.02f, -0.02f }, 3.0f, 0 }, { 1.10f, { 0, 0, 0 }, 3.2f, 0 },
+                                       { 1.50f, { 0.25f, 0.25f, 0.25f }, 4.4f, 0.3f } };   // printed lighter, as labs did
+
+// Generations between the camera negative and the print: grain each duplicate adds (share of the camera's, in its
+// size), the contrast and saturation they accumulate, and the print's grain size (a 16 mm print is enlarged more).
+struct Generation { float grain, size, contrast, sat, printSize; };
+const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00f, 1.0f },
+                                                      { 0.35f, 0.8f, 1.05f, 0.95f, 1.0f },
+                                                      { 0.45f, 1.6f, 1.08f, 0.92f, 1.8f },
+                                                      { 0.80f, 1.0f, 1.15f, 0.85f, 1.2f } };
+
+// Viewing media (VIDEO_ANALOGICO.md, PELLICOLE_E_SVILUPPO.md): kind, scan lines, glass curvature, beam sigma (in
+// lines) dark and bright, phosphor mask amount and type (0 stripes, 1 slots) and triads across the width, light
+// falloff to the corners, flicker, black (flare or paper Dmax), white (lamp or paper), unsteadiness (share of the
+// height), lens softness (px at 1080), corner radius and edge softness (share of the height).
+struct Medium { int kind, lines; float curve, beamMin, beamMax, mask; int maskType; float triads, falloff, flicker,
+                black, white[3], unsteady, soft, corner, edge; };
+const Medium kMedia[kCrMediumCount] = {
+    { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0 },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.20f, 0.012f, 0.004f, { 1, 1, 1 }, 0.0012f, 0, 0.010f, 0.003f },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.50f, 0.050f, 0.015f, { 1.0f, 0.92f, 0.78f }, 0.004f, 1.2f, 0.03f, 0.006f },
+    { CR_MEDIUM_SCREEN, 576, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.8f, 0.05f, 0.004f },
+    { CR_MEDIUM_SCREEN, 480, 0.06f, 0.22f, 0.45f, 0.35f, 1, 560, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.9f, 0.05f, 0.004f },
+    { CR_MEDIUM_SCREEN, 576, 0.02f, 0.18f, 0.38f, 0.25f, 0, 900, 0.06f, 0, 0.010f, { 1, 1, 1 }, 0, 0.4f, 0.02f, 0.002f },
+    { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0 },
+    { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, 0.008f, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0 } };
+
 
 // Film formats: grain size and amount, halation radius, gate weave (share of the width), relative to Super 35.
 struct Format { float grainSize, grainAmount, halRadius, weave; };
@@ -169,6 +235,12 @@ void colour709(const float c[3], float* out)
 
 void set3(float* d, float a, float b, float c) { d[0] = a; d[1] = b; d[2] = c; }
 
+double smoothstepd(double a, double b, double x)
+{
+    const double t = clampd((x - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+}
+
 // split-tone vector of a hue (degrees) and an amount, in stops
 void hueVector(double hue, double amount, float* out)
 {
@@ -176,11 +248,11 @@ void hueVector(double hue, double amount, float* out)
     for (int k = 0; k < 3; ++k) out[k] = (float)(0.35 * amount * cos(h - 2.0 * kPi * k / 3.0));
 }
 
-// a sigma (full-size px) on a grid fine enough for it: scale s with sigma / s <= 6
+// a sigma (full-size px) on a grid fine enough for it: scale s with sigma / s <= 3
 void glowGrid(int W, int H, float sigma, int& s, int& w, int& h, float& onGrid)
 {
     s = 1;
-    while (sigma / (float)s > 6.0f && s < 64) s *= 2;
+    while (sigma / (float)s > 3.0f && s < 64) s *= 2;   // a wide glow is smooth: 3 cells of sigma suffice
     w = (W + s - 1) / s;
     h = (H + s - 1) / s;
     onGrid = sigma / (float)s;
@@ -258,7 +330,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
     const Format& fmt = kFormats[c.format >= 0 && c.format < kCrFormatCount ? c.format : 2];
     float rms = 10.0f, hal = 1.0f, halThreshold = 3.0f;
     float printCast[3] = { 0, 0, 0 };
-    float printContrast = 1.45f;
+    float printContrast = 1.45f, printSilver = 0.0f;
     const double push = clampd(c.push, -2, 3), silver = clampd(c.silver, 0, 1), age = clampd(c.age, 0, 1);
     bool film = true;          // grain, halation, weave and the print's lights apply
     bool pushes = true;        // the development (push/pull) applies
@@ -286,6 +358,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         printContrast = pr.contrast;
         for (int k = 0; k < 3; ++k) printCast[k] = pr.cast[k];
         p.dmax = pr.dmax;
+        printSilver = pr.silver;
         p.dustSign = c.print == 0 ? 1.0f : -1.0f;   // dust on the negative prints white
         if (c.output == CR_OUT_LOG) p.output = CR_OUT_LOG;
         break;
@@ -564,11 +637,20 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         printContrast *= (float)(1.0 + 0.4 * silver);
         rms *= (float)(1.0 + 0.3 * silver);
     }
+    p.silver = std::min(1.0f, p.silver + printSilver);
     if (age > 0) {
         if (p.image == CR_IMAGE_SUB) set3(p.fade, (float)(1 - 0.6 * age), (float)(1 - 0.1 * age), (float)(1 - 0.4 * age));
         set3(p.stain, (float)(0.02 * age), (float)(0.04 * age), (float)(0.14 * age));
         for (int k = 0; k < 3; ++k) p.slope[k] *= (float)(1.0 - 0.15 * age);
         rms *= (float)(1.0 + 0.3 * age);
+    }
+
+    // the generations between negative and print: duplicates add contrast, lose saturation, add their grain
+    const Generation& gen = kGenerations[c.generation >= 0 && c.generation < kCrGenerationCount ? c.generation : 0];
+    const bool printed = (proc == kCrColourNegative && c.print != 0 && p.output != CR_OUT_LOG) || proc == kCrBlackWhite;
+    if (printed) {
+        printContrast *= gen.contrast;
+        p.saturation *= gen.sat;
     }
 
     // the print's (or the positive's) lights and contrast: 1 printer point = 0.025 log E = 0.083 stop
@@ -591,6 +673,12 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
     p.grainSize = (float)std::max(0.5, 1.1 * fmt.grainSize * clampd(c.grainSize, 0.25, 4) * k1080);
     p.grainColor = p.records == 1 ? 0.0f : 0.6f;
     if (p.kind != CR_KIND_PROCESS) p.grainAmount = 0.0f;
+    if (printed && p.kind == CR_KIND_PROCESS) {
+        p.genGrain = (float)(0.08 * fmt.grainAmount * gen.grain * clampd(c.grain, 0, 3));
+        p.genSize = (float)std::max(0.5, 1.1 * fmt.grainSize * gen.size * clampd(c.grainSize, 0.25, 4) * k1080);
+        p.printGrain = (float)(0.010 * fmt.grainAmount * sqrt(gen.printSize) * clampd(c.printGrain, 0, 3));
+        p.printGrainSize = (float)std::max(0.5, 0.8 * fmt.grainSize * gen.printSize * k1080);
+    }
     p.halAmount = (float)(hal * 0.12 * clampd(c.halation, 0, 3));
     if (p.kind != CR_KIND_PROCESS) p.halAmount = 0.0f;
     p.halThreshold = CR_GREY * (float)exp2(halThreshold);
@@ -630,6 +718,10 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
     p.dust = (float)clampd(c.dust, 0, 1);
     p.scratches = film ? (float)clampd(c.scratches, 0, 1) : 0.0f;
     p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0) ? 1 : 0;
+    double when[3];
+    creativeRecordTimes(c, when);
+    p.shared = (std::lround(when[0]) == std::lround(when[1]) && std::lround(when[1]) == std::lround(when[2])
+                && ca <= 0 && reg <= 0) ? 1 : 0;   // one frame at one place: decode the source once
 
     // colour
     float sh[3], hi[3];
@@ -640,4 +732,51 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         p.splitHigh[k] = hi[k];
     }
     p.splitBalance = (float)clampd(c.balance, -3, 3);
+
+    // viewing medium: on the finished picture (not on a Log scan, which is graded afterwards)
+    const Medium& md = kMedia[c.medium >= 0 && c.medium < kCrMediumCount ? c.medium : 0];
+    const float ma = (float)clampd(c.mediumAmount, 0, 1);
+    if (md.kind == CR_MEDIUM_NONE || p.output == CR_OUT_LOG) return;
+    p.medium = md.kind;
+    p.mGain = 1.0f + md.flicker * ma * cr_hash(frame, 5, 81);
+    p.mBlack = md.black * ma;
+    for (int k = 0; k < 3; ++k) p.mWhite[k] = 1.0f + (md.white[k] - 1.0f) * ma;
+    p.mFalloff = md.falloff * ma;
+    p.mShiftX = (float)(md.unsteady * ma * H * (0.6 * sin(frame * 1.7 + 0.4) + 0.4 * cr_hash(frame, 6, 82)));
+    p.mShiftY = (float)(md.unsteady * ma * H * 0.8 * (0.6 * sin(frame * 1.3 + 2.1) + 0.4 * cr_hash(frame, 7, 83)));
+    p.mSoft = md.soft * ma * k1080;
+    p.mCorner = std::min(md.corner * ma * H, 0.25f * std::min(W, H));
+    p.mEdge = std::max(0.5f, md.edge * ma * H);
+    if (md.lines > 0) {
+        // lines and phosphors need pixels to show: below 3 px per line (or per triad) they would only beat
+        const float lines = ma * (float)smoothstepd(1.5, 3.0, (double)H / md.lines);
+        const float pitch = (float)W / md.triads;
+        p.mLines = md.lines;
+        p.mCurve = md.curve * ma;
+        p.mBeamMin = 0.6f + (md.beamMin - 0.6f) * lines;   // 0.6 lines: a beam wide enough to leave no gaps
+        p.mBeamMax = 0.6f + (md.beamMax - 0.6f) * lines;
+        p.mMask = md.mask * ma * (float)smoothstepd(2.0, 3.0, pitch);
+        p.mMaskType = md.maskType;
+        p.mPitch = std::max(3.0f, (float)W / md.triads);
+    }
+    if (md.kind == CR_MEDIUM_PAPER) p.mTexture = ma;
+    if (md.kind == CR_MEDIUM_LCD) {   // 160 x 144, four shades of green (emulator values, [gen])
+        p.mCols = 160;
+        p.mRows = 144;
+        p.mScreenH = 0.86f * H;
+        p.mScreenW = p.mScreenH * 160.0f / 144.0f;
+        if (p.mScreenW > 0.95f * W) {
+            p.mScreenW = 0.95f * W;
+            p.mScreenH = p.mScreenW * 144.0f / 160.0f;
+        }
+        p.mBezel = 0.05f * H;
+        p.mDither = ma;
+        p.mGrid = 0.35f * ma * (float)smoothstepd(3.0, 6.0, p.mScreenH / 144.0);   // the grid needs pixels to show
+        const int hex[4] = { 0x0f380f, 0x306230, 0x8bac0f, 0x9bbc0f };
+        for (int l = 0; l < 4; ++l)
+            for (int k = 0; k < 3; ++k) p.mPalette[l * 3 + k] = (float)((hex[l] >> (16 - 8 * k)) & 0xff) / 255.0f;
+        set3(p.mUnlit, 0.66f, 0.77f, 0.12f);
+        set3(p.mBezelTint, 0.33f, 0.33f, 0.38f);
+        set3(p.mBodyTint, 0.78f, 0.77f, 0.74f);
+    }
 }

@@ -12,6 +12,11 @@
   salvato con il Detail si apre come un Creative nuovo. I numeri sono stime dalle ricerche in `docs/creative/`, da
   tarare su riprese vere; non ancora provato in Resolve, Metal verificato solo dai test della CI macOS. Dettagli:
   `docs/CREATIVE.md`. Guide, README nelle 5 lingue e wiki aggiornati.
+  Poi: 6 negativi, 3 invertibili e 3 B/N in più; 4 positivi nuovi (anche con argento trattenuto); **Generazione**
+  (copia campione, di distribuzione da interpositivo e internegativo, riduzione 16 mm, controtipo) con la grana dei
+  duplicati e la **grana della stampa**; **Supporto di visione** dopo l'uscita: sala, proiettore di casa, televisore a
+  tubo PAL e NTSC, monitor broadcast, console portatile LCD verde, carta fotografica. Motore più veloce: sorgente
+  decodificata una volta, sfocature con meno esponenziali, video analogico circa 3 volte più rapido sulla CPU.
 
 - **Motion Blur più veloce**: chiede a Resolve solo i fotogrammi accanto (prima ne chiedeva 3 per lato, quindi
   Resolve calcolava 7 fotogrammi a monte, Stabilize compreso, per ognuno). Il contesto lontano si legge solo quando

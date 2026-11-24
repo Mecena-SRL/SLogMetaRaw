@@ -50,7 +50,8 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "Il procedimento: come la luce diventa immagine. Ognuno ha i suoi comandi qui sotto", proc);
     defineInfo(d, page, proc, "processInfo", "Come funziona", kCrProcessInfo[kCrColourNegative]);
     for (const CrChoiceDef& c : kCrChoices)
-        defineChoice(d, page, c.name, c.label, c.options, c.count, CreativeControls().*(c.field), c.hint, proc);
+        defineChoice(d, page, c.name, c.label, c.options, c.count, CreativeControls().*(c.field), c.hint,
+                     groups[c.group]);
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
                  "Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Va dopo Log MetaRaw: "
                  "l'uscita è Rec.709 Gamma 2.4, o la stessa codifica con Uscita Log",

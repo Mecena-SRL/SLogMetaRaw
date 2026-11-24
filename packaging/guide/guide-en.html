@@ -121,8 +121,8 @@
     <tr><td class="k">Dati di ripresa</td><td>Shooting data: lens, focal length, iris, focus, shutter, ISO/EI, WB, fps, ND</td><td class="pg">4</td></tr>
     <tr class="grp"><td colspan="3">Log MetaRaw Creative node <span>· right after · spatial, left out of Generate LUT</span></td></tr>
     <tr><td class="k">Processo</td><td>Process: 16 of them, colour negative, reversal, B&amp;W, Technicolor, Autochrome, Dufay, three plates, Kinemacolor, daguerreotype, collodion, prints, analog video, digital</td><td class="pg">8</td></tr>
-    <tr><td class="k">Varianti</td><td>Variants: stock, print, output, sensitivity, taking filter, era, support, paper, format, video format, camera</td><td class="pg">8</td></tr>
-    <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Exposure, temperature, tint, push/pull, silver, flash, age; printer lights R G B, contrast</td><td class="pg">8</td></tr>
+    <tr><td class="k">Varianti</td><td>Variants: stock, positive, generation, output, viewing medium, sensitivity, taking filter, era, support, paper, format, video format, camera</td><td class="pg">8</td></tr>
+    <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Exposure, temperature, tint, push/pull, silver, flash, age; printer lights R G B, contrast, print grain</td><td class="pg">8</td></tr>
     <tr><td class="k">Grana e ottica</td><td>Grain, halation, diffusion, aberration, vignette, gate weave, flicker, dust, scratches</td><td class="pg">8</td></tr>
     <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registration, interval, K key; mosaic; mirror, UV, oxidation, border, toning; tape, heads, noise, clip</td><td class="pg">8</td></tr>
     <tr><td class="k">Colore</td><td>Shadows and highlights (hue, amount), balance, saturation, colour density, reset</td><td class="pg">8</td></tr>
@@ -531,7 +531,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <h2>The processes</h2>
       <table>
         <tr><td class="k">Colour negative</td><td>Three layers with their own contrast, toe and shoulder, interimage, grain per
-          layer, halation from the base, a positive print with R G B lights. 14 stocks, Eastern ones too: Sovcolor, ORWO,
+          layer, halation from the base, a positive print with R G B lights. 20 stocks, Eastern ones too: Sovcolor, ORWO,
           Svema, Gevacolor. <i>Log output</i> = the negative scan.</td></tr>
         <tr><td class="k">Reversal · B&amp;W</td><td>Slide film: one pass, dense blacks. B&amp;W: sensitivity (blue, ortho, pan) and
           a compensated taking filter.</td></tr>
@@ -555,7 +555,10 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <table>
         <tr><td class="k">Ripresa e sviluppo</td><td>Exposure and light balance; <b>push</b> or pull, <b>retained silver</b> (bleach
           bypass), flash, age (fading dyes, yellowing base).</td></tr>
-        <tr><td class="k">Stampa</td><td>Printer points (1 point = 0.025 log E) and the positive's contrast.</td></tr>
+        <tr><td class="k">Stampa e copie</td><td>Positive (9), <b>Generation</b> (answer print, release print, 16 mm reduction,
+          dupe of a dupe), print grain, printer points (1 point = 0.025 log E), contrast.</td></tr>
+        <tr><td class="k">Supporto di visione</td><td>After the output: cinema, home projector, PAL and NTSC tube, broadcast
+          monitor, green LCD handheld, paper. <b>Intensity</b> 0 = monitor.</td></tr>
         <tr><td class="k">Grana e ottica</td><td>In multiples of the material's and the <b>format</b>'s own (8 mm to IMAX 15/70):
           1 = as it was. Halation, diffusion, aberration, vignette, gate weave, dust and scratches.</td></tr>
         <tr><td class="k">Separazioni</td><td>Registration of strips and plates, interval between exposures, K key, dye density.</td></tr>

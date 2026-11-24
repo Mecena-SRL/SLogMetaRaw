@@ -994,11 +994,11 @@
      "id": "cr.record",
      "kind": "function",
      "label": "Record",
-     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante.",
+     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola.",
      "basis": "dedotto",
      "refs": [
       {
-       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_record"
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_records"
       },
       {
        "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU"
@@ -1033,11 +1033,14 @@
      "id": "cr.process",
      "kind": "function",
      "label": "Curva e immagine",
-     "text": "Curva H&D per record, grana, danni, curva del positivo; immagine sottrattiva (coloranti), additiva (filtri e mosaico) o monocroma (deposito virato sulla carta), poi Rec.709 Gamma 2.4 o Log d'ingresso.",
+     "text": "Curva H&D per record, grana del negativo e dei duplicati (interpositivo, internegativo), danni, curva del positivo con la grana della stampa nelle sue densità; immagine sottrattiva (coloranti), additiva (filtri e mosaico) o monocroma (deposito virato sulla carta), poi Rec.709 Gamma 2.4 o Log d'ingresso.",
      "basis": "dedotto",
      "refs": [
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_process"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain"
       }
      ]
     },
@@ -1053,6 +1056,27 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at"
+      }
+     ]
+    },
+    {
+     "id": "cr.medium",
+     "kind": "function",
+     "label": "Supporto di visione",
+     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log: proiezione in sala o di casa (caduta di luce, sfarfallio, instabilità, flare, lampada), televisore o monitor a tubo (vetro curvo, righe di scansione, fosfori), console LCD a quattro verdi, carta (bianco, Dmax, fibre).",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at"
+      },
+      {
+       "param": "param:creative.medium"
+      },
+      {
+       "param": "param:creative.mediumAmount"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_every_medium_renders_and_changes_the_picture"
       }
      ]
     },
@@ -1143,13 +1167,20 @@
     {
      "id": "c11",
      "from": "cr.process",
-     "to": "cr.out",
+     "to": "cr.medium",
      "kind": "data",
      "label": "RGB"
     },
     {
      "id": "c12",
      "from": "cr.signal",
+     "to": "cr.medium",
+     "kind": "data",
+     "label": "RGB"
+    },
+    {
+     "id": "c13",
+     "from": "cr.medium",
      "to": "cr.out",
      "kind": "data",
      "label": "RGB"
@@ -1208,8 +1239,12 @@
       3
      ],
      "cr.out": [
-      8,
+      9,
       0
+     ],
+     "cr.medium": [
+      8,
+      2
      ]
     }
    },
@@ -1266,8 +1301,10 @@
   },
   "beh:creative.process": {
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_process": "e8d85f19856d",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_record": "5b1e1f201c1d",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "62c52b7d540f",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "97c0e8607e0a",
@@ -1275,9 +1312,9 @@
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "b1191ce6db9b",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "1152803485a5",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "499e69d4a3db",
-   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "5dedd1b4d9e5",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "c2586da8da51"
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "a65ff5a566a9",
+   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "8b04379ac9e4",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "9e09068a317b"
   }
  }
 }

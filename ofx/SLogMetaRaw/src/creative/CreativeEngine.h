@@ -4,6 +4,7 @@
 //   1. record   source frames -> record planes E (one frame per record: sequential plates read other times)
 //   2. glow     E -> halation grid, diffusion grids (box down, Gaussian on the grid)
 //   3. output   process: per pixel, curve and image; signal chains: Y Cb Cr planes, their filters, then per pixel
+//   4. medium   the finished picture through a projector, a tube, an LCD or on paper (when one is chosen)
 #pragma once
 #include <cstddef>
 #include <functional>
@@ -17,7 +18,7 @@ using CreativeParallel = std::function<void(int n, const std::function<void(int 
 struct CreativeScratch
 {
     std::vector<float> E[3], V[3], T[4];   // full size: records; Y Cb Cr; filtered luma, its blur, Cb, Cr
-    std::vector<float> hal, bl[3], tmp;
+    std::vector<float> hal, bl[3], tmp, M;   // M: the finished picture, display-linear, for the viewing medium
 };
 
 // src[k]: the frame record k is exposed from (RGBA, rows of srcRowFloats floats; the same pointer when the records

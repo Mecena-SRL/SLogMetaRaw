@@ -3,20 +3,21 @@ param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllar
 param:detailInfo|OfxParamTypeString|Creative|Spaziale · escluso da Generate LUT|||0|||||||0||||
 param:processGroup|OfxParamTypeGroup|Processo|||||||||||||||1
 param:shotGroup|OfxParamTypeGroup|Ripresa e sviluppo|||||||||||||||1
-param:printGroup|OfxParamTypeGroup|Stampa|||||||||||||||0
+param:printGroup|OfxParamTypeGroup|Stampa e copie|||||||||||||||1
 param:textureGroup|OfxParamTypeGroup|Grana e ottica|||||||||||||||1
 param:separationGroup|OfxParamTypeGroup|Separazioni|||||||||||||||1
 param:screenGroup|OfxParamTypeGroup|Mosaico|||||||||||||||1
 param:plateGroup|OfxParamTypeGroup|Lastra e carta|||||||||||||||1
 param:signalGroup|OfxParamTypeGroup|Segnale|||||||||||||||1
 param:colourGroup|OfxParamTypeGroup|Colore|||||||||||||||0
+param:viewGroup|OfxParamTypeGroup|Supporto di visione|||||||||||||||1
 param:process|OfxParamTypeChoice|Processo|0|processGroup|||||||||0|Il procedimento: come la luce diventa immagine. Ognuno ha i suoi comandi qui sotto|Negativo colore e stampa,Invertibile colore (diapositiva),Bianco e nero,Technicolor tre strisce,Technicolor due colori,Autochrome,Dufaycolor (rete),Tre lastre (Prokudin-Gorskij),Kinemacolor,Dagherrotipo,Collodio umido,Carta salata e albumina,Cianotipia,Platino e palladio,Video analogico,Digitale d'epoca||
 param:processInfo|OfxParamTypeString|Come funziona|Tre strati: curva del negativo, interimage, grana, stampa positiva con le sue luci; uscita Log = scansione del negativo|processGroup||0|||||||0||||
-param:negative|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti|Cinema lenta, pulita,Cinema veloce tungsteno,Veloce senza remjet (alone forte),Fredda a basso contrasto,Vivida ad alto contrasto,Ritratto morbida,Amatoriale calda,Amatoriale fredda-verde,Archivio Est Europa anni '70,Monopack anni '50 (assorbimenti forti),Sovcolor anni '50,ORWO NC anni '70,Svema anni '70-'80,Gevacolor anni '50||
-param:print|OfxParamTypeChoice|Stampa|1|processGroup|||||||||0|Il positivo su cui si stampa il negativo. Nessuna = il negativo scansionato, piatto|Nessuna (scansione del negativo),Positivo standard,Positivo a contrasto alto,Positivo freddo,Positivo morbido||
+param:negative|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti|Cinema lenta, pulita,Cinema veloce tungsteno,Veloce senza remjet (alone forte),Fredda a basso contrasto,Vivida ad alto contrasto,Ritratto morbida,Amatoriale calda,Amatoriale fredda-verde,Archivio Est Europa anni '70,Monopack anni '50 (assorbimenti forti),Sovcolor anni '50,ORWO NC anni '70,Svema anni '70-'80,Gevacolor anni '50,Diurna 50, grana finissima,Tungsteno 200, media,Fotografica 400 (negativo still),Fotografica ritratto 160,Amatoriale 800, notturna,Negativo anni '80 (prima dei tabulari)||
+param:print|OfxParamTypeChoice|Positivo|1|printGroup|||||||||0|La pellicola positiva su cui si stampa il negativo: contrasto, dominante, nero. Nessuna = il negativo scansionato, piatto|Nessuna (scansione del negativo),Positivo standard,Positivo a contrasto alto,Positivo freddo,Positivo morbido,Positivo caldo anni '70,Positivo Est Europa (poca densità),Positivo a basso contrasto per telecinema,Positivo con argento trattenuto (bypass in stampa)||
 param:output|OfxParamTypeChoice|Uscita|0|processGroup|||||||||0|Rec.709: la stampa vista in proiezione. Log: la scansione del negativo, riscritta nella codifica d'ingresso, per gradare dopo come un DI|Rec.709 Gamma 2.4 (stampa),Log d'ingresso (scansione del negativo)||
-param:reversal|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|L'invertibile: un solo passaggio, il positivo è la pellicola stessa|Ultra-satura,Neutra,Coloranti aggiunti in sviluppo||
-param:bwStock|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Contrasto e grana dell'emulsione|Cinema classica,Veloce da reportage,Tabulare finissima||
+param:reversal|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|L'invertibile: un solo passaggio, il positivo è la pellicola stessa|Ultra-satura,Neutra,Coloranti aggiunti in sviluppo,Super 8 tungsteno anni '70,Fredda moderna da proiezione,Scaduta (contrasto basso)||
+param:bwStock|OfxParamTypeChoice|Pellicola|0|processGroup|||||||||0|Contrasto e grana dell'emulsione|Cinema classica,Veloce da reportage,Tabulare finissima,Lenta 25, grana finissima,Spinta a 3200,Positiva usata in ripresa (contrasto alto)||
 param:sensitivity|OfxParamTypeChoice|Sensibilità|3|processGroup|||||||||0|A quali colori è sensibile l'emulsione: blu = cieli bianchi e rossi neri; ortocromatica = rossi scuri; pancromatica = tutti|Blu (prima del 1880),Ortocromatica,Pancromatica precoce,Pancromatica moderna||
 param:filter|OfxParamTypeChoice|Filtro di presa|0|processGroup|||||||||0|Il filtro davanti all'obiettivo, compensato in esposizione: giallo-rosso scuriscono il cielo, verde schiarisce le foglie|Nessuno,Giallo,Arancio,Rosso,Verde||
 param:techniEra|OfxParamTypeChoice|Epoca|0|processGroup|||||||||0|Fino al 1944 la stampa aveva una chiave nera (K); dal 1955 le matrici vengono da un negativo monopack|1935-1944 con chiave K,1945-1955,Imbibizione da monopack (1955-1975)||
@@ -25,6 +26,8 @@ param:paper|OfxParamTypeChoice|Carta|1|processGroup|||||||||0|Salata: opaca, nel
 param:format|OfxParamTypeChoice|Formato|2|processGroup|||||||||0|Le dimensioni del fotogramma: più piccolo = grana, alone e instabilità più grandi sull'immagine|Super 8,16 mm,Super 35,65 mm (Todd-AO, Panavision 70),IMAX 15/70,Lastra 9x12,Super 16,8 mm,9,5 mm Pathé-Baby,35 mm anamorfico,Techniscope,VistaVision||
 param:analog|OfxParamTypeChoice|Formato video|1|processGroup|||||||||0|Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato|Broadcast,VHS SP,VHS LP,S-VHS,Betamax,Video8,Hi8,U-matic,U-matic SP,Betacam SP,1 pollice tipo C||
 param:digital|OfxParamTypeChoice|Camera|0|processGroup|||||||||0|Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera|Cinema digitale moderno,Reflex video 2009,Cinema HD a CCD 2002,CCD 3 sensori anni 2000 (MiniDV),MiniDV cine 24p,Compatta digitale 2004,Telefono 2008,Webcam anni 2000,Action cam 2010,Telefono smart HDR||
+param:generation|OfxParamTypeChoice|Generazione|0|printGroup|||||||||0|Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. Le copie viste in sala erano di solito di distribuzione|Copia campione dal negativo,Copia di distribuzione (interpositivo e internegativo),Riduzione 16 mm da 35 mm,Controtipo di controtipo (archivio)||
+param:medium|OfxParamTypeChoice|Supporto|0|viewGroup|||||||||0|Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, console portatile, carta. Nessuno = il monitor Rec.709. Non vale con Uscita Log|Nessuno (monitor Rec.709),Proiezione in sala (xeno),Proiettore domestico 8/16 mm (alogena),Televisore a tubo PAL (576 righe),Televisore a tubo NTSC (480 righe),Monitor broadcast a tubo,Console portatile LCD verde (160x144),Stampa fotografica su carta||
 param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|processGroup|||||||||0|Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Va dopo Log MetaRaw: l'uscita è Rec.709 Gamma 2.4, o la stessa codifica con Uscita Log|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
 param:exposure|OfxParamTypeDouble|Esposizione (stop)|0|shotGroup|||-6|6|-6|6|0.05|2||La luce che arriva al materiale: sotto = ombre nel piede, sopra = luci nella spalla|||
 param:temperature|OfxParamTypeDouble|Temperatura|0|shotGroup|||-1|1|-1|1|0.01|2||Luce più calda (positivo) o più fredda di quella per cui il materiale è bilanciato|||
@@ -37,6 +40,7 @@ param:printR|OfxParamTypeDouble|Luci di stampa R|0|printGroup|||-24|24|-24|24|1|
 param:printG|OfxParamTypeDouble|Luci di stampa G|0|printGroup|||-24|24|-24|24|1|0||Più verde = stampa più magenta|||
 param:printB|OfxParamTypeDouble|Luci di stampa B|0|printGroup|||-24|24|-24|24|1|0||Più blu = stampa più gialla|||
 param:printContrast|OfxParamTypeDouble|Contrasto|1|printGroup|||0.5|2|0.5|2|0.01|2||Il contrasto del positivo (o del segnale), moltiplicato su quello del processo|||
+param:printGrain|OfxParamTypeDouble|Grana della stampa|1|printGroup|||0|3|0|3|0.01|2||La grana propria del positivo, nelle sue densità, più fine di quella del negativo: 1 = com'era|||
 param:grain|OfxParamTypeDouble|Grana|1|textureGroup|||0|3|0|3|0.01|2||Quantità rispetto a quella del materiale e del formato: 1 = com'era|||
 param:grainSize|OfxParamTypeDouble|Dimensione grana|1|textureGroup|||0.25|4|0.25|4|0.01|2||Rispetto a quella del materiale e del formato|||
 param:halation|OfxParamTypeDouble|Alone|1|textureGroup|||0|3|0|3|0.01|2||La luce che attraversa l'emulsione e torna dal supporto: rosso attorno alle luci forti|||
@@ -76,6 +80,7 @@ param:highAmount|OfxParamTypeDouble|Luci: quantità|0|colourGroup|||0|1|0|1|0.01
 param:balance|OfxParamTypeDouble|Bilanciamento (stop)|0|colourGroup|||-3|3|-3|3|0.05|2||Dove passano le ombre alle luci, in stop dal grigio|||
 param:saturation|OfxParamTypeDouble|Saturazione|1|colourGroup|||0|2|0|2|0.01|2|||||
 param:density|OfxParamTypeDouble|Densità colore|0|colourGroup|||0|1|0|1|0.01|2||Colori saturi più scuri, come i coloranti veri|||
+param:mediumAmount|OfxParamTypeDouble|Intensità del supporto|1|viewGroup|||0|1|0|1|0.01|2||1 = com'è davvero. Sala e proiettore: caduta di luce, sfarfallio, instabilità. Tubo: curvatura, righe, fosfori. Console: retinatura e griglia. Carta: fibre, bianco e nero della carta|||
 param:creativeReset|OfxParamTypePushButton|Azzera comandi||colourGroup||||||||||Riporta ai valori del processo tutti i comandi; processo e varianti restano|||
 param:boundPath|OfxParamTypeString||||1||||||||0||||
 param:camSpace|OfxParamTypeInteger||-1||1||||||||0||||
