@@ -138,14 +138,16 @@ class OfxHost(unittest.TestCase):
         self.assertIn('secret:gamutPower=1', self.host('--plugin', '0', '--no-reload'))
 
     def test_a_rendering_writes_a_display_encoding(self):
-        """Display light encoded with the camera OETF (Rec.709) or a scene curve was too dark or rendered twice."""
+        """The camera OETF (Rec.709) on display light read too dark: it becomes Gamma 2.4. A scene encoding is kept."""
         def info(*args):
             return self.values('--set', 'inputSpace=9', '--set', 'inputGamma=10', '--set', 'unlockNoMeta=1', *args)
-        for gamma in ('6', '1', '2'):   # Rec.709, DaVinci Intermediate, Linear
-            v = info('--set', 'rendering=4', '--set', 'gamma=' + gamma, '--change', 'inputGamma=10')
-            self.assertIn('Uscita: Rec.709 / Gamma 2.4', v['nodeInfo'], v['nodeInfo'])
+        v = info('--set', 'rendering=4', '--set', 'gamma=6', '--change', 'inputGamma=10')
+        self.assertIn('Uscita: Rec.709 / Gamma 2.4', v['nodeInfo'], v['nodeInfo'])
+        dwg = info('--set', 'rendering=3', '--set', 'colorSpace=1', '--set', 'gamma=1', '--change', 'inputGamma=10')
+        self.assertIn('Uscita: DaVinci WG / DaVinci Intermediate (immagine gia resa', dwg['nodeInfo'], dwg['nodeInfo'])
         kept = info('--set', 'rendering=4', '--set', 'colorSpace=4', '--set', 'gamma=7', '--change', 'inputGamma=10')
         self.assertIn('Uscita: P3 D65 / sRGB', kept['nodeInfo'], kept['nodeInfo'])
+        self.assertNotIn('immagine gia resa', kept['nodeInfo'])
 
     def test_the_eyedropper_sets_temperature_and_tint(self):
         """A warm-looking neutral lowers the Kelvin, a cool one raises it, and the balance becomes Custom."""

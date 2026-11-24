@@ -118,8 +118,9 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "luminanza, tinte conservate (approssima il tone mapping DaVinci). Filmico: curva per canale come una "
                  "pellicola, le luci forti sfumano nel bianco. ACES 1.3: RRT + ODT Rec.709 100 nit. OpenDRT: v1.1.0 di "
                  "Jed Smith, look Standard, Rec.1886 100 nit. Sceglierlo imposta Compressione e Mappatura gamut "
-                 "consigliate, che puoi cambiare. Con un rendering l'uscita e uno schermo: Timeline = Rec.709 / Gamma "
-                 "2.4, una curva di scena diventa Gamma 2.4", output);
+                 "consigliate, che puoi cambiare. Timeline = Rec.709 / Gamma 2.4. Con uno spazio o una curva di scena "
+                 "(DaVinci WG / Intermediate) l'immagine resa per Rec.709 viaggia in quella codifica, per altri plugin: "
+                 "un CST verso Rec.709 / Gamma 2.4 senza tone mapping la riporta identica", output);
     static const char* gcOpts[] = { "Nessuna", "ACES riferimento (RGC)", "ACES parametrica" };
     defineChoice(d, page, "gamutCompress", "Compressione gamut", gcOpts, 3, 0,
                  "Come Gamut Compress Type del Color Space Transform: riporta in ACES AP1 i colori della camera fuori "

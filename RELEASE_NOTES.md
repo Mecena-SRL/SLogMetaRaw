@@ -1,5 +1,12 @@
 # Changelog
 
+## Prossima versione
+
+- **Tone mapping con uscita di scena**: con un rendering (ACES 2.0, Filmico, OpenDRT...) Spazio colore e Gamma di
+  scena come DaVinci WG / DaVinci Intermediate non vengono più sostituiti da Rec.709 / Gamma 2.4. L'immagine resa per
+  Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer, ...): un CST verso Rec.709 / Gamma 2.4
+  senza tone mapping la riporta identica. Uscite di schermo (Rec.709, P3, Rec.2020) invariate bit per bit.
+
 ## Log MetaRaw 3.1.2
 
 - **DJI D-Log M**: curva di Thatcher Freeman confermata dall'asse neutro della LUT ufficiale DJI (usata come

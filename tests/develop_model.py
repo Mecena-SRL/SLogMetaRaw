@@ -374,10 +374,13 @@ def develop(rgb, node_space, node_gamma, shot=(5600, 0, 800),
         gmap = display.RECOMMENDED[drt][1]
     if rgc:
         xyz = display.gamut_compress(xyz, rgc)
-    if drt:   # display rendering: out_space / out_gamma are the display
-        c = display.render(xyz, drt, out_space, None, gmap)
+    if drt:   # rendered for a display gamut: the output one, else Rec.709 carried in the output space
+        ds = out_space if 1 <= out_space <= 5 else 1
+        c = display.render(xyz, drt, ds, None, gmap)
         if hl_vib > 0:
-            c = display.highlight_vibrance(c, hl_vib, out_space)
+            c = display.highlight_vibrance(c, hl_vib, ds)
+        if ds != out_space:
+            c = mul(MATS[out_space][1], mul(MATS[ds][0], c))
         return [encode1(v, out_gamma) for v in c]
     space, gamma = (out_space, out_gamma) if convert else (node_space, node_gamma)
     o = mul(MATS[space][1], xyz)
