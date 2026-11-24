@@ -18,12 +18,15 @@ SYSTEM=(
   "$ROOT/Library/OFX/Plugins/SLogMetaRaw.ofx.bundle"
   "$ROOT/Library/OFX/Plugins/SLogMetaRawProbe.ofx.bundle"
   "$ROOT/Library/OFX/Plugins/SonyMetaRAW.ofx.bundle"
+  "$ROOT/Library/OFX/Plugins/MecenaMotion.ofx.bundle"
   "$ROOT/Library/Application Support/SLogMetaRaw"
   "$ROOT/Library/Application Support/SonyMeta"
   "$ROOT/$UTIL/Log MetaRaw.py"
   "$ROOT/$UTIL/S-Log MetaRaw.py"
   "$ROOT/$UTIL/SLogMetaRaw.py"
   "$ROOT/$UTIL/SonyMeta.py"
+  "$ROOT/$UTIL/Mecena ClipDB.py"
+  "$ROOT/usr/local/bin/mecena-clipdb"
 )
 USERS=(
   "$HOME/$UTIL/Log MetaRaw.py"
@@ -38,7 +41,7 @@ USERS=(
   "$HOME/Library/Application Support/Blackmagic Design/DaVinci Resolve/OFXPluginCacheV2.xml"
 )
 CSV="$HOME/Documents/SLogMetaRaw"
-RECEIPTS=(com.slogmetaraw.pkg com.sonymeta.pkg)
+RECEIPTS=(com.slogmetaraw.pkg com.sonymeta.pkg it.mecena.motion.pkg)
 
 exists() { [[ -e "$1" || -L "$1" ]]; }
 ask() {   # ask "question" -> 0 on s/S
