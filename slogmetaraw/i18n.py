@@ -19,6 +19,12 @@ TABLES = {
     'it': {
         # --- extract.py section titles / labels (English source) ---
         'MEDIA': 'MEDIA',
+        'Source': 'Origine',
+        'Frames read': 'Fotogrammi letti',
+        'Gyroscope': 'Giroscopio',
+        'Accelerometer': 'Accelerometro',
+        'IMU orientation': 'Orientamento IMU',
+        'Focus position per frame': 'Fuoco per fotogramma',
         'SHOOTING INFORMATION': 'INFORMAZIONI DI RIPRESA',
         'VIDEO': 'VIDEO',
         'AUDIO': 'AUDIO',
@@ -108,6 +114,10 @@ TABLES = {
         'Livelli di riferimento MXF': 'MXF reference levels',
         'Interpretazione in Resolve': 'How Resolve interprets it',
         'Correggi il Data Level': 'Correct the Data Level',
+        'Acquisizione profonda (IMU)': 'Deep acquisition (IMU)',
+        'Legge giroscopio, accelerometro e fuoco di ogni fotogramma per la stabilizzazione (file .gcsv per Stabilize e Gyroflow). Più lenta.':
+            'Reads gyroscope, accelerometer and focus of every frame for stabilisation (.gcsv file for Stabilize and Gyroflow). Slower.',
+        'MOVIMENTO (acquisizione profonda, per Stabilize e Gyroflow)': 'MOTION (deep acquisition, for Stabilize and Gyroflow)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Sets Data Level = Full or Video in Clip Attributes according to the capture gamma: this is the real fix and it applies to the whole project',
         ' Data Level corretto su %d clip.': ' Data Level corrected on %d clips.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -228,6 +238,10 @@ TABLES = {
         'Livelli di riferimento MXF': 'Niveles de referencia MXF',
         'Interpretazione in Resolve': 'Interpretación en Resolve',
         'Correggi il Data Level': 'Corregir el Data Level',
+        'Acquisizione profonda (IMU)': 'Adquisición profunda (IMU)',
+        'Legge giroscopio, accelerometro e fuoco di ogni fotogramma per la stabilizzazione (file .gcsv per Stabilize e Gyroflow). Più lenta.':
+            'Lee giroscopio, acelerómetro y enfoque de cada fotograma para la estabilización (archivo .gcsv para Stabilize y Gyroflow). Más lenta.',
+        'MOVIMENTO (acquisizione profonda, per Stabilize e Gyroflow)': 'MOVIMIENTO (adquisición profunda, para Stabilize y Gyroflow)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Establece Data Level = Full o Video en Atributos del clip según la gamma de captura: es la corrección real y se aplica a todo el proyecto',
         ' Data Level corretto su %d clip.': ' Data Level corregido en %d clips.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -393,6 +407,10 @@ TABLES = {
         'Livelli di riferimento MXF': 'Níveis de referência MXF',
         'Interpretazione in Resolve': 'Interpretação no Resolve',
         'Correggi il Data Level': 'Corrigir o Data Level',
+        'Acquisizione profonda (IMU)': 'Aquisição profunda (IMU)',
+        'Legge giroscopio, accelerometro e fuoco di ogni fotogramma per la stabilizzazione (file .gcsv per Stabilize e Gyroflow). Più lenta.':
+            'Lê giroscópio, acelerômetro e foco de cada quadro para a estabilização (arquivo .gcsv para Stabilize e Gyroflow). Mais lenta.',
+        'MOVIMENTO (acquisizione profonda, per Stabilize e Gyroflow)': 'MOVIMENTO (aquisição profunda, para Stabilize e Gyroflow)',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': 'Define Data Level = Full ou Video nos Atributos do clipe conforme a gama de captura: é a correção real e vale para todo o projeto',
         ' Data Level corretto su %d clip.': ' Data Level corrigido em %d clipes.',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':
@@ -557,6 +575,10 @@ TABLES = {
         'Livelli di riferimento MXF': 'MXF 参考电平',
         'Interpretazione in Resolve': 'Resolve 的解释方式',
         'Correggi il Data Level': '修正数据电平',
+        'Acquisizione profonda (IMU)': '深度采集（IMU）',
+        'Legge giroscopio, accelerometro e fuoco di ogni fotogramma per la stabilizzazione (file .gcsv per Stabilize e Gyroflow). Più lenta.':
+            '读取每一帧的陀螺仪、加速度计和对焦数据用于防抖（供 Stabilize 和 Gyroflow 使用的 .gcsv 文件）。速度较慢。',
+        'MOVIMENTO (acquisizione profonda, per Stabilize e Gyroflow)': '运动（深度采集，用于 Stabilize 和 Gyroflow）',
         'Imposta Data Level = Full o Video in Attributi clip secondo la gamma di ripresa: è la correzione vera, vale per tutto il progetto': '根据拍摄伽马在片段属性中设置 Data Level = Full 或 Video：这是真正的修正，对整个项目有效',
         ' Data Level corretto su %d clip.': ' 已为 %d 个片段修正 Data Level。',
         'Aggiunge camera, gamma e primarie alle keyword di ogni clip (smart bin)':

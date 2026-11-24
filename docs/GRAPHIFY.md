@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 3.2.0; dalla 3.1.0 si aggiunge solo `develop/NoiseMask`. Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 3.2.0; dalla 3.1.0 si aggiunge solo `develop/NoiseMask`, poi `motion.py` (acquisizione profonda). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -15,6 +15,7 @@ __main__.py ──> extract.py ──> codec.py
    │                 ├──────> mxf.py
    │                 ├──────> nrt.py
    │                 └──────> rtmd.py
+   ├──> motion.py   (--deep: IMU e fuoco di ogni fotogramma → .gcsv/.lens.csv; usa mp4, mxf, rtmd, plugin_cache)
    │
 ui.py ──> i18n.py
    ├────> osx_utils.py

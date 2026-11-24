@@ -37,7 +37,27 @@ def klv(key, value):
     return key + ber(len(value)) + value
 
 
-def rtmd_payload(frame):
+IMU_PER_FRAME = 4   # gyroscope readings per frame in the imu=True clips (accelerometer: half as many)
+
+
+def _vectors(values):
+    return struct.pack('>ii', len(values), 6) + b''.join(struct.pack('>hhh', *v) for v in values)
+
+
+def imu_set(frame):
+    """The Sony set with the IMU, gyroscope data inside a 0x8300 container: reading j of frame i is (i, j, -i)."""
+    def tag(t, v):
+        return struct.pack('>HH', t, len(v)) + v
+    gyro = _vectors([(frame, j, -frame) for j in range(IMU_PER_FRAME)])
+    accel = _vectors([(0, 0, 4096)] * (IMU_PER_FRAME // 2))
+    body = (tag(0xe435, struct.pack('>i', 100)) + tag(0xe439, struct.pack('>f', 16.4))
+            + tag(0xe43a, struct.pack('>H', 0x241)) + tag(0xe445, struct.pack('>i', 50))
+            + tag(0xe449, struct.pack('>f', 4096.0)) + tag(0xe40e, struct.pack('>i', 15600))
+            + tag(0x8300, tag(0xe43b, gyro)) + tag(0xe44b, accel))
+    return klv(UL + bytes.fromhex('02530101') + bytes.fromhex('0c0201017f010000'), body)
+
+
+def rtmd_payload(frame, imu=False):
     """Camera and lens sets as Sony writes them (RDD 18 local tags)."""
     def pack(tail, tags):
         body = b''.join(struct.pack('>HH', tag, len(v)) + v for tag, v in tags)
@@ -48,7 +68,7 @@ def rtmd_payload(frame):
         (0x810b, struct.pack('>H', 800)), (0x8115, struct.pack('>H', 3200)),
         (0x810e, struct.pack('>H', 3000 + frame)), (0x811f, struct.pack('>h', 0)),
         (0x8120, b'\x02')])
-    return lens + camera
+    return lens + camera + (imu_set(frame) if imu else b'')
 
 
 # --- MP4 ---------------------------------------------------------------------------
@@ -61,11 +81,11 @@ def _full(typ, payload):
     return _box(typ, b'\0\0\0\0' + payload)
 
 
-def build_mp4(path, frames=250, free=256 * 1024):
+def build_mp4(path, frames=250, free=256 * 1024, imu=False):
     """XAVC-like MP4: ftyp, free, mdat with one rtmd sample per frame, moov, NRT meta.
 
     Returns the byte range of the samples in mdat."""
-    samples = [struct.pack('>H', 0x1c) + b'\0' * 26 + rtmd_payload(i) for i in range(frames)]
+    samples = [struct.pack('>H', 0x1c) + b'\0' * 26 + rtmd_payload(i, imu) for i in range(frames)]
     ftyp = _box(b'ftyp', b'XAVC\0\0\0\0XAVCmp42iso2') + _box(b'free', b'\0' * free)
     data_start = len(ftyp) + 8
     offsets, pos = [], data_start
@@ -138,7 +158,7 @@ def _index_segment(first, offsets, eubc):
 
 
 def build_mxf(path, frames=40, picture=100 * 1024, header_fill=5 * 1024 * 1024, index='vbe',
-              anc=True, xml_gamma=None, header_junk=b''):
+              anc=True, xml_gamma=None, header_junk=b'', imu=False):
     """XAVC-like MXF with the essence after header_fill bytes of header metadata.
 
     index: 'vbe' (entry array, two segments), 'cbe' (edit unit byte count) or None;
@@ -162,7 +182,7 @@ def build_mxf(path, frames=40, picture=100 * 1024, header_fill=5 * 1024 * 1024, 
         cp += klv(PICTURE, (b'\0\0\0\x01\x09\x10\0\0\0\x01' + SPS + b'\0\0\0\x01\x68\xee' + b'\0' * size)[:size])
         cp += b''.join(klv(SOUND + bytes([ch]), b'\0' * 5760) for ch in range(2))
         if anc:
-            cp += _anc(rtmd_payload(i))
+            cp += _anc(rtmd_payload(i, imu))
         packages.append(_fill_to(cp, 512) if index == 'cbe' else cp)
     if index == 'cbe':
         assert len(set(map(len, packages))) == 1
