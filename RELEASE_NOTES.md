@@ -1,7 +1,20 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.0.2
 
+- **Noise, zona campione** (come Neat Video): spunta **Mostra campione**, trascina nel viewer i due angoli del
+  riquadro giallo e nero su una zona piatta (cielo, muro, fuori fuoco) e premi **Usa il campione**. Il nodo misura
+  lì il rumore vero, banda per banda, e corregge il profilo della camera; le altre luminosità seguono la curva della
+  camera. Una zona troppo piccola, bruciata o con dettaglio è rifiutata e la riga Da dice perché. Il profilo resta
+  automatico dai metadata finché non usi il campione.
+- **Noise, pannello più semplice**: in vista Profilo, campione, Livello rumore, Forza (Luminanza, Colore,
+  Fotogrammi, Preserva dettaglio) e Vista; bande, ombre, pelle, forza temporale, ingresso e Misura dal fotogramma nel
+  gruppo **Avanzate**, chiuso. I progetti salvati si riaprono con gli stessi valori.
+- **Noise, taratura automatica**: se la clip non ha ancora i dati, il nodo li riprende da solo appena un altro nodo
+  o lo script li registra.
+- **Noise su GPU più leggero**: la soglia legge i coefficienti già calcolati (metà delle letture) e ogni canale
+  risparmia due passate sull'intera immagine. Risultato identico alla CPU (verificato in CI); tempi in Resolve da
+  provare.
 - **Motion Blur più veloce**: chiede a Resolve solo i fotogrammi accanto (prima ne chiedeva 3 per lato, quindi
   Resolve calcolava 7 fotogrammi a monte, Stabilize compreso, per ognuno). Il contesto lontano si legge solo quando
   serve. Su Mac i buffer Metal restano pronti anche con più render in parallelo. Il calcolo è lo stesso. Da

@@ -176,6 +176,10 @@ Plugin Noise (24/11/2026): nodo `noise/` su CPU e GPU Metal (`docs/DENOISE.md`, 
 (`tests/noise_metal_test.mm`, CI macOS). Spaziale con soglia sul vicinato 3×3 (NeighShrink). Provato e scartato:
 secondo stadio Wiener su pilota (−5% di errore al doppio del costo). Aperto: prova in Resolve (accesso temporale su
 GPU, cache, Salta ovunque, Misura in modalità Metal), taratura dei profili sui campioni di Ivan, CUDA, CPU più rapida.
+Noise 4.0.2 (scelta di Ivan: «zona campione + automatico»): profilo automatico dai metadata, corretto per banda da un
+riquadro tra due punti Double2D (Resolve non permette a un OFX di disegnare un riquadro trascinabile; il contorno lo
+disegna il nodo con *Mostra campione*). Pannello: Profilo, campione, Forza e Vista in vista, il resto in Avanzate
+chiuso. Aperto: provare in Resolve il trascinamento degli angoli e i tempi GPU reali.
 Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).

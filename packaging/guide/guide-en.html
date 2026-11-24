@@ -94,7 +94,7 @@
     <tr><td class="k">Copy to clips without metadata</td><td>Copies the values of read clips onto an external recorder's ProRes</td><td class="pg">3</td></tr>
     <tr><td class="k">Options</td><td>Camera tag · Overwrite metadata · Correct the Data Level · Also set Input Color Space</td><td class="pg">3</td></tr>
     <tr class="grp"><td colspan="3">Log MetaRaw Noise node <span>· node 1, on the log image · temporal and spatial, Metal GPU</span> <span class="new">4.0</span></td></tr>
-    <tr><td class="k">Profilo · Leggi dati camera · Misura</td><td>Profile: expected noise by camera, ISO and format (Automatic), measured or Manual; noise level</td><td class="pg">9</td></tr>
+    <tr><td class="k">Profilo · Campione</td><td>Profile: expected noise by camera, ISO and format (Automatic), corrected by a sample area, or Manual; noise level</td><td class="pg">9</td></tr>
     <tr><td class="k">Temporale · Spaziale · Protezione</td><td>Temporal ±1-3 aligned frames; luma, colour, bands, shadows; detail and skin</td><td class="pg">9</td></tr>
     <tr><td class="k">Vista · Salta Noise ovunque</td><td>Removed noise, map, motion; Skip Noise everywhere turns every Noise node off</td><td class="pg">9</td></tr>
     <tr class="grp"><td colspan="3">Stabilize · Motion Blur <span>· nodes 2 and 3 · Mecena Motion, Apple silicon Macs only</span> <span class="new">4.0</span></td></tr>
@@ -600,7 +600,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <table>
         <tr><td class="k">Profilo</td><td><b>Automatico</b>: from the clip's data, read when the panel opens or with <b>Leggi dati camera</b> (camera, ISO or EI and native ISO, codec,
           bits per pixel, 4:2:0) the expected noise for 16 brightness levels and 5 bands, luma and colour apart. The <i>Da</i>
-          line says what it used. <b>Misura dal fotogramma</b> measures a frame with flat areas. <b>Manuale</b>: a generic curve.</td></tr>
+          line says what it used. <b>Sample</b> (like Neat Video): tick <b>Mostra campione</b>, drag the box's two corners onto a flat area, press <b>Usa il campione</b>: the profile is corrected on the real noise. <b>Manuale</b>: a generic curve. Bands, shadows, skin and input are in <b>Avanzate</b>.</td></tr>
         <tr><td class="k">Livello rumore</td><td>How much noise the filter expects (×): the first thing to set.</td></tr>
         <tr><td class="k">Temporale</td><td><b>Fotogrammi</b> Automatic (by format: RAW and Intra ±2, compressed Long GOP ±1),
           off, ±1-3. Each neighbour is aligned by blocks and weighted per pixel: where the motion does not match it does not count.</td></tr>
