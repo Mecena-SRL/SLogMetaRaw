@@ -14,10 +14,10 @@ motore su GPU Metal, stessi passaggi e stesse somme). Test: `tests/noise_test.cp
 
 | | |
 |---|---|
-| Implementato e verificato dai test | motore spaziale e temporale su fotogrammi sintetici (rumore bianco noto, scena ferma, in movimento, taglio); misura dal fotogramma; forza 0 = immagine identica; alpha invariato; pannello caricato dal mini host OFX; kernel Metal uguali alla CPU (CI su Mac) |
-| Non verificato | comportamento in Resolve (accesso temporale su GPU, cache, prestazioni reali), qualità su clip reali con rumore del codec e NR della camera, protezione pelle (euristica), Misura con Resolve in modalità Metal |
+| Implementato e verificato dai test | motore spaziale e temporale su fotogrammi sintetici (rumore bianco noto, scena ferma, in movimento, taglio); misura dal fotogramma; zona campione (rumore della zona, rifiuto di zone piccole o con bordi, correzione del profilo, contorno); forza 0 = immagine identica; alpha invariato; pannello caricato dal mini host OFX; kernel Metal uguali alla CPU (CI su Mac) |
+| Non verificato | comportamento in Resolve (accesso temporale su GPU, cache, prestazioni reali), qualità su clip reali con rumore del codec e NR della camera, protezione pelle (euristica), Misura e campione con Resolve in modalità Metal, trascinamento degli angoli nel viewer |
 | Stimato, da tarare con i campioni | quasi tutte le costanti dei profili (sotto) |
-| Pianificato | CUDA (Windows/Linux oggi su CPU), misura su un'area scelta, profili salvati per camera/ISO |
+| Pianificato | CUDA (Windows/Linux oggi su CPU), profili salvati per camera/ISO |
 
 Su Mac il nodo gira su **GPU Metal** quando Resolve usa Metal (Preferenze › Memoria e GPU), tutto il fotogramma
 (temporale e spaziale) senza tornare alla CPU; il tempo per un fotogramma UHD su GPU è nel log della CI macOS
@@ -34,11 +34,18 @@ singolo coefficiente a quella sul vicinato: errore solo spaziale da 0,0088 a 0,0
 1. **Profilo**: per 16 livelli di luminosità e 5 bande (1, 2, 4, 8, 16 px) il rumore atteso, separato per
    luminanza e colore. Tre modi:
    - *Automatico*: dal modello della camera e del formato (sotto), letti dal file della clip con lo stesso lettore di
-     Log MetaRaw: all'apertura del pannello se la clip non ha ancora i dati, o con il pulsante **Leggi dati camera**
-     (rilegge e scrive anche nel Media Pool, come *Rileggi metadata*);
-   - *Misurato*: il pulsante **Misura dal fotogramma** legge il fotogramma corrente; per ogni luminosità e banda
-     prende i blocchi più uniformi (15° percentile). Serve un fotogramma con zone piatte (cielo, muri, fuori fuoco)
-     a più luminosità. Le bande grosse mancanti si ricavano dal rapporto delle altre;
+     Log MetaRaw: all'apertura del pannello se la clip non ha ancora i dati, o con il pulsante **Rileggi metadata**
+     in cima al pannello (come in Log MetaRaw: rilegge il file, scrive nel Media Pool, riporta *Ingresso* ad
+     Automatico e riattiva il nodo). L'ingresso segue la stessa regola di Log MetaRaw: se Resolve dà uno spazio colore
+     che il nodo non conosce (DaVinci YRGB), vale la codifica della camera letta dalla clip;
+   - *Misurato*, con la **zona campione** (come Neat Video): *Mostra campione* disegna un riquadro giallo e nero
+     tra due angoli che si trascinano nel viewer; **Usa il campione** misura il rumore nel riquadro per banda
+     (mediana dei blocchi 8/16 px, corretta per la mediana di una chi quadro), luminanza e colore, e lo confronta con
+     quello che il profilo della camera si aspetta a quella luminosità: il rapporto di ogni banda (0,2-5) corregge il
+     profilo a tutte le luminosità, che seguono la curva della camera. Rifiuta una zona sotto 24 px, bruciata, o con
+     la banda di 4 px più forte di 1,5 volte quella di 1 px (dettaglio, non rumore). In alternativa (Avanzate)
+     **Misura dal fotogramma** legge tutto il fotogramma: per ogni luminosità e banda i blocchi più uniformi (15°
+     percentile); serve un fotogramma con zone piatte a più luminosità;
    - *Manuale*: profilo generico della curva, regolato da *Livello rumore*.
 2. **Temporale** (fotogrammi ±1…±3, Automatico per formato): per ogni vicino un vettore di movimento per blocco
    16×16 (ricerca su piramide 1/4, 1/2, piena, ±24 px), poi un peso per pixel dalla differenza delle patch 3×3
@@ -96,8 +103,9 @@ vecchia Maschera rumore (stop sotto il grigio dove il rumore inizia e dove è pi
 ## In Resolve
 
 1. Nodo **Log MetaRaw Noise** prima del nodo Log MetaRaw (o di CST/LUT), sull'immagine della camera.
-2. Lascia Profilo su Automatico e premi **Leggi dati camera** (la riga *Da* dice camera, formato e ISO usati, o
-   perché mancano); se la clip non ha dati di camera scegli un fotogramma con zone uniformi e premi **Misura dal fotogramma**.
+2. Lascia Profilo su Automatico: i dati della clip si leggono da soli (la riga *Da* dice camera, formato e ISO
+   usati, o perché mancano; **Rileggi metadata** li rilegge). Per tarare sul rumore vero: spunta **Mostra
+   campione**, porta i due angoli del riquadro su una zona piatta e premi **Usa il campione**.
 3. Regola *Livello rumore* (quanto rumore il filtro si aspetta), poi Luminanza e Colore. *Vista: Rumore rimosso*
    mostra cosa toglie: deve sembrare grana senza contorni.
 4. **Salta Noise ovunque**: spegne tutti i nodi Noise del progetto finché non lo ripremi o riapri Resolve. Prima

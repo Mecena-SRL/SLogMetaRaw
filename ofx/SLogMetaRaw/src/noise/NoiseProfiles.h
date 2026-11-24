@@ -41,3 +41,16 @@ NoiseModel noiseModel(const NoiseSource& src, int frameWidth, double level);
 // A measured profile as text for a hidden parameter, and back. Empty / malformed text -> invalid profile.
 std::string noiseProfileToText(const NoiseProfile& p);
 NoiseProfile noiseProfileFromText(const std::string& text);
+
+// The sample box's correction of a camera profile: per band, measured noise / expected noise at the box's
+// brightness, luma and colour. Applied to every brightness: the camera curve keeps its shape, the sample its level.
+struct NoiseSampleFix
+{
+    float luma[kNoiseLevels] = {}, chroma[kNoiseLevels] = {};
+    float level = 0.0f;   // brightness of the box, for the panel
+    bool valid = false;
+};
+NoiseSampleFix noiseSampleFix(const NoiseProfile& expected, const NoiseSample& measured);
+void applySampleFix(NoiseProfile& p, const NoiseSampleFix& f);
+std::string noiseSampleToText(const NoiseSampleFix& f);
+NoiseSampleFix noiseSampleFromText(const std::string& text);

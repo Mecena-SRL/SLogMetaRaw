@@ -238,8 +238,8 @@ class OfxHost(unittest.TestCase):
 
     def test_noise_reads_the_camera_from_the_record_and_ignores_old_ones(self):
         """The Noise node takes camera, codec and ISO from the record Log MetaRaw writes. A record of an older version
-        (before 4.0.1 it had no noise_* fields) counts as missing: the line says why, the panel or the Leggi dati
-        camera button reads the clip again."""
+        (before 4.0.1 it had no noise_* fields) counts as missing: the line says why, the panel or the Rileggi
+        metadata button reads the clip again. An unknown colour space from Resolve falls back on the camera curve."""
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory) / 'user'
             cache = home / SUPPORT_REL / 'cache'
@@ -252,19 +252,29 @@ class OfxHost(unittest.TestCase):
                 value = ((value ^ byte) * 0x100000001b3) & 0xffffffffffffffff
             env = dict(os.environ, HOME=str(home), SLOGMETARAW_TEST_NO_RESOLVE='1', SLOGMETARAW_NO_UPDATE_CHECK='1')
 
-            def profile(version):
+            def lines(version, *extra):
                 (cache / ('%016x.json' % value)).write_text(json.dumps({
                     'version': version, 'supported': 1, 'model': 'ILME-FX30', 'cam_gamma': 9, 'noise_codec': 'long',
                     'noise_iso': 800}), encoding='utf-8')
-                out = subprocess.run([self.exe, BINARY, str(clip), '--plugin', '2', '--no-reload'],
+                out = subprocess.run([self.exe, BINARY, str(clip), '--plugin', '2', '--no-reload'] + list(extra),
                                      capture_output=True, text=True, env=env, timeout=20).stdout
-                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)['profileInfo']
+                return dict(line.split('=', 1) for line in out.splitlines() if '=' in line)
+
+            def profile(version):
+                return lines(version)['profileInfo']
+
+            # a colour space Resolve names but the node does not know (DaVinci YRGB): the camera curve, as in Develop
+            active = lines(7, '--colourspace', 'some_unmapped_space')
+            self.assertTrue(active['noiseInfo'].startswith('Ingresso SLog3'), active['noiseInfo'])
+            self.assertTrue(active['profileInfo'].startswith('Sony FX30'), active['profileInfo'])
+            neutral = lines(6, '--colourspace', 'some_unmapped_space')['noiseInfo']
+            self.assertIn('ingresso non riconosciuto (Resolve: some_unmapped_space)', neutral)
 
             self.assertTrue(profile(7).startswith('Sony FX30 · Long GOP'), profile(7))
             old = profile(6)
             self.assertIn('Metadata non ancora letti', old)
             self.assertNotIn('FX30', old)
-            self.assertIn('param:readCamera|OfxParamTypePushButton|Leggi dati camera',
+            self.assertIn('param:readCamera|OfxParamTypePushButton|Rileggi metadata',
                           self.host('--plugin', '2', '--no-reload', '--dump-params'))
 
     def test_the_lut_safe_node_comes_first_and_the_spatial_one_second(self):

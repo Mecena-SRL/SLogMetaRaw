@@ -80,6 +80,32 @@ int main()
     printf("text_roundtrip=%d\n", back.valid && std::fabs(back.luma[8][0] - measured.luma[8][0]) < 1e-6f ? 1 : 0);
     printf("text_rejects_garbage=%d\n", noiseProfileFromText("np1,abc").valid ? 0 : 1);
 
+    {   // 1b. the sample box: a flat area of the same ramp, and one over the scene's edges and texture
+        NoiseSample smp;
+        const bool sok = noiseSample(W, H, flat.frame(), 70, 30, 140, 100, serial, s, smp);
+        printf("sample_ok=%d\n", sok ? 1 : 0);
+        printf("sample_luma0=%.5f\n", smp.luma[0]);
+        printf("sample_chroma0=%.5f\n", smp.chroma[0]);
+        printf("sample_small_rejected=%d\n", noiseSample(W, H, flat.frame(), 70, 30, 80, 40, serial, s, smp) ? 0 : 1);
+        const Img scene = make(sigma, 3);
+        printf("sample_edges_rejected=%d\n", noiseSample(W, H, scene.frame(), 40, 20, 120, 90, serial, s, smp) ? 0 : 1);
+        // the correction of a profile twice too strong is 0.5, and it survives the text of the hidden parameter
+        NoiseSample half;
+        noiseSample(W, H, flat.frame(), 70, 30, 140, 100, serial, s, half);
+        NoiseProfile twice = measured;
+        for (int b = 0; b < kNoiseBins; ++b)
+            for (int j = 0; j < kNoiseLevels; ++j) {
+                twice.luma[b][j] *= 2.0f;
+                twice.chroma[b][j] *= 2.0f;
+            }
+        const NoiseSampleFix fix = noiseSampleFix(twice, half);
+        const NoiseSampleFix back2 = noiseSampleFromText(noiseSampleToText(fix));
+        printf("sample_fix_luma0=%.4f\n", fix.luma[0]);
+        printf("sample_fix_chroma0=%.4f\n", fix.chroma[0]);
+        printf("sample_text_roundtrip=%d\n", back2.valid && std::fabs(back2.luma[2] - fix.luma[2]) < 1e-3f ? 1 : 0);
+        printf("sample_text_rejects_garbage=%d\n", noiseSampleFromText("ns1,0.5,9").valid ? 0 : 1);
+    }
+
     // 2. spatial: noisy scene, measured profile
     const Img noisy = make(sigma, 2);
     std::vector<float> out((size_t)W * H * 4);
@@ -114,6 +140,17 @@ int main()
     double maxd = 0.0;
     for (size_t i = 0; i < out.size(); ++i) maxd = std::max(maxd, (double)std::fabs(out[i] - noisy.px[i]));
     printf("zero_maxdiff=%.8f\n", maxd);
+    {   // the sample box outline: drawn on its edge, the picture untouched inside
+        NoiseControls boxed = zero;
+        boxed.box[0] = 40;
+        boxed.box[1] = 30;
+        boxed.box[2] = 120;
+        boxed.box[3] = 90;
+        noiseRenderCPU(W, H, &f, 1, 0, measured, boxed, out.data(), (size_t)W * 4, serial, s);
+        const size_t edge = ((size_t)30 * W + 60) * 4, inside = ((size_t)60 * W + 80) * 4;
+        printf("box_edge_blue=%.3f\n", out[edge + 2]);
+        printf("box_inside_same=%d\n", out[inside] == noisy.px[inside] ? 1 : 0);
+    }
 
     // 4. temporal, still scene: five frames with independent noise, spatial off
     std::vector<Img> still;

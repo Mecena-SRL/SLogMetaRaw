@@ -20,6 +20,31 @@
   Poi: i duplicati perdono nitidezza; bagliore del vetro e dell'obiettivo attorno alle luci; la console tiene la scia
   del fotogramma precedente; pannello più pulito (righe senza effetto nascoste, Azzera comandi in alto, «Visto su»).
 
+## Log MetaRaw 4.0.3
+
+- **Noise si attiva come Log MetaRaw**: se Resolve passa al nodo uno spazio colore che il nodo non conosce (DaVinci
+  YRGB e altri), ora vale la codifica della camera letta dalla clip, come in Log MetaRaw. Prima il nodo restava
+  neutro con «ingresso non riconosciuto» anche su clip già lette dallo script (segnalato su una FX6). Se resta
+  neutro, la riga Noise dice il nome che Resolve ha dato.
+- **Rileggi metadata in cima al pannello Noise**: il tasto (prima *Leggi dati camera*, nel gruppo Profilo) sta sotto
+  la riga Noise, con lo stesso nome e lo stesso comportamento di Log MetaRaw: rilegge il file, scrive nel Media
+  Pool, riporta *Ingresso (IDT)* ad Automatico e riattiva il nodo.
+
+## Log MetaRaw 4.0.2
+
+- **Noise, zona campione** (come Neat Video): spunta **Mostra campione**, trascina nel viewer i due angoli del
+  riquadro giallo e nero su una zona piatta (cielo, muro, fuori fuoco) e premi **Usa il campione**. Il nodo misura
+  lì il rumore vero, banda per banda, e corregge il profilo della camera; le altre luminosità seguono la curva della
+  camera. Una zona troppo piccola, bruciata o con dettaglio è rifiutata e la riga Da dice perché. Il profilo resta
+  automatico dai metadata finché non usi il campione.
+- **Noise, pannello più semplice**: in vista Profilo, campione, Livello rumore, Forza (Luminanza, Colore,
+  Fotogrammi, Preserva dettaglio) e Vista; bande, ombre, pelle, forza temporale, ingresso e Misura dal fotogramma nel
+  gruppo **Avanzate**, chiuso. I progetti salvati si riaprono con gli stessi valori.
+- **Noise, taratura automatica**: se la clip non ha ancora i dati, il nodo li riprende da solo appena un altro nodo
+  o lo script li registra.
+- **Noise su GPU più leggero**: la soglia legge i coefficienti già calcolati (metà delle letture) e ogni canale
+  risparmia due passate sull'intera immagine. Risultato identico alla CPU (verificato in CI); tempi in Resolve da
+  provare.
 - **Motion Blur più veloce**: chiede a Resolve solo i fotogrammi accanto (prima ne chiedeva 3 per lato, quindi
   Resolve calcolava 7 fotogrammi a monte, Stabilize compreso, per ognuno). Il contesto lontano si legge solo quando
   serve. Su Mac i buffer Metal restano pronti anche con più render in parallelo. Il calcolo è lo stesso. Da

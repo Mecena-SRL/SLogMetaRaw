@@ -129,6 +129,23 @@ GroupParamDescriptor* defineGroup(ImageEffectDescriptor& d, PageParamDescriptor*
     return g;
 }
 
+Double2DParamDescriptor* definePoint(ImageEffectDescriptor& d, PageParamDescriptor* page, GroupParamDescriptor* group,
+                                     const char* name, const char* label, double x, double y, const char* hint, bool secret)
+{
+    if (!claimName(name)) return nullptr;
+    Double2DParamDescriptor* p = d.defineDouble2DParam(name);
+    p->setLabels(label, label, label);
+    p->setHint(hint);
+    p->setDoubleType(eDoubleTypeXYAbsolute);
+    p->setDefaultCoordinateSystem(eCoordinatesNormalised);
+    p->setDefault(x, y);
+    p->setAnimates(false);
+    p->setIsSecret(secret);
+    if (group) p->setParent(*group);
+    page->addChild(*p);
+    return p;
+}
+
 RGBParamDescriptor* defineColor(ImageEffectDescriptor& d, PageParamDescriptor* page, const std::string& name,
                                 const std::string& label, const char* hint, GroupParamDescriptor* group)
 {

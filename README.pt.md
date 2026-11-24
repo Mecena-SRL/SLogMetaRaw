@@ -47,7 +47,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-4.0.1.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-4.0.3.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -135,7 +135,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v4.0.1`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v4.0.3`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -221,7 +221,7 @@ Trabalham sobre a imagem da câmera, antes do **Log MetaRaw**.
 
 - **Log MetaRaw Noise** sabe quanto ruído esperar e onde. Do registro do script lê a câmera, o ISO (ou o EI e o ISO
   nativo), o codec, os bits por pixel e o 4:2:0. Tem perfis para Sony FX6 e FX30, iPhone 17 Pro e DJI Osmo Action 4
-  e 5 Pro. O botão **Leggi dati camera** relê-os do ficheiro (são lidos sozinhos ao abrir o painel se faltarem). Também pode medir o ruído num quadro com zonas planas.
+  e 5 Pro. O botão **Rileggi metadata** relê-os do ficheiro (são lidos sozinhos ao abrir o painel se faltarem). Para o afinar no ruído real marca **Mostra campione**, leva os dois cantos do retângulo a uma zona plana e prime **Usa il campione** (como o Neat Video); bandas, sombras e pele estão no grupo **Avanzate**.
   - *Temporal*: de ±1 a ±3 quadros vizinhos, alinhados por blocos e ponderados pixel a pixel, para que as partes em
     movimento e os cortes não borrem.
   - *Espacial*: luminância e cor separadas, em 5 bandas wavelet. Cada coeficiente é comparado com a energia da sua
@@ -242,7 +242,7 @@ Nenhum dos três nós foi ainda testado no Resolve com clipes reais.
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.0.1`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.0.3`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.

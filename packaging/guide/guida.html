@@ -94,7 +94,7 @@
     <tr><td class="k">Copia su clip senza metadata</td><td>Copia i valori delle clip lette sui ProRes di un registratore esterno</td><td class="pg">3</td></tr>
     <tr><td class="k">Opzioni</td><td>Tag per camera · Sovrascrivi metadata · Correggi il Data Level · Imposta anche Input Color Space</td><td class="pg">3</td></tr>
     <tr class="grp"><td colspan="3">Nodo Log MetaRaw Noise <span>· nodo 1, sull'immagine log · temporale e spaziale, GPU Metal</span> <span class="new">4.0</span></td></tr>
-    <tr><td class="k">Profilo · Leggi dati camera · Misura</td><td>Rumore atteso per camera, ISO e formato (Automatico), misurato o Manuale; Livello rumore</td><td class="pg">9</td></tr>
+    <tr><td class="k">Profilo · Campione</td><td>Rumore atteso per camera, ISO e formato (Automatico), corretto da una zona campione, o Manuale; Livello rumore</td><td class="pg">9</td></tr>
     <tr><td class="k">Temporale · Spaziale · Protezione</td><td>Fotogrammi ±1-3 allineati; Luminanza, Colore, bande, ombre; dettaglio e pelle</td><td class="pg">9</td></tr>
     <tr><td class="k">Vista · Salta Noise ovunque</td><td>Rumore rimosso, mappa, movimento; spegne tutti i nodi Noise per lavorare</td><td class="pg">9</td></tr>
     <tr class="grp"><td colspan="3">Stabilize · Motion Blur <span>· nodi 2 e 3 · Mecena Motion, solo Mac Apple silicon</span> <span class="new">4.0</span></td></tr>
@@ -589,9 +589,9 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     <div>
       <h2>1 · Log MetaRaw Noise</h2>
       <table>
-        <tr><td class="k">Profilo</td><td><b>Automatico</b>: dai dati della clip, letti all'apertura o con <b>Leggi dati camera</b> (camera, ISO o EI e ISO nativo, codec,
+        <tr><td class="k">Profilo</td><td><b>Automatico</b>: dai dati della clip, letti all'apertura o con <b>Rileggi metadata</b> in cima (camera, ISO o EI e ISO nativo, codec,
           bit per pixel, 4:2:0) il rumore atteso per 16 luminosità e 5 bande, luminanza e colore separati. La riga <i>Da</i>
-          dice cosa ha usato. <b>Misura dal fotogramma</b>: su un fotogramma con zone piatte. <b>Manuale</b>: curva generica.</td></tr>
+          dice cosa ha usato. <b>Campione</b> (come Neat Video): <b>Mostra campione</b>, trascina i due angoli del riquadro su una zona piatta, <b>Usa il campione</b>: corregge il profilo sul rumore vero. <b>Manuale</b>: curva generica. Bande, ombre, pelle e ingresso sono in <b>Avanzate</b>.</td></tr>
         <tr><td class="k">Livello rumore</td><td>Quanto rumore il filtro si aspetta (×): la prima regolazione da fare.</td></tr>
         <tr><td class="k">Temporale</td><td><b>Fotogrammi</b> Automatico (per formato: RAW e Intra ±2, Long GOP compresso ±1),
           Spento, ±1-3. Ogni vicino è allineato a blocchi e pesato pixel per pixel: dove il movimento non torna non conta.</td></tr>

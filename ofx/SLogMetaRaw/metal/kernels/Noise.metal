@@ -21,6 +21,8 @@ struct NzArgs {
     int nbx, nby;        // motion blocks
     int isLuma, skinOn, view, used;
     float gj, preserve, skin, shadows, inv, rho, scale;
+    int bx0, by0, bx1, by1, bw;   // sample box outline (bx0 < 0: none), NoiseEngine.h noiseBoxEdge
+    int first, last;              // nz_shrink: first band (acc starts here), last band (adds the residual)
 };
 
 constant float NZ_INV_SQRT2 = 0.70710678f;
@@ -306,6 +308,23 @@ kernel void nz_smooth_v(const device float* tmp [[buffer(0)]], device float* dst
     dst[y * a.W + x] = NZ_B0 * (r0 + r4) + NZ_B1 * (r1 + r3) + NZ_B2 * r2;
 }
 
+// The vertical pass that also writes the band's coefficients (src - smoothed): nz_shrink reads them once each.
+kernel void nz_smooth_vc(const device float* tmp [[buffer(0)]], device float* dst [[buffer(1)]],
+                         const device float* src [[buffer(2)]], device float* coef [[buffer(3)]],
+                         constant NzArgs& a [[buffer(4)]], uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x, y = (int)id.y;
+    if (x >= a.W || y >= a.H) return;
+    const int st = a.step;
+    const float r0 = tmp[nz_mirror(y - 2 * st, a.H) * a.W + x], r1 = tmp[nz_mirror(y - st, a.H) * a.W + x];
+    const float r2 = tmp[y * a.W + x];
+    const float r3 = tmp[nz_mirror(y + st, a.H) * a.W + x], r4 = tmp[nz_mirror(y + 2 * st, a.H) * a.W + x];
+    const int i = y * a.W + x;
+    const float v = NZ_B0 * (r0 + r4) + NZ_B1 * (r1 + r3) + NZ_B2 * r2;
+    dst[i] = v;
+    coef[i] = src[i] - v;
+}
+
 // What multiplies every threshold (shadow boost, temporal leftover) and the skin weight, once per pixel.
 kernel void nz_boost(const device float* guide [[buffer(0)]], const device float* ratio [[buffer(1)]],
                      const device float* gc1 [[buffer(2)]], const device float* gc2 [[buffer(3)]],
@@ -319,11 +338,10 @@ kernel void nz_boost(const device float* guide [[buffer(0)]], const device float
     if (a.skinOn) skin[i] = a.skin * nz_skin_weight(m, gc1[i], gc2[i]);
 }
 
-inline float nz_coef(const device float* cur, const device float* next, int i) { return cur[i] - next[i]; }
-
 // One band of one channel: each coefficient shrunk against the mean energy of its 3x3 neighbourhood (one band step
-// apart), threshold from the profile at the pixel's brightness; the result added to acc.
-kernel void nz_shrink(const device float* cur [[buffer(0)]], const device float* next [[buffer(1)]],
+// apart), threshold from the profile at the pixel's brightness; the result added to acc (written on the first band,
+// with the residual added on the last one: same sums, same order as noiseRenderCPU).
+kernel void nz_shrink(const device float* coef [[buffer(0)]], const device float* next [[buffer(1)]],
                       const device float* guide [[buffer(2)]], const device float* boost [[buffer(3)]],
                       const device float* skin [[buffer(4)]], device float* acc [[buffer(5)]],
                       constant NzArgs& a [[buffer(6)]], constant NzTables& T [[buffer(7)]],
@@ -332,7 +350,7 @@ kernel void nz_shrink(const device float* cur [[buffer(0)]], const device float*
     const int x = (int)id.x, y = (int)id.y;
     if (x >= a.W || y >= a.H) return;
     const int i = y * a.W + x;
-    const float wv = nz_coef(cur, next, i);
+    const float wv = coef[i];
     float out = wv;
     if (a.gj > 0.0f) {
         int bin;
@@ -347,8 +365,7 @@ kernel void nz_shrink(const device float* cur [[buffer(0)]], const device float*
         const int rows[3] = { nz_mirror(y - st, a.H) * a.W, y * a.W, nz_mirror(y + st, a.H) * a.W };
         float e = 0.0f;
         for (int r = 0; r < 3; ++r) {
-            const float va = nz_coef(cur, next, rows[r] + xa), vc = nz_coef(cur, next, rows[r] + x);
-            const float vb = nz_coef(cur, next, rows[r] + xb);
+            const float va = coef[rows[r] + xa], vc = coef[rows[r] + x], vb = coef[rows[r] + xb];
             e += va * va + vc * vc + vb * vb;
         }
         e = e * (1.0f / 9.0f);
@@ -357,7 +374,9 @@ kernel void nz_shrink(const device float* cur [[buffer(0)]], const device float*
         if (a.isLuma && level == 0 && a.preserve > 0.0f) out += a.preserve * (wv - out);
         if (a.skinOn && a.isLuma && level < 2) out += skin[i] * (wv - out);
     }
-    acc[i] += out;
+    float sum = (a.first ? 0.0f : acc[i]) + out;
+    if (a.last) sum += next[i];
+    acc[i] = sum;
 }
 
 // Back to RGB, or a view; alpha from the source.
@@ -385,6 +404,17 @@ kernel void nz_final(const device float* src [[buffer(0)]], device float* dst [[
     } else if (a.view == 3) {
         const float v = a.used > 0 ? nz_clampf(wsum[i] / (float)a.used, 0.0f, 1.0f) : 0.0f;
         rgb[0] = rgb[1] = rgb[2] = v;
+    }
+    if (a.bx0 >= 0) {
+        const int t = a.bw;
+        const bool outer = x >= a.bx0 - t && x <= a.bx1 + t && y >= a.by0 - t && y <= a.by1 + t;
+        const bool inner = x > a.bx0 && x < a.bx1 && y > a.by0 && y < a.by1;
+        if (outer && !inner) {
+            const bool dash = ((x + y) >> 3) & 1;
+            rgb[0] = dash ? 1.0f : 0.0f;
+            rgb[1] = dash ? 0.85f : 0.0f;
+            rgb[2] = 0.0f;
+        }
     }
     dst[o] = rgb[0];
     dst[o + 1] = rgb[1];

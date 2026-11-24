@@ -430,6 +430,7 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
     }
 
     // ---- 3. back to RGB, or a view
+    const int boxWidth = std::max(2, W / 960);
     parallel(H, [&](int y0, int y1) {
         for (int y = y0; y < y1; ++y) {
             const float* src = cf.px + (size_t)y * cf.rowFloats;
@@ -451,6 +452,7 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
                     const float v = used > 0 ? clampf(s.wsum[i] / (float)used, 0.0f, 1.0f) : 0.0f;
                     rgb[0] = rgb[1] = rgb[2] = v;
                 }
+                noiseBoxEdge(c.box, x, y, boxWidth, rgb);
                 out[4 * x] = rgb[0];
                 out[4 * x + 1] = rgb[1];
                 out[4 * x + 2] = rgb[2];
@@ -564,6 +566,69 @@ bool noiseMeasure(int W, int H, NoiseFrame frame, const NoiseParallel& parallel,
                 else t[bin][j] = t[lo][j] + (t[hi][j] - t[lo][j]) * (float)(bin - lo) / (float)(hi - lo);
             }
     }
+    out.valid = true;
+    return true;
+}
+
+bool noiseSample(int W, int H, NoiseFrame frame, int x0, int y0, int x1, int y1, const NoiseParallel& parallel,
+                 NoiseScratch& s, NoiseSample& out)
+{
+    out = NoiseSample();
+    x0 = std::max(x0, 0);
+    y0 = std::max(y0, 0);
+    x1 = std::min(x1, W);
+    y1 = std::min(y1, H);
+    if (x1 - x0 < 24 || y1 - y0 < 24) return false;
+    const size_t N = (size_t)W * H;
+    for (int k = 0; k < 3; ++k) resize(s.plane[k], N);
+    resize(s.cur, N);
+    resize(s.next, N);
+    resize(s.guide, N);
+    resize(s.lumaC, N);
+    toOpponent(W, H, frame, s, parallel);
+    buildGuide(W, H, s, parallel);
+    double mean = 0.0;
+    for (int y = y0; y < y1; ++y)
+        for (int x = x0; x < x1; ++x) mean += s.guide[(size_t)y * W + x];
+    out.level = (float)(mean / ((double)(x1 - x0) * (y1 - y0)));
+    if (out.level < 0.02f || out.level > 0.97f) return false;   // clipped: no noise to see
+    // the whole frame is filtered (the bands need their neighbourhood), only the blocks inside the box count
+    const int kSize[kNoiseLevels] = { 8, 8, 16, 16, 16 };
+    for (int k = 0; k < 3; ++k) {
+        s.cur = s.plane[k];
+        for (int j = 0; j < kNoiseLevels; ++j) {
+            smooth(s.cur, s.next, s.lumaC, W, H, j, parallel);
+            const int b = kSize[j];
+            std::vector<float> e;
+            for (int by = y0; by + b <= y1; by += b)
+                for (int bx = x0; bx + b <= x1; bx += b) {
+                    double acc = 0.0;
+                    for (int y = by; y < by + b; ++y)
+                        for (int x = bx; x < bx + b; ++x) {
+                            const size_t i = (size_t)y * W + x;
+                            const float wv = s.cur[i] - s.next[i];
+                            acc += (double)wv * wv;
+                        }
+                    e.push_back((float)(acc / ((double)b * b)));
+                }
+            float* t = k == 0 ? out.luma : out.chroma;
+            if (e.size() >= 4) {
+                // the median block, corrected for the median of a chi-square with the block's degrees of freedom;
+                // colour: C1 and C2 together
+                std::nth_element(e.begin(), e.begin() + e.size() / 2, e.end());
+                const float side = (float)b / (float)(1 << j);
+                const float dof = std::max(4.0f, side * side * 0.5f);
+                const float c = std::pow(1.0f - 2.0f / (9.0f * dof), 3.0f);
+                const float v = std::sqrt(std::max(e[e.size() / 2], 0.0f) / c);
+                t[j] = k == 2 ? std::sqrt(0.5f * (t[j] * t[j] + v * v)) : v;
+            } else {
+                t[j] = -1.0f;   // too few blocks at this band: the caller keeps the ratio of the finer one
+            }
+            s.cur.swap(s.next);
+        }
+    }
+    // a flat area: the noise falls from one band to the next coarser one; texture would not
+    if (out.luma[0] <= 0.0f || (out.luma[2] > 0.0f && out.luma[2] > 1.5f * out.luma[0])) return false;
     out.valid = true;
     return true;
 }
