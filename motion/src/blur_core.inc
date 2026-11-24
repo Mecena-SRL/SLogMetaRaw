@@ -27,7 +27,7 @@ struct GmCamera { float h[12]; };
 struct GmParams {
     int width, height, grid, fieldW, fieldH;
     int hasPrev, hasNext, curve, maxSamples, curved, reach, level;
-    float exposure, pad0, pad1, pad2;
+    float exposure, grain, pad1, pad2; // grain: std of the source's pixel-scale residual (encoded)
     GmCamera camP, camN; // dominant (camera) motion to each neighbour, or zeros
 };
 
@@ -434,5 +434,20 @@ inline void gm_integrate(GM_DEVC float* src, GM_DEVC float* linC, GM_DEVC float*
     float inv = 1.f / float(n);
     out[0] = gm_encode(sr * inv, p.curve); out[1] = gm_encode(sg * inv, p.curve); out[2] = gm_encode(sb * inv, p.curve);
     out[3] = alpha;
+    // Sensor grain belongs to the pixel, not to the moving scene: a longer
+    // shutter does not smear it. Averaging along the path removed about
+    // 1/(1+L) of its variance; put back the small pixel-scale residual of the
+    // centre picture (cored so that real edges and texture stay blurred).
+    if (p.grain > 0.f) {
+        float length = 2.f * reach;
+        float restore = .894f * sqrt(length / (1.f + length));
+        int xl = 4 * (y * w + max(x - 1, 0)), xr = 4 * (y * w + min(x + 1, w - 1));
+        int yu = 4 * (max(y - 1, 0) * w + x), yd = 4 * (min(y + 1, h - 1) * w + x);
+        for (int c = 0; c < 3; ++c) {
+            float r = src[idx + c] - .25f * (src[xl + c] + src[xr + c] + src[yu + c] + src[yd + c]);
+            float keep = clamp(2.f - abs(r) / p.grain, 0.f, 1.f);
+            out[c] += restore * keep * r;
+        }
+    }
 }
 )

@@ -602,6 +602,7 @@ void render(OfxImageEffectHandle e,OfxPropertySetHandle args){
         blur::Job job;
         job.center=im;job.prev=neighbors[0]?&images[0]:nullptr;job.next=neighbors[1]?&images[1]:nullptr;
         job.exposure=span;job.curve=curve;job.draft=draft;job.curved=plan.cinema;job.camera=plan.cinema?camera:nullptr;
+        job.grain=blur::grainLevel(im);
 #ifdef __APPLE__
         if(size_t(im.w)*im.h>=65536 && !fx->abort(e) && metalBlur(job,dest,win)){record("Metal");return;}
 #endif
