@@ -1,8 +1,12 @@
 # Maschera rumore
 
-Il nodo Develop può scrivere nel canale **alpha** le zone dove la camera, all'EI scelto, produce rumore visibile, per
-far lavorare Neat Video o un altro denoiser solo lì. Colori e uscita (Rec.709 compreso) non cambiano: lo verifica
-`tests/test_ofx_math.py` (RGB bit per bit identici con la maschera accesa e spenta, con ogni tone mapping).
+Con Maschera accesa (Automatica o Personalizzata) il nodo Develop diventa, dalla 3.2.1, un **nodo maschera**: non
+sviluppa, passa l'immagine che riceve identica e scrive solo l'**alpha**, 1 dove la camera, all'EI scelto, produce
+rumore visibile e 0 dove è pulita, sfumando. Serve a far lavorare Neat Video o un altro denoiser solo lì. Nella 3.2.0 lo
+stesso nodo sviluppava e scriveva l'alpha, ma Resolve usa l'alpha di un plugin come key del suo stesso nodo (uscita =
+sviluppata dove l'alpha è 1, ingresso del nodo dove è 0) e l'immagine risultava strana. Il nodo che sviluppa, con
+Maschera spenta, non cambia (Rec.709 compreso). Lo verifica `tests/test_ofx_math.py`: l'immagine del nodo maschera è
+identica al suo ingresso bit per bit, con ogni tone mapping scelto.
 
 Codice: `src/develop/NoiseMask.cpp` (tabella e soglia), `math/Develop.h` (`sm_noise_mask`, per pixel).
 
@@ -56,9 +60,13 @@ nativi di FX3, X-H2S, Z8, Komodo, la gamma dinamica di C70, Z8/Z6 III, X-H2S, Ko
 
 ## In Resolve
 
-Il manuale (18.6, OFX nella pagina Color) dice che finestra, qualifier o key limitano l'effetto di un plugin OFX.
-**Non provato**: che l'alpha del nodo arrivi come key all'ingresso del nodo con Neat Video. Se non arriva: un nodo in
-parallelo con *Vedi maschera* e un qualifier di luminanza.
+Usa un secondo nodo Log MetaRaw, copia di quello che sviluppa (stesso EI), messo **prima** di lui così riceve l'immagine
+log, con Maschera accesa; collega la sua uscita alpha (key) all'ingresso key del nodo con Neat Video. Il nodo che
+sviluppa resta con Maschera *Spenta*. *Vedi maschera* mostra la maschera in grigio per controllarla; la riga *Rilevato*
+dice «NODO MASCHERA RUMORE: immagine invariata, solo alpha». Il manuale (18.6, OFX nella pagina Color) dice che
+finestra, qualifier o key limitano l'effetto di un plugin OFX. **Non provato**: che l'alpha del nodo maschera arrivi
+all'ingresso key del nodo con Neat Video. Se non arriva: un nodo in parallelo con *Vedi maschera* e un qualifier di
+luminanza.
 
 ## Fonti
 

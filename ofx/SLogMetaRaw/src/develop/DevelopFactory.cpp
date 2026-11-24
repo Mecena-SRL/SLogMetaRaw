@@ -165,15 +165,17 @@ void DevelopFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  "questo nodo. Ingresso: il segnale che entra nel nodo", output);
 
     GroupParamDescriptor* noise = defineGroup(d, page, "noiseGroup", "Maschera rumore", false);
-    if (noise) noise->setHint("Per Neat Video e i denoiser: nell'alpha le zone che la camera rende rumorose all'EI "
-                              "scelto. L'immagine non cambia");
+    if (noise) noise->setHint("Per Neat Video e i denoiser: un nodo Log MetaRaw a parte che passa l'immagine "
+                              "invariata e scrive nell'alpha le zone che la camera rende rumorose all'EI scelto");
     static const char* noiseOpts[] = { "Spenta", "Automatica", "Personalizzata" };
     defineChoice(d, page, "noiseMask", "Maschera", noiseOpts, 3, 0,
-                 "Scrive nel canale alpha 1 dove la camera ha rumore e 0 dove è pulita, sfumando; i colori restano "
-                 "identici. Automatica: soglia misurata o stimata per camera, ISO nativo e codec. Personalizzata: "
-                 "Inizio e Sfumatura tuoi. In entrambe la soglia si sposta con l'EI scelto: ogni stop sopra il nativo "
-                 "la avvicina di uno stop al grigio. In Resolve collega l'uscita alpha del nodo all'ingresso key "
-                 "del nodo con Neat Video", noise);
+                 "Accesa, il nodo diventa una maschera: non sviluppa, passa l'immagine che riceve identica e scrive "
+                 "nell'alpha 1 dove la camera ha rumore e 0 dove è pulita, sfumando (Resolve usa l'alpha di un plugin "
+                 "come key del suo nodo). Usa un secondo nodo Log MetaRaw, copia di quello che sviluppa (stesso EI), "
+                 "messo prima di lui, e collega la sua uscita alpha all'ingresso key del nodo con Neat Video. "
+                 "Automatica: soglia misurata o stimata per camera, ISO nativo e codec. Personalizzata: Inizio e "
+                 "Sfumatura tuoi. In entrambe la soglia si sposta con l'EI scelto: ogni stop sopra il nativo la "
+                 "avvicina di uno stop al grigio", noise);
     const char* noiseHint = "Personalizzata: stop sotto il grigio 18% a cui inizia la maschera all'ISO nativo, e "
                             "quanti stop servono per arrivare piena. L'EI scelto la sposta come in Automatica";
     defineSlider(d, page, "noiseStart", "Inizio", 3.0, 0.0, 10.0, 0.0, 8.0, 0.1, noiseHint, noise);

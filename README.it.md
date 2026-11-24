@@ -45,7 +45,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-3.2.0.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-3.2.1.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -132,7 +132,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v3.2.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v3.2.1`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -140,7 +140,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 | **Esposizione** (EI) | indice di esposizione: EI doppio = +1 stop |
 | **False color** | una casella sopra Temperatura, una sotto Tint, una sotto Esposizione; vedi sotto |
 | **Spazio colore** | tre sottogruppi. **Ingresso**: Spazio colore e Gamma in ingresso, Rilevato e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e i riferimenti di ripresa. **Uscita**: **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione e Mappatura gamut, Vibrance luci, Spazio colore e Gamma (come un Color Space Transform; *Timeline* non converte), dimensione ed esportazione della LUT |
-| **Maschera rumore** | **Maschera**: Spenta, Automatica, Personalizzata (**Inizio**, **Sfumatura**); **Vedi maschera**; **Soglia** mostra la soglia in uso. Scrive nell'alpha le zone rumorose, i colori non cambiano; vedi sotto |
+| **Maschera rumore** | **Maschera**: Spenta, Automatica, Personalizzata (**Inizio**, **Sfumatura**); **Vedi maschera**; **Soglia** mostra la soglia in uso. Accesa, il nodo diventa un nodo maschera: immagine invariata, solo l'alpha; vedi sotto |
 | **Toni** | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* aggiunge Contrast, Shadows, Whites, Blacks, Vibrance e le **Zone** (Black, Shadow, Light, Specular con Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); compaiono da soli se il nodo li usa |
 | **Dati di ripresa** | sola lettura: obiettivo, focale, diaframma, fuoco, shutter, EI, WB, fps, ND, LUT di camera |
 
@@ -177,13 +177,17 @@ una Gamma di scena come DaVinci WG / DaVinci Intermediate non vengono più sosti
 resa per Rec.709 viaggia in quella codifica, per passarla ad altri plugin (Dehancer…), e un CST verso Rec.709 / Gamma 2.4
 senza tone mapping la riporta identica. Le uscite di schermo (Rec.709, P3, Rec.2020) non cambiano.
 
-**Maschera rumore (3.2.0).** Il nodo può scrivere nel canale **alpha** le zone dove la camera, all'EI scelto, ha rumore
-visibile, per far lavorare Neat Video o un altro denoiser solo lì. *Automatica* usa una soglia per camera, ISO nativo
-(anche doppio) e codec (ProRes RAW e 8 bit la anticipano di mezzo stop); *Personalizzata* usa Inizio e Sfumatura scelti
-da te. In entrambe ogni stop di EI sopra il nativo la avvicina di uno stop al grigio. *Vedi maschera* la mostra al posto
-dell'immagine. Colori e uscita restano identici bit per bit. **Non ancora provato in Resolve**: che l'alpha arrivi
-all'ingresso key del nodo con Neat Video. Se non arriva, un nodo in parallelo con *Vedi maschera* e un qualifier di
-luminanza. Le costanti sono misurate per alcune camere e stimate per le altre: [docs/NOISE.md](docs/NOISE.md).
+**Maschera rumore (3.2.0, nodo maschera dalla 3.2.1).** Con Maschera accesa il nodo diventa una maschera: non sviluppa,
+passa l'immagine che riceve identica bit per bit e scrive solo l'**alpha**: 1 dove la camera, all'EI scelto, ha rumore
+visibile, 0 dove è pulita, sfumando (Resolve usa l'alpha di un plugin come key del suo stesso nodo, quindi un nodo che
+sviluppa non può portarla). Usa un secondo nodo Log MetaRaw, copia di quello che sviluppa (stesso EI), messo prima di
+lui, e collega la sua uscita alpha all'ingresso key del nodo con Neat Video; il nodo che sviluppa resta con Maschera
+Spenta e non cambia. *Automatica* usa una soglia per camera, ISO nativo (anche doppio) e codec (ProRes RAW e 8 bit la
+anticipano di mezzo stop); *Personalizzata* usa Inizio e Sfumatura scelti da te. In entrambe ogni stop di EI sopra il
+nativo la avvicina di uno stop al grigio. *Vedi maschera* la mostra in grigio al posto dell'immagine. **Non ancora
+provato in Resolve**: che l'alpha arrivi all'ingresso key del nodo con Neat Video. Se non arriva, un nodo in parallelo
+con *Vedi maschera* e un qualifier di luminanza. Le costanti sono misurate per alcune camere e stimate per le altre:
+[docs/NOISE.md](docs/NOISE.md).
 
 **Senza metadata.** Un ProRes da registratore esterno, o una clip che non si legge, lascia il nodo neutro. Spunta
 *Spazio colore › Senza metadata › Sblocca controlli* e scrivi EI, Kelvin e tinta di ripresa: i controlli si attivano e il nodo
@@ -238,7 +242,7 @@ ai bordi forti la grana può crescere di 1,25–1,7 volte. Dehaze ha bisogno di 
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/3.2.0`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/3.2.1`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

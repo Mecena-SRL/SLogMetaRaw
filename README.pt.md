@@ -45,7 +45,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-3.2.0.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-3.2.1.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -133,7 +133,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v3.2.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v3.2.1`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -141,7 +141,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 | **Esposizione** (EI) | índice de exposição: o dobro do EI = +1 stop |
 | **False color** | uma caixa acima de Temperatura, uma abaixo de Tint e uma abaixo de Esposizione; veja abaixo |
 | **Spazio colore** (espaço de cor) | três subgrupos. **Ingresso** (entrada): Spazio colore e Gamma que entram no nó, Rilevato (detectado) e *Ripristina da camera*, Data level, Livello e *Ripristina da clip*. **Senza metadata**: *Sblocca controlli* e as referências de gravação. **Uscita** (saída): **Tone mapping** (Nessuno/CST, ACES 2.0, Luminanza, Filmico, ACES 1.3, OpenDRT), Compressione e Mappatura gamut, Vibrance luci, Spazio colore e Gamma (como um Color Space Transform; *Timeline* não converte), tamanho e exportação da LUT |
-| **Maschera rumore** (máscara de ruído) | **Maschera**: Spenta (desligada), Automatica, Personalizzata (**Inizio** início, **Sfumatura** transição); **Vedi maschera** (ver máscara); **Soglia** (limiar) mostra o limiar em uso. Escreve no alfa as zonas com ruído, as cores não mudam; veja abaixo |
+| **Maschera rumore** (máscara de ruído) | **Maschera**: Spenta (desligada), Automatica, Personalizzata (**Inizio** início, **Sfumatura** transição); **Vedi maschera** (ver máscara); **Soglia** (limiar) mostra o limiar em uso. Ligada, o nó vira um nó máscara: imagem inalterada, só o alfa; veja abaixo |
 | **Toni** (tons) | Highlights, **Bianco** (stop), Soft Clip, Saturation (−100…+100). *Mostra tutti i controlli* acrescenta Contrast, Shadows, Whites, Blacks, Vibrance e as **Zone** (Black, Shadow, Light, Specular com Exp, Sat, Range e Falloff, Contrast Pivot, false color *Zone*); aparecem sozinhos se o nó os usa |
 | **Dati di ripresa** (dados de gravação) | só leitura: objetiva, focal, abertura, foco, obturador, EI, WB, fps, ND, LUT da câmera |
 
@@ -176,13 +176,16 @@ Gamma de cena como DaVinci WG / DaVinci Intermediate não são mais substituído
 renderizada para Rec.709 viaja nessa codificação, para passá-la a outros plugins (Dehancer…), e um CST para Rec.709 /
 Gamma 2.4 sem tone mapping a devolve idêntica. As saídas de tela (Rec.709, P3, Rec.2020) não mudam.
 
-**Máscara de ruído (3.2.0).** O nó pode escrever no canal **alfa** as zonas onde a câmera, no EI escolhido, tem ruído
-visível, para que o Neat Video ou outro denoiser trabalhe só ali. *Automatica* usa um limiar por câmera, ISO nativo
-(também duplo) e codec (ProRes RAW e 8 bits o antecipam em meio stop); *Personalizzata* usa o Inizio e a Sfumatura que
-você escolher. Nos dois, cada stop de EI acima do nativo o aproxima um stop do cinza. *Vedi maschera* mostra a máscara no
-lugar da imagem. Cores e saída não mudam, bit a bit. **Ainda não testado no Resolve**: que o alfa chegue à entrada key do
-nó com o Neat Video. Se não chegar, um nó em paralelo com *Vedi maschera* e um qualifier de luminância. As constantes são
-medidas para algumas câmeras e estimadas para as outras: [docs/NOISE.md](docs/NOISE.md) (em italiano).
+**Máscara de ruído (3.2.0, nó máscara desde a 3.2.1).** Com Maschera ligada o nó vira uma máscara: não revela, passa a
+imagem que recebe idêntica bit a bit e escreve só o **alfa**: 1 onde a câmera, no EI escolhido, tem ruído visível, 0
+onde está limpa, com transição suave (o Resolve usa o alfa de um plugin como key do próprio nó, então um nó que revela
+não pode levá-la). Use um segundo nó Log MetaRaw, cópia do que revela (mesmo EI), colocado antes dele, e ligue a sua
+saída alfa à entrada key do nó com o Neat Video; o nó que revela fica com Maschera Spenta e não muda. *Automatica* usa
+um limiar por câmera, ISO nativo (também duplo) e codec (ProRes RAW e 8 bits o antecipam em meio stop); *Personalizzata*
+usa o Inizio e a Sfumatura que você escolher. Nos dois, cada stop de EI acima do nativo o aproxima um stop do cinza.
+*Vedi maschera* mostra a máscara em cinza no lugar da imagem. **Ainda não testado no Resolve**: que o alfa chegue à
+entrada key do nó com o Neat Video. Se não chegar, um nó em paralelo com *Vedi maschera* e um qualifier de luminância.
+As constantes são medidas para algumas câmeras e estimadas para as outras: [docs/NOISE.md](docs/NOISE.md) (em italiano).
 
 **Sem metadados.** Um ProRes de gravador externo, ou um clipe que não pode ser lido, deixa o nó neutro. Marque
 *Spazio colore › Senza metadata › Sblocca controlli* e digite o EI, os Kelvin e o tint de gravação: os controles se ativam e o
@@ -238,7 +241,7 @@ ruído, mas junto a bordas fortes o grão pode crescer 1,25–1,7 vezes. O Dehaz
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/3.2.0`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/3.2.1`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
