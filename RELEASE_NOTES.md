@@ -7,7 +7,9 @@
   movimento (±1-3 fotogrammi, automatico per formato) e spaziale per bande, luminanza e colore separati, più forte
   dove la camera è più rumorosa. Misura del rumore dal fotogramma, vista del rumore rimosso, protezione dettaglio e
   pelle, **Salta Noise ovunque** per lavorare veloce (si riaccende alla riapertura di Resolve). Va prima di Log
-  MetaRaw. Solo CPU per ora; non ancora provato in Resolve. Dettagli: `docs/DENOISE.md`.
+  MetaRaw. Su Mac gira tutto su GPU Metal (temporale e spaziale), altrove su CPU. Soglia sul vicinato dei
+  coefficienti: più rumore tolto e più dettaglio tenuto della soglia sul singolo coefficiente. Non ancora provato
+  in Resolve. Dettagli: `docs/DENOISE.md`.
 
 ## Log MetaRaw 3.2.1
 

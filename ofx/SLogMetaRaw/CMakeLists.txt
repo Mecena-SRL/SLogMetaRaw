@@ -94,6 +94,7 @@ if(APPLE)
   file(GLOB MM_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/metal/*.mm")
   list(APPEND PLUGIN_SRCS ${MM_SRCS})
   set_source_files_properties(${MM_SRCS} "${REPO_ROOT}/tests/metal_test.mm" "${REPO_ROOT}/tests/detail_metal_test.mm"
+                              "${REPO_ROOT}/tests/noise_metal_test.mm"
                               PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 endif()
 
@@ -213,7 +214,9 @@ if(SLOGMETARAW_BUILD_TESTS)
               "${CMAKE_CURRENT_SOURCE_DIR}/metal/DevelopKernel.mm")
     slog_test(detail_metal_test "${REPO_ROOT}/tests/detail_metal_test.mm" src/detail/DetailPasses.cpp
               "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/DetailKernels.mm")
-    foreach(t metal_test detail_metal_test)
+    slog_test(noise_metal_test "${REPO_ROOT}/tests/noise_metal_test.mm" src/noise/NoiseEngine.cpp
+              "${CMAKE_CURRENT_SOURCE_DIR}/metal/MetalContext.mm" "${CMAKE_CURRENT_SOURCE_DIR}/metal/NoiseKernels.mm")
+    foreach(t metal_test detail_metal_test noise_metal_test)
       target_link_libraries(${t} PRIVATE "-framework Metal" "-framework Foundation")
     endforeach()
   endif()

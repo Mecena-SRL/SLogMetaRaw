@@ -12,7 +12,7 @@ param:temporalGroup|OfxParamTypeGroup|Temporale|||||||||||||||1
 param:temporalFrames|OfxParamTypeChoice|Fotogrammi|0|temporalGroup|||||||||0|Quanti fotogrammi prima e dopo: Automatico dal formato (RAW e Intra ±2, Long GOP compresso ±1). Più fotogrammi tolgono più rumore sulle scene ferme e costano di più|Automatico,Spento,±1,±2,±3||
 param:temporalStrength|OfxParamTypeDouble|Forza temporale|1|temporalGroup|||0|2|0|2|0.05|||Quanto il filtro accetta differenze tra un fotogramma e l'altro: più alta = più rumore tolto e più rischio di scie sul movimento veloce. 0 = solo il fotogramma corrente|||
 param:spatialGroup|OfxParamTypeGroup|Spaziale|||||||||||||||1
-param:lumaStrength|OfxParamTypeDouble|Luminanza|1|spatialGroup|||0|3|0|2|0.05|||Forza sul rumore di luminanza (grana): 1 = soglia di 1,5 volte il rumore atteso di ogni banda|||
+param:lumaStrength|OfxParamTypeDouble|Luminanza|1|spatialGroup|||0|3|0|2|0.05|||Forza sul rumore di luminanza (grana): 1 = soglia di 1,2 volte il rumore atteso di ogni banda, sull'energia dei vicini|||
 param:chromaStrength|OfxParamTypeDouble|Colore|1|spatialGroup|||0|3|0|2|0.05|||Forza sul rumore di colore (macchie): si può spingere più della luminanza|||
 param:fineBand|OfxParamTypeDouble|Dettaglio fine|1|spatialGroup|||0|3|0|2|0.05|||Bande di 1-2 pixel|||
 param:mediumBand|OfxParamTypeDouble|Dettaglio medio|1|spatialGroup|||0|3|0|2|0.05|||Banda di 4 pixel|||

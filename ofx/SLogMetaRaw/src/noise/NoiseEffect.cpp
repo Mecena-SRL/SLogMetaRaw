@@ -16,11 +16,24 @@
 #include "../common/ClipCache.h"
 #include "../common/ColourSpaces.h"
 #include "../common/ImageLayout.h"
+#ifdef __APPLE__
+#include "../../metal/MetalKernels.h"
+#endif
 
 namespace {
 
 std::atomic<bool>& skipFlag() { static std::atomic<bool> f(false); return f; }
 std::atomic<int>& liveNodes() { static std::atomic<int> n(0); return n; }
+
+// Where the node renders: the host chooses per frame; on a Mac Resolve uses Metal when its GPU mode allows it.
+const char* gpuLabel()
+{
+#ifdef __APPLE__
+    return " · GPU Metal (CPU se Resolve non usa Metal)";
+#else
+    return " · CPU";
+#endif
+}
 
 // The host's worker threads for the CPU passes.
 class HostThreads : public OFX::MultiThread::Processor
@@ -119,7 +132,12 @@ NoiseEffect::NoiseEffect(OfxImageEffectHandle p_Handle)
 
 NoiseEffect::~NoiseEffect()
 {
-    if (--liveNodes() == 0) ScratchLease::drop();   // the last Noise node is gone: its working planes too
+    if (--liveNodes() == 0) {   // the last Noise node is gone: its working planes too
+        ScratchLease::drop();
+#ifdef __APPLE__
+        DropNoiseScratch();
+#endif
+    }
 }
 
 void NoiseEffect::syncClip()
@@ -253,6 +271,14 @@ void NoiseEffect::render(const OFX::RenderArguments& p_Args)
     const OfxRectI b = src->getBounds();
     const int W = b.x2 - b.x1, H = b.y2 - b.y1;
     if (neutralAt(p_Args.time)) {   // skipped or neutral: the host renders it anyway
+#ifdef __APPLE__
+        if (p_Args.isEnabledMetalRender) {
+            if (!RunCopy(p_Args.pMetalCmdQ, (size_t)src->getRowBytes() * H, static_cast<const float*>(src->getPixelData()),
+                         static_cast<float*>(dst->getPixelData())))
+                OFX::throwSuiteStatusException(kOfxStatFailed);
+            return;
+        }
+#endif
         memcpy(dst->getPixelData(), src->getPixelData(), (size_t)src->getRowBytes() * H);
         return;
     }
@@ -279,6 +305,14 @@ void NoiseEffect::render(const OFX::RenderArguments& p_Args)
         held.push_back(std::move(im));
         if (abort()) return;
     }
+#ifdef __APPLE__
+    if (p_Args.isEnabledMetalRender) {   // the neighbours fetched inside render are GPU buffers too
+        if (!RunNoiseKernels(p_Args.pMetalCmdQ, W, H, frames.data(), (int)frames.size(), center, model.profile,
+                             controls, static_cast<float*>(dst->getPixelData()), dst->getRowBytes() / 16))
+            OFX::throwSuiteStatusException(kOfxStatFailed);
+        return;
+    }
+#endif
     NoiseParallel parallel = [this](int n, const std::function<void(int, int)>& fn) {
         if (abort()) return;
         HostThreads threads(n, fn);
@@ -327,7 +361,7 @@ void NoiseEffect::refreshInfo()
     } else {
         const int r = radiusAt(t);
         text += std::string("Ingresso ") + kGammaNames[gamma] + " · temporale " + (r > 0 ? "±" + std::to_string(r) : "spento")
-                + " · CPU";
+                + gpuLabel();
     }
     std::string cur;
     m_Info->getValue(cur);

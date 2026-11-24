@@ -9,8 +9,10 @@ namespace {
 const float kInvSqrt2 = 0.70710678f, kInvSqrt3 = 0.57735027f, kInvSqrt6 = 0.40824829f;
 // à trous B3 spline: 1 4 6 4 1 / 16, taps 2^level apart
 const float kB3[5] = { 1.0f / 16.0f, 4.0f / 16.0f, 6.0f / 16.0f, 4.0f / 16.0f, 1.0f / 16.0f };
-// a threshold of 1.5 σ at strength 1: most of the noise of a band, little of a texture above it
-const float kThreshold = 1.5f;
+// threshold at strength 1, on the mean energy of the coefficient's neighbourhood (NeighShrink, Chen et al. 2004):
+// 1.2 σ takes as much noise as 1.5 σ on the coefficient alone did, and keeps more texture, whose energy spreads
+// over the neighbours where the noise of a single coefficient does not
+const float kThreshold = 1.2f;
 
 inline int mirror(int i, int n)
 {
@@ -116,6 +118,15 @@ float skinWeight(float m, float c1, float c2)
     const float h = clampf((30.0f - dh) / 12.0f, 0.0f, 1.0f);
     const float lo = clampf((sat - 0.01f) / 0.02f, 0.0f, 1.0f), hi = clampf((0.3f - sat) / 0.1f, 0.0f, 1.0f);
     return h * lo * hi;
+}
+
+// Mean energy of a coefficient's 3x3 neighbourhood in its band, the neighbours one band step apart (mirrored).
+inline float neighbourhood(const float* const (&rows)[3], int x, int st, int W)
+{
+    const int xa = mirror(x - st, W), xb = mirror(x + st, W);
+    float e = 0.0f;
+    for (int r = 0; r < 3; ++r) e += rows[r][xa] * rows[r][xa] + rows[r][x] * rows[r][x] + rows[r][xb] * rows[r][xb];
+    return e * (1.0f / 9.0f);
 }
 
 // ---------------------------------------------------------------- temporal
@@ -363,6 +374,7 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
     }
     // per pixel, once: what multiplies every threshold (shadow boost, temporal leftover) and the skin weight
     resize(s.boost, N);
+    resize(s.band, N);
     if (skin) resize(s.skin, N);
     parallel(H, [&](int y0, int y1) {
         for (int y = y0; y < y1; ++y)
@@ -384,11 +396,18 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
             smooth(s.cur, s.next, s.plane[k], W, H, j, parallel);   // plane[k] is free after the copy: scratch
             const float gj = group[j] * strength;
             const float (*tab)[kNoiseLevels] = isLuma ? profile.luma : profile.chroma;
+            std::vector<float>& band = s.band;   // the band's coefficients, read again by the neighbours
             parallel(H, [&](int y0, int y1) {
-                for (int y = y0; y < y1; ++y)
+                for (size_t i = (size_t)y0 * W; i < (size_t)y1 * W; ++i) band[i] = s.cur[i] - s.next[i];
+            });
+            const int st = 1 << j;
+            parallel(H, [&](int y0, int y1) {
+                for (int y = y0; y < y1; ++y) {
+                    const float* rows[3] = { &band[(size_t)mirror(y - st, H) * W], &band[(size_t)y * W],
+                                             &band[(size_t)mirror(y + st, H) * W] };
                     for (int x = 0; x < W; ++x) {
                         const size_t i = (size_t)y * W + x;
-                        const float wv = s.cur[i] - s.next[i];
+                        const float wv = band[i];
                         float out = wv;
                         if (gj > 0.0f) {
                             int bin;
@@ -396,13 +415,13 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
                             noiseBin(s.guide[i], bin, frac);
                             const float sig = tab[bin][j] + frac * (tab[bin + 1][j] - tab[bin][j]);
                             const float t = gj * sig * s.boost[i];
-                            const float w2 = wv * wv, t2 = t * t;
-                            out = w2 > t2 ? wv * (1.0f - t2 / w2) : 0.0f;
+                            out = noiseShrink(wv, neighbourhood(rows, x, st, W), t);
                             if (isLuma && j == 0 && c.preserve > 0.0f) out += c.preserve * (wv - out);
                             if (skin && isLuma && j < 2) out += s.skin[i] * (wv - out);
                         }
                         acc[i] += out;
                     }
+                }
             });
             s.cur.swap(s.next);
         }

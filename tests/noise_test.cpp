@@ -90,6 +90,21 @@ int main()
     printf("noisy_rmse=%.5f\n", rmse(noisy.px));
     printf("spatial_rmse=%.5f\n", rmse(out));
     printf("alpha_kept=%d\n", out[3] == noisy.px[3] ? 1 : 0);
+    {   // detail: the clean scene through the same filter (what it takes from the picture), and the noise left
+        const Img cleanImg = make(0.0f, 2);
+        std::vector<float> outClean((size_t)W * H * 4);
+        NoiseFrame fc = cleanImg.frame();
+        noiseRenderCPU(W, H, &fc, 1, 0, measured, c, outClean.data(), (size_t)W * 4, serial, s);
+        printf("detail_loss=%.5f\n", rmse(outClean));
+        std::vector<float> left(out.size());
+        for (size_t i = 0; i < out.size(); ++i) left[i] = out[i] - outClean[i];
+        double e = 0.0;
+        long n = 0;
+        for (int y = 8; y < H - 8; ++y)
+            for (int x = 8; x < W - 8; ++x)
+                for (int k = 0; k < 3; ++k, ++n) e += (double)left[((size_t)y * W + x) * 4 + k] * left[((size_t)y * W + x) * 4 + k];
+        printf("noise_left=%.5f\n", std::sqrt(e / n));
+    }
 
     // 3. strength 0: the picture comes back
     NoiseControls zero;

@@ -44,7 +44,14 @@ class NoisePipeline(unittest.TestCase):
         self.assertEqual(self.v['alpha_kept'], '1')   # Resolve keys the node with the plugin's alpha: never change it
 
     def test_spatial_halves_the_error(self):
-        self.assertLess(self.f('spatial_rmse'), self.f('noisy_rmse') / 2.0)
+        """Threshold on the neighbourhood energy: 3.3 times less error (the coefficient alone gave 2.3)."""
+        self.assertLess(self.f('spatial_rmse'), self.f('noisy_rmse') / 3.0)
+
+    def test_spatial_keeps_the_detail(self):
+        """The clean scene through the same filter loses less than a quarter of the noise σ (texture of 18 px,
+        amplitude 2σ), and the noise left is under a quarter of what came in."""
+        self.assertLess(self.f('detail_loss'), self.f('noisy_rmse') * 0.25)
+        self.assertLess(self.f('noise_left'), self.f('noisy_rmse') * 0.25)
 
     def test_temporal_on_a_still_scene(self):
         """Five frames: ideally sqrt(5) = 2.24 times less noise; at least 2."""
@@ -59,7 +66,7 @@ class NoisePipeline(unittest.TestCase):
         self.assertLess(self.f('cut_temporal_rmse'), self.f('still_noisy_rmse') / 1.4)
 
     def test_temporal_and_spatial_together(self):
-        self.assertLess(self.f('full_rmse'), self.f('moving_noisy_rmse') / 3.5)
+        self.assertLess(self.f('full_rmse'), self.f('moving_noisy_rmse') / 5.0)
 
     def test_camera_profiles(self):
         for cam in CAMERAS:

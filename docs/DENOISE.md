@@ -6,20 +6,28 @@ Va **prima di Log MetaRaw**, sull'immagine log, e restituisce la stessa codifica
 L'alpha esce identico all'ingresso (Resolve usa l'alpha di un plugin come key del suo stesso nodo).
 
 Codice: `ofx/SLogMetaRaw/src/noise/` (`NoiseEngine` motore CPU senza OpenFX, `NoiseProfiles` profili per camera e
-formato, `NoiseEffect`/`NoiseFactory` il nodo). Test: `tests/noise_test.cpp`, `tests/test_noise.py`.
+formato, `NoiseEffect`/`NoiseFactory` il nodo), `metal/kernels/Noise.metal` + `metal/NoiseKernels.mm` (lo stesso
+motore su GPU Metal, stessi passaggi e stesse somme). Test: `tests/noise_test.cpp`, `tests/test_noise.py`,
+`tests/noise_metal_test.mm` (GPU contro CPU, in `tests/test_metal.py`).
 
 ## Stato
 
 | | |
 |---|---|
-| Implementato e verificato dai test | motore spaziale e temporale su fotogrammi sintetici (rumore bianco noto, scena ferma, in movimento, taglio); misura dal fotogramma; forza 0 = immagine identica; alpha invariato; pannello caricato dal mini host OFX |
-| Non verificato | comportamento in Resolve (accesso temporale, cache, prestazioni), qualità su clip reali con rumore del codec e NR della camera, protezione pelle (euristica) |
+| Implementato e verificato dai test | motore spaziale e temporale su fotogrammi sintetici (rumore bianco noto, scena ferma, in movimento, taglio); misura dal fotogramma; forza 0 = immagine identica; alpha invariato; pannello caricato dal mini host OFX; kernel Metal uguali alla CPU (CI su Mac) |
+| Non verificato | comportamento in Resolve (accesso temporale su GPU, cache, prestazioni reali), qualità su clip reali con rumore del codec e NR della camera, protezione pelle (euristica), Misura con Resolve in modalità Metal |
 | Stimato, da tarare con i campioni | quasi tutte le costanti dei profili (sotto) |
-| Pianificato | kernel Metal/GPU (oggi solo CPU), CUDA, misura su un'area scelta, profili salvati per camera/ISO |
+| Pianificato | CUDA (Windows/Linux oggi su CPU), misura su un'area scelta, profili salvati per camera/ISO |
 
-Prestazioni misurate su CPU a 4 thread (container Linux): HD solo spaziale 150 ms, HD con ±2 fotogrammi 380 ms;
-UHD con ±2 circa 1,5 s. Su un Mac con più core sarà più rapido, ma resta lento per la riproduzione: per lavorare
-usa **Salta Noise ovunque**.
+Su Mac il nodo gira su **GPU Metal** quando Resolve usa Metal (Preferenze › Memoria e GPU), tutto il fotogramma
+(temporale e spaziale) senza tornare alla CPU; il tempo per un fotogramma UHD su GPU è nel log della CI macOS
+(`UHD radius …`). Altrove gira su CPU: a 4 thread (container Linux) HD solo spaziale circa 180 ms, HD con ±2
+fotogrammi circa 350 ms. Per lavorare senza attese resta **Salta Noise ovunque**.
+
+Qualità sulla scena di prova (rumore bianco σ 0,02, trama di 18 px ampia 2σ), dalla versione con la soglia sul
+singolo coefficiente a quella sul vicinato: errore solo spaziale da 0,0088 a 0,0060; rumore rimasto da 0,0075 a
+0,0046 (−39%); dettaglio tolto alla scena pulita da 0,0056 a 0,0042 (−24%); temporale ±2 + spaziale da 0,0047 a
+0,0037. Scena sintetica: su clip reali va verificato.
 
 ## Come lavora
 
@@ -36,8 +44,10 @@ usa **Salta Noise ovunque**.
    taglio) il vicino non conta. Il rumore rimasto (√Σw²/Σw, corretto per la parte che nel Long GOP si ripete tra
    fotogrammi) abbassa la soglia dello spaziale.
 3. **Spaziale**: canali opponenti ortonormali (Y, R−B, R−2G+B), wavelet à trous B3 in 5 bande, ogni coefficiente
-   ridotto con il *garrote* (0 sotto la soglia, quasi intatto molto sopra) con soglia = 1,5 × forza × rumore atteso
-   della banda alla luminosità di quel punto. Così la forza cresce da sola dove la camera è più rumorosa (ombre, ISO
+   ridotto con il *garrote* (0 sotto la soglia, quasi intatto molto sopra) confrontando con la soglia l'energia media
+   dei 3×3 coefficienti vicini (distanti un passo della banda: *NeighShrink*), non il coefficiente da solo. Soglia =
+   1,2 × forza × rumore atteso della banda alla luminosità di quel punto. Una trama ha energia in tutto il vicinato
+   e passa; un picco di rumore isolato no: più rumore tolto e più dettaglio tenuto. Così la forza cresce da sola dove la camera è più rumorosa (ombre, ISO
    alti) e luminanza e colore hanno forze separate.
 4. **Protezioni**: *Preserva dettaglio* rimette una parte della grana più fine; *Protezione pelle* conserva parte
    della trama fine sui toni pelle (tinta calda e poco satura, rilevata in modo euristico sui valori log).
@@ -104,6 +114,8 @@ e denoiser video*, note *Formati camere per denoise* (Sony FX6/FX30, iPhone 17 P
 - Poisson-gaussiano e stabilizzazione: A. Foi et al., «Practical Poissonian-Gaussian noise modeling and fitting for
   single-image raw-data», IEEE TIP 2008; M. Mäkitalo, A. Foi, IEEE TIP 2013 (Anscombe generalizzata).
 - Wavelet à trous e soglie per banda: J.-L. Starck, F. Murtagh, *Astronomical Image and Data Analysis*.
+- Soglia sul vicinato: G. Y. Chen, T. D. Bui, A. Krzyżak, «Image denoising using neighbouring wavelet
+  coefficients», ICASSP 2004 (NeighShrink).
 - Stima del rumore da blocchi uniformi: N. Ponomarenko et al. / M. Colom, A. Buades, IPOL 2013.
 - Temporale con pesi per patch e block matching: S. Hasinoff et al., «Burst photography for HDR and low-light
   imaging on mobile cameras» (HDR+), SIGGRAPH Asia 2016; Neat Video, guida utente (raggio 2 di default).

@@ -21,10 +21,10 @@ void NoiseFactory::describe(ImageEffectDescriptor& p_Desc)
                          "temporale con compensazione del movimento e spaziale per bande, luminanza e colore separati. "
                          "Va prima di Log MetaRaw, sull'immagine log. Ivan Mazzone + Claude (@Ivan_94m).",
                          "com.slogmetaraw.SLogMetaRawNoise.png", kSpatial);
-    // the neighbour frames are read at other times; the CPU path only for now (Metal: next step)
+    // the neighbour frames are read at other times; Metal on macOS, the CPU elsewhere (CUDA: next step)
     p_Desc.setTemporalClipAccess(true);
 #ifdef __APPLE__
-    p_Desc.setSupportsMetalRender(false);
+    p_Desc.setSupportsMetalRender(true);
 #endif
 }
 
@@ -73,7 +73,7 @@ void NoiseFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
 
     GroupParamDescriptor* sp = defineGroup(d, page, "spatialGroup", "Spaziale", true);
     defineSlider(d, page, "lumaStrength", "Luminanza", 1, 0, 3, 0, 2, 0.05,
-                 "Forza sul rumore di luminanza (grana): 1 = soglia di 1,5 volte il rumore atteso di ogni banda", sp);
+                 "Forza sul rumore di luminanza (grana): 1 = soglia di 1,2 volte il rumore atteso di ogni banda, sull'energia dei vicini", sp);
     defineSlider(d, page, "chromaStrength", "Colore", 1, 0, 3, 0, 2, 0.05,
                  "Forza sul rumore di colore (macchie): si può spingere più della luminanza", sp);
     defineSlider(d, page, "fineBand", "Dettaglio fine", 1, 0, 3, 0, 2, 0.05, "Bande di 1-2 pixel", sp);

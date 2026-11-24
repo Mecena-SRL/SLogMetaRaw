@@ -32,7 +32,7 @@ enum NoiseView { kViewOutput = 0, kViewRemoved = 1, kViewNoiseMap = 2, kViewTemp
 
 struct NoiseControls
 {
-    float luma = 1.0f, chroma = 1.0f;           // strength: 0 keeps the channel, 1 = threshold 1.5 σ of the band
+    float luma = 1.0f, chroma = 1.0f;           // strength: 0 keeps the channel, 1 = threshold 1.2 σ of the band (neighbourhood energy)
     float fine = 1.0f, medium = 1.0f, coarse = 1.0f;   // per band group: levels 0-1, 2, 3-4
     float shadows = 0.0f;                       // extra strength towards the blacks, 0..1
     float preserve = 0.0f;                      // share of the removed fine luma put back, 0..1
@@ -50,11 +50,18 @@ struct NoiseFrame
 
 struct NoiseScratch
 {
-    std::vector<float> plane[3], acc[3], cur, next, guide, gc1, gc2, ratio, wsum, wsq, lumaC, boost, skin;   // full size
+    std::vector<float> plane[3], acc[3], cur, next, band, guide, gc1, gc2, ratio, wsum, wsq, lumaC, boost, skin;   // full size
     std::vector<float> fused;                                                              // RGBA
     std::vector<float> yN, pyr[3], pyrN[3];                                                // motion search
     std::vector<int> vx, vy;
 };
+
+// Non-negative garrote of coefficient w on the mean energy e of its neighbourhood, threshold t.
+inline float noiseShrink(float w, float e, float t)
+{
+    const float t2 = t * t;
+    return e > t2 ? w * (1.0f - t2 / e) : 0.0f;
+}
 
 // Brightness bin of a mean code value, with the fraction towards the next bin.
 void noiseBin(float mean, int& bin, float& frac);

@@ -50,7 +50,7 @@ Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Detail, Nois
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp),
   │                                 NoiseMask (Maschera rumore: tabella per camera, docs/NOISE.md)
   ├──> detail/DetailFactory.h   ──> DetailEffect, DetailPasses
-  └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet), NoiseProfiles
+  └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles
                                     (tabella camere e formati, docs/DENOISE.md)
 
 common/  (condiviso dai nodi)
@@ -71,7 +71,9 @@ common/  (condiviso dai nodi)
 - **Noise** (terzo nodo, prima del Develop): riduzione rumore sull'immagine log. `NoiseProfiles` costruisce il
   rumore atteso per luminosità e banda dalla clip (`model`, `noise_codec`, `noise_iso`, `noise_bitrate`… del record
   di `plugin_cache.py`); `NoiseEngine` fa il temporale (block matching su piramide, pesi per patch) e lo spaziale
-  (canali opponenti, à trous B3 in 5 bande, garrote). Solo CPU per ora; accesso temporale OFX (`getFramesNeeded`).
+  (canali opponenti, à trous B3 in 5 bande, garrote sull'energia del vicinato 3×3). GPU Metal
+  (`metal/NoiseKernels.mm`, `metal/kernels/Noise.metal`, stessi passaggi) + fallback CPU; accesso temporale OFX
+  (`getFramesNeeded`).
 - **Rendering display** (`math/Display.h`, modello `tests/model/display.py`): ultimo passo di `sm_develop` se
   `drt` ≠ 0 (scelta `rendering` in Uscita): 1 ACES 2.0 (Output Transform SDR 100 nit Rec.709; parametri e tabelle
   fissi calcolati da `tools/aces2.py` in `gen/Aces2Tables.h`), 2 Luminanza (stile DaVinci, approssimato), 3 Filmico

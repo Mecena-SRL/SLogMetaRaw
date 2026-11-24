@@ -72,7 +72,8 @@ TEST_BIN = $(BUILD)/tests
 # the OFX-free part of src/common
 TEST_OBJS_COMMON = $(filter $(addprefix $(BUILD)/src/common/,Files.o FlatJson.o Child.o Version.o),$(OBJS))
 TESTS = $(TEST_BIN)/ofx_math_test $(TEST_BIN)/metal_test $(TEST_BIN)/host_test $(TEST_BIN)/common_test \
-        $(TEST_BIN)/detail_test $(TEST_BIN)/detail_metal_test $(TEST_BIN)/noise_test
+        $(TEST_BIN)/detail_test $(TEST_BIN)/detail_metal_test $(TEST_BIN)/noise_test \
+        $(TEST_BIN)/noise_metal_test
 
 test-bins: $(TESTS)
 
@@ -104,6 +105,11 @@ $(TEST_BIN)/noise_test: ../../tests/noise_test.cpp $(NOISE_TEST_OBJS)
 
 $(TEST_BIN)/detail_metal_test: ../../tests/detail_metal_test.mm $(BUILD)/src/detail/DetailPasses.o \
         $(BUILD)/metal/MetalContext.o $(BUILD)/metal/DetailKernels.o
+	@mkdir -p $(TEST_BIN)
+	$(CXX) $^ -o $@ $(filter-out -MMD -MP,$(OBJCFLAGS)) -framework Metal -framework Foundation
+
+$(TEST_BIN)/noise_metal_test: ../../tests/noise_metal_test.mm $(BUILD)/src/noise/NoiseEngine.o \
+        $(BUILD)/metal/MetalContext.o $(BUILD)/metal/NoiseKernels.o
 	@mkdir -p $(TEST_BIN)
 	$(CXX) $^ -o $@ $(filter-out -MMD -MP,$(OBJCFLAGS)) -framework Metal -framework Foundation
 
