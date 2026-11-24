@@ -30,23 +30,6 @@ static DoubleParamDescriptor* trim(ImageEffectDescriptor& d, PageParamDescriptor
     return p;
 }
 
-// A point on the picture, normalised to the frame (0,0 bottom left): where Misura reads light or shadow.
-static void definePoint(ImageEffectDescriptor& d, PageParamDescriptor* page, GroupParamDescriptor* group,
-                        const char* name, const char* label, double x, double y, const char* hint)
-{
-    if (!claimName(name)) return;
-    Double2DParamDescriptor* p = d.defineDouble2DParam(name);
-    p->setLabels(label, label, label);
-    p->setHint(hint);
-    p->setDoubleType(eDoubleTypeXYAbsolute);
-    p->setDefaultCoordinateSystem(eCoordinatesNormalised);
-    p->setDefault(x, y);
-    p->setAnimates(false);
-    p->setIsSecret(true);   // shown in Zonale
-    p->setParent(*group);
-    page->addChild(*p);
-}
-
 static void defineHiddenDouble(ImageEffectDescriptor& d, PageParamDescriptor* page, const char* name, double def)
 {
     if (!claimName(name)) return;
@@ -91,8 +74,8 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     GroupParamDescriptor* adams = defineGroup(d, page, "adamsGroup", "Misura", true);
     if (adams) adams->setIsSecret(true);
     definePoint(d, page, adams, "adamsShadowPos", "Ombra", 0.3, 0.3,
-                "Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)");
-    definePoint(d, page, adams, "adamsHighPos", "Luce", 0.7, 0.7, "Una luce in cui vuoi ancora dettaglio");
+                "Un'ombra in cui vuoi ancora dettaglio (frazione del fotogramma, 0,0 in basso a sinistra)", true);
+    definePoint(d, page, adams, "adamsHighPos", "Luce", 0.7, 0.7, "Una luce in cui vuoi ancora dettaglio", true);
     if (auto* p = defineButton(d, page, "adamsMeasure", "Misura zone",
                                "Legge i due punti: l'ombra resta sulla sua zona, la luce si colloca dove cade con "
                                "sviluppo normale (N 0)", adams))
@@ -151,7 +134,7 @@ void DetailFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
         p->setIsSecret(true);
     }
     definePoint(d, page, split, "provinoPos", "Provino: cella", 0.5, 0.5,
-                "Porta il punto sulla cella da usare, poi premi Usa la cella");
+                "Porta il punto sulla cella da usare, poi premi Usa la cella", true);
     if (auto* p = defineButton(d, page, "provinoApply", "Usa la cella",
                                "Le esposizioni (o l'unione) della cella sotto il punto diventano quelle del nodo", split))
         p->setIsSecret(true);

@@ -99,6 +99,10 @@ NoiseEffect::NoiseEffect(OfxImageEffectHandle p_Handle)
         m_ProfileInfo = fetchStringParam("profileInfo");
         m_Measured = fetchStringParam("measuredProfile");
         m_BoundPath = fetchStringParam("boundPath");
+        m_SampleText = fetchStringParam("noiseSample");
+        m_SampleShow = fetchBooleanParam("sampleShow");
+        m_SampleA = fetchDouble2DParam("sampleA");
+        m_SampleB = fetchDouble2DParam("sampleB");
         m_SettingsVersion = fetchIntParam("settingsVersion");
         m_ProfileMode = fetchChoiceParam("profileMode");
         m_NodeInput = fetchChoiceParam("nodeInput");
@@ -124,6 +128,9 @@ NoiseEffect::NoiseEffect(OfxImageEffectHandle p_Handle)
         std::string text;
         m_Measured->getValue(text);
         m_MeasuredProfile = noiseProfileFromText(text);
+        m_SampleText->getValue(text);
+        m_Sample = noiseSampleFromText(text);
+        showSample();
         syncClip(MetaMode::CacheOnly);
         m_Badge.attach(*this);
     } catch (...) {
@@ -203,7 +210,18 @@ NoiseModel NoiseEffect::modelAt(double t, int p_FrameWidth) const
         return m;
     }
     NoiseModel m = noiseModel(src, p_FrameWidth, level);
-    if (mode == 1) {
+    NoiseSampleFix sample;
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        sample = m_Sample;
+    }
+    if (mode == 1 && sample.valid) {
+        applySampleFix(m.profile, sample);
+        char buf[96];
+        snprintf(buf, sizeof(buf), "campione (luminosità %.0f%%, grana ×%.2f, colore ×%.2f) · ", sample.level * 100.0,
+                 sample.luma[0], sample.chroma[0]);
+        m.info = buf + m.info;
+    } else if (mode == 1) {
         if (measured.valid) {
             const float k = (float)std::max(level, 0.0);
             for (int b = 0; b < kNoiseBins; ++b)
@@ -213,7 +231,7 @@ NoiseModel NoiseEffect::modelAt(double t, int p_FrameWidth) const
                 }
             m.info = "misurato dal fotogramma · formato: " + m.info;
         } else {
-            m.info = "non ancora misurato (premi Misura) · automatico: " + m.info;
+            m.info = "nessun campione (Mostra campione, poi Usa il campione) · automatico: " + m.info;
         }
     }
     return m;
@@ -247,6 +265,7 @@ NoiseControls NoiseEffect::controlsAt(double t) const
 bool NoiseEffect::neutralAt(double t) const
 {
     if (noiseSkipped() || inputGamma() < 0) return true;
+    if (m_SampleShow->getValue()) return false;   // the box is drawn on the output
     const NoiseControls c = controlsAt(t);
     if (c.view != kViewOutput) return false;
     const bool spatial = c.luma > 0.0f || c.chroma > 0.0f;
@@ -294,8 +313,10 @@ void NoiseEffect::render(const OFX::RenderArguments& p_Args)
         memcpy(dst->getPixelData(), src->getPixelData(), (size_t)src->getRowBytes() * H);
         return;
     }
+    lookForRecord();
     const NoiseModel model = modelAt(p_Args.time, W);
-    const NoiseControls controls = controlsAt(p_Args.time);
+    NoiseControls controls = controlsAt(p_Args.time);
+    if (m_SampleShow->getValue()) sampleBox(p_Args.time, W, H, controls.box);
     const int r = controls.temporal > 0.0f ? radiusAt(p_Args.time) : 0;
 
     // the window in time order, inside the clip; a neighbour of another size is left out
@@ -352,12 +373,107 @@ void NoiseEffect::measure(double t)
     }
     // the level applies on top: a measure taken at another Livello rumore keeps its own scale
     m_Measured->setValue(noiseProfileToText(p));
+    m_SampleText->setValue("");   // the whole frame replaces the sample
     {
         std::lock_guard<std::mutex> lock(m_Mutex);
         m_MeasuredProfile = p;
+        m_Sample = NoiseSampleFix();
     }
     m_ProfileMode->setValue(1);
     refreshInfo();
+}
+
+// The two corners in pixels of a W x H frame. Canonical coordinates as the spec says; a host that hands back the
+// normalised value is read as such (DetailEffect does the same).
+bool NoiseEffect::sampleBox(double t, int W, int H, int (&box)[4]) const
+{
+    const OfxRectD rod = m_SrcClip->getRegionOfDefinition(t);
+    double p[2][2];
+    OFX::Double2DParam* const corners[2] = { m_SampleA, m_SampleB };
+    for (int k = 0; k < 2; ++k) {
+        double x = 0.5, y = 0.5;
+        corners[k]->getValueAtTime(t, x, y);
+        if (!(x <= 1.0 && y <= 1.0) && rod.x2 > rod.x1 && rod.y2 > rod.y1) {
+            x = (x - rod.x1) / (rod.x2 - rod.x1);
+            y = (y - rod.y1) / (rod.y2 - rod.y1);
+        }
+        p[k][0] = std::min(1.0, std::max(0.0, x)) * W;
+        p[k][1] = std::min(1.0, std::max(0.0, y)) * H;
+    }
+    box[0] = (int)std::lround(std::min(p[0][0], p[1][0]));
+    box[1] = (int)std::lround(std::min(p[0][1], p[1][1]));
+    box[2] = std::min(W - 1, (int)std::lround(std::max(p[0][0], p[1][0])));
+    box[3] = std::min(H - 1, (int)std::lround(std::max(p[0][1], p[1][1])));
+    return box[2] > box[0] && box[3] > box[1];
+}
+
+// The corners show in the panel and in the viewer only with Mostra campione.
+void NoiseEffect::showSample()
+{
+    const bool show = m_SampleShow->getValue();
+    m_SampleA->setIsSecret(!show);
+    m_SampleB->setIsSecret(!show);
+}
+
+// Usa il campione: the noise in the box, against what the camera profile expects there.
+void NoiseEffect::useSample(double t)
+{
+    std::unique_ptr<OFX::Image> src(m_SrcClip->fetchImage(t));
+    if (!src || src->getPixelDepth() != OFX::eBitDepthFloat || src->getPixelComponents() != OFX::ePixelComponentRGBA) {
+        m_ProfileInfo->setValue("Campione non riuscito: nessuna immagine al fotogramma corrente");
+        return;
+    }
+    const OfxRectI b = src->getBounds();
+    const int W = b.x2 - b.x1, H = b.y2 - b.y1;
+    int box[4];
+    if (!sampleBox(t, W, H, box)) {
+        m_ProfileInfo->setValue("Campione non riuscito: i due angoli coincidono");
+        return;
+    }
+    NoiseScratch s;
+    NoiseSample measured;
+    const NoiseFrame f = { static_cast<const float*>(src->getPixelData()), (size_t)src->getRowBytes() / 4 };
+    if (!noiseSample(W, H, f, box[0], box[1], box[2], box[3], serial, s, measured)) {
+        m_ProfileInfo->setValue("Campione non riuscito: zona troppo piccola, bruciata o con dettaglio. Scegli una zona "
+                                "piatta più grande (cielo, muro, fuori fuoco)");
+        return;
+    }
+    NoiseSource source;
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        source = m_Source;
+    }
+    source.gamma = inputGamma();
+    // against the camera profile at level 1: Livello rumore keeps applying on top
+    const NoiseSampleFix fix = noiseSampleFix(noiseModel(source, W, 1.0).profile, measured);
+    m_SampleText->setValue(noiseSampleToText(fix));
+    m_Measured->setValue("");   // the sample replaces a whole-frame measure
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        m_Sample = fix;
+        m_MeasuredProfile = NoiseProfile();
+    }
+    m_ProfileMode->setValue(1);
+    refreshInfo();
+}
+
+// A clip that had no data when the node was made: another node (or the script) may have written its record since.
+void NoiseEffect::lookForRecord()
+{
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        if (m_ReadStatus.empty()) return;
+        const auto now = std::chrono::steady_clock::now();
+        if (now - m_LastCacheLook < std::chrono::seconds(5)) return;
+        m_LastCacheLook = now;
+    }
+    const std::string path = getPropertySet().propGetString(kOfxImageEffectPropSrcFilePath, false);
+    std::map<std::string, std::string> record;
+    if (path.empty() || !readClipRecord(path, record)) return;
+    const NoiseSource src = noiseSourceFromRecord(record);
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    m_Source = src;
+    m_ReadStatus.clear();
 }
 
 void NoiseEffect::refreshInfo()
@@ -422,6 +538,15 @@ void NoiseEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const std
             syncClip(MetaMode::Reload);
         } else if (p_ParamName == "measure") {
             measure(p_Args.time);
+        } else if (p_ParamName == "sampleUse") {
+            useSample(p_Args.time);
+        } else if (p_ParamName == "sampleShow") {
+            showSample();
+        } else if (p_ParamName == "noiseSample") {
+            std::string text;
+            m_SampleText->getValue(text);
+            std::lock_guard<std::mutex> lock(m_Mutex);
+            m_Sample = noiseSampleFromText(text);
         } else if (p_ParamName == "measuredProfile") {
             std::string text;
             m_Measured->getValue(text);
