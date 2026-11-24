@@ -80,6 +80,8 @@ D-Log M nel Color Space Transform. La LUT è usata solo come **riferimento** per
   Errore medio sui colori della LUT 0,013 (Freeman 0,032, Rec.2020 0,033, P3 0,028). Il gamut ricavato è più saturo e
   contiene il "look" DJI della LUT: il plugin tiene di proposito le primarie di Freeman (scelta del 15/11/2026).
 
+Ricerca completa per camera (D-Log, D-Log M, D-Log2, percorsi `djmd` dei droni, lacune): `docs/DJI_LOG.md`.
+
 Resta da verificare: una clip della Osmo Action 4 e una serie di esposizioni di un ColorChecker (o cartoncino grigio) a
 ±1 stop, per fissare grigio e matrice su una misura e non su una LUT. I file LUT non sono nel repository.
 
