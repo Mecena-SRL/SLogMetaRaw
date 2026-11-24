@@ -280,3 +280,74 @@ NoiseProfile noiseProfileFromText(const std::string& text)
     p.valid = true;
     return p;
 }
+
+NoiseSampleFix noiseSampleFix(const NoiseProfile& expected, const NoiseSample& measured)
+{
+    NoiseSampleFix f;
+    if (!measured.valid) return f;
+    int bin;
+    float frac;
+    noiseBin(measured.level, bin, frac);
+    const int next = std::min(bin + 1, kNoiseBins - 1);
+    for (int ch = 0; ch < 2; ++ch) {
+        const float (*t)[kNoiseLevels] = ch == 0 ? expected.luma : expected.chroma;
+        const float* m = ch == 0 ? measured.luma : measured.chroma;
+        float* r = ch == 0 ? f.luma : f.chroma;
+        float last = 1.0f;
+        for (int j = 0; j < kNoiseLevels; ++j) {
+            const float e = t[bin][j] + (t[next][j] - t[bin][j]) * frac;
+            // a band the box was too small for keeps the correction of the finer one
+            if (m[j] > 0.0f && e > 1e-6f) last = std::min(5.0f, std::max(0.2f, m[j] / e));
+            r[j] = last;
+        }
+    }
+    f.level = measured.level;
+    f.valid = true;
+    return f;
+}
+
+void applySampleFix(NoiseProfile& p, const NoiseSampleFix& f)
+{
+    if (!f.valid) return;
+    for (int bin = 0; bin < kNoiseBins; ++bin)
+        for (int j = 0; j < kNoiseLevels; ++j) {
+            p.luma[bin][j] *= f.luma[j];
+            p.chroma[bin][j] *= f.chroma[j];
+        }
+}
+
+std::string noiseSampleToText(const NoiseSampleFix& f)
+{
+    if (!f.valid) return "";
+    std::ostringstream o;
+    char buf[32];
+    snprintf(buf, sizeof(buf), "ns1,%.4g", f.level);
+    o << buf;
+    for (int j = 0; j < kNoiseLevels; ++j) {
+        snprintf(buf, sizeof(buf), ",%.4g,%.4g", f.luma[j], f.chroma[j]);
+        o << buf;
+    }
+    return o.str();
+}
+
+NoiseSampleFix noiseSampleFromText(const std::string& text)
+{
+    NoiseSampleFix f;
+    if (text.compare(0, 3, "ns1") != 0) return f;
+    const char* s = text.c_str() + 3;
+    auto next = [&](float lo, float hi, float& out) {
+        if (*s != ',') return false;
+        char* end = nullptr;
+        const double v = strtod(s + 1, &end);
+        if (end == s + 1 || !std::isfinite(v) || v < lo * 0.999 || v > hi * 1.001) return false;
+        out = std::min(hi, std::max(lo, (float)v));
+        s = end;
+        return true;
+    };
+    if (!next(0.0f, 1.0f, f.level)) return NoiseSampleFix();
+    for (int j = 0; j < kNoiseLevels; ++j)
+        if (!next(0.2f, 5.0f, f.luma[j]) || !next(0.2f, 5.0f, f.chroma[j])) return NoiseSampleFix();
+    if (*s != '\0') return NoiseSampleFix();
+    f.valid = true;
+    return f;
+}

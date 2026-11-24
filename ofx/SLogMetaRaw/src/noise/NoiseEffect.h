@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <chrono>
 #include <mutex>
 #include <string>
 
@@ -13,7 +14,7 @@ const int kNoiseSettingsVersion = 1;
 
 const int kNoiseProfileCount = 3;
 static const char* const kNoiseProfileNames[kNoiseProfileCount] = { "Automatico (camera e formato)",
-                                                                     "Misurato (dal fotogramma)", "Manuale" };
+                                                                     "Misurato (campione o fotogramma)", "Manuale" };
 const int kNoiseFramesCount = 5;   // index -> radius: Automatico, Spento, ±1, ±2, ±3
 static const char* const kNoiseFramesNames[kNoiseFramesCount] = { "Automatico", "Spento", "±1", "±2", "±3" };
 const int kNoiseViewCount = 4;
@@ -41,6 +42,10 @@ private:
     NoiseControls controlsAt(double p_Time) const;
     bool neutralAt(double p_Time) const;
     void measure(double p_Time);
+    void useSample(double p_Time);
+    bool sampleBox(double p_Time, int W, int H, int (&box)[4]) const;   // pixels, from the two corners
+    void showSample();
+    void lookForRecord();
     void refreshInfo();
 
     bool m_Ready = false;
@@ -51,6 +56,10 @@ private:
     OFX::StringParam* m_ProfileInfo = nullptr;
     OFX::StringParam* m_Measured = nullptr;
     OFX::StringParam* m_BoundPath = nullptr;
+    OFX::StringParam* m_SampleText = nullptr;
+    OFX::BooleanParam* m_SampleShow = nullptr;
+    OFX::Double2DParam* m_SampleA = nullptr;
+    OFX::Double2DParam* m_SampleB = nullptr;
     OFX::IntParam* m_SettingsVersion = nullptr;
     OFX::ChoiceParam* m_ProfileMode = nullptr;
     OFX::ChoiceParam* m_NodeInput = nullptr;
@@ -71,6 +80,8 @@ private:
     NoiseSource m_Source;
     std::string m_ReadStatus;                         // why the camera data are missing; empty when read
     NoiseProfile m_MeasuredProfile;                   // parsed from the hidden parameter
+    NoiseSampleFix m_Sample;                          // the sample box's correction, parsed from noiseSample
+    mutable std::chrono::steady_clock::time_point m_LastCacheLook;   // a clip without data: the record is looked for again
 };
 
 // The session-wide switch: every Noise node passes its input through. Lives in memory only, so reopening Resolve

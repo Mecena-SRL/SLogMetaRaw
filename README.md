@@ -47,7 +47,7 @@ is there. It cannot create what is not there.
 
 ## Install
 
-1. Download `SLogMetaRaw-4.0.1.dmg` from **Releases** and open it.
+1. Download `SLogMetaRaw-4.0.2.dmg` from **Releases** and open it.
 2. Double-click **Installa Log MetaRaw.pkg**. It is not signed with an Apple certificate: the first time,
    right-click it and choose **Open**. It asks for the Mac password because the plugin goes in a system folder.
 3. Restart DaVinci Resolve.
@@ -134,7 +134,7 @@ The node is pointwise: each pixel depends only on itself. It never makes halos, 
 
 | Control | What it does |
 |---|---|
-| **Version** (top) | `v4.0.1`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
+| **Version** (top) | `v4.0.2`. Once a day it asks GitHub for the latest release. If there is one it reads **🟢 v3.1.0 → 3.x.y**, and a click opens the download of the installer for your system (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`) in the browser. It never installs anything itself |
 | **Camera** · **Rileggi metadata** | the camera that was read. *Rileggi* re-reads the clip, sets every control back to the camera values and writes the clip's metadata into the Media Pool |
 | **Ripresa** (shot) · **Decodifica** | *Clip* lets you change the controls; *Camera metadata* locks them to the shot values |
 | **Bilanciamento** (balance) · **Temperatura** · **Tint** | As shot or a preset. Bradford chromatic adaptation in linear light, from the white the camera recorded |
@@ -232,8 +232,9 @@ They work on the camera image, before **Log MetaRaw**.
 - **Log MetaRaw Noise** knows how much noise to expect, and where. It reads the camera, the ISO (or the EI and the
   native ISO), the codec, the bits per pixel and the 4:2:0 chroma from the script's record, with tuned profiles for the
   Sony FX6 and FX30, iPhone 17 Pro and DJI Osmo Action 4 and 5 Pro. The **Leggi dati camera** button re-reads them from the
-  file (they are read on their own when the panel opens and they are missing). It can also measure the noise from a
-  frame with flat areas.
+  file (they are read on their own when the panel opens and they are missing). To tune it on the real noise, tick **Mostra campione**,
+  drag the box's two corners onto a flat area and press **Usa il campione** (like Neat Video); bands, shadows and skin
+  are in the **Avanzate** group.
   - *Temporal*: ±1 to ±3 neighbour frames, aligned by blocks and weighted per pixel, so moving parts and cuts do not
     smear.
   - *Spatial*: luma and colour apart, in 5 wavelet bands. Each coefficient is weighed against the energy of its
@@ -254,7 +255,7 @@ None of the three nodes has been tried in Resolve on real clips yet.
 ## Updates and privacy
 
 - The **nodes** ask GitHub for this project's latest release at most once a day, in the background. The request
-  carries only the program version (`User-Agent: SLogMetaRaw/4.0.1`). To turn it off, create the empty file
+  carries only the program version (`User-Agent: SLogMetaRaw/4.0.2`). To turn it off, create the empty file
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - The **script** checks only when you click its version.
 - A click only opens a download link from this project's GitHub releases. Nothing is installed without you.

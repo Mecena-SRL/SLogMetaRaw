@@ -36,6 +36,12 @@ OFX::RGBParamDescriptor* defineColor(OFX::ImageEffectDescriptor& d, OFX::PagePar
                                      const std::string& name, const std::string& label, const char* hint,
                                      OFX::GroupParamDescriptor* group = nullptr);
 
+// A point on the picture, normalised to the frame (0,0 bottom left): Resolve draws a crosshair the user drags in the
+// viewer. secret: hidden until the panel shows it (setIsSecret at run time).
+OFX::Double2DParamDescriptor* definePoint(OFX::ImageEffectDescriptor& d, OFX::PageParamDescriptor* page,
+                                          OFX::GroupParamDescriptor* group, const char* name, const char* label,
+                                          double x, double y, const char* hint, bool secret);
+
 template <typename T>
 void hideParam(T* p, OFX::PageParamDescriptor* page)
 {

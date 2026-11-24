@@ -39,7 +39,22 @@ struct NoiseControls
     float skin = 0.0f;                          // skin tones keep this share of their fine luma texture, 0..1
     float temporal = 1.0f;                      // temporal strength, 0 = only the current frame
     int view = kViewOutput;
+    int box[4] = { -1, -1, -1, -1 };            // sample box drawn on the output, pixels x0 y0 x1 y1 (x0 < 0: none)
 };
+
+// The outline of the sample box: yellow and black dashes, t pixels wide. Same rule in Noise.metal (nz_final).
+inline bool noiseBoxEdge(const int (&box)[4], int x, int y, int t, float (&rgb)[3])
+{
+    if (box[0] < 0) return false;
+    const bool outer = x >= box[0] - t && x <= box[2] + t && y >= box[1] - t && y <= box[3] + t;
+    const bool inner = x > box[0] && x < box[2] && y > box[1] && y < box[3];
+    if (!outer || inner) return false;
+    const bool dash = ((x + y) >> 3) & 1;
+    rgb[0] = dash ? 1.0f : 0.0f;
+    rgb[1] = dash ? 0.85f : 0.0f;
+    rgb[2] = 0.0f;
+    return true;
+}
 
 // One frame of float RGBA, rows of rowFloats floats (>= 4 * width).
 struct NoiseFrame
@@ -75,3 +90,14 @@ void noiseRenderCPU(int W, int H, const NoiseFrame* frames, int count, int cente
 // Measure the profile of one frame: per brightness bin and band, the noise of the flattest blocks.
 // Bins with too few flat blocks are filled from their neighbours; false when the frame has too little flat area.
 bool noiseMeasure(int W, int H, NoiseFrame frame, const NoiseParallel& parallel, NoiseScratch& s, NoiseProfile& out);
+
+// The noise of a flat area the user picked (the sample box, like Neat Video): per band, luma and colour, at the area's
+// brightness. False when the box is too small or not flat (more texture than noise).
+struct NoiseSample
+{
+    float level = 0.0f;                         // mean brightness of the box (guide scale, 0..1)
+    float luma[kNoiseLevels] = {}, chroma[kNoiseLevels] = {};
+    bool valid = false;
+};
+bool noiseSample(int W, int H, NoiseFrame frame, int x0, int y0, int x1, int y1, const NoiseParallel& parallel,
+                 NoiseScratch& s, NoiseSample& out);

@@ -3,26 +3,30 @@ param:version|OfxParamTypePushButton|v{release}||||||||||||Clicca per controllar
 param:noiseInfo|OfxParamTypeString|Noise|Temporale + spaziale · prima di Log MetaRaw|||0|||||||0||||
 param:skipAll|OfxParamTypePushButton|Salta Noise ovunque||||||||||||Spegne tutti i nodi Noise del progetto per lavorare veloce; un secondo clic li riaccende. Si riaccendono da soli alla riapertura di Resolve. Prima dell'export controlla che la riga Noise non dica SALTATO; se un nodo resta spento dopo averli riaccesi, svuota la render cache|||
 param:profileGroup|OfxParamTypeGroup|Profilo del rumore|||||||||||||||1
-param:profileMode|OfxParamTypeChoice|Profilo|0|profileGroup|||||||||0|Automatico: dalla camera, dall'ISO e dal formato della clip (letti da Log MetaRaw). Misurato: dal fotogramma, premi Misura su un fotogramma con zone uniformi. Manuale: un profilo generico, regolato solo da Livello rumore|Automatico (camera e formato),Misurato (dal fotogramma),Manuale||
+param:profileMode|OfxParamTypeChoice|Profilo|0|profileGroup|||||||||0|Automatico: dalla camera, dall'ISO e dal formato della clip, letti da soli. Misurato: il profilo della camera corretto sulla zona campione (Usa il campione), o misurato sull'intero fotogramma (Misura dal fotogramma). Manuale: un profilo generico, regolato solo da Livello rumore|Automatico (camera e formato),Misurato (campione o fotogramma),Manuale||
 param:profileInfo|OfxParamTypeString|Da|—|profileGroup||0|||||||0||||
 param:readCamera|OfxParamTypePushButton|Leggi dati camera||profileGroup||||||||||Rilegge dal file della clip camera, ISO, codec, bitrate e formato, li scrive nel Media Pool di Resolve come Rileggi metadata di Log MetaRaw e aggiorna il profilo Automatico|||
-param:measure|OfxParamTypePushButton|Misura dal fotogramma||profileGroup||||||||||Legge il rumore del fotogramma corrente per luminosità e banda (blocchi più uniformi) e passa a Profilo: Misurato. Meglio un fotogramma con cielo, muri o zone fuori fuoco a più luminosità|||
+param:sampleShow|OfxParamTypeBoolean|Mostra campione|0|profileGroup|||||||||0|Disegna la zona campione (riquadro giallo e nero) e i suoi due angoli nel viewer: trascinali su una zona piatta, senza dettaglio (cielo, muro, fuori fuoco)|||
+param:sampleA|OfxParamTypeDouble2D|Campione: angolo|0.42,0.58|profileGroup|1||||||||0|Un angolo della zona campione (frazione del fotogramma, 0,0 in basso a sinistra)|||
+param:sampleB|OfxParamTypeDouble2D|Campione: angolo opposto|0.58,0.42|profileGroup|1||||||||0|L'angolo opposto della zona campione|||
+param:sampleUse|OfxParamTypePushButton|Usa il campione||profileGroup||||||||||Misura il rumore nella zona campione e corregge su quello il profilo della camera, banda per banda; le altre luminosità seguono la curva della camera. Passa a Profilo: Misurato|||
 param:noiseLevel|OfxParamTypeDouble|Livello rumore (×)|1|profileGroup|||0.1|8|0.25|4|0.05|||Moltiplica il rumore atteso del profilo: sopra 1 il filtro lo considera più forte e toglie di più|||
-param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|profileGroup|||||||||0|Codifica che entra nel nodo, per leggere la luminosità: Automatico la chiede a Resolve, poi alla clip. Il nodo restituisce la stessa codifica|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
-param:temporalGroup|OfxParamTypeGroup|Temporale|||||||||||||||1
-param:temporalFrames|OfxParamTypeChoice|Fotogrammi|0|temporalGroup|||||||||0|Quanti fotogrammi prima e dopo: Automatico dal formato (RAW e Intra ±2, Long GOP compresso ±1). Più fotogrammi tolgono più rumore sulle scene ferme e costano di più|Automatico,Spento,±1,±2,±3||
-param:temporalStrength|OfxParamTypeDouble|Forza temporale|1|temporalGroup|||0|2|0|2|0.05|||Quanto il filtro accetta differenze tra un fotogramma e l'altro: più alta = più rumore tolto e più rischio di scie sul movimento veloce. 0 = solo il fotogramma corrente|||
-param:spatialGroup|OfxParamTypeGroup|Spaziale|||||||||||||||1
+param:spatialGroup|OfxParamTypeGroup|Forza|||||||||||||||1
 param:lumaStrength|OfxParamTypeDouble|Luminanza|1|spatialGroup|||0|3|0|2|0.05|||Forza sul rumore di luminanza (grana): 1 = soglia di 1,2 volte il rumore atteso di ogni banda, sull'energia dei vicini|||
 param:chromaStrength|OfxParamTypeDouble|Colore|1|spatialGroup|||0|3|0|2|0.05|||Forza sul rumore di colore (macchie): si può spingere più della luminanza|||
-param:fineBand|OfxParamTypeDouble|Dettaglio fine|1|spatialGroup|||0|3|0|2|0.05|||Bande di 1-2 pixel|||
-param:mediumBand|OfxParamTypeDouble|Dettaglio medio|1|spatialGroup|||0|3|0|2|0.05|||Banda di 4 pixel|||
-param:coarseBand|OfxParamTypeDouble|Dettaglio grosso|1|spatialGroup|||0|3|0|2|0.05|||Bande di 8-16 pixel: macchie di colore e blocchi del Long GOP|||
-param:shadowStrength|OfxParamTypeDouble|Più forza nelle ombre|0|spatialGroup|||0|1|0|1|0.01|||Aggiunge forza scendendo verso il nero, oltre a quella che il profilo dà già alle ombre|||
-param:protectGroup|OfxParamTypeGroup|Protezione|||||||||||||||1
-param:preserveDetail|OfxParamTypeDouble|Preserva dettaglio|0.1|protectGroup|||0|1|0|1|0.01|||Rimette questa parte della grana più fine tolta: evita l'effetto plastica|||
-param:skinProtect|OfxParamTypeDouble|Protezione pelle|0.3|protectGroup|||0|1|0|1|0.01|||Sui toni pelle (tinta calda, poco satura) conserva questa parte della trama fine: volti meno cerosi|||
+param:temporalFrames|OfxParamTypeChoice|Fotogrammi|0|spatialGroup|||||||||0|Quanti fotogrammi prima e dopo: Automatico dal formato (RAW e Intra ±2, Long GOP compresso ±1). Più fotogrammi tolgono più rumore sulle scene ferme e costano di più|Automatico,Spento,±1,±2,±3||
+param:preserveDetail|OfxParamTypeDouble|Preserva dettaglio|0.1|spatialGroup|||0|1|0|1|0.01|||Rimette questa parte della grana più fine tolta: evita l'effetto plastica|||
 param:noiseView|OfxParamTypeChoice|Vista|0||||||||||0|Uscita; Rumore rimosso (grigio = niente, amplificato 4×); Mappa del rumore atteso; Movimento: bianco dove i fotogrammi vicini sono stati usati, nero dove il movimento li ha esclusi|Uscita,Rumore rimosso,Mappa del rumore,Movimento (fotogrammi usati)||
+param:advancedGroup|OfxParamTypeGroup|Avanzate|||||||||||||||0
+param:temporalStrength|OfxParamTypeDouble|Forza temporale|1|advancedGroup|||0|2|0|2|0.05|||Quanto il filtro accetta differenze tra un fotogramma e l'altro: più alta = più rumore tolto e più rischio di scie sul movimento veloce. 0 = solo il fotogramma corrente|||
+param:fineBand|OfxParamTypeDouble|Dettaglio fine|1|advancedGroup|||0|3|0|2|0.05|||Bande di 1-2 pixel|||
+param:mediumBand|OfxParamTypeDouble|Dettaglio medio|1|advancedGroup|||0|3|0|2|0.05|||Banda di 4 pixel|||
+param:coarseBand|OfxParamTypeDouble|Dettaglio grosso|1|advancedGroup|||0|3|0|2|0.05|||Bande di 8-16 pixel: macchie di colore e blocchi del Long GOP|||
+param:shadowStrength|OfxParamTypeDouble|Più forza nelle ombre|0|advancedGroup|||0|1|0|1|0.01|||Aggiunge forza scendendo verso il nero, oltre a quella che il profilo dà già alle ombre|||
+param:skinProtect|OfxParamTypeDouble|Protezione pelle|0.3|advancedGroup|||0|1|0|1|0.01|||Sui toni pelle (tinta calda, poco satura) conserva questa parte della trama fine: volti meno cerosi|||
+param:nodeInput|OfxParamTypeChoice|Ingresso (IDT)|0|advancedGroup|||||||||0|Codifica che entra nel nodo, per leggere la luminosità: Automatico la chiede a Resolve, poi alla clip. Il nodo restituisce la stessa codifica|Automatico,DaVinci WG/Intermediate,S-Gamut3.Cine/S-Log3,S-Gamut3/S-Log3,S-Gamut/S-Log2,ACES AP1/ACEScct||
+param:measure|OfxParamTypePushButton|Misura dal fotogramma||advancedGroup||||||||||Senza zona campione: legge il rumore di tutto il fotogramma corrente per luminosità e banda (blocchi più uniformi) e passa a Profilo: Misurato. Serve un fotogramma con zone piatte a più luminosità|||
+param:noiseSample|OfxParamTypeString||||1||||||||0||||
 param:measuredProfile|OfxParamTypeString||||1||||||||0||||
 param:boundPath|OfxParamTypeString||||1||||||||0||||
 param:settingsVersion|OfxParamTypeInteger||0||1||||||||0||||

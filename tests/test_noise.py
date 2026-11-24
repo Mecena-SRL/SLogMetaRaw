@@ -35,6 +35,23 @@ class NoisePipeline(unittest.TestCase):
         for key in ('measured_luma0', 'measured_chroma0'):
             self.assertAlmostEqual(self.f(key) / self.f('expected_band0'), 1.0, delta=0.1, msg=key)
 
+    def test_the_sample_box_reads_the_noise_of_a_flat_area(self):
+        """Like Neat Video: a box on a flat area gives the noise of each band (0.889 σ on the finest, within 10%); a box
+        too small or over edges and texture is refused. A profile twice too strong gets a correction of 0.5."""
+        self.assertEqual(self.v['sample_ok'], '1')
+        for key in ('sample_luma0', 'sample_chroma0'):
+            self.assertAlmostEqual(self.f(key) / self.f('expected_band0'), 1.0, delta=0.1, msg=key)
+        self.assertEqual(self.v['sample_small_rejected'], '1')
+        self.assertEqual(self.v['sample_edges_rejected'], '1')
+        for key in ('sample_fix_luma0', 'sample_fix_chroma0'):
+            self.assertAlmostEqual(self.f(key), 0.5, delta=0.05, msg=key)
+        self.assertEqual(self.v['sample_text_roundtrip'], '1')
+        self.assertEqual(self.v['sample_text_rejects_garbage'], '1')
+
+    def test_the_sample_box_is_drawn_only_on_its_edge(self):
+        self.assertEqual(self.f('box_edge_blue'), 0.0)
+        self.assertEqual(self.v['box_inside_same'], '1')
+
     def test_profile_text_roundtrip(self):
         self.assertEqual(self.v['text_roundtrip'], '1')
         self.assertEqual(self.v['text_rejects_garbage'], '1')

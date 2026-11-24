@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Noise node's Metal kernels against noiseRenderCPU on synthetic frames (spatial, temporal, views, skin).
+// The Noise node's Metal kernels against noiseRenderCPU on synthetic frames (spatial, temporal, views, skin, sample box).
 // Prints "MAXDIFF x" (code values) and, with --time, the GPU time of a UHD frame (spatial, then ±2).
 #import <Metal/Metal.h>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -87,20 +88,24 @@ int main(int argc, char** argv)
                 return 1;
             }
             sync();
-            const auto t0 = std::chrono::steady_clock::now();
-            for (int r = 0; r < 5; ++r)
+            // the median of 7 frames, each waited for: the CI runners share their GPU, a batch mean wanders
+            std::vector<double> ms;
+            for (int r = 0; r < 7; ++r) {
+                const auto t0 = std::chrono::steady_clock::now();
                 RunNoiseKernels((__bridge void*)queue, W, H, gf.data(), (int)gf.size(), radius, profile, c,
                                 (float*)(__bridge void*)out, row);
-            sync();
-            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / 5;
-            printf("UHD radius %d: %.1f ms\n", radius, ms);
+                sync();
+                ms.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+            }
+            std::sort(ms.begin(), ms.end());
+            printf("UHD radius %d: %.1f ms (min %.1f)\n", radius, ms[3], ms[0]);
         }
         return 0;
     }
     double worst = 0.0;
     NoiseScratch scratch;
     std::vector<float> cpu(imgs[0].size());
-    for (int k = 0; k < 9; ++k) {
+    for (int k = 0; k < 10; ++k) {
         NoiseControls c;
         int radius = 0;
         switch (k) {
@@ -113,6 +118,7 @@ int main(int argc, char** argv)
         case 6: radius = 2; c.view = kViewTemporal; break;
         case 7: radius = 2; c.luma = 0.0f; c.chroma = 2.0f; c.fine = 0.5f; c.coarse = 2.0f; break;
         case 8: radius = 2; c.luma = 0.0f; c.chroma = 0.0f; break;
+        case 9: radius = 1; c.box[0] = 10; c.box[1] = 7; c.box[2] = W / 2; c.box[3] = H / 2; break;   // sample box
         }
         std::vector<NoiseFrame> cf, gf;
         for (int f = 2 - radius; f <= 2 + radius; ++f) {

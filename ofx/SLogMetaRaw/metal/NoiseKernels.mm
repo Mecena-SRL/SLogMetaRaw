@@ -25,6 +25,8 @@ struct NzArgs {
     int nbx, nby;
     int isLuma, skinOn, view, used;
     float gj, preserve, skin, shadows, inv, rho, scale;
+    int bx0, by0, bx1, by1, bw;
+    int first, last;
 };
 
 const float kThresholdGPU = 1.2f;   // NoiseEngine.cpp kThreshold
@@ -127,6 +129,17 @@ public:
         ps = use("nz_smooth_v");
         buf(tmp, 0); buf(out, 1); bytes(a, 2); grid2(ps, a.W, a.H);
     }
+    // the same, writing the band's coefficients (in - out) to coef as well
+    void smoothCoef(id<MTLBuffer> in, id<MTLBuffer> out, id<MTLBuffer> tmp, id<MTLBuffer> coef, NzArgs a, int level)
+    {
+        a.step = 1 << level;
+        a.x0 = std::min(2 * a.step, a.W);
+        a.x1 = std::max(a.x0, a.W - 2 * a.step);
+        id<MTLComputePipelineState> ps = use("nz_smooth_h");
+        buf(in, 0); buf(tmp, 1); bytes(a, 2); grid2(ps, a.W, a.H);
+        ps = use("nz_smooth_vc");
+        buf(tmp, 0); buf(out, 1); buf(in, 2); buf(coef, 3); bytes(a, 4); grid2(ps, a.W, a.H);
+    }
     // the luma pyramid of an RGBA frame: full, 1/2, 1/4
     void pyramid(id<MTLBuffer> frame, int rowPixels, NzArgs a, __strong id<MTLBuffer> (&pyr)[3], int (&w)[3], int (&h)[3])
     {
@@ -180,6 +193,11 @@ bool RunNoiseKernels(void* p_CmdQ, int W, int H, const NoiseFrame* frames, int c
     a.rowPixels = (int)(frames[center].rowFloats / 4);
     a.dstRowPixels = dstRowPixels;
     a.view = c.view;
+    a.bx0 = c.box[0];
+    a.by0 = c.box[1];
+    a.bx1 = c.box[2];
+    a.by1 = c.box[3];
+    a.bw = std::max(2, W / 960);
 
     id<MTLCommandBuffer> commands = [queue commandBuffer];
     commands.label = @"SLogMetaRawNoise";
@@ -190,6 +208,7 @@ bool RunNoiseKernels(void* p_CmdQ, int W, int H, const NoiseFrame* frames, int c
 
     id<MTLBuffer> pl[3] = { P("pl0", N), P("pl1", N), P("pl2", N) };
     id<MTLBuffer> cur = P("cur", N), next = P("next", N), tmp = P("tmp", N);
+    id<MTLBuffer> coef = P("coef", N);
     id<MTLBuffer> guide = P("guide", N), boost = P("boost", N), ratio = P("ratio", N), wsum = P("wsum", N);
     id<MTLBuffer> acc[3] = { P("acc0", N), P("acc1", N), P("acc2", N) };
 
@@ -285,26 +304,25 @@ bool RunNoiseKernels(void* p_CmdQ, int W, int H, const NoiseFrame* frames, int c
     for (int k = 0; k < 3; ++k) {
         const bool isLuma = k == 0;
         const float strength = (isLuma ? c.luma : c.chroma) * kThresholdGPU;
-        e.fill(acc[k], 0.0f, N);
         id<MTLBuffer> x = pl[k], y = cur;   // x: the current approximation; y: the next one
         for (int j = 0; j < kNoiseLevels; ++j) {
-            e.smooth(x, y, tmp, a, j);
+            e.smoothCoef(x, y, tmp, coef, a, j);
             NzArgs b = a;
             b.step = 1 << j;
             b.gj = group[j] * strength;
             b.isLuma = isLuma ? 1 : 0;
             b.preserve = c.preserve;
             b.skinOn = skin ? 1 : 0;
+            b.first = j == 0 ? 1 : 0;
+            b.last = j == kNoiseLevels - 1 ? 1 : 0;
             ps = e.use("nz_shrink");
-            e.buf(x, 0); e.buf(y, 1); e.buf(guide, 2); e.buf(boost, 3); e.buf(skinW, 4); e.buf(acc[k], 5);
+            e.buf(coef, 0); e.buf(y, 1); e.buf(guide, 2); e.buf(boost, 3); e.buf(skinW, 4); e.buf(acc[k], 5);
             e.bytes(b, 6); e.bytes(T, 7); e.bytes(j, 8); e.grid2(ps, W, H);
             // the next level reads y; x becomes free (plane k is no longer needed after its first level)
             id<MTLBuffer> old = x;
             x = y;
             y = (old == pl[k]) ? next : old;
         }
-        ps = e.use("nz_add");
-        e.buf(acc[k], 0); e.buf(x, 1); e.bytes(N, 2); e.grid1(ps, N);
     }
 
     // ---- 3. back to RGB, or a view
