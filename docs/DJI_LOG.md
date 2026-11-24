@@ -2,7 +2,8 @@
 
 Ricerca per implementare l'ingresso DJI. Ogni dato porta la sua natura: **ufficiale** (documento DJI o Blackmagic),
 **misurato** (terzi, con metodo dichiarato), **dedotto** (calcolato qui da dati altrui), **non verificato**.
-Nessuna clip DJI è stata misurata in questa ricerca; nessun codice è cambiato.
+Nessuna camera DJI è stata tarata in questa ricerca (una clip Action 5 Pro è stata solo analizzata, §3b); nessun
+codice è cambiato.
 
 ## 1. Quattro famiglie, non una
 
@@ -68,6 +69,83 @@ ColorChecker, serie di tempi a ISO fisso, spline libera, residuo ~0,005. Due cam
 Gamma dinamica D-Log M (non ufficiale): Mavic 4 Pro con auto ISO 17,7 stop misurati da terzi (Xyla 21, contro 14,7 in
 D-Log) per una fusione a doppio guadagno non dichiarata da DJI ([DroneXL](https://dronexl.co/2025/06/28/dji-mavic-4-pro-dual-gain-iso-fusion)).
 
+## 3b. D-Log M: analisi numerica (24/11/2026)
+
+Calcoli fatti qui (script non nel repository) su: tabelle misurate Action 6 / 360 II (§3), fit Freeman del plugin, LUT
+ufficiale DJI e LUT CineMatch fornite da Ivan, una clip Action 5 Pro D-Log M fornita da Ivan. Codici normalizzati sul
+range Video, rms in codici su 1023.
+
+**Che curva è.** Pendenza in codici per stop (dalla tabella Action 6):
+
+| Codice | 0.10 | 0.20 | 0.30 | 0.414 | 0.60 | 0.80 | 0.95 |
+|---|---|---|---|---|---|---|---|
+| Action 6 | 0.048 | 0.069 | 0.107 | 0.148 | 0.156 | 0.150 | 0.117 |
+| Freeman | 0.057 | 0.075 | 0.110 | 0.136 | 0.161 | 0.173 | 0.178 |
+
+- Una log vera ha pendenza costante sopra il piede (D-Log: 0.077 ovunque). D-Log M ne ha circa **il doppio (0.15) nei
+  medi**, un **piede lungo** sotto 0.3 e una **spalla** sopra 0.8: è una curva a S con il centro logaritmico, non una
+  log. Spiega il giudizio della comunità ("not a true log", ACES Central 2024) e perché il CST *D-Log* raddoppia il
+  contrasto.
+- Freeman non ha spalla (pendenza crescente fino a 1.0): da qui l'errore nelle luci della §3.
+- Modelli analitici contro la tabella Action 6 (codici 0.04–1.0): `a·log2(lin+b)+c` rms 11,4; HLG BT.2100 scalato
+  rms 8,4; Freeman 17,8; D-Log scalato 117. Sulla 360 II: 15,7 / 15,1 / 36,9 / 103. **Nessuna forma chiusa scende
+  sotto il rumore di misura (~5)**: serve una tabella (come fa la DCTL di riferimento) o una spline.
+- HLG è la forma chiusa più vicina: spiega perché in Resolve "input HLG" funziona meglio di D-Log.
+
+**Le LUT DJI non sono per camera.** I file "Osmo Pocket 3" e "Osmo Action 5 Pro" (copie in un repository pubblico; la Pocket 3 riporta l'URL CDN DJI) e la
+LUT fornita da Ivan sono **lo stesso file** (sha256 `b1816285…`), con intestazione `Mavic 3 Pro, D-Log M, 2023-03-24`.
+DJI dunque distribuisce la LUT Mavic 3 Pro anche per Pocket 3 e Action 5 Pro; la Action 6 ha una LUT propria
+(`OA6 D-LogM to Rec.709 v11.17`). Conseguenza: una curva o un gamut "confermati dalla LUT" valgono per il Mavic 3 Pro,
+non per la camera che ha girato la clip.
+
+**Cosa fa la LUT 2023.** Asse neutro: grigio 0.414 → uscita 0.397 (−0,7 stop di display a gamma 2.4); il 18% in OETF
+Rec.709 (0.409) arriva da codice 0.424; nessun clip prima di 1.0. Separabilità (curva per canale + matrice in lineare +
+curva per canale), provata con sei decodifiche:
+
+| Decodifica | rms, nodi poco saturi (spread ≤ 0.13) | R x,y ricavato |
+|---|---|---|
+| Action 6 misurata | 18,8 | 0.993, 0.323 |
+| Freeman | 18,1 | 0.978, 0.326 |
+| HLG | 18,6 | 0.980, 0.321 |
+| gamma 2.4 | 19,8 | 0.962, 0.328 |
+| D-Log | 68,0 | 0.952, 0.305 |
+
+Allargando ai nodi con spread ≤ 0.26 il residuo sale a ~45 e il rosso ricavato scende a x 0.92; su tutti i nodi a x
+0.74. Quindi: (1) la LUT 2023 **non è matrice + curva**, contiene un look non lineare (tinta e saturazione); (2) le
+primarie che se ne ricavano **dipendono dai nodi scelti** e non sono fisiche (x > 0.9): anche quelle di
+`tools/lut_gamut.py` vanno lette così; (3) la LUT esclude D-Log ma **non distingue** fra Freeman, Action 6 e HLG.
+La matrice Action 6 della §3 viene invece dalla LUT OA6, che il suo autore trova separabile (residuo 0,004).
+
+**Clip Action 5 Pro (fornita da Ivan).** HEVC 10 bit 4:2:0, VUI dichiarato BT.709 / BT.709 / BT.709 e range Video;
+ISO 1600, 1/53 s, 5600 K. Y minimo 28 (sotto il nero 64: DJI usa il footroom, il nero non è tagliato), 0,1° percentile
+~85, 99,9° 731, massimo 837: la scena non tocca il clip, quindi questa clip non misura il bianco.
+
+## 3c. CineMatch (FilmConvert)
+
+- Metodo dichiarato: ogni camera è profilata "under identical shooting conditions"; il match "allinea i dati del
+  sensore" della sorgente a quelli della destinazione e poi riapplica la scienza colore della destinazione. Uscite
+  Rec.709, Rec.2100 HLG o PQ; controlli esposizione, bilanciamento, tinta. FilmConvert **non pubblica** procedura,
+  formato dei profili, spazio di lavoro né decodifica di D-Log M ([pagina CineMatch](https://www.filmconvert.com/plugin/cinematch),
+  [blog 2020](https://www.filmconvert.com/blog/introducing-cinematch-camera-matching-made-easy/)).
+- Camere DJI nell'elenco FilmConvert: Action 4, 5 Pro, 6; Air 2S, Air 3; Mavic 2 Pro, 3 Cine, 4 Pro; Mini 3 Pro,
+  4 Pro, 5 Pro; Pocket 3, 4, 4P; Phantom 4 / 4 Pro; Ronin 4D; Zenmuse X3–X7 (senza dire quali profili).
+- **Misura nostra**: la LUT CineMatch esportata il 15/11/2026 (impostazioni di esportazione non note) coincide con la
+  LUT DJI 2023: differenza media 0,0007, rms 0,0009, massimo 0,017, solo il 2% dei nodi oltre 0,005, assi neutri
+  entro 0,0006. È la LUT DJI ricampionata: per D-Log M → Rec.709 CineMatch **non aggiunge** una curva o un gamut
+  propri, almeno in questa esportazione.
+- Lezione per il plugin: il valore di CineMatch sta nel profilo per camera e nei controlli in un dominio "sensore"; su
+  D-Log M la sua base è la stessa LUT DJI che abbiamo. Un vantaggio reale si ottiene solo con misure nostre per camera.
+
+## 3d. Metodo di taratura proposto
+
+Per ogni famiglia (action, 360, Pocket, droni): ISO fisso, WB fisso, nitidezza e riduzione rumore al minimo;
+1. **Curva**: serie di tempi a luce costante (cartoncino grigio + scala di grigi), 1/3 di stop fra le prese su 12+
+   stop, tempo letto dal `djmd`; stima della curva come spline monotona su tutti i patch (metodo di Debevec–Malik), nero
+   da una presa col tappo, grigio 18% come ancora. Verifica: una seconda serie indipendente deve cadere entro 0,1 stop.
+2. **Gamut**: ColorChecker sotto illuminante misurato; matrice nativo → XYZ ai minimi quadrati (righe vincolate al
+   bianco) sui patch linearizzati, con i valori Lab di riferimento X-Rite; errore in ΔE2000 per patch.
+3. **Confronto**: CST di Resolve con la nostra curva contro la LUT DJI della stessa camera, sulle stesse clip.
+
 ## 4. D-Log2 / D-Gamut2 (Osmo Pocket 4P, 2026)
 
 - **Resolve 21.1 lo supporta**: "DJI's D-Gamut2 and D-Log2" ([Blackmagic, 08/09/2026](https://www.blackmagicdesign.com/media/partial/release/20260908-03)).
@@ -127,8 +205,10 @@ gamut 13 D-Gamut, 19 D-Log M stimato; lettore `djmd` con percorsi della Action 5
    coerenza con la CST di Resolve.
 2. **D-Log M: una curva per tutte le camere.** Le misure Action 6 / 360 II mettono il grigio a 0.414 (Freeman 0.400)
    e le luci fino a +0,7 stop oltre Freeman. Va scelta una curva per famiglia (action, 360, droni), non una sola.
-3. **Gamut D-Log M**: tre stime diverse (Freeman; `lut_gamut.py` sulla LUT Action 5 Pro; matrice Action 6 da LUT).
-   Nessuna misura colorimetrica assoluta.
+3. **Gamut D-Log M**: tre stime diverse (Freeman; `lut_gamut.py` sulla LUT "Action 5 Pro", che è la LUT Mavic 3
+   Pro 2023 e non è separabile, §3b; matrice Action 6 dalla LUT OA6). Nessuna misura colorimetrica assoluta.
+   Anche la frase di `docs/CAMERAS.md` "curva confermata dalla LUT DJI" va ridimensionata: la LUT non distingue
+   Freeman da Action 6 o HLG.
 4. **Percorsi `djmd` dei droni diversi da quelli delle action** (exiftool): ISO a 3-2-7-1 (Mini 4 Pro, Air 3), 3-2-9-1
    (Pocket 3, Mavic 3 Pro, Mavic 4), 3-2-2-1 (Avata 2, Neo, Mavic 3); Kelvin a 3-2-32-1 (Mini 4 Pro, Air 3) o 3-2-24-1
    (Pocket 3, Mavic 4); su Mavic 3 il 3-2-6-1 è lo zoom. Oggi `FRAME_FIELDS` usa quelli dell'Action 4/5: sui droni
@@ -147,6 +227,5 @@ In ordine; ogni passo va fatto con test e aggiornando l'Atlante.
 2. **Tabella schema → percorsi** in `dji.py` (dalle tabelle di exiftool) invece dei percorsi fissi della Action.
 3. **D-Log M per famiglia**: tenere Freeman per i droni; per Action 6 / 360 una curva misurata (tabelle a 513 punti o
    un fit), dopo aver controllato la licenza del repository di origine (oggi non dichiarata nel README).
-4. **Misura nostra**: clip DJI dell'utente (Action, Pocket, drone) con cartoncino grigio a ±1 stop e ColorChecker,
-   per confermare grigio, curva e matrice su ogni famiglia. Servono le clip.
+4. **Misura nostra** col metodo della §3d su ogni famiglia di camere. Servono le clip.
 5. Modo colore D-Log2 nel `djmd` della Pocket 4P: serve una clip.
