@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Draws the Log MetaRaw icons (installer, disk image, SLogMetaRaw OpenFX effect).
 // Usage: swift tools/make_icons.swift <output dir>
-// Writes icon_1024.png (app/installer icon), effect_256.png, detail_256.png, stabilize_256.png and
+// Writes icon_1024.png (app/installer icon), effect_256.png, detail_256.png, noise_256.png, stabilize_256.png and
 // motionblur_256.png (OpenFX node icons, with their place in the node chain).
 import AppKit
 
@@ -283,6 +283,27 @@ func drawMotionBlurIcon(size s: CGFloat) -> NSBitmapImageRep {
     }
 }
 
+// Noise: grain that fades into a clean field behind a sweep.
+func drawNoiseIcon(size s: CGFloat) -> NSBitmapImageRep {
+    return drawBadgeIcon(size: s) { c, r in
+        var seed: UInt64 = 7
+        func rnd() -> CGFloat { seed = seed * 16807 % 2147483647; return CGFloat(seed) / 2147483647 }
+        for _ in 0..<46 {
+            let a = rnd() * 2 * .pi, d = sqrt(rnd()) * r * 0.66
+            let x = c.x + cos(a) * d, y = c.y + sin(a) * d, g = s * 0.008
+            color(0xFFB347, 1 - (x - (c.x - r * 0.66)) / (r * 1.32)).setFill()
+            NSBezierPath(ovalIn: CGRect(x: x - g, y: y - g, width: 2 * g, height: 2 * g)).fill()
+        }
+        let sweep = NSBezierPath()
+        sweep.appendArc(withCenter: CGPoint(x: c.x - r * 0.34, y: c.y), radius: r * 0.6,
+                        startAngle: 66, endAngle: -66, clockwise: true)
+        sweep.lineWidth = s * 0.014
+        sweep.lineCapStyle = .round
+        color(0xFFFFFF, 0.9).setStroke()
+        sweep.stroke()
+    }
+}
+
 // Where the node goes in the chain: Noise 1, Stabilize 2, Motion Blur 3, Log MetaRaw 4, Detail 5.
 // Five pips along the top of the tile; the node's own step is an orange chip with its number.
 let chainSteps = 5
@@ -329,6 +350,8 @@ try! drawStep(4, on: drawIcon(size: 256)).representation(using: .png, properties
     .write(to: URL(fileURLWithPath: out + "/effect_256.png"))
 try! drawStep(5, on: drawDetailIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/detail_256.png"))
+try! drawStep(1, on: drawNoiseIcon(size: 256)).representation(using: .png, properties: [:])!
+    .write(to: URL(fileURLWithPath: out + "/noise_256.png"))
 try! drawStep(2, on: drawStabilizeIcon(size: 256)).representation(using: .png, properties: [:])!
     .write(to: URL(fileURLWithPath: out + "/stabilize_256.png"))
 try! drawStep(3, on: drawMotionBlurIcon(size: 256)).representation(using: .png, properties: [:])!

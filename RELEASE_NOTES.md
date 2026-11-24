@@ -1,7 +1,15 @@
 # Changelog
 
-## In sviluppo
+## In sviluppo (non pubblicato)
 
+- **Log MetaRaw Noise**, terzo nodo: riduzione rumore con il profilo della camera e del formato (Sony FX6, FX30,
+  iPhone 17 Pro, DJI Osmo Action 4 e 5 Pro, più le curve delle altre camere). Temporale con compensazione del
+  movimento (±1-3 fotogrammi, automatico per formato) e spaziale per bande, luminanza e colore separati, più forte
+  dove la camera è più rumorosa. Misura del rumore dal fotogramma, vista del rumore rimosso, protezione dettaglio e
+  pelle, **Salta Noise ovunque** per lavorare veloce (si riaccende alla riapertura di Resolve). Va prima di Log
+  MetaRaw. Su Mac gira tutto su GPU Metal (temporale e spaziale), altrove su CPU. Soglia sul vicinato dei
+  coefficienti: più rumore tolto e più dettaglio tenuto della soglia sul singolo coefficiente. Non ancora provato
+  in Resolve. Dettagli: `docs/DENOISE.md`.
 - **Acquisizione profonda (IMU)**, nuova spunta nella finestra (e `--deep` da riga di comando): con Mecena Motion
   installato, ogni clip letta passa anche da `mecena-clipdb`, che salva giroscopio, accelerometro, orientamento,
   tempo di lettura del sensore e obiettivo di ogni fotogramma nel **MecenaClipDB**, lo stesso database che legge

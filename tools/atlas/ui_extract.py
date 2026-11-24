@@ -2,7 +2,7 @@
 """Interfaccia: what the three panels contain, read from their sources (development tool).
 
 - Script window: the widget tree passed to disp.AddWindow in slogmetaraw/ui.py, read with the AST.
-- Develop and Detail panels: tests/golden/params_*.txt, the dump of the parameters as a miniature OpenFX host sees
+- Develop, Detail and Noise panels: tests/golden/params_*.txt, the dump of the parameters as a miniature OpenFX host sees
   them when it loads the built plugin (tests/test_ofx_host.py keeps them equal to the plugin). Each parameter is
   located in the C++ sources by a text search for its name.
 - Components: the UIManager widget types of the script, the define* helpers of src/common/ParamDefs.h.
@@ -16,7 +16,8 @@ OFX_SRC = os.path.join('ofx', 'SLogMetaRaw', 'src')
 GOLDEN_FIELDS = ('label', 'default', 'parent', 'secret', 'enabled', 'min', 'max', 'displayMin', 'displayMax',
                  'increment', 'digits', 'animates', 'hint', 'options', 'icon', 'groupOpen')
 PANELS = (('develop', 'Log MetaRaw (Develop)', 'tests/golden/params_develop.txt', 'develop'),
-          ('detail', 'Log MetaRaw Detail', 'tests/golden/params_detail.txt', 'detail'))
+          ('detail', 'Log MetaRaw Detail', 'tests/golden/params_detail.txt', 'detail'),
+          ('noise', 'Log MetaRaw Noise', 'tests/golden/params_noise.txt', 'noise'))
 
 
 def _read(rel):

@@ -50,6 +50,17 @@ class CacheRules(unittest.TestCase):
         self.assertEqual(nc({'v_codec': 'H.265', 'v_bit_depth': 10}), 'long')
         self.assertEqual(nc({}), '')
 
+    def test_noise_format_for_the_noise_node(self):
+        nf = plugin_cache.noise_format
+        got = nf({'iso': 1600, 'bitrate_mbps': 130.4, 'v_bit_depth': 10, 'v_chroma': '4:2:0', 'v_width': 3840,
+                  'v_height': 2160, 'v_fps': 29.97})
+        self.assertEqual(got, {'noise_iso': 1600.0, 'noise_bitrate': 130.4, 'noise_bit_depth': 10, 'noise_chroma': '4:2:0',
+                               'noise_width': 3840, 'noise_height': 2160, 'noise_fps': 29.97})
+        empty = nf({'iso': 'n/a', 'bitrate_mbps': float('nan')})
+        self.assertEqual((empty['noise_iso'], empty['noise_bitrate'], empty['noise_chroma']), (0, 0, ''))
+        plugin_cache.write_cache(self.full)
+        self.assertIn('noise_bitrate', self.record())
+
     def test_partial_fields(self):
         """The record says how many samples were read and whether that is complete."""
         self.assertEqual(plugin_cache.VERSION, 6)

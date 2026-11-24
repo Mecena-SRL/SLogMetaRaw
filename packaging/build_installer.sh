@@ -30,6 +30,7 @@ done
 iconutil -c icns "$ICONSET" -o "$ROOT/assets/SLogMetaRaw.icns"
 cp "$ROOT/assets/effect_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRaw.png"
 cp "$ROOT/assets/detail_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawDetail.png"
+cp "$ROOT/assets/noise_256.png" "$ROOT/ofx/SLogMetaRaw/com.slogmetaraw.SLogMetaRawNoise.png"
 # Stabilize and Motion Blur keep their plugin identifiers (saved projects): the icons take those names
 cp "$ROOT/assets/stabilize_256.png" "$ROOT/motion/assets/icons/it.mecena.motion.stabilize.png"
 cp "$ROOT/assets/motionblur_256.png" "$ROOT/motion/assets/icons/it.mecena.motion.shutter.png"
