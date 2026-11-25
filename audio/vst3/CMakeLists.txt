@@ -16,12 +16,18 @@ if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "")
 endif()
 project(LogMetaRawAudio VERSION ${AU_VERSION} LANGUAGES C CXX)
+if(APPLE)
+  enable_language(OBJC OBJCXX)   # VSTGUI's Cocoa code: enabled here, at the top, so every target sees it
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(VST3_SDK_DIR "" CACHE PATH "Steinberg VST3 SDK root; fetched from GitHub (pinned tag) when empty")
 if(NOT VST3_SDK_DIR)
   include(FetchContent)
+  if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)   # populate only: the SDK is added below, after its options
+  endif()
   FetchContent_Declare(vst3sdk
     GIT_REPOSITORY https://github.com/steinbergmedia/vst3sdk.git
     GIT_TAG v3.8.1_build_84
