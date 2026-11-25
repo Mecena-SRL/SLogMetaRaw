@@ -23,7 +23,8 @@ jobs:
 
   audio:
     # Log MetaRaw Audio (VST3): builds the plugin and runs Steinberg's validator on it (a post-build step that fails
-    # the build). Linux only checks the code: Resolve loads VST3 on macOS and Windows.
+    # the build). Linux only checks the code: Resolve loads VST3 on macOS and Windows. On macOS also the Audio Units
+    # for Logic Pro, checked by Apple's auval.
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +43,16 @@ jobs:
         run: |
           cmake -S audio/vst3 -B build/audio -DCMAKE_BUILD_TYPE=Release
           cmake --build build/audio --config Release --parallel --target LogMetaRawAudio
+      - name: Audio Units (Logic Pro) and Apple's validator
+        if: runner.os == 'macOS'
+        run: |
+          cmake --build build/audio --config Release --parallel --target LogMetaRawAU
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R build/audio/AU/*.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep Mcna
+          auval -strict -v aufx LMrp Mcna
+          auval -strict -v aufx LMmx Mcna
 
   macos:
     # Compiles the plugin (Metal included) and runs the whole suite on a real Mac. It builds with CMake against the

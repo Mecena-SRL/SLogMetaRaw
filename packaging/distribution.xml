@@ -14,6 +14,7 @@
         <line choice="core"/>
         <line choice="motion"/>
         <line choice="audio"/>
+        <line choice="audiounit"/>
     </choices-outline>
     <choice id="core" title="Log MetaRaw (sempre installato)" enabled="false" selected="true"
             description="Script dei metadata e nodi Log MetaRaw, Noise e Creative per la pagina Color.">
@@ -27,7 +28,12 @@
             description="Plugin Log MetaRaw Ripresa e Mix e supporto: registratori, microfoni, banchi e supporti d'epoca.">
         <pkg-ref id="com.slogmetaraw.audio.pkg"/>
     </choice>
+    <choice id="audiounit" title="Audio d'epoca per Logic Pro (Audio Unit)" start_selected="true"
+            description="Gli stessi plugin Ripresa e Mix e supporto come Audio Unit, per Logic Pro, GarageBand e le altre app Mac.">
+        <pkg-ref id="com.slogmetaraw.audiounit.pkg"/>
+    </choice>
     <pkg-ref id="com.slogmetaraw.pkg" version="@VERSION@" onConclusion="none">SLogMetaRaw-component.pkg</pkg-ref>
     <pkg-ref id="it.mecena.motion.pkg" version="@MOTION_VERSION@" onConclusion="none">MecenaMotion-component.pkg</pkg-ref>
     <pkg-ref id="com.slogmetaraw.audio.pkg" version="@VERSION@" onConclusion="none">LogMetaRawAudio-component.pkg</pkg-ref>
+    <pkg-ref id="com.slogmetaraw.audiounit.pkg" version="@VERSION@" onConclusion="none">LogMetaRawAU-component.pkg</pkg-ref>
 </installer-gui-script>

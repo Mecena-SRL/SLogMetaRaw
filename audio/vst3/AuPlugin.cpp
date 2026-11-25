@@ -822,17 +822,27 @@ private:
 #define AU_VENDOR "Mecena SRL"
 #define AU_URL "https://github.com/Mecena-SRL/SLogMetaRaw"
 
+// The Audio Unit wrapper takes the first effect a module holds: each Audio Unit embeds a build with one plugin only
+// (AU_ONLY 1 = Ripresa, 2 = Mix e supporto); the VST3 for Fairlight holds both.
+#ifndef AU_ONLY
+#define AU_ONLY 0
+#endif
+
 BEGIN_FACTORY_DEF(AU_VENDOR, AU_URL, "")
 
+#if AU_ONLY != 2
 DEF_CLASS2(INLINE_UID_FROM_FUID(kRipresaProcessor), PClassInfo::kManyInstances, kVstAudioEffectClass,
            "Log MetaRaw Ripresa", Vst::kDistributable, PlugType::kFx, AU_VERSION, kVstVersionString,
            Processor::ripresa)
 DEF_CLASS2(INLINE_UID_FROM_FUID(kRipresaController), PClassInfo::kManyInstances, kVstComponentControllerClass,
            "Log MetaRaw Ripresa Controller", 0, "", AU_VERSION, kVstVersionString, Controller::ripresa)
+#endif
+#if AU_ONLY != 1
 DEF_CLASS2(INLINE_UID_FROM_FUID(kMixProcessor), PClassInfo::kManyInstances, kVstAudioEffectClass,
            "Log MetaRaw Mix e supporto", Vst::kDistributable, PlugType::kFx, AU_VERSION, kVstVersionString,
            Processor::mixer)
 DEF_CLASS2(INLINE_UID_FROM_FUID(kMixController), PClassInfo::kManyInstances, kVstComponentControllerClass,
            "Log MetaRaw Mix e supporto Controller", 0, "", AU_VERSION, kVstVersionString, Controller::mixer)
+#endif
 
 END_FACTORY

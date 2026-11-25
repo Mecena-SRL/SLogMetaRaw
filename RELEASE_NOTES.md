@@ -2,6 +2,8 @@
 
 ## In sviluppo
 
+- **Audio per Logic Pro**: i due plugin audio ci sono anche come Audio Unit, per Logic Pro, GarageBand e le altre app
+  Mac. L'installer Mac li propone come componente a parte, spuntato di serie; il disinstallatore li toglie.
 - **Audio, frontali con meter**: i due plugin audio si aprono su un frontale disegnato per ogni famiglia di registratore
   e per ogni banco, con il nome del modello, quattro manopole e due meter a lancetta che si muovono con il segnale: VU
   sulla maggior parte, PPM sui registratori a bobine portatili e sul banco EMI. La manopola *Taratura* sceglie quale

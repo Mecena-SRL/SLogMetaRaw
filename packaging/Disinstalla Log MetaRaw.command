@@ -20,6 +20,8 @@ SYSTEM=(
   "$ROOT/Library/OFX/Plugins/SonyMetaRAW.ofx.bundle"
   "$ROOT/Library/OFX/Plugins/MecenaMotion.ofx.bundle"
   "$ROOT/Library/Audio/Plug-Ins/VST3/Log MetaRaw Audio.vst3"
+  "$ROOT/Library/Audio/Plug-Ins/Components/Log MetaRaw Ripresa.component"
+  "$ROOT/Library/Audio/Plug-Ins/Components/Log MetaRaw Mix e supporto.component"
   "$ROOT/Library/Application Support/SLogMetaRaw"
   "$ROOT/Library/Application Support/SonyMeta"
   "$ROOT/$UTIL/Log MetaRaw.py"

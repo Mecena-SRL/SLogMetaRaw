@@ -7,8 +7,12 @@ G.257 a 4,75 cm/s col suo microfono piezo, mix su EMI REDD.51, stampato su 78 gi
 
 OFX non elabora audio: in Resolve serve un plugin per Fairlight. Formato: **VST3** (macOS universale e Windows x64),
 con l'SDK VST3 di Steinberg (licenza MIT dalla 3.8, ottobre 2025, scaricato dal CMake al tag `v3.8.1_build_84`) e
-VSTGUI per il pannello, senza JUCE. Fairlight carica il VST3 anche su Mac, quindi l'AU non serve (il wrapper AU
-dell'SDK richiede Xcode e l'SDK CoreAudio di Apple). Linux: Resolve non carica plugin VST nativi; lì il plugin si
+VSTGUI per il pannello, senza JUCE. Fairlight carica il VST3 anche su Mac. Per Logic Pro (e GarageBand, le altre app
+Mac) ci sono le **Audio Unit v2** `Log MetaRaw Ripresa.component` e `Log MetaRaw Mix e supporto.component` (codici
+`aufx LMrp Mcna`, `aufx LMmx Mcna`): il wrapper AU dell'SDK Steinberg attorno a un VST3 con un solo plugin (il wrapper
+prende il primo effetto del modulo, da qui `AU_ONLY`), copiato in `Contents/Resources/plugin.vst3`; l'AudioUnitSDK di
+Apple (Apache-2.0, tag 1.1.0, C++17) si compila dentro, così basta un generatore CMake qualunque (target
+`LogMetaRawAU`). La CI le verifica con `auval -strict`; l'installer Mac le ha come componente a parte. Linux: Resolve non carica plugin VST nativi; lì il plugin si
 compila solo per i controlli.
 
 Un solo modulo, `Log MetaRaw Audio.vst3`, contiene i due plugin. Installazione: `/Library/Audio/Plug-Ins/VST3/` su Mac
@@ -96,7 +100,7 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
   Dolby, wow misurato sugli attraversamenti dello zero, supporti mono, perdita di acuti per copia, dry/wet e uscita.
 - Implementato e verificato: plugin VST3 (validatore Steinberg 94/94 su Linux), pannello aperto e fotografato nell'host
   VST3 di prova dell'SDK (editorhost), job CI `audio` su Linux, macOS e Windows, pkg Mac e setup Windows.
-- Incerto: comportamento in Fairlight (mai caricato in Resolve), build Mac e Windows finché la CI non passa.
+- Incerto: comportamento in Fairlight (mai caricato in Resolve) e in Logic Pro (verificato solo da `auval`), build Mac e Windows finché la CI non passa.
 - Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
   coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
 - Implementato e verificato su Linux (validatore 94/94, editorhost): frontali per famiglia e banco, manopole, meter.

@@ -82,12 +82,16 @@ python3 "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" \
 # Log MetaRaw Audio (VST3 for Fairlight): Ripresa and Mix e supporto
 AUDIO_BUILD="$BUILD/audio"
 cmake -S "$ROOT/audio/vst3" -B "$AUDIO_BUILD" -DCMAKE_BUILD_TYPE=Release > "$BUILD/audio-build.log" 2>&1 &&
-  cmake --build "$AUDIO_BUILD" --config Release --parallel --target LogMetaRawAudio >> "$BUILD/audio-build.log" 2>&1 ||
+  cmake --build "$AUDIO_BUILD" --config Release --parallel --target LogMetaRawAudio LogMetaRawAU >> "$BUILD/audio-build.log" 2>&1 ||
   { tail -40 "$BUILD/audio-build.log" >&2; exit 1; }
 A="$BUILD/audio-root"   # its own component: the installer lets the user leave it out
 mkdir -p "$A/Library/Audio/Plug-Ins/VST3"
 cp -R "$AUDIO_BUILD/VST3/Release/Log MetaRaw Audio.vst3" "$A/Library/Audio/Plug-Ins/VST3/"
-find "$R" "$A" -name ".DS_Store" -delete
+U="$BUILD/au-root"   # the Audio Units for Logic Pro: a component of their own too
+mkdir -p "$U/Library/Audio/Plug-Ins/Components"
+cp -R "$AUDIO_BUILD/AU/"*.component "$U/Library/Audio/Plug-Ins/Components/"
+find "$R" "$A" "$U" -name ".DS_Store" -delete
+xattr -rc "$U"
 xattr -rc "$A"
 xattr -rc "$R"
 
@@ -108,6 +112,8 @@ pkgbuild --root "$M" --install-location / --identifier it.mecena.motion.pkg --ve
          --scripts "$BUILD/motion-scripts" "$BUILD/MecenaMotion-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
 pkgbuild --root "$A" --install-location / --identifier com.slogmetaraw.audio.pkg --version "$VERSION" \
          "$BUILD/LogMetaRawAudio-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
+pkgbuild --root "$U" --install-location / --identifier com.slogmetaraw.audiounit.pkg --version "$VERSION" \
+         "$BUILD/LogMetaRawAU-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
 cp "$PKG_DIR/resources/"* "$BUILD/resources/"
 # the version lives in slogmetaraw/__init__.py alone: substitute it into the
 # installer pages too, so they cannot announce a different one from the disk
