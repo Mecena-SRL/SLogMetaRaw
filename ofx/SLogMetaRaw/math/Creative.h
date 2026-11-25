@@ -437,11 +437,11 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
         }
     }
     if ((p.sndDigital & 1) != 0 && p.perfSides == 2) {   // Dolby Digital: 76 x 76 bits between the perforations
-        const float lt = (f.along - p.perfPhase) / p.perfPitch, nf = CR_FLOOR(lt), half = 0.5f * p.ddSize;
+        const float lt = (f.along - p.perfPhase) / p.perfPitch, nf = CR_FLOOR(lt), hb = 0.5f * p.ddSize;
         const float v = (lt - nf - 0.5f) * p.perfPitch, u = f.across - p.ddAcross;
-        if (SM_ABS(u) < half + p.sMM && SM_ABS(v) < half + p.sMM) {
+        if (SM_ABS(u) < hb + p.sMM && SM_ABS(v) < hb + p.sMM) {
             const int n = (int)nf + (int)CR_FLOOR(p.sndPhase / p.perfPitch + 0.5f);
-            const float bu = (u + half) * (76.0f / p.ddSize) - 38.0f, bv = (v + half) * (76.0f / p.ddSize) - 38.0f;
+            const float bu = (u + hb) * (76.0f / p.ddSize) - 38.0f, bv = (v + hb) * (76.0f / p.ddSize) - 38.0f;
             float op;
             if (SM_ABS(bu) < 15.0f && SM_ABS(bv) < 15.0f) {   // the double-D in the middle, dark on a clear field
                 const float lu = SM_ABS(bu) - 1.5f, r = 8.5f;
@@ -452,7 +452,7 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
                 op = cr_hash((int)CR_FLOOR(bu) + 40, (int)CR_FLOOR(bv) + 97 * n, p.sndSeed * 7 + 1212) > 0.0f ? 1.0f
                                                                                                              : 0.0f;
             }
-            const float in = (1.0f - cr_smooth(-h, h, SM_ABS(u) - half)) * (1.0f - cr_smooth(-h, h, SM_ABS(v) - half));
+            const float in = (1.0f - cr_smooth(-h, h, SM_ABS(u) - hb)) * (1.0f - cr_smooth(-h, h, SM_ABS(v) - hb));
             o.op = SM_MAX(o.op, op * in);
         }
     }
