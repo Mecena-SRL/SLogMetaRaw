@@ -6,16 +6,28 @@
     <welcome file="welcome.html" mime-type="text/html"/>
     <license file="license.txt"/>
     <conclusion file="conclusion.html" mime-type="text/html"/>
-    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <options customize="always" require-scripts="false" hostArchitectures="arm64,x86_64"/>
     <domains enable_localSystem="true"/>
     <os-version min="12.0"/>
+    <!-- «Personalizza»: Log MetaRaw is always installed, the other components are ticked and can be left out -->
     <choices-outline>
-        <line choice="default"/>
+        <line choice="core"/>
+        <line choice="motion"/>
+        <line choice="audio"/>
     </choices-outline>
-    <choice id="default" title="Log MetaRaw">
+    <choice id="core" title="Log MetaRaw (sempre installato)" enabled="false" selected="true"
+            description="Script dei metadata e nodi Log MetaRaw, Noise e Creative per la pagina Color.">
         <pkg-ref id="com.slogmetaraw.pkg"/>
+    </choice>
+    <choice id="motion" title="Stabilize e Motion Blur" start_selected="true"
+            description="Mecena Motion per la pagina Color: stabilizzazione dal giroscopio e mosso ricostruito. Mac Apple silicon.">
         <pkg-ref id="it.mecena.motion.pkg"/>
+    </choice>
+    <choice id="audio" title="Audio d'epoca per Fairlight (VST3)" start_selected="true"
+            description="Plugin Log MetaRaw Ripresa e Mix e supporto: registratori, microfoni, banchi e supporti d'epoca.">
+        <pkg-ref id="com.slogmetaraw.audio.pkg"/>
     </choice>
     <pkg-ref id="com.slogmetaraw.pkg" version="@VERSION@" onConclusion="none">SLogMetaRaw-component.pkg</pkg-ref>
     <pkg-ref id="it.mecena.motion.pkg" version="@MOTION_VERSION@" onConclusion="none">MecenaMotion-component.pkg</pkg-ref>
+    <pkg-ref id="com.slogmetaraw.audio.pkg" version="@VERSION@" onConclusion="none">LogMetaRawAudio-component.pkg</pkg-ref>
 </installer-gui-script>

@@ -79,7 +79,16 @@ rsync -a --exclude "__pycache__" "$ROOT/slogmetaraw" "$R/Library/Application Sup
 python3 "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" \
     "/Library/Application Support/SLogMetaRaw/lib" \
     "$R/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py"
-find "$R" -name ".DS_Store" -delete
+# Log MetaRaw Audio (VST3 for Fairlight): Ripresa and Mix e supporto
+AUDIO_BUILD="$BUILD/audio"
+cmake -S "$ROOT/audio/vst3" -B "$AUDIO_BUILD" -DCMAKE_BUILD_TYPE=Release > "$BUILD/audio-build.log" 2>&1 &&
+  cmake --build "$AUDIO_BUILD" --config Release --parallel --target LogMetaRawAudio >> "$BUILD/audio-build.log" 2>&1 ||
+  { tail -40 "$BUILD/audio-build.log" >&2; exit 1; }
+A="$BUILD/audio-root"   # its own component: the installer lets the user leave it out
+mkdir -p "$A/Library/Audio/Plug-Ins/VST3"
+cp -R "$AUDIO_BUILD/VST3/Release/Log MetaRaw Audio.vst3" "$A/Library/Audio/Plug-Ins/VST3/"
+find "$R" "$A" -name ".DS_Store" -delete
+xattr -rc "$A"
 xattr -rc "$R"
 
 M="$BUILD/motion-root"
@@ -97,6 +106,8 @@ pkgbuild --root "$R" --install-location / --identifier com.slogmetaraw.pkg --ver
 # the receipt of Mecena Motion's own installer: either one updates the other
 pkgbuild --root "$M" --install-location / --identifier it.mecena.motion.pkg --version "$MOTION_VERSION" \
          --scripts "$BUILD/motion-scripts" "$BUILD/MecenaMotion-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
+pkgbuild --root "$A" --install-location / --identifier com.slogmetaraw.audio.pkg --version "$VERSION" \
+         "$BUILD/LogMetaRawAudio-component.pkg" >> "$BUILD/pkgbuild.log" 2>&1
 cp "$PKG_DIR/resources/"* "$BUILD/resources/"
 # the version lives in slogmetaraw/__init__.py alone: substitute it into the
 # installer pages too, so they cannot announce a different one from the disk

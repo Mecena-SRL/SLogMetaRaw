@@ -17,9 +17,20 @@ Compression=lzma2
 SolidCompression=yes
 Uninstallable=yes
 
+; like Resolve's installer: Log MetaRaw is always installed, the rest is ticked and can be left out
+[Types]
+Name: "full"; Description: "Installazione completa"
+Name: "custom"; Description: "Scegli i componenti"; Flags: iscustom
+
+[Components]
+Name: "core"; Description: "Log MetaRaw: script dei metadata, nodi Log MetaRaw, Noise e Creative"; Types: full custom; Flags: fixed
+Name: "audio"; Description: "Audio d'epoca per Fairlight (VST3): Ripresa e Mix e supporto"; Types: full custom
+
 [Files]
 ; the OpenFX bundle goes where Resolve looks for plugins
 Source: "{#StageDir}\SLogMetaRaw.ofx.bundle\*"; DestDir: "{commoncf64}\OFX\Plugins\SLogMetaRaw.ofx.bundle"; Flags: recursesubdirs ignoreversion
+; Log MetaRaw Audio, where Fairlight looks for VST3 plugins
+Source: "{#StageDir}\Log MetaRaw Audio.vst3\*"; DestDir: "{commoncf64}\VST3\Log MetaRaw Audio.vst3"; Components: audio; Flags: recursesubdirs ignoreversion
 ; the Python library and the launcher script, per user (the user running the installer)
 Source: "{#StageDir}\slogmetaraw\*"; DestDir: "{userappdata}\SLogMetaRaw\lib\slogmetaraw"; Flags: recursesubdirs ignoreversion
 ; the launcher goes in as is: it finds the library through lib_path, so no Python is needed to install it

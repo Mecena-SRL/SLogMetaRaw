@@ -2,6 +2,19 @@
 
 ## In sviluppo
 
+- **Log MetaRaw Audio** (nuovo, VST3 per Fairlight su Mac e Windows): due plugin per il suono d'epoca.
+  - *Ripresa*, sulle tracce: registratore (Geloso G.257, Nagra III e 4.2, Uher 4000 Report-L, Ampex 350, Studer J37 e
+    A80, Revox A77, Philips EL 3300, Portastudio 144, Walkman Pro, Auricon, Ektasound, Handycam, fonografo Edison,
+    registratore a filo), microfono (di serie o RCA 44, U 47, C12, Shure 55, SM58, MKH 416…), supporto e riduzione rumore.
+  - *Mix e supporto*, su bus e master: banco (RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604), supporto
+    (nastro ¼" per velocità, cassette, 78/45/33 giri, VHS, Video8, U-matic, banda ottica, Super 8, radio, telefono),
+    riversaggi in più copie e ascolto (radio a valvole, transistor, juke-box, TV, sala).
+  - Ogni stadio ha un interruttore; Saturazione, Rumori, Wow e flutter, Dry/wet e Uscita regolano il risultato. I valori
+    sono stime da tarare a orecchio.
+- **Installer a componenti**, come quello di Resolve: Log MetaRaw (script e nodi Color) è sempre installato; Stabilize e
+  Motion Blur (Mac) e l'audio per Fairlight sono spuntati di serie e si possono togliere (Mac: «Personalizza»; Windows:
+  «Scegli i componenti»).
+
 - **Creative, Ingresso (IDT)**: oltre a DaVinci WG/Intermediate, S-Log3, S-Log2 e ACEScct ora anche Rec.709, ACEScg,
   ACES2065-1 e Cineon, per usarlo anche dopo un grade. Rec.709 si legge con la curva BT.709, quindi il grigio di un
   grade (0,41) diventa il 18% della pellicola. Cineon: nero a 95, bianco a 685, grigio a 468. Gli ingressi di Noise e

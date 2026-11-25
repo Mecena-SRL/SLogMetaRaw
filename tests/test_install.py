@@ -185,7 +185,8 @@ class Versioning(unittest.TestCase):
 
     def test_the_installer_takes_the_version_from_the_package(self):
         with open(os.path.join(ROOT, 'packaging', 'distribution.xml'), encoding='utf-8') as fh:
-            self.assertEqual(fh.read().count('@VERSION@'), 2, 'la versione e di nuovo scritta a mano')
+            # the title and the two Log MetaRaw packages (plugins, Fairlight audio)
+            self.assertEqual(fh.read().count('@VERSION@'), 3, 'la versione e di nuovo scritta a mano')
         with open(os.path.join(ROOT, 'packaging', 'resources', 'welcome.html'), encoding='utf-8') as fh:
             self.assertIn('@VERSION@', fh.read(), 'la pagina di benvenuto non dichiara la versione')
         with open(os.path.join(ROOT, 'packaging', 'build_installer.sh'), encoding='utf-8') as fh:
