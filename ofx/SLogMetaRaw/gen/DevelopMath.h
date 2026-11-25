@@ -1516,9 +1516,11 @@ struct CreativeParams {
     float slope[3], offset[3], shoulder, toe, interlayer;
     float grainAmount, grainSize, grainColor, grainLayer[3];
     float dust, scratches, dustSign;
-    // something caught in the camera's gate (a hair or a crumb of emulsion): opacity, half width (px), a polyline
-    // of five points (x, y) and its bounding box with the width in it (x0, y0, x1, y1)
-    float hair, hairW, hairPt[10], hairBox[4];
+    // something caught in the camera's gate (a hair, a fibre of lint or a crumb of emulsion): opacity, half width at
+    // the root (px), the share of it left at the free end, the blur of its shadow on the emulsion (px), up to two
+    // strands of nine points (x, y) each, the bounding box with width and blur in it (x0, y0, x1, y1)
+    float hair, hairW, hairTaper, hairBlur, hairPt[36], hairBox[4];
+    int hairStrands, hairSeed;
     // the scan of the film strip (strip != 0): output pixel -> mm on the film (sMM per px, the view centred on sCX,
     // sCY mm from the frame's centre), travel across (travelH) or down; the film (filmA mm across, its centre aOff
     // from the frame's), the frames (apW x apH mm in output orientation, every pitch mm), the camera gate (gate: 0
@@ -1602,6 +1604,17 @@ SM_FN float cr_luma(SMf3 c) { return 0.2627f * c.x + 0.6780f * c.y + 0.0593f * c
 SM_FN float cr_smooth(float a, float b, float x) {
     const float t = sm_clamp((x - a) / (b - a), 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t);
+}
+// erf, to 4e-4 (Winitzki): the cover of a blurred edge.
+SM_FN float cr_erf(float x) {
+    const float x2 = x * x, a = 0.147f;
+    const float e = SM_SQRT(1.0f - SM_EXP(-x2 * (1.2732395f + a * x2) / (1.0f + a * x2)));
+    return x < 0.0f ? -e : e;
+}
+// Share of a pixel's light a band of half width w kept at distance d from its axis, through a blur b (px).
+SM_FN float cr_band(float d, float w, float b) {
+    const float k = 0.70710678f / SM_MAX(b, 0.05f);
+    return 0.5f * (cr_erf((w - d) * k) + cr_erf((w + d) * k));
 }
 SM_FN float cr_softplus(float x) { return x > 20.0f ? x : SM_LOG(1.0f + SM_EXP(x)); }
 SM_FN float cr_stops(float x) { return SM_LOG2(SM_MAX(x, CR_EPS) / CR_GREY); }
@@ -2029,48 +2042,81 @@ SM_FN SMf3 cr_print_grain(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
-// What a hair or a crumb of emulsion caught in the gate hides from the film: 0 (open) to its opacity. It sits on the
-// film plane, so it is sharp but for the emulsion's depth (half a pixel at 1080).
+// What a hair, a fibre or a crumb of emulsion caught in the gate hides from the film: 0 (open) to its opacity. It
+// is a round fibre, thinner towards its free end, of uneven density (keratin and lint let some light through), a
+// little in front of the emulsion: its shadow is blurred by the light's cone, the emulsion and the print (hairBlur).
 SM_FN float cr_hair(int x, int y, SM_CREF(CreativeParams) p) {
     if (p.hair <= 0.0f) return 0.0f;
     const float fx = (float)x + 0.5f, fy = (float)y + 0.5f;
     if (fx < p.hairBox[0] || fx > p.hairBox[2] || fy < p.hairBox[1] || fy > p.hairBox[3]) return 0.0f;
-    float d = 1e9f;
-    for (int i = 0; i < 4; ++i) {
-        const float ax = p.hairPt[2 * i], ay = p.hairPt[2 * i + 1];
-        const float bx = p.hairPt[2 * i + 2] - ax, by = p.hairPt[2 * i + 3] - ay;
-        const float t = SM_MIN(SM_MAX(((fx - ax) * bx + (fy - ay) * by) / SM_MAX(bx * bx + by * by, 1e-6f), 0.0f), 1.0f);
-        const float dx = fx - ax - t * bx, dy = fy - ay - t * by;
-        d = SM_MIN(d, SM_SQRT(dx * dx + dy * dy));
+    float open = 1.0f;
+    for (int s = 0; s < p.hairStrands; ++s) {
+        float best = 1e18f, at = 0.0f;
+        for (int i = 0; i < 8; ++i) {
+            const int o = 18 * s + 2 * i;
+            const float ax = p.hairPt[o], ay = p.hairPt[o + 1];
+            const float bx = p.hairPt[o + 2] - ax, by = p.hairPt[o + 3] - ay;
+            const float t = sm_clamp(((fx - ax) * bx + (fy - ay) * by) / SM_MAX(bx * bx + by * by, 1e-6f), 0.0f, 1.0f);
+            const float dx = fx - ax - t * bx, dy = fy - ay - t * by, d2 = dx * dx + dy * dy;
+            if (d2 < best) { best = d2; at = ((float)i + t) * 0.125f; }
+        }
+        const float w = p.hairW * (s == 0 ? 1.0f : 0.6f) * (1.0f - (1.0f - p.hairTaper) * at * at)
+                        * (1.0f + 0.15f * cr_value(at * 5.0f, (float)s, p.hairSeed));
+        // the fibre's round section softens its edge as much as the blur does
+        const float b = SM_SQRT(p.hairBlur * p.hairBlur + 0.12f * w * w);
+        const float dens = 0.88f + 0.12f * cr_value(at * 6.0f, 3.0f + (float)s, p.hairSeed + 1);
+        open *= 1.0f - dens * cr_band(SM_SQRT(best), w, b);
     }
-    const float soft = SM_MAX(0.5f, (float)p.H / 2160.0f);
-    return p.hair * (1.0f - cr_smooth(p.hairW - soft, p.hairW + soft, d));
+    return p.hair * (1.0f - open);
 }
 
-// Dust (specks, per record when the records were separate plates) and vertical scratches, in stops.
+// One cell's speck of dust or fibre of lint on the film, if it has one: how much of the light at (fx, fy) it holds
+// back (0..1). Sizes run from a grain to half a cell, most of them small; edges ragged, density and sharpness vary
+// (on the film or printed through from the negative, out of focus).
+SM_FN float cr_speck(float fx, float fy, int ci, int cj, float cell, int z, SM_CREF(CreativeParams) p) {
+    if (cr_hash01(ci, cj, p.frame * 16 + 200 + z) >= p.dust * 0.004f) return 0.0f;
+    const float px = ((float)ci + cr_hash01(ci, cj, 300 + z)) * cell, py = ((float)cj + cr_hash01(ci, cj, 400 + z)) * cell;
+    const float u = cr_hash01(ci, cj, 500 + z), dx = fx - px, dy = fy - py;
+    const float soft = 0.35f + cell * 0.12f * cr_hash01(ci, cj, 510 + z) * cr_hash01(ci, cj, 511 + z);
+    const float dens = 0.45f + 0.55f * cr_hash01(ci, cj, 520 + z);
+    if (cr_hash01(ci, cj, 530 + z) < 0.2f) {   // a fibre: a short bent thread
+        const float a = 6.2831853f * cr_hash01(ci, cj, 540 + z), c = CR_COS(a), sn = CR_SIN(a);
+        const float L = cell * (0.35f + 0.55f * u), bend = 0.8f * cr_hash(ci, cj, 550 + z);
+        const float al = dx * c + dy * sn, ac = -dx * sn + dy * c - bend * al * al / L;
+        const float off = SM_MAX(SM_ABS(al) - L, 0.0f), d = SM_SQRT(ac * ac + off * off);
+        return dens * cr_band(d, cell * (0.03f + 0.04f * cr_hash01(ci, cj, 560 + z)) + 0.3f, soft);
+    }
+    const float r = cell * (0.06f + 0.5f * u * u * u) + 0.4f;
+    const float rr = r * (1.0f + 0.35f * cr_value(dx / r * 1.3f + 7.0f * (float)z, dy / r * 1.3f, 570 + ci * 7 + cj));
+    return dens * cr_band(SM_SQRT(dx * dx + dy * dy), rr, soft);
+}
+
+// Dust (specks and fibres, per record when the records were separate plates) and vertical scratches, in stops.
 SM_FN SMf3 cr_damage(SMf3 s, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.dust <= 0.0f && p.scratches <= 0.0f) return s;
-    const float cell = SM_MAX(4.0f, (float)p.H / 180.0f);
-    const int ci = (int)CR_FLOOR((float)x / cell), cj = (int)CR_FLOOR((float)y / cell);
+    const float cell = SM_MAX(4.0f, (float)p.H / 180.0f), fx = (float)x + 0.5f, fy = (float)y + 0.5f;
+    const int ci = (int)CR_FLOOR(fx / cell), cj = (int)CR_FLOOR(fy / cell);
     float hit[3] = { 0.0f, 0.0f, 0.0f };
-    for (int k = 0; k < 3; ++k) {
-        const int z = p.records > 1 && p.image != CR_IMAGE_MONO ? k : 0;
-        if (cr_hash01(ci, cj, p.frame * 16 + 200 + z) < p.dust * 0.004f) {
-            const float px = ((float)ci + cr_hash01(ci, cj, 300 + z)) * cell, py = ((float)cj + cr_hash01(ci, cj, 400 + z)) * cell;
-            const float r = cell * (0.15f + 0.35f * cr_hash01(ci, cj, 500 + z));
-            const float dx = (float)x - px, dy = (float)y - py;
-            hit[k] = 1.0f - cr_smooth(r * 0.6f, r, SM_SQRT(dx * dx + dy * dy));
+    const int nz = p.records > 1 && p.image != CR_IMAGE_MONO ? 3 : 1;
+    if (p.dust > 0.0f)
+        for (int k = 0; k < nz; ++k) {
+            float open = 1.0f;
+            for (int j = -1; j <= 1; ++j)
+                for (int i = -1; i <= 1; ++i) open *= 1.0f - cr_speck(fx, fy, ci + i, cj + j, cell, k, p);
+            hit[k] = 1.0f - open;
         }
-    }
-    if (p.scratches > 0.0f) {   // a few lines per frame, each kept for some frames
+    if (nz == 1) hit[1] = hit[2] = hit[0];
+    if (p.scratches > 0.0f) {   // a few lines per frame, each kept for some frames, fading in and out along its length
         for (int n = 0; n < 3; ++n) {
             const int life = (p.frame / 12) * 3 + n;
             if (cr_hash01(life, 0, 600) < p.scratches) {
-                const float sx = cr_hash01(life, 1, 601) * (float)p.W
-                                 + 3.0f * cr_value((float)y / (float)p.H * 4.0f, (float)life, 602);
-                const float w = 0.6f + (float)p.H / 1080.0f;
-                const float a = 1.0f - cr_smooth(0.0f, w, SM_ABS((float)x - sx));
-                for (int k = 0; k < 3; ++k) hit[k] = SM_MAX(hit[k], a);
+                const float v = fy / (float)p.H;
+                const float sx = cr_hash01(life, 1, 601) * (float)p.W + 3.0f * cr_value(v * 4.0f, (float)life, 602);
+                const float w = (0.3f + 0.5f * (float)p.H / 1080.0f) * (0.6f + 0.8f * cr_hash01(life, 2, 604))
+                                * (1.0f + 0.3f * cr_value(v * 9.0f, (float)life, 605));
+                const float along = cr_smooth(-0.3f, 0.5f, cr_value(v * 3.0f, (float)life, 603) + 0.25f);
+                const float a = (0.5f + 0.5f * cr_hash01(life, 3, 606)) * along * cr_band(SM_ABS(fx - sx), w, 0.6f);
+                for (int k = 0; k < 3; ++k) hit[k] = 1.0f - (1.0f - hit[k]) * (1.0f - a);
             }
         }
     }
