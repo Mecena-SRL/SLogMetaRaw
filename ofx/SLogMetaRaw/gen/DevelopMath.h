@@ -1536,6 +1536,12 @@ struct CreativeParams {
     float chromaK, chromaSigmaN, chromaAM, chromaLimit, delayPx, hueGain, huePhase;
     float tbWave, tbWaveLines, tbScrape, headStep, headRows, headTau, flagAmp, flagRows, headNoise;
     float dropDensity, dropSlide, dropLife;
+    // the video camera's sensor (sensor != 0), on the records before the camera's curve: a pickup tube's charge
+    // carried across fields (lag, comet tails) from the history (up to 3 previous frames), a CCD's vertical smear
+    // (column sums), a MOS's fixed pattern; a striped tube's or a mosaic's false colour, along the line (cr_tape_row)
+    int sensor, history;
+    float tubeK[3], tubeB[3], tubeGamma, tubeBias, tubeQmax, tubeGreen;
+    float smear, smearWell, smearMono, fpn, falseColour, fcPeriod;
     // duplicates and print: grain of the intermediates (stops), of the print (density)
     float genGrain, genSize, printGrain, printGrainSize, genSoft;   // genSoft: the duplicates' blur (px)
     // viewing medium, on the finished picture (display-linear Rec.709)
@@ -1658,6 +1664,101 @@ SM_FN SMf3 cr_records(CR_PLANE s0, CR_PLANE s1, CR_PLANE s2, int x, int y, SM_CR
     const SMf3 c1 = p.shared != 0 ? c0 : cr_source(s1, 1, x, y, p);
     const SMf3 c2 = p.shared != 0 ? c0 : cr_source(s2, 2, x, y, p);
     return smf3(cr_expose(c0, 0, x, y, p), cr_expose(c1, 1, x, y, p), cr_expose(c2, 2, x, y, p));
+}
+
+// ---- the video camera's sensor (research VIDEO_EMULAZIONE.md, 1.1-1.2)
+
+SM_CONST int CR_SENSOR_TUBE = 1;
+SM_CONST int CR_SENSOR_CCD = 2;
+SM_CONST int CR_SENSOR_MOS = 3;
+
+// One field of a pickup tube's element (Philips 1963, in units of the peak white's charge per field): the light L
+// discharges it, the beam (capacity B) lands at full current down to the cathode, then with an exponential tail
+// (K = C V_T): what it cannot take back is the lag, an overload it cannot reach is the comet tail (kept up to qmax).
+// q: the charge carried in; returns the charge carried out (x) and the signal read (y).
+struct CrTube { float q, s; };
+SM_FN CrTube cr_tube_field(float q, float L, float K, float B, SM_CREF(CreativeParams) p) {
+    const float q0 = q + SM_EXP2(p.tubeGamma * SM_LOG2(SM_MAX(L, 0.0f) + p.tubeBias + 1e-8f));
+    const float r1 = SM_MIN(SM_MAX(q0, 0.0f), B);
+    const float rest = q0 - r1, beam = B - r1;
+    float q1 = rest;
+    if (rest <= 0.0f) q1 = rest - K * SM_LOG(1.0f + beam / K * SM_EXP(rest / K));
+    CrTube t;
+    t.q = SM_MIN(q1, p.tubeQmax * B);
+    t.s = q0 - q1;
+    return t;
+}
+// The charges of the three channels after two fields of light L.
+SM_FN SMf3 cr_tube_frame(SMf3 q, SMf3 L, SM_CREF(CreativeParams) p) {
+    float o[3];
+    for (int c = 0; c < 3; ++c) {
+        const float K = SM_MAX(p.tubeK[c], 1e-6f), B = p.tubeB[c];
+        CrTube t = cr_tube_field(cr_at(q, c), cr_at(L, c), K, B, p);
+        t = cr_tube_field(t.q, cr_at(L, c), K, B, p);
+        o[c] = t.q;
+    }
+    return smf3(o[0], o[1], o[2]);
+}
+
+// The records of this pixel through the sensor. h0..h2: the source frames 1, 2, 3 before this one (the first
+// `history` of them exist); S: the CCD's smear per column (3 planes of W).
+SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, int x, int y,
+                     SM_CREF(CreativeParams) p) {
+    if (p.sensor == CR_SENSOR_TUBE) {
+        // the charge before the oldest frame: that frame's light held a few fields, then every frame two fields
+        const int n = p.history;
+        const SMf3 L2 = n > 2 ? cr_records(h2, h2, h2, x, y, p) : e;
+        const SMf3 L1 = n > 1 ? cr_records(h1, h1, h1, x, y, p) : e;
+        const SMf3 L0 = n > 0 ? cr_records(h0, h0, h0, x, y, p) : e;
+        const SMf3 oldest = n > 2 ? L2 : (n > 1 ? L1 : L0);
+        SMf3 q = cr_tube_frame(cr_tube_frame(smf3(0.0f, 0.0f, 0.0f), oldest, p), oldest, p);
+        if (n > 2) q = cr_tube_frame(q, L2, p);
+        if (n > 1) q = cr_tube_frame(q, L1, p);
+        if (n > 0) q = cr_tube_frame(q, L0, p);
+        float o[3], over = 0.0f;
+        const float bias = SM_EXP2(p.tubeGamma * SM_LOG2(p.tubeBias + 1e-8f));
+        for (int c = 0; c < 3; ++c) {
+            const float K = SM_MAX(p.tubeK[c], 1e-6f), B = p.tubeB[c], l = cr_at(e, c);
+            const CrTube a = cr_tube_field(cr_at(q, c), l, K, B, p);
+            const CrTube b = cr_tube_field(a.q, l, K, B, p);
+            // the camera's gamma corrects half of the target's (a vidicon stays softer in the shadows)
+            const float sig = SM_MAX(0.5f * (a.s + b.s) - bias, 0.0f);
+            o[c] = SM_EXP2(SM_LOG2(sig + 1e-8f) / SM_SQRT(p.tubeGamma));
+            over = SM_MAX(over, b.q / B);   // charge left over: the overload
+        }
+        // a striped tube the beam cannot discharge turns its highlights green
+        const float g = p.tubeGreen * cr_smooth(0.0f, 1.0f, over);
+        return smf3(o[0] * (1.0f - g), o[1], o[2] * (1.0f - g));
+    }
+    if (p.sensor == CR_SENSOR_CCD)   // the light on the vertical registers during the transfer: the whole column
+        return smf3(e.x + S[x], e.y + S[p.W + x], e.z + S[2 * p.W + x]);
+    if (p.sensor == CR_SENSOR_MOS) {   // XY readout: no smear, a fixed pattern of rows and columns
+        const float f = 1.0f + p.fpn * (0.7f * cr_hash(0, y, 977) + 0.3f * cr_hash(x, 0, 979));
+        return smf3(e.x * f, e.y * f, e.z * f);
+    }
+    return e;
+}
+
+// A CCD's smear of column x: the light above the full well, summed down the column, shared by all of it; a single
+// mosaic chip reads it through its filters (about one colour).
+SM_FN void cr_smear_col(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, CR_OUT S, int x, SM_CREF(CreativeParams) p) {
+    float a = 0.0f, b = 0.0f, c = 0.0f;
+    for (int y = 0; y < p.H; ++y) {
+        const int k = y * p.W + x;
+        a += SM_MAX(E0[k] - p.smearWell, 0.0f);
+        b += SM_MAX(E1[k] - p.smearWell, 0.0f);
+        c += SM_MAX(E2[k] - p.smearWell, 0.0f);
+    }
+    const float g = p.smear / (float)p.H;
+    if (p.smearMono > 0.0f) {
+        const float m = (a + b + c) * (1.0f / 3.0f);
+        a = m;
+        b = m * 0.85f;
+        c = m;
+    }
+    S[x] = a * g;
+    S[p.W + x] = b * g;
+    S[2 * p.W + x] = c * g;
 }
 
 // ---- glow
@@ -2084,9 +2185,17 @@ SM_FN void cr_tape_row(CR_PLANE Y, CR_PLANE Cb, CR_PLANE Cr, CR_OUT Yo, CR_OUT C
         x2b = x1b; x1b = a; y2b = y1b; y1b = b;
         sc += p.crispK * (b - sc);
         Yo[k] = b + p.crisp * (b - sc);
-        // colour
-        u1 += p.chromaK * (Cb[k] - u1); u2 += p.chromaK * (u1 - u2); u3 += p.chromaK * (u2 - u3);
-        v1 += p.chromaK * (Cr[k] - v1); v2 += p.chromaK * (v1 - v2); v3 += p.chromaK * (v2 - v3);
+        // colour; a striped tube or a mosaic chip reads fine luma detail as colour (its carrier), which the
+        // colour-under then smooths into slow blotches
+        float cbIn = Cb[k], crIn = Cr[k];
+        if (p.falseColour > 0.0f) {
+            const float hp = e - 0.5f * (Y[row + (x > 0 ? x - 1 : 0)] + Y[row + (x + 1 < p.W ? x + 1 : x)]);
+            const float ph = 6.2831853f * (float)x / p.fcPeriod + 3.1415927f * (float)((r + F) & 1);
+            cbIn += p.falseColour * hp * CR_COS(ph);
+            crIn += p.falseColour * hp * CR_SIN(ph);
+        }
+        u1 += p.chromaK * (cbIn - u1); u2 += p.chromaK * (u1 - u2); u3 += p.chromaK * (u2 - u3);
+        v1 += p.chromaK * (crIn - v1); v2 += p.chromaK * (v1 - v2); v3 += p.chromaK * (v2 - v3);
         nu += p.chromaK * (cr_gauss(x, r, F * 7 + 941) - nu);
         nv += p.chromaK * (cr_gauss(x, r, F * 7 + 951) - nv);
         const float am = 1.0f + p.chromaAM * nu;

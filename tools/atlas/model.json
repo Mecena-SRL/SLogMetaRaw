@@ -1066,9 +1066,15 @@
      "id": "cr.signal",
      "kind": "function",
      "label": "Catena del segnale",
-     "text": "Y Cb Cr con clip e knee della camera. Digitale: banda del luma e del colore, peaking, blocchi di colore, rumore, banding. Nastro analogico emulato riga per riga (cr_tape_row, cr_tape_out): pre-enfasi, clip FM, rumore FM derivato, de-enfasi esatta, passa-basso causale a biquad e crispener (sbavature e ringing a destra, bordi grandi più morbidi dei piccoli); colore su tre poli, rumore AM e di fase, tinta mossa dallo stesso errore di timebase, comb con la riga precedente del campo; timebase residua dopo l'aggancio del TV (onda, scrape, gradino del cambio testina recuperato in poche righe, flagging in alto); dropout sul nastro che durano più campi e salgono, sostituiti dalla riga sopra e senza colore; rumore per riga di campo. Il rumore FM è tarato in creativePrepare sul rapporto S/R del formato.",
+     "text": "Sensore della videocamera sui record (cr_sensor): tubo con stato ricostruito dai 3 quadri prima (scia nelle ombre, code di cometa, alte luci verdi del vidicon a strisce), smear del CCD per colonna (cr_smear_col), disegno fisso del MOS. Y Cb Cr con clip e knee della camera. Digitale: banda del luma e del colore, peaking, blocchi di colore, rumore, banding. Nastro analogico emulato riga per riga (cr_tape_row, cr_tape_out): pre-enfasi, clip FM, rumore FM derivato, de-enfasi esatta, passa-basso causale a biquad e crispener (sbavature e ringing a destra, bordi grandi più morbidi dei piccoli); colore su tre poli, rumore AM e di fase, tinta mossa dallo stesso errore di timebase, comb con la riga precedente del campo; timebase residua dopo l'aggancio del TV (onda, scrape, gradino del cambio testina recuperato in poche righe, flagging in alto); dropout sul nastro che durano più campi e salgono, sostituiti dalla riga sopra e senza colore; rumore per riga di campo; falso colore dei tubi a strisce e dei mosaici sommato al colore prima del colour-under. Il rumore FM è tarato in creativePrepare sul rapporto S/R del formato.",
      "basis": "dedotto",
      "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_sensor"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col"
+      },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal"
       },
@@ -1089,6 +1095,18 @@
       },
       {
        "test": "tests/test_creative.py::Creative.test_tape_colour_arrives_late_and_soft"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_tube_remembers_the_frames_before_in_the_shadows"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_tube_leaves_a_comet_tail_behind_a_bright_light"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_ccd_smears_a_very_bright_light_down_its_column"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_striped_tube_turns_fine_detail_into_colour"
       }
      ]
     },
@@ -1354,20 +1372,22 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_sensor": "f90300b830e9",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col": "f86e080eb8fc",
    "ofx/SLogMetaRaw/math/Creative.h::cr_tape_out": "b5eff409b227",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_tape_row": "1c492defbd03",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_tape_row": "5d2385d658f8",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a4c70cb6442f",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "4ce52e8c821f",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "2d366cf560f9",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "932af2000dcc",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "e6bf9a573f56",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "8e3dc45675fe",
-   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "de7aa054c7d4",
+   "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "bde95fb609e7",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "0faaefc77ea8",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "6334e9dff94a",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "e6a3da51f9f3",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "eadac621a263"
   }
  }

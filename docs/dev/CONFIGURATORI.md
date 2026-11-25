@@ -220,6 +220,12 @@ seriale lungo x: enfasi, clip FM, rumore FM, de-enfasi, biquad, colore), `cr_tap
 testina), `tapeEmulation` in `CreativeModel.cpp` con la tabella `kTapeEmu`; kernel Metal `cr_tape_row_k` (un thread per
 riga) e `cr_tape_out_k`. Verificato: test CPU (asimmetria dei bordi, clip, grana per riga, ritardo del colore), sintassi
 Metal simulata; parità Metal solo in CI macOS. Aperto: camera a tubo e CCD, campi interlacciati nel movimento, taratura.
+Sensore della videocamera (25/11/2026, fase 2b): `cr_sensor` (tubo di Philips 1963 con stato dai 3 quadri prima,
+CCD smear da `cr_smear_col`, MOS), falso colore in `cr_tape_row`; tabella `kSensors` in `CreativeModel.cpp`, controlli
+`sensor`, `lag`, `comet`, `smear`; l'host passa i quadri prima (`creativeHistory`, `CreativeHistory`, kernel Metal
+`cr_smear_k`, `cr_sensor_k`). Verificato: test CPU (scia nelle ombre, cometa, smear per colonna, falso colore), sintassi
+Metal simulata; parità Metal solo in CI macOS. Aperto: campi interlacciati nel movimento, otturatore a righe del tubo,
+taratura su riprese vere.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

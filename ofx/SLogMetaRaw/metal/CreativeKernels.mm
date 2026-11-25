@@ -120,7 +120,8 @@ private:
 }  // namespace
 
 bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const float* const p_Inputs[3], float* p_Output,
-                        const CreativeParams* p_PrevParams, const float* const* p_PrevInputs)
+                        const CreativeParams* p_PrevParams, const float* const* p_PrevInputs,
+                        const float* const* p_History)
 {
     const CreativeParams& p = p_Params;
     if (p.W <= 0 || p.H <= 0) return false;
@@ -132,6 +133,9 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     const bool ghost = p.medium != CR_MEDIUM_NONE && p.mGhost > 0.0f && p_PrevParams && p_PrevInputs;
     if (ghost)
         for (int k = 0; k < 3; ++k) prevSrc[k] = (__bridge id<MTLBuffer>)(void*)p_PrevInputs[k];
+    id<MTLBuffer> hist[3];   // a pickup tube's frames before this one; the ones it does not have: never read
+    for (int k = 0; k < 3; ++k)
+        hist[k] = p_History && p.history > k ? (__bridge id<MTLBuffer>)(void*)p_History[k] : src[0];
     const size_t N = (size_t)p.W * p.H;
     const std::string key = std::to_string(p.W) + "x" + std::to_string(p.H);
     std::shared_ptr<Scratch> s = pool().acquire(device, key);
@@ -151,6 +155,7 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     id<MTLBuffer> bl = p.bloom > 0.0f ? P("bl", 3 * G) : E;
     id<MTLBuffer> tmp = (p.halAmount > 0.0f || p.bloom > 0.0f || p.mGlow > 0.0f) ? P("tmp", std::max(std::max(G, Gh), Gm)) : E;
     id<MTLBuffer> soft = p.genSoft > 0.0f ? P("soft", N) : E;
+    id<MTLBuffer> S = p.sensor == CR_SENSOR_CCD ? P("S", 3 * (size_t)p.W) : E;
     if (!signal) {
         s->planes.erase("V");   // planes of a signal chain of the same size, not needed here
         s->planes.erase("T");
@@ -173,6 +178,16 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
                 e.blur(E, k * N, soft, 0, q.W, q.H, 0, q.genSoft, 0);
                 e.blur(soft, 0, E, k * N, q.W, q.H, 1, q.genSoft, 0);
             }
+        // the video camera's sensor: a CCD's smear by column (one thread each), then every pixel
+        if (q.sensor != 0) {
+            if (q.sensor == CR_SENSOR_CCD) {
+                ps = e.use("cr_smear_k");
+                e.buf(E, 0); e.buf(S, 1); e.bytes(q, 2); e.grid(ps, q.W, 1);
+            }
+            ps = e.use("cr_sensor_k");
+            e.buf(E, 0); e.buf(hist[0], 1); e.buf(hist[1], 2); e.buf(hist[2], 3); e.buf(S, 4); e.bytes(q, 5);
+            e.grid(ps, q.W, q.H);
+        }
 
         // 2. glow
         if (q.halAmount > 0.0f) e.glow(E, hal, 0, tmp, q.hS, q.hW, q.hH, 3, q.halSigma, q);
@@ -215,11 +230,13 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
 
     // an LCD's slow response: the previous frame's picture first (no medium), in the layout of dst
     CreativeParams q = p;
+    if (!p_History) q.history = 0;
     id<MTLBuffer> prev = dst;
     if (ghost) {
         prev = P("prev", (size_t)p.dstRowPixels * 4 * p.H);
         CreativeParams pp = *p_PrevParams;
         pp.medium = CR_MEDIUM_NONE;
+        pp.history = 0;
         pp.rowPixels = p.rowPixels;
         pp.dstRowPixels = p.dstRowPixels;
         picture(pp, prevSrc, prev);

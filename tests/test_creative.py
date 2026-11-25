@@ -332,17 +332,19 @@ class Creative(unittest.TestCase):
         same(self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)]),
              self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)]))
         same(self.render({'device': 2, 'videoCamera': 5}, [ramp(tinted=True)]),
-             self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3},
+             self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3, 'sensor': 7},
                          [ramp(tinted=True)]))
 
 
     # ---- analog tape, emulated line by line
 
-    def tape(self, rows, controls, size):
-        """Render picture rows (top first, Gamma 2.4 Rec.709 code values) through a tape; rows of output, top first."""
+    def tape(self, rows, controls, size, before=()):
+        """Render picture rows (top first, Gamma 2.4 Rec.709 code values) through a tape; rows of output, top first.
+        before: the pictures 1, 2, 3 frames earlier (a pickup tube remembers them)."""
         w, h = size
-        px = [rows[h - 1 - y][x] for y in range(h) for x in range(w)]   # bottom-up
-        out = self.render(dict({'process': ANALOG}, **controls), [px], size=size, enc=(1, 3))
+        flip = lambda r: [r[h - 1 - y][x] for y in range(h) for x in range(w)]   # bottom-up  # noqa: E731
+        frames = [flip(rows)] + [flip(b) for b in before]
+        out = self.render(dict({'process': ANALOG}, **controls), frames, size=size, enc=(1, 3))
         return [out[(h - 1 - y) * w: (h - y) * w] for y in range(h)]
 
     def test_tape_edges_ring_after_and_big_edges_soften(self):
@@ -388,6 +390,59 @@ class Creative(unittest.TestCase):
         lo, hi = sum(red[250:340]) / 90, sum(red[600:700]) / 100
         centre = next(i for i in range(340, 700) if (red[i] - lo) / (hi - lo) > 0.5)
         self.assertGreater(centre, 363)
+
+    # ---- the video camera's sensor
+
+    QUIET = {'analog': 1, 'noise': 0, 'instability': 0, 'heads': 0, 'wear': 0}
+
+    @staticmethod
+    def mean(rows, x0, x1, y0, y1, c=1):
+        return sum(r[x][c] for r in rows[y0:y1] for x in range(x0, x1)) / ((x1 - x0) * (y1 - y0))
+
+    def test_a_tube_remembers_the_frames_before_in_the_shadows(self):
+        """Lag: dim light after a bright frame reads brighter than the same light after darkness; the tube's own
+        lag (1) more than none (0)."""
+        w, h = 160, 32
+        dim = [[(0.12,) * 3] * w for _ in range(h)]
+        lit = [[(1.0,) * 3] * w for _ in range(h)]
+        tube = dict(self.QUIET, sensor=5)
+        after_dark = self.mean(self.tape(dim, tube, (w, h), [dim, dim, dim]), 40, 120, 8, 24)
+        after_lit = self.mean(self.tape(dim, tube, (w, h), [lit, lit, lit]), 40, 120, 8, 24)
+        no_lag = self.mean(self.tape(dim, dict(tube, lag=0, comet=0), (w, h), [lit, lit, lit]), 40, 120, 8, 24)
+        self.assertGreater(after_lit, after_dark + 0.03)
+        self.assertLess(abs(no_lag - after_dark), 0.01)
+
+    def test_a_tube_leaves_a_comet_tail_behind_a_bright_light(self):
+        """A light far above the beam's capacity, gone in this frame, still reads saturated (comet tail); with no
+        comet the place is dark again."""
+        w, h = 160, 32
+        dark = [[(0.1,) * 3] * w for _ in range(h)]
+        spot = [[(2.6,) * 3 if 60 <= x < 100 and 8 <= y < 24 else (0.1,) * 3 for x in range(w)] for y in range(h)]
+        tube = dict(self.QUIET, sensor=1, lag=0)
+        tail = self.mean(self.tape(dark, tube, (w, h), [spot, dark, dark]), 70, 90, 12, 20)
+        gone = self.mean(self.tape(dark, dict(tube, comet=0), (w, h), [spot, dark, dark]), 70, 90, 12, 20)
+        self.assertGreater(tail, 0.6)
+        self.assertLess(gone, 0.3)
+
+    def test_a_ccd_smears_a_very_bright_light_down_its_column(self):
+        """Smear: the light above the full well spreads over the whole column, far above and below the light."""
+        w, h = 160, 96
+        rows = [[(4.0,) * 3 if 76 <= x < 84 and 44 <= y < 52 else (0.3,) * 3 for x in range(w)] for y in range(h)]
+        ccd = dict(self.QUIET, sensor=8)
+        out = self.tape(rows, ccd, (w, h))
+        column, beside = self.mean(out, 78, 82, 4, 30), self.mean(out, 30, 60, 4, 30)
+        self.assertGreater(column, beside + 0.05)
+        out = self.tape(rows, dict(ccd, smear=0), (w, h))
+        self.assertLess(abs(self.mean(out, 78, 82, 4, 30) - self.mean(out, 30, 60, 4, 30)), 0.01)
+
+    def test_a_striped_tube_turns_fine_detail_into_colour(self):
+        """False colour: grey stripes near the stripe filter's carrier come out coloured; plain grey does not."""
+        w, h = 720, 8
+        lines = [[(0.75,) * 3 if (x // 2) % 2 else (0.25,) * 3 for x in range(w)] for _ in range(h)]
+        def chroma(sensor):
+            row = self.tape(lines, dict(self.QUIET, sensor=sensor, lag=0, comet=0), (w, h))[4]
+            return sum(abs(px[0] - px[2]) + abs(px[1] - 0.5 * (px[0] + px[2])) for px in row[100:600]) / 500
+        self.assertGreater(chroma(5), chroma(0) + 0.02)
 
 if __name__ == '__main__':
     unittest.main()

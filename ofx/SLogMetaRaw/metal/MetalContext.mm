@@ -51,7 +51,7 @@ id<MTLComputePipelineState> metalPipeline(id<MTLDevice> device, const char* sour
     }
     if (!pipeline) {
         fprintf(stderr, "Log MetaRaw: kernel Metal %s non compilato: %.2000s\n", function,
-                err ? err.localizedDescription.UTF8String : "funzione mancante");
+                err ? err.description.UTF8String : "funzione mancante");
         failed.insert(key);
         return nil;
     }
