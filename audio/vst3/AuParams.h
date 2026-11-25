@@ -12,10 +12,10 @@
 enum AuParamId : int {
     kPBypass, kPDevice, kPMic, kPMedium, kPNR, kPDesk, kPTransfer, kPCopies, kPListen,
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
-    kPDrive, kPNoise, kPWow, kPMix, kPOut, kPCount
+    kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR, kPCount
 };
 
-enum class AuKind { List, Toggle, Range };
+enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
 
 struct AuParamDef
 {
@@ -105,6 +105,9 @@ inline const AuParamDef& auParam(AuParamId id)
         { kPWow, "Wow e flutter", AuKind::Range, 0, 4, 1, "×" },
         { kPMix, "Dry/wet", AuKind::Range, 0, 100, 100, "%" },
         { kPOut, "Uscita", AuKind::Range, -24, 12, 0, "dB" },
+        { kPMeterRef, "Taratura meter", AuKind::Range, -24, -6, -18, "dBFS" },   // the level that reads 0 VU
+        { kPMeterL, "Meter sinistro", AuKind::Meter },
+        { kPMeterR, "Meter destro", AuKind::Meter },
     };
     return defs[id];
 }
@@ -228,9 +231,6 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Riduzione rumore", kPOnNR, kPNR },
         { "Wow e flutter", kPOnWow, kPWow },
         { "Rumori", kPOnNoise, kPNoise },
-        { "Saturazione", -1, kPDrive },
-        { "Dry/wet", -1, kPMix },
-        { "Uscita", -1, kPOut },
     };
     static const std::vector<AuRow> mixRows = {
         { "Banco", kPOnDesk, kPDesk },
@@ -241,14 +241,18 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Riversaggio su", kPOnTransfer, kPTransfer },
         { "Copie", -1, kPCopies },
         { "Ascolto", kPOnListen, kPListen },
-        { "Saturazione", -1, kPDrive },
-        { "Dry/wet", -1, kPMix },
-        { "Uscita", -1, kPOut },
     };
     return mix ? mixRows : ripresa;
 }
 
-// The parameters a plugin has: bypass plus everything its rows show.
+// The knobs on the front plate, under the device's name, and the two meters beside them.
+inline const std::vector<AuParamId>& auKnobs()
+{
+    static const std::vector<AuParamId> knobs = { kPDrive, kPMix, kPOut, kPMeterRef };
+    return knobs;
+}
+
+// The parameters a plugin has: bypass, everything its rows show, the knobs and the meters.
 inline std::vector<AuParamId> auParams(bool mix)
 {
     std::vector<AuParamId> out = { kPBypass };
@@ -256,7 +260,20 @@ inline std::vector<AuParamId> auParams(bool mix)
         if (r.toggle >= 0) out.push_back(AuParamId(r.toggle));
         if (r.control >= 0) out.push_back(AuParamId(r.control));
     }
+    for (AuParamId k : auKnobs()) out.push_back(k);
+    out.push_back(kPMeterL);
+    out.push_back(kPMeterR);
     return out;
+}
+
+// How the meters read: a peak programme meter (fast rise, slow fall) on the portable reels, whose modulometers are
+// one, and on the EMI desk; a VU (average, about 300 ms) everywhere else.
+inline bool auMeterPeak(const double* v, bool mix)
+{
+    if (mix) return auPlain(v, kPDesk) == 2;
+    int family, model;
+    auDeviceSplit(auPlain(v, kPDevice), family, model);
+    return family == 0;
 }
 
 // Plain parameter values (index for lists, 0/1 for switches) → the engine's settings.

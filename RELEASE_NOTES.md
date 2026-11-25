@@ -1,5 +1,12 @@
 # Changelog
 
+## In sviluppo
+
+- **Audio, frontali con meter**: i due plugin audio si aprono su un frontale disegnato per ogni famiglia di registratore
+  e per ogni banco, con il nome del modello, quattro manopole e due meter a lancetta che si muovono con il segnale: VU
+  sulla maggior parte, PPM sui registratori a bobine portatili e sul banco EMI. La manopola *Taratura* sceglie quale
+  livello legge 0 VU (di serie −18 dBFS).
+
 ## Log MetaRaw 4.3.1
 
 - **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra, come nel

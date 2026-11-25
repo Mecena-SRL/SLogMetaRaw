@@ -54,6 +54,21 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Banco**: RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604.
 - **Ascolto**: radio a valvole, radiolina a transistor, juke-box Wurlitzer 1015, TV CRT, sala (curva X).
 
+## Frontale e meter (`audio/vst3/AuPlugin.cpp`)
+
+Il pannello si apre su un frontale disegnato (nessuna immagine, nessun marchio dei produttori): un materiale per ogni
+famiglia di registratore (alluminio spazzolato, smalto grigio da studio, nero e argento delle cassette, antracite e
+arancio delle cineprese, noce e ottone prima del nastro) e per ogni banco. Sul frontale: targhetta con il modello,
+quattro manopole (*Saturazione*, *Dry/wet*, *Uscita*, *Taratura*) e due meter a lancetta.
+
+- **VU** (media, assestamento in circa 300 ms, scala lineare in tensione, 0 VU al 71 %) su tutti, tranne
+  **PPM** (sale subito, scende 24 dB in 2,8 s, sette tacche a 4 dB, la 4 al riferimento) sui registratori a bobine
+  portatili e sul banco EMI.
+- *Taratura* è il livello digitale che legge 0 VU (o la tacca 4), da −24 a −6 dBFS, di serie −18 dBFS; la lampada rossa
+  si accende sopra +3 VU (o la tacca 6).
+- Il livello lo misura il processore all'uscita, a ogni blocco (media quadratica per il VU, picco per il PPM), e lo
+  manda al pannello con due parametri in sola lettura (`Meter sinistro`/`destro`, non salvati, non automatizzabili).
+
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
 Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
@@ -84,6 +99,9 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Incerto: comportamento in Fairlight (mai caricato in Resolve), build Mac e Windows finché la CI non passa.
 - Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
   coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
+- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali per famiglia e banco, manopole, meter.
+  Il movimento delle lancette è stato visto con un segnale finto nel pannello: l'host di prova dell'SDK non fa passare
+  audio, quindi il meter con audio vero va visto in Fairlight.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.
 - Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
   (fase 4). Dolby come compander,
