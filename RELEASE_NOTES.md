@@ -2,6 +2,10 @@
 
 ## In sviluppo
 
+- **Creative, pellicole per formato**: con una cinepresa scelta, il pannello propone solo le pellicole fatte nel suo
+  formato, di tutti i produttori, con il codice di quel formato (una 16 mm mostra Vision3 500T 7219, non 5219). I
+  listini completi per produttore restano a una spunta, *Tutte le pellicole, per produttore*. Una cinepresa con un solo
+  formato non mostra più la scelta del formato. I grade salvati non cambiano.
 - **Creative, corretto un crash**: scegliere come supporto di visione il proiettore Super 8, il Trinitron, il plasma o
   il primo LCD chiudeva Resolve (mancava il testo «Come si vede» di quei supporti). Un test ora controlla ogni voce.
 - **Creative, oscillazione della pellicola rifatta**: non più una sinusoide regolare ma tre cause separate, ognuna con

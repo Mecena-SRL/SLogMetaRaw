@@ -173,7 +173,18 @@ void CreativeEffect::updateProcess()
         used[k.group] = used[k.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
-    for (int i = 0; i < kCrMakerCount; ++i) show(kCrMakers[i].param, now.device == kCrDevFilm && now.maker == i);
+    // stocks: the camera's gauge first (every manufacturer, that gauge's codes); the manufacturers' whole lists on
+    // the switch, or when the stock chosen was never made in this gauge (a grade from before, or a free choice)
+    const bool film = now.device == kCrDevFilm;
+    const int list = creativeGaugeList(now);
+    bool all = false;
+    if (paramExists("allStocks")) fetchBooleanParam("allStocks")->getValue(all);
+    const int maker = now.maker >= 0 && now.maker < kCrMakerCount ? now.maker : 0;
+    const bool byGauge = film && list >= 0 && !all && creativePickIndex(list, maker, now.stock[maker]) >= 0;
+    for (int l = 0; l < kCrGaugeListCount; ++l) show(kCrGaugeLists[l].param, byGauge && l == list);
+    show("allStocks", film && list >= 0);
+    show("maker", film && !byGauge);
+    for (int i = 0; i < kCrMakerCount; ++i) show(kCrMakers[i].param, film && !byGauge && maker == i);
     for (const CrToggleDef& t : kCrToggles) show(t.name, !crRowIdle(t.name, now));
     auto setText = [this](const char* name, const std::string& text) {
         if (!paramExists(name)) return;
@@ -226,6 +237,32 @@ void CreativeEffect::loadDevice()
                 m_Sliders[i]->setValue(c.*(kCrSliders[i].field));
             }
     if (m_DeviceLoaded) m_DeviceLoaded->setValue(c.deviceLoaded);
+}
+
+void CreativeEffect::syncPick()
+{
+    const CreativeControls c = readControls(timeLineGetTime());
+    const int list = creativeGaugeList(c);
+    const int maker = c.maker >= 0 && c.maker < kCrMakerCount ? c.maker : 0;
+    const int i = creativePickIndex(list, maker, c.stock[maker]);
+    if (i < 0 || !paramExists(kCrGaugeLists[list].param)) return;
+    OFX::ChoiceParam* p = fetchChoiceParam(kCrGaugeLists[list].param);
+    int cur = 0;
+    p->getValue(cur);
+    if (cur != i) p->setValue(i);
+}
+
+void CreativeEffect::pickStock(const std::string& name)
+{
+    for (int l = 0; l < kCrGaugeListCount; ++l) {
+        if (name != kCrGaugeLists[l].param) continue;
+        int i = 0;
+        fetchChoiceParam(kCrGaugeLists[l].param)->getValue(i);
+        if (i < 0 || i >= kCrGaugeLists[l].count) return;
+        const CrPick& pk = kCrGaugeLists[l].picks[i];
+        if (paramExists("maker")) fetchChoiceParam("maker")->setValue((int)pk.maker);
+        if (m_Stocks[pk.maker]) m_Stocks[pk.maker]->setValue((int)pk.stock);
+    }
 }
 
 void CreativeEffect::loadLens()
@@ -300,11 +337,16 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
     if (p_ParamName == "medium" && user) loadMedium();
     if (p_ParamName == "lens" && user) loadLens();
     if (model && user) loadDevice();
+    if (user && !std::strncmp(p_ParamName.c_str(), "stockFor", 8)) pickStock(p_ParamName);
+    else if (user && (model || p_ParamName == "format" || p_ParamName == "maker" || p_ParamName == "allStocks"
+                      || !std::strncmp(p_ParamName.c_str(), "stock", 5)))
+        syncPick();
     if (p_ParamName == "nodeInput") refreshInfo();
     else if (model || p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print"
              || p_ParamName == "output" || p_ParamName == "format" || p_ParamName == "maker"
              || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3)
-             || p_ParamName == "camWeave" || p_ParamName == "projWeave" || p_ParamName == "generation")
+             || p_ParamName == "camWeave" || p_ParamName == "projWeave" || p_ParamName == "generation"
+             || p_ParamName == "allStocks")
         updateProcess();   // rows and info that depend on these choices
     m_Badge.refresh(false);
 }

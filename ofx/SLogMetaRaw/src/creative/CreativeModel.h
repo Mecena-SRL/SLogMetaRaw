@@ -126,6 +126,12 @@ void creativeWeave(const CreativeControls& c, int W, int H, int frame, double ou
 // The chosen stock (nullptr unless a film device) and whether it was made in the chosen format.
 const CrStock* creativeStock(const CreativeControls& c);
 bool creativeStockFits(const CreativeControls& c);
+// The gauge list (kCrGaugeLists) of c's format, -1 for a format no stock list belongs to (a plate); the place of
+// (maker, stock) in list l, -1 if it was not made in that gauge; and the label of list l's entry i: manufacturer,
+// stock, with the code the gauge sold it under (Kodak 5xxx is 7xxx in 16 mm and 8 mm, Fuji 85xx is 86xx in 16 mm).
+int creativeGaugeList(const CreativeControls& c);
+int creativePickIndex(int l, int maker, int stock);
+std::string creativePickLabel(int l, int i);
 // What the panel says about the device: the model, its formats, the stock (year, kind, gauges) and any mismatch.
 std::string creativeDeviceInfo(const CreativeControls& c);
 // Whether the output is the input encoding (Log output, or the film's tone off): no print, no viewing medium.

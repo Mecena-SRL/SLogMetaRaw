@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "CreativeModel.h"
 
+#include <cctype>
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -634,6 +636,45 @@ bool creativeStockFits(const CreativeControls& c)
 {
     const CrStock* st = creativeStock(c);
     return !st || (st->gauges & gaugeOf(c.format)) != 0;
+}
+
+int creativeGaugeList(const CreativeControls& c)
+{
+    const unsigned g = gaugeOf(c.format);
+    for (int l = 0; l < kCrGaugeListCount; ++l)
+        if (kCrGaugeLists[l].gauge == g) return l;
+    return -1;
+}
+
+int creativePickIndex(int l, int maker, int stock)
+{
+    if (l < 0 || l >= kCrGaugeListCount) return -1;
+    for (int i = 0; i < kCrGaugeLists[l].count; ++i)
+        if (kCrGaugeLists[l].picks[i].maker == maker && kCrGaugeLists[l].picks[i].stock == stock) return i;
+    return -1;
+}
+
+std::string creativePickLabel(int l, int i)
+{
+    if (l < 0 || l >= kCrGaugeListCount || i < 0 || i >= kCrGaugeLists[l].count) return "";
+    const CrPick& pk = kCrGaugeLists[l].picks[i];
+    std::string maker = kCrMakers[pk.maker].name, name = kCrMakers[pk.maker].stocks[pk.stock].name;
+    const size_t cut = maker.find_first_of("/(");
+    if (cut != std::string::npos) maker = maker.substr(0, maker.find_last_not_of(' ', cut - 1) + 1);
+    const unsigned g = kCrGaugeLists[l].gauge;
+    const bool kodak = pk.maker == 0, fuji = pk.maker == 1;
+    if ((kodak && (g & (kG8 | kGS8 | kG16))) || (fuji && (g & kG16)))
+        for (size_t k = 0; k + 4 <= name.size(); ++k) {   // the first four-digit code: 5219 -> 7219, 8573 -> 8673
+            const bool four = std::isdigit((unsigned char)name[k]) && std::isdigit((unsigned char)name[k + 1])
+                              && std::isdigit((unsigned char)name[k + 2]) && std::isdigit((unsigned char)name[k + 3])
+                              && (k == 0 || !std::isdigit((unsigned char)name[k - 1]))
+                              && (k + 4 == name.size() || !std::isdigit((unsigned char)name[k + 4]));
+            if (!four) continue;
+            if (kodak && name[k] == '5') name[k] = '7';
+            if (fuji && name[k] == '8' && name[k + 1] == '5') name[k + 1] = '6';
+            break;
+        }
+    return maker + " · " + name;
 }
 
 void creativeLoadLens(CreativeControls& c, int l)

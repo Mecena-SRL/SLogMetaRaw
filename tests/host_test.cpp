@@ -316,6 +316,7 @@ static OfxStatus paramGetPropertySet(OfxParamHandle param, OfxPropertySetHandle*
 }
 
 static OfxStatus paramGetNumKeys(OfxParamHandle, unsigned int* n) { *n = 0; return kOfxStatOK; }
+static OfxStatus paramDeleteAllKeys(OfxParamHandle) { return kOfxStatOK; }   // no keys: nothing to delete
 
 static OfxStatus paramSetValueAtTime(OfxParamHandle handle, OfxTime time, ...)
 {
@@ -497,6 +498,7 @@ static void buildHost()
     g_paramSuite.paramGetValueAtTime = paramGetValueAtTime;
     g_paramSuite.paramSetValue = paramSetValue;
     g_paramSuite.paramGetNumKeys = paramGetNumKeys;
+    g_paramSuite.paramDeleteAllKeys = paramDeleteAllKeys;
     g_paramSuite.paramSetValueAtTime = paramSetValueAtTime;
     g_effectSuite.getPropertySet = effectGetPropertySet;
     g_effectSuite.getParamSet = effectGetParamSet;
