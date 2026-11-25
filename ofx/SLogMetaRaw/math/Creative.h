@@ -391,8 +391,8 @@ SM_FN float cr_snd_env(float t, SM_CREF(CreativeParams) p) {
 }
 SM_FN float cr_snd_carrier(float t, int k, SM_CREF(CreativeParams) p) {
     const int z = p.sndSeed * 7 + 1202;
-    const float common = 0.5f * cr_noise(t * 2.7f, 1.5f, z) + 0.3f * cr_noise(t * 8.5f, 2.5f, z + 1)
-                         + 0.2f * cr_noise(t * 0.8f, 3.5f, z + 2);
+    const float common = 0.55f * cr_noise(t * 2.7f, 1.5f, z) + 0.2f * cr_noise(t * 6.0f, 2.5f, z + 1)
+                         + 0.25f * cr_noise(t * 0.8f, 3.5f, z + 2);
     const float own = cr_noise(t * 3.1f, 4.5f + (float)k, z + 3);
     return sm_clamp(0.8f * common + 0.2f * own, -1.0f, 1.0f);
 }
@@ -405,7 +405,8 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
     o.m = 0.0f; o.c = 0.0f; o.op = 0.0f;
     if (p.sndKind == 0 && p.sndDigital == 0) return o;
     const CrFilm f = cr_film(x, y, p);
-    const float h = 0.5f * p.sMM, t = f.along + p.sndPhase;
+    // the printed record is a little soft (the sound negative's image, printed by contact): 10 microns
+    const float h = 0.5f * p.sMM, t = f.along + p.sndPhase, hs = h + 0.01f;
     if (p.sndKind != 0) {   // the analog record: variable density or bilateral variable area, one track or two
         const float a = f.across - p.sndAcross;
         const float band = 1.0f - cr_smooth(-h, h, SM_ABS(a) - 0.5f * p.sndW);
@@ -418,9 +419,9 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
             const float env = cr_snd_env(t, p), s = cr_snd_carrier(t, k, p);
             float clear;
             if (p.sndKind == 1)   // variable density: across the whole track, its transmission follows the sound
-                clear = (1.0f - cr_smooth(-h, h, d - 0.48f * tw)) * (0.45f + 0.4f * env * s);
+                clear = (1.0f - cr_smooth(-hs, hs, d - 0.48f * tw)) * (0.45f + 0.4f * env * s);
             else   // variable area: the clear part's width follows it, a thin line in the pauses (noise reduction)
-                clear = 1.0f - cr_smooth(-h, h, d - 0.5f * tw * (0.05f + env * (0.47f + 0.43f * s)));
+                clear = 1.0f - cr_smooth(-hs, hs, d - 0.5f * tw * (0.05f + env * (0.47f + 0.43f * s)));
             o.m = band;
             o.c = clear;
         }
@@ -428,10 +429,14 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
     if ((p.sndDigital & 2) != 0) {   // DTS: a time code of dashes, the sound on a disc
         const float a = SM_ABS(f.across - p.dtsAcross) - 0.5f * p.dtsW;
         if (a < p.sMM) {
+            // dashes of 0.1 mm every 0.12, each as much as the pixel's footprint (w bits either side) covers
             const float band = 1.0f - cr_smooth(-h, h, a), u = t / 0.12f, ui = CR_FLOOR(u), fr = u - ui;
-            const float sa = 0.5f * p.sMM / 0.12f + 0.05f;
-            const float on = cr_hash((int)ui, 0, p.sndSeed * 7 + 1211) > -0.1f ? 1.0f : 0.0f;
-            const float dash = on * cr_smooth(-sa, sa, fr - 0.1f) * (1.0f - cr_smooth(-sa, sa, fr - 0.9f));
+            const float w = SM_MIN(SM_MAX(0.5f * p.sMM / 0.12f, 0.05f), 1.4f);
+            float dash = 0.0f;
+            for (int j = -2; j <= 2; ++j) {
+                const float lo = SM_MAX((float)j + 0.1f, fr - w), hi = SM_MIN((float)j + 0.9f, fr + w);
+                if (hi > lo && cr_hash((int)ui + j, 0, p.sndSeed * 7 + 1211) > -0.1f) dash += (hi - lo) / (2.0f * w);
+            }
             o.c = o.c * (1.0f - band) + dash * band;
             o.m = SM_MAX(o.m, band);
         }

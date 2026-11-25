@@ -1185,9 +1185,10 @@ static void creativeSoundtrack(CreativeParams& p, const CreativeControls& c, con
     p.magW = p.balW = 0;
     const int g = creativeSoundGauge(c.format);
     const float half = 0.5f * fs.filmA;
-    // the film's travel, wrapped every 1000 frames (whole perforations) so a float keeps microns
-    p.sndPhase = float(std::fmod(double(frame) * fs.pitch, 1000.0 * fs.pitch));
-    p.sndSeed = int(cr_hash01(frame / 2400, 5, 995) * 1000);   // a reel's own sound
+    // the film's travel within a run of 16 frames, each run its own sound: small distances keep the CPU and the GPU
+    // on the same microns
+    p.sndPhase = float((frame % 16 + 16) % 16) * fs.pitch;
+    p.sndSeed = int(cr_hash01((frame >= 0 ? frame : frame - 15) / 16, 5, 995) * 1000);
     if (sound == 6) {   // the magnetic stripe, on the edge away from the perforations, its balance stripe beside them
         if (g == 8 && c.format == 0) {
             p.magAcross = half - 0.4f; p.magW = 0.69f; p.balAcross = -(half - 0.23f); p.balW = 0.30f;
