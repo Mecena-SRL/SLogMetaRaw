@@ -67,6 +67,11 @@ const char* const kCrSensorNames[kCrSensorCount] = { "Nessuno (il segnale com'è
                                                      "3 tubi Saticon", "1 tubo Saticon a strisce (consumer)",
                                                      "1 tubo vidicon a strisce (consumer)", "1 tubo Newvicon a strisce",
                                                      "1 CCD a mosaico (consumer)", "3 CCD", "1 MOS a mosaico" };
+const char* const kCrTransferNames[kCrTransferCount] = { "Nessuno", "Telecinema su VHS (casa)",
+                                                         "Telecinema su Betacam SP (televisione)",
+                                                         "Copia VHS di terza generazione",
+                                                         "Kinescopio su 16 mm bianco e nero (anni '50)",
+                                                         "Film-out su 35 mm (negativo e stampa)" };
 const char* const kCrMediumInfo[kCrMediumCount] = {
     "",
     "Sala: 48 nit al buio, che appiattisce il contrasto percepito (2,4/2,6); xenon, luce che cade del 20% agli angoli, "
@@ -605,7 +610,39 @@ bool creativeNeedsPrevious(const CreativeControls& c0)
 {
     const CreativeControls c = creativeResolve(c0);
     return c.medium > 0 && c.medium < kCrMediumCount && kMedia[c.medium].ghost > 0.0f && c.mediumAmount > 0.0
-           && !creativeLogOut(c);
+           && c.transfer <= 0 && !creativeLogOut(c);   // a copy's pass shows no previous picture
+}
+
+bool creativePrepareTransfer(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame)
+{
+    const CreativeControls c = creativeResolve(c0);
+    if (c.transfer <= 0 || c.transfer >= kCrTransferCount || creativeLogOut(c)) return false;
+    // the copy sees the finished picture as a scene: its grey (display 0.115) back to 0.18
+    CreativeControls t;
+    t.exposure = std::log2(0.18 / 0.115);
+    switch (c.transfer) {
+    case 1: t.process = kCrAnalog; t.analog = 1; t.wear = 0.1; t.heads = 0.3; t.instability = 0.25; break;
+    case 2: t.process = kCrAnalog; t.analog = 9; t.wear = 0.05; t.heads = 0; t.instability = 0.05; break;
+    case 3:   // a copy of a copy: every generation's noise, bleed and timebase on top of each other
+        t.process = kCrAnalog; t.analog = 1; t.wear = 0.6; t.heads = 0.5; t.instability = 0.5; t.noise = 1.6;
+        t.colourBleed = 1.5; break;
+    case 4: t.process = kCrBlackWhite; t.bwStock = 0; t.format = 1; t.weave = 0.3; t.grain = 1.2; break;
+    default: t.process = kCrColourNegative; t.negative = 0; t.print = 1; t.format = 2; t.grain = 0.7; break;
+    }
+    // what the copy is seen on: the original's medium and its response
+    t.medium = c.medium;
+    t.mediumAmount = c.mediumAmount;
+    t.mediumLoaded = c.mediumLoaded;
+    t.mediumRoom = c.mediumRoom;
+    t.mediumGamma = c.mediumGamma;
+    t.mediumContrast = c.mediumContrast;
+    t.mediumAmbient = c.mediumAmbient;
+    t.mediumNits = c.mediumNits;
+    t.mediumKelvin = c.mediumKelvin;
+    t.mediumColour = c.mediumColour;
+    t.mediumOverscan = c.mediumOverscan;
+    creativePrepare(p, t, W, H, frame, 1, CR_GAMMA24);   // Rec.709, Gamma 2.4: the first pass's output
+    return true;
 }
 
 bool creativeSensorTube(int s) { return kSensors[pick(s, kCrSensorCount)].type == CR_SENSOR_TUBE; }

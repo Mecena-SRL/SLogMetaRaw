@@ -466,10 +466,14 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
         prev.p.dstRowPixels = p.dstRowPixels;
         for (int k = 0; k < 3; ++k) prev.src[k] = prevInputs[k];
     }
+    CreativeParams copy;   // a transfer to another medium: its own pass on the finished picture
+    const bool transfer = creativePrepareTransfer(copy, controls, W, H, (int)std::lround(p_Args.time));
+    copy.rowPixels = copy.dstRowPixels = p.dstRowPixels;
 #ifdef __APPLE__
     if (p_Args.isEnabledMetalRender) {
         if (!RunCreativeKernels(p_Args.pMetalCmdQ, p, inputs, static_cast<float*>(dst->getPixelData()),
-                                previous ? &prev.p : nullptr, previous ? prev.src : nullptr, history.src))
+                                previous ? &prev.p : nullptr, previous ? prev.src : nullptr, history.src,
+                                transfer ? &copy : nullptr))
             OFX::throwSuiteStatusException(kOfxStatFailed);
         return;
     }
@@ -482,5 +486,6 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
     };
     ScratchLease scratch((size_t)W * H);
     creativeRenderCPU(p, inputs, (size_t)src->getRowBytes() / 4, static_cast<float*>(dst->getPixelData()),
-                      (size_t)dst->getRowBytes() / 4, parallel, *scratch, previous ? &prev : nullptr, &history);
+                      (size_t)dst->getRowBytes() / 4, parallel, *scratch, previous ? &prev : nullptr, &history,
+                      transfer ? &copy : nullptr);
 }

@@ -230,6 +230,11 @@ Digitali per modello (25/11/2026, fase 3): `cr_dig_*` in `math/Creative.h` (sens
 campi del modello in `CrDigitalCamera` (`CreativePresets.h`), kernel Metal `cr_dig_*_k`. Verificato: test CPU (blocchi
 8x8 crescono con la compressione, il RAZR perde il dettaglio fine), sintassi Metal simulata; parità Metal solo in CI
 macOS. Aperto: rolling shutter, AE/AWB, GOP; valori da tarare su clip vere.
+Riversaggio (25/11/2026, fase 4): controllo `transfer`, `creativePrepareTransfer` in `CreativeModel.cpp` prepara
+la copia come seconda passata (CPU `creativeRenderCPU`, Metal `RunCreativeKernels` con `p_Transfer`, buffer `xfer`);
+il supporto di visione va sulla copia, niente ghost LCD con la copia. Verificato: test CPU (VHS ammorbidisce e aggiunge
+rumore, kinescopio toglie il colore e aggiunge grana, Log ignora la copia), golden; parità Metal solo in CI macOS.
+Aperto: taratura, generazioni multiple scelte a mano.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

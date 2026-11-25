@@ -122,7 +122,7 @@ private:
 
 bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const float* const p_Inputs[3], float* p_Output,
                         const CreativeParams* p_PrevParams, const float* const* p_PrevInputs,
-                        const float* const* p_History)
+                        const float* const* p_History, const CreativeParams* p_Transfer)
 {
     const CreativeParams& p = p_Params;
     if (p.W <= 0 || p.H <= 0) return false;
@@ -131,7 +131,7 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     id<MTLBuffer> src[3], prevSrc[3];
     for (int k = 0; k < 3; ++k) src[k] = (__bridge id<MTLBuffer>)(void*)p_Inputs[k];
     id<MTLBuffer> dst = (__bridge id<MTLBuffer>)(void*)p_Output;
-    const bool ghost = p.medium != CR_MEDIUM_NONE && p.mGhost > 0.0f && p_PrevParams && p_PrevInputs;
+    const bool ghost = !p_Transfer && p.medium != CR_MEDIUM_NONE && p.mGhost > 0.0f && p_PrevParams && p_PrevInputs;
     if (ghost)
         for (int k = 0; k < 3; ++k) prevSrc[k] = (__bridge id<MTLBuffer>)(void*)p_PrevInputs[k];
     id<MTLBuffer> hist[3];   // a pickup tube's frames before this one; the ones it does not have: never read
@@ -149,14 +149,17 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         if (!b) allocated = false;
         return b;
     };
-    const bool signal = p.kind != CR_KIND_PROCESS;
-    const size_t G = (size_t)p.bW * p.bH, Gh = (size_t)p.hW * p.hH, Gm = (size_t)p.mGW * p.mGH;
+    const CreativeParams& t = p_Transfer ? *p_Transfer : p;   // a copy's pass: its planes too
+    const bool signal = p.kind != CR_KIND_PROCESS || t.kind != CR_KIND_PROCESS;
+    const size_t G = std::max((size_t)p.bW * p.bH, (size_t)t.bW * t.bH);
+    const size_t Gh = std::max((size_t)p.hW * p.hH, (size_t)t.hW * t.hH), Gm = (size_t)t.mGW * t.mGH;
+    const bool halo = p.halAmount > 0.0f || t.halAmount > 0.0f, glows = p.bloom > 0.0f || t.bloom > 0.0f;
     id<MTLBuffer> E = P("E", 3 * N);
-    id<MTLBuffer> hal = p.halAmount > 0.0f ? P("hal", Gh) : E;
-    id<MTLBuffer> bl = p.bloom > 0.0f ? P("bl", 3 * G) : E;
-    id<MTLBuffer> tmp = (p.halAmount > 0.0f || p.bloom > 0.0f || p.mGlow > 0.0f) ? P("tmp", std::max(std::max(G, Gh), Gm)) : E;
-    id<MTLBuffer> soft = p.genSoft > 0.0f ? P("soft", N) : E;
-    id<MTLBuffer> S = p.sensor == CR_SENSOR_CCD ? P("S", 3 * (size_t)p.W) : E;
+    id<MTLBuffer> hal = halo ? P("hal", Gh) : E;
+    id<MTLBuffer> bl = glows ? P("bl", 3 * G) : E;
+    id<MTLBuffer> tmp = (halo || glows || t.mGlow > 0.0f) ? P("tmp", std::max(std::max(G, Gh), Gm)) : E;
+    id<MTLBuffer> soft = (p.genSoft > 0.0f || t.genSoft > 0.0f) ? P("soft", N) : E;
+    id<MTLBuffer> S = (p.sensor == CR_SENSOR_CCD || t.sensor == CR_SENSOR_CCD) ? P("S", 3 * (size_t)p.W) : E;
     if (!signal) {
         s->planes.erase("V");   // planes of a signal chain of the same size, not needed here
         s->planes.erase("T");
@@ -196,10 +199,10 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         // 2. glow
         if (q.halAmount > 0.0f) e.glow(E, hal, 0, tmp, q.hS, q.hW, q.hH, 3, q.halSigma, q);
         if (q.bloom > 0.0f)
-            for (int c = 0; c < 3; ++c) e.glow(E, bl, c * G, tmp, q.bS, q.bW, q.bH, c, q.bloomSigma, q);
+            for (int c = 0; c < 3; ++c) e.glow(E, bl, c * (size_t)q.bW * q.bH, tmp, q.bS, q.bW, q.bH, c, q.bloomSigma, q);
 
         // 3. output
-        if (!signal) {
+        if (q.kind == CR_KIND_PROCESS) {
             ps = e.use("cr_process_k");
             e.buf(in[0], 0); e.buf(out, 1); e.buf(E, 2); e.buf(hal, 3); e.buf(bl, 4); e.bytes(q, 5); e.grid(ps, q.W, q.H);
             return;
@@ -260,7 +263,20 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     CreativeParams q = p;
     if (!p_History) q.history = 0;
     id<MTLBuffer> prev = dst;
-    if (ghost) {
+    if (p_Transfer) {   // a copy: the picture first (no medium), then the copy's own pass on it
+        id<MTLBuffer> xfer = P("xfer", (size_t)p.dstRowPixels * 4 * p.H);
+        CreativeParams a = q;
+        a.medium = CR_MEDIUM_NONE;
+        a.rowPixels = p.rowPixels;
+        picture(a, src, xfer);
+        id<MTLBuffer> xin[3] = { xfer, xfer, xfer };
+        q = *p_Transfer;
+        q.rowPixels = q.dstRowPixels = p.dstRowPixels;
+        q.mGhost = 0.0f;
+        q.history = 0;
+        s->planes.erase("prev");
+        picture(q, xin, dst);
+    } else if (ghost) {
         prev = P("prev", (size_t)p.dstRowPixels * 4 * p.H);
         CreativeParams pp = *p_PrevParams;
         pp.medium = CR_MEDIUM_NONE;
@@ -272,7 +288,10 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         q.mGhost = 0.0f;
         s->planes.erase("prev");
     }
-    picture(q, src, dst);
+    if (!p_Transfer) {
+        s->planes.erase("xfer");
+        picture(q, src, dst);
+    }
 
     // 4. viewing medium
     if (q.medium != CR_MEDIUM_NONE) {

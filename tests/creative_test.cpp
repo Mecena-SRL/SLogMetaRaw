@@ -85,7 +85,10 @@ int main()
     };
     CreativeScratch s;
     std::vector<float> dst(N * 4);
-    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s, previous ? &prev : nullptr, &hist);
+    CreativeParams copy;
+    const bool transfer = creativePrepareTransfer(copy, c, W, H, frame);
+    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s, previous ? &prev : nullptr, &hist,
+                      transfer ? &copy : nullptr);
     for (size_t i = 0; i < N; ++i) printf("%.7g %.7g %.7g\n", dst[i * 4], dst[i * 4 + 1], dst[i * 4 + 2]);
     return 0;
 }

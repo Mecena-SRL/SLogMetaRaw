@@ -74,6 +74,12 @@
     sensore, codec e colore del modello.
   - Modelli nuovi: RED One, Canon C300, Blackmagic Pocket, Lumix GH2, Motorola RAZR V3, Sony Ericsson K800i, Nokia
     N95, Flip UltraHD, Kodak Zi8. Il digitale *a mano* resta quello di prima.
+- **Creative, Riversato su** (gruppo *Proiezione e visione*): il risultato rifatto come copia su un altro supporto,
+  con i difetti di quel supporto sopra quelli dell'originale (grana sopra grana).
+  - Telecinema su VHS (casa) o su Betacam SP (televisione), copia VHS di terza generazione, kinescopio su 16 mm
+    bianco e nero (anni '50), film-out su 35 mm (negativo e stampa).
+  - La copia si guarda poi sul supporto scelto in *Proiettato o visto su*. Non vale con Uscita Log. Nessuno = come
+    prima.
 
 ## Log MetaRaw 4.1.0
 

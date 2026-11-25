@@ -131,23 +131,36 @@ void renderPicture(const CreativeParams& p, const float* const src[3], size_t sr
 
 void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
                        size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s, const CreativePrevious* prev,
-                       const CreativeHistory* history)
+                       const CreativeHistory* history, const CreativeParams* transfer)
 {
     const int W = p.W, H = p.H;
     const size_t N = (size_t)W * H;
     CreativeParams q = p;
     q.rowPixels = (int)(srcRowFloats / 4);
     q.dstRowPixels = (int)(dstRowFloats / 4);
-    // an LCD's slow response: the previous frame's picture first (no medium), in the layout of dst
-    const bool ghost = q.medium != CR_MEDIUM_NONE && q.mGhost > 0.0f && prev != nullptr;
-    if (!ghost) q.mGhost = 0.0f;
-    if (ghost) {
-        ensure(s.prev, dstRowFloats * (size_t)H);
-        CreativeParams pp = prev->p;
-        pp.medium = CR_MEDIUM_NONE;
-        renderPicture(pp, prev->src, srcRowFloats, s.prev.data(), dstRowFloats, par, s, nullptr);
+    bool ghost = false;
+    if (transfer) {   // a copy: the picture first, then the copy's own pass on it; the copy is what is seen
+        ensure(s.xfer, dstRowFloats * (size_t)H);
+        CreativeParams a = q;
+        a.medium = CR_MEDIUM_NONE;
+        renderPicture(a, src, srcRowFloats, s.xfer.data(), dstRowFloats, par, s, history);
+        const float* x[3] = { s.xfer.data(), s.xfer.data(), s.xfer.data() };
+        q = *transfer;
+        q.rowPixels = q.dstRowPixels = (int)(dstRowFloats / 4);
+        q.mGhost = 0.0f;
+        renderPicture(q, x, dstRowFloats, dst, dstRowFloats, par, s, nullptr);
+    } else {
+        // an LCD's slow response: the previous frame's picture first (no medium), in the layout of dst
+        ghost = q.medium != CR_MEDIUM_NONE && q.mGhost > 0.0f && prev != nullptr;
+        if (!ghost) q.mGhost = 0.0f;
+        if (ghost) {
+            ensure(s.prev, dstRowFloats * (size_t)H);
+            CreativeParams pp = prev->p;
+            pp.medium = CR_MEDIUM_NONE;
+            renderPicture(pp, prev->src, srcRowFloats, s.prev.data(), dstRowFloats, par, s, nullptr);
+        }
+        renderPicture(q, src, srcRowFloats, dst, dstRowFloats, par, s, history);
     }
-    renderPicture(q, src, srcRowFloats, dst, dstRowFloats, par, s, history);
 
     // 4. viewing medium: the finished picture, decoded into M, shown through the screen or on paper
     if (q.medium == CR_MEDIUM_NONE) return;
