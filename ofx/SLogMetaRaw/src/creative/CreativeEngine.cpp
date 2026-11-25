@@ -79,6 +79,42 @@ void renderPicture(const CreativeParams& p, const float* const src[3], size_t sr
             }
     });
     const float* E[3] = { s.E[0].data(), s.E[1].data(), s.E[2].data() };
+    if (q.lens != 0) {   // the lens: soft edges and swirl into L, then the light it scatters back into E
+        const float* L[3] = { E[0], E[1], E[2] };
+        if (q.lSoft > 0.0f || q.lSwirl > 0.0f) {
+            for (int k = 0; k < 3; ++k) ensure(s.L[k], N);
+            par(H, [&](int b, int e) {
+                for (int y = b; y < e; ++y)
+                    for (int x = 0; x < W; ++x) {
+                        const SMf3 v = cr_lens_soft(E[0], E[1], E[2], x, y, q);
+                        const size_t i = (size_t)y * W + x;
+                        s.L[0][i] = v.x;
+                        s.L[1][i] = v.y;
+                        s.L[2][i] = v.z;
+                    }
+            });
+            for (int k = 0; k < 3; ++k) L[k] = s.L[k].data();
+        }
+        if (q.lStreak > 0.0f) {
+            ensure(s.St, N);
+            par(H, [&](int b, int e) {
+                for (int y = b; y < e; ++y) cr_streak_row(L[0], L[1], L[2], s.St.data(), y, q);
+            });
+        }
+        if (q.lGlare > 0.0f) glowGrid(par, s, L, s.gl, q.lgS, q.lgW, q.lgH, 4, q.lgSigma, q);
+        const float* gl = q.lGlare > 0.0f ? s.gl.data() : E[0];   // unused planes: never read
+        const float* St = q.lStreak > 0.0f ? s.St.data() : E[0];
+        par(H, [&](int b, int e) {
+            for (int y = b; y < e; ++y)
+                for (int x = 0; x < W; ++x) {
+                    const size_t i = (size_t)y * W + x;
+                    const SMf3 v = cr_lens_add(smf3(L[0][i], L[1][i], L[2][i]), gl, St, x, y, q);
+                    s.E[0][i] = v.x;
+                    s.E[1][i] = v.y;
+                    s.E[2][i] = v.z;
+                }
+        });
+    }
     if (q.sensor != 0) {   // the video camera's sensor: a CCD's smear by column, then every pixel
         if (!hist) q.history = 0;
         ensure(s.S, 3 * (size_t)W);

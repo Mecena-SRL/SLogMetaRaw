@@ -92,6 +92,7 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineHiddenInt(d, page, "settingsVersion", 0);
     defineHiddenInt(d, page, "mediumLoaded", -1);   // the medium whose values the response sliders hold
     defineHiddenInt(d, page, "deviceLoaded", -1);   // the model whose values the texture or tape rows hold
+    defineHiddenInt(d, page, "lensLoaded", -1);     // the lens whose values the texture rows hold
 }
 
 ImageEffect* CreativeFactory::createInstance(OfxImageEffectHandle p_Handle, ContextEnum)

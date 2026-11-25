@@ -235,6 +235,11 @@ la copia come seconda passata (CPU `creativeRenderCPU`, Metal `RunCreativeKernel
 il supporto di visione va sulla copia, niente ghost LCD con la copia. Verificato: test CPU (VHS ammorbidisce e aggiunge
 rumore, kinescopio toglie il colore e aggiunge grana, Log ignora la copia), golden; parità Metal solo in CI macOS.
 Aperto: taratura, generazioni multiple scelte a mano.
+Ottiche (25/11/2026, fase 5): tabella `kCrLenses` (`CreativePresets.h`, 14 ottiche [gen] da `DIGITALI_OTTICHE.md`),
+`creativeLoadLens` e `lensLoaded` (come per il supporto), `cr_lens_soft`, `cr_streak_row`, `cr_lens_add` in
+`math/Creative.h`, kernel Metal `cr_lens_soft_k`, `cr_streak_k`, `cr_lens_add_k`. Verificato: test CPU (barilotto,
+bordi e vortice, striscia, velo, caricamento e vetro), golden; parità Metal solo in CI macOS. Aperto: bokeh, ghost,
+desqueeze, vortice a 16 campioni granuloso con raggi grandi (4K), taratura su riprese vere.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

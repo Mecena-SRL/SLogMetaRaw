@@ -80,6 +80,13 @@
     bianco e nero (anni '50), film-out su 35 mm (negativo e stampa).
   - La copia si guarda poi sul supporto scelto in *Proiettato o visto su*. Non vale con Uscita Log. Nessuno = come
     prima.
+- **Creative, Ottica** (gruppo della texture): 14 obiettivi d'epoca, tra cui Cooke Speed Panchro, Zeiss Super Speed,
+  Canon K35, Baltar, Angénieux 25-250, Panavision C e G, LOMO e Kowa anamorfici, Helios 44, Jupiter-9,
+  Super-Takumar al torio, Petzval e ottica da telefono.
+  - Ogni ottica carica nei comandi distorsione, bordi morbidi, vortice, velo, striscia anamorfica, vignettatura,
+    aberrazione e diffusione, e porta il colore del suo vetro e dei suoi riflessi.
+  - Comandi nuovi: *Distorsione*, *Bordi morbidi*, *Vortice*, *Velo* e *Striscia anamorfica*. Nessuna ottica = come
+    prima. I valori sono stimati, da tarare.
 
 ## Log MetaRaw 4.1.0
 

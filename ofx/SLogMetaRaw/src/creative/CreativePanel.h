@@ -103,6 +103,10 @@ static const CrChoiceDef kCrChoices[] = {
     { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
       "Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. "
       "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
+    { "lens", "Ottica", &CreativeControls::lens, kCrLensNames.data(), kCrLensCount, kCrAll,
+      "Un obiettivo d'epoca: carica distorsione, bordi morbidi, vortice, velo, striscia anamorfica, vignettatura, "
+      "aberrazione e diffusione nei comandi qui sotto, poi si possono cambiare; porta anche il colore del suo vetro e "
+      "dei suoi riflessi. Nessuna = quella della camera", kGrTexture },
     { "transfer", "Riversato su", &CreativeControls::transfer, kCrTransferNames, kCrTransferCount, kCrAll,
       "La copia che se ne faceva: un telecinema su cassetta, una copia VHS di copia, un kinescopio su pellicola, un "
       "film-out. Il risultato passa per quel supporto e ne prende i difetti, grana sopra grana. Nessuno = l'originale. "
@@ -166,6 +170,17 @@ static const CrSliderDef kCrSliders[] = {
       "Rosso e blu a ingrandimenti diversi verso i bordi, come un obiettivo d'epoca" },
     { "vignette", "Vignettatura (stop)", &CreativeControls::vignette, -1, 3, 0.05, kGrTexture, kCrAll,
       "Caduta di luce agli angoli, prima della curva" },
+    { "distortion", "Distorsione (%)", &CreativeControls::distortion, -10, 10, 0.1, kGrTexture, kCrAll,
+      "Barilotto agli angoli (negativo = cuscinetto); gli anamorfici la piegano soprattutto in orizzontale" },
+    { "edgeSoft", "Bordi morbidi", &CreativeControls::edgeSoft, 0, 3, 0.01, kGrTexture, kCrAll,
+      "Il fuoco che cala verso gli angoli (campo curvo, astigmatismo); 1 = forte come un Petzval" },
+    { "swirl", "Vortice", &CreativeControls::swirl, 0, 3, 0.01, kGrTexture, kCrAll,
+      "La sfocatura dei bordi allungata in cerchio attorno al centro (Helios, Petzval); dedotta senza profondità, "
+      "quindi anche sui soggetti ai bordi" },
+    { "glare", "Velo (%)", &CreativeControls::glare, 0, 20, 0.1, kGrTexture, kCrAll,
+      "La luce diffusa nell'obiettivo che solleva i neri vicino alle zone chiare, nel colore del suo trattamento" },
+    { "streak", "Striscia anamorfica", &CreativeControls::streak, 0, 3, 0.01, kGrTexture, kCrAll,
+      "Le luci forti si allungano in orizzontale, nel colore della serie (blu Panavision, viola LOMO, ambra Kowa)" },
     { "weave", "Instabilità del quadro", &CreativeControls::weave, 0, 1, 0.01, kGrTexture, kCrFilm,
       "Il fotogramma oscilla nel passo della macchina, in proporzione al formato" },
     { "breath", "Sfarfallio", &CreativeControls::breath, 0, 1, 0.01, kGrTexture, kCrPhoto,
@@ -307,6 +322,7 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
                               "printContrast", "printGrain", "generation" }))
         return true;
     if (!colour && !std::strcmp(name, "filter")) return true;   // the records are the picture's own channels
+    if (!texture && crIs(name, { "lens", "distortion", "edgeSoft", "swirl", "glare", "streak" })) return true;
     if (!texture && crIs(name, { "grain", "grainSize", "halation", "bloom", "bloomRadius", "aberration", "vignette",
                                  "weave", "breath", "dust", "scratches", "printGrain" }))
         return true;

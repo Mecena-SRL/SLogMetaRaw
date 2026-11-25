@@ -47,6 +47,7 @@ CreativeEffect::CreativeEffect(OfxImageEffectHandle p_Handle) : ImageEffect(p_Ha
             if (paramExists(kCrSliders[i].name)) m_Sliders[i] = fetchDoubleParam(kCrSliders[i].name);
         if (paramExists("mediumLoaded")) m_MediumLoaded = fetchIntParam("mediumLoaded");
         if (paramExists("deviceLoaded")) m_DeviceLoaded = fetchIntParam("deviceLoaded");
+        if (paramExists("lensLoaded")) m_LensLoaded = fetchIntParam("lensLoaded");
         for (int i = 0; i < kCrMakerCount; ++i)
             if (paramExists(kCrMakers[i].param)) m_Stocks[i] = fetchChoiceParam(kCrMakers[i].param);
         for (int i = 0; i < kCrToggleCount; ++i)
@@ -134,6 +135,7 @@ CreativeControls CreativeEffect::readControls(double t) const
         if (m_Sliders[i]) c.*(kCrSliders[i].field) = m_Sliders[i]->getValueAtTime(t);
     if (m_MediumLoaded) c.mediumLoaded = m_MediumLoaded->getValue();
     if (m_DeviceLoaded) c.deviceLoaded = m_DeviceLoaded->getValue();
+    if (m_LensLoaded) c.lensLoaded = m_LensLoaded->getValue();
     for (int i = 0; i < kCrMakerCount; ++i)
         if (m_Stocks[i]) m_Stocks[i]->getValueAtTime(t, c.stock[i]);
     for (int i = 0; i < kCrToggleCount; ++i)
@@ -217,6 +219,24 @@ void CreativeEffect::loadDevice()
     if (m_DeviceLoaded) m_DeviceLoaded->setValue(c.deviceLoaded);
 }
 
+void CreativeEffect::loadLens()
+{
+    int lens = 0;
+    for (int i = 0; i < kCrChoiceCount; ++i)
+        if (m_Choices[i] && !std::strcmp(kCrChoices[i].name, "lens")) m_Choices[i]->getValue(lens);
+    CreativeControls c;
+    creativeLoadLens(c, lens);
+    static const char* const rows[] = { "distortion", "edgeSoft", "swirl", "glare", "streak", "vignette",
+                                        "aberration", "bloom" };
+    for (int i = 0; i < kCrSliderCount; ++i)
+        for (const char* r : rows)
+            if (m_Sliders[i] && !std::strcmp(kCrSliders[i].name, r)) {
+                m_Sliders[i]->deleteAllKeys();
+                m_Sliders[i]->setValue(c.*(kCrSliders[i].field));
+            }
+    if (m_LensLoaded) m_LensLoaded->setValue(lens);
+}
+
 void CreativeEffect::loadMedium()
 {
     int medium = 0;
@@ -243,6 +263,7 @@ void CreativeEffect::beginEdit()
         const CreativeControls c = readControls(timeLineGetTime());
         if (c.medium > 0 && c.mediumLoaded != c.medium) loadMedium();   // a grade from before the response rows
         if (c.device > 0 && c.deviceLoaded != creativeDeviceKey(c)) loadDevice();
+        if (c.lens > 0 && c.lensLoaded != c.lens) loadLens();
         updateProcess();
         m_Badge.refresh(true);
     } catch (...) {
@@ -268,6 +289,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
     const bool model = p_ParamName == "device" || p_ParamName == "filmCamera" || p_ParamName == "videoCamera"
                        || p_ParamName == "cinemaCamera" || p_ParamName == "phoneCamera";
     if (p_ParamName == "medium" && user) loadMedium();
+    if (p_ParamName == "lens" && user) loadLens();
     if (model && user) loadDevice();
     if (p_ParamName == "nodeInput") refreshInfo();
     else if (model || p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print"

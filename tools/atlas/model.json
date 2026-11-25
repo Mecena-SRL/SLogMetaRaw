@@ -1012,7 +1012,7 @@
      "id": "cr.record",
      "kind": "function",
      "label": "Record",
-     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola. Con le copie (Generazione) i record si sfocano come i duplicati.",
+     "text": "Fino a tre record (strati, strisce, lastre) da luce lineare Rec.2020 con i loro pesi, ognuno letto nel suo punto (registro, aberrazione, instabilità) e nel suo istante. Se i tre record leggono lo stesso fotogramma nello stesso punto, la sorgente si decodifica una volta sola. Con le copie (Generazione) i record si sfocano come i duplicati. L'ottica (facoltativa) agisce sui record: distorsione a barilotto per asse e colore del vetro dove si leggono, poi bordi morbidi e vortice (sfocatura tangenziale a 16 campioni, cr_lens_soft), velo dalla media locale e striscia anamorfica per riga (cr_streak_row, decadimento esponenziale) sommati di nuovo (cr_lens_add). Valori delle ottiche stimati [gen].",
      "basis": "dedotto",
      "refs": [
       {
@@ -1020,6 +1020,33 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_lens_soft"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_streak_row"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_lens_add"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadLens"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_barrel_distortion_bows_straight_lines_out"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_soft_edges_and_swirl_blur_the_corners_not_the_centre"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_an_anamorphic_streak_runs_along_the_line"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_veiling_glare_lifts_the_blacks_near_the_light"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_lens_loads_its_rows_and_brings_its_glass"
       }
      ]
     },
@@ -1394,28 +1421,32 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_dig_dct": "4e0d974d52b2",
    "ofx/SLogMetaRaw/math/Creative.h::cr_dig_out": "a52a7b1dca49",
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_lens_add": "8f2f8368c77e",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_lens_soft": "dc8c8087d29b",
    "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "a4e0c5767b25",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_records": "20226fd76450",
    "ofx/SLogMetaRaw/math/Creative.h::cr_sensor": "f90300b830e9",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col": "f86e080eb8fc",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_streak_row": "a39cd4cc9c0b",
    "ofx/SLogMetaRaw/math/Creative.h::cr_tape_out": "b5eff409b227",
    "ofx/SLogMetaRaw/math/Creative.h::cr_tape_row": "5d2385d658f8",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a4c70cb6442f",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "4ce52e8c821f",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "4b2a32b34e5f",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "7371b1228da1",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "e6bf9a573f56",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "8e3dc45675fe",
    "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "2a39d0a0b4d1",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "0faaefc77ea8",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadLens": "be29af39e278",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "e73831168f7b",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "d6a9bdb2dec6",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepareTransfer": "74534c96e297",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "eadac621a263"
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "b09c74d88479"
   }
  }
 }

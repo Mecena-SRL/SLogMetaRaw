@@ -35,6 +35,7 @@ private:
     void refreshInfo();
     void updateProcess();   // the rows and groups of the chosen process
     void resetAll();
+    void loadLens();        // the chosen lens's preset into the texture rows
     void loadMedium();      // the chosen medium's preset into the response rows
     void loadDevice();      // the chosen model's preset into the format, texture or tape rows
     void fetchRecords(const CreativeControls& c, double t, const OFX::Image& layout, OFX::Image* frame,
@@ -53,6 +54,7 @@ private:
     OFX::ChoiceParam* m_Process = nullptr;
     OFX::IntParam* m_MediumLoaded = nullptr;
     OFX::IntParam* m_DeviceLoaded = nullptr;
+    OFX::IntParam* m_LensLoaded = nullptr;
     OFX::ChoiceParam* m_Stocks[kCrMakerCount] = {};
     OFX::BooleanParam* m_Toggles[kCrToggleCount] = {};
     OFX::ChoiceParam* m_Choices[kCrChoiceCount] = {};

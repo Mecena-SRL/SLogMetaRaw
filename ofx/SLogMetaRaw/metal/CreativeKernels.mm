@@ -157,7 +157,17 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
     id<MTLBuffer> E = P("E", 3 * N);
     id<MTLBuffer> hal = halo ? P("hal", Gh) : E;
     id<MTLBuffer> bl = glows ? P("bl", 3 * G) : E;
-    id<MTLBuffer> tmp = (halo || glows || t.mGlow > 0.0f) ? P("tmp", std::max(std::max(G, Gh), Gm)) : E;
+    const size_t Gl = std::max((size_t)p.lgW * p.lgH, (size_t)t.lgW * t.lgH);   // the lens's veil
+    const bool glare = (p.lens != 0 && p.lGlare > 0.0f) || (t.lens != 0 && t.lGlare > 0.0f);
+    const bool lsoft = (p.lens != 0 && (p.lSoft > 0.0f || p.lSwirl > 0.0f))
+                       || (t.lens != 0 && (t.lSoft > 0.0f || t.lSwirl > 0.0f));
+    const bool streak = (p.lens != 0 && p.lStreak > 0.0f) || (t.lens != 0 && t.lStreak > 0.0f);
+    id<MTLBuffer> tmp = (halo || glows || glare || t.mGlow > 0.0f)
+                            ? P("tmp", std::max(std::max(std::max(G, Gh), Gm), Gl)) : E;
+    id<MTLBuffer> Lb = lsoft ? P("L", 3 * N) : E, St = streak ? P("St", N) : E, gl = glare ? P("gl", Gl) : E;
+    if (!lsoft) s->planes.erase("L");
+    if (!streak) s->planes.erase("St");
+    if (!glare) s->planes.erase("gl");
     id<MTLBuffer> soft = (p.genSoft > 0.0f || t.genSoft > 0.0f) ? P("soft", N) : E;
     id<MTLBuffer> S = (p.sensor == CR_SENSOR_CCD || t.sensor == CR_SENSOR_CCD) ? P("S", 3 * (size_t)p.W) : E;
     if (!signal) {
@@ -180,6 +190,21 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         // 1. records, and the duplicates' loss of sharpness
         id<MTLComputePipelineState> ps = e.use("cr_record_k");
         e.buf(in[0], 0); e.buf(in[1], 1); e.buf(in[2], 2); e.buf(E, 3); e.bytes(q, 4); e.grid(ps, q.W, q.H);
+        if (q.lens != 0) {   // the lens: soft edges and swirl into L, then the light it scatters back into E
+            id<MTLBuffer> L = E;
+            if (q.lSoft > 0.0f || q.lSwirl > 0.0f) {
+                L = Lb;
+                ps = e.use("cr_lens_soft_k");
+                e.buf(E, 0); e.buf(L, 1); e.bytes(q, 2); e.grid(ps, q.W, q.H);
+            }
+            if (q.lStreak > 0.0f) {
+                ps = e.use("cr_streak_k");
+                e.buf(L, 0); e.buf(St, 1); e.bytes(q, 2); e.grid(ps, q.H, 1);
+            }
+            if (q.lGlare > 0.0f) e.glow(L, gl, 0, tmp, q.lgS, q.lgW, q.lgH, 4, q.lgSigma, q);
+            ps = e.use("cr_lens_add_k");
+            e.buf(L, 0); e.buf(gl, 1); e.buf(St, 2); e.buf(E, 3); e.bytes(q, 4); e.grid(ps, q.W, q.H);
+        }
         if (q.genSoft > 0.0f)
             for (int k = 0; k < 3; ++k) {
                 e.blur(E, k * N, soft, 0, q.W, q.H, 0, q.genSoft, 0);
