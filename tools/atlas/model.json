@@ -1372,7 +1372,7 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_sensor": "83b86497fc4b",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_sensor": "f90300b830e9",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col": "f86e080eb8fc",
