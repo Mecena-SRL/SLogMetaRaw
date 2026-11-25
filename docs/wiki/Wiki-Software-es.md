@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · **Español** · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-es)
 
-> Versión **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versión **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Probado solo en DaVinci Resolve Studio 21.1 en macOS.
 
 Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archivo (Kelvin, tinte, EI, objetivo, diafragma, obturador, perfil de color) y los usa dentro de DaVinci Resolve. Resolve hace esto solo con los MXF de FX6/FX9; en los MP4 de FX30, FX3, serie a7 y a6000 los ignora.
@@ -289,6 +289,12 @@ proceso elegido.
 
 Los números son estimaciones de la investigación en [docs/CREATIVE.md](docs/CREATIVE.md), no perfiles de productos: hay
 que ajustarlos con material real. Aún no probado en Resolve; Metal verificado por los tests de la CI de macOS.
+
+**Novedades de la 4.3.1.**
+
+- **Pelo en la ventanilla, polvo y rayas reales**: el pelo se afina hacia la punta, tiene densidad irregular y una
+  sombra desenfocada como en la película (más en Super 8 y en las copias); a veces es rizado o una fibra de dos hilos.
+  El polvo tiene bordes irregulares y granos de todo tamaño; las rayas cambian de grosor e intensidad.
 
 **Novedades de la 4.3.0.**
 

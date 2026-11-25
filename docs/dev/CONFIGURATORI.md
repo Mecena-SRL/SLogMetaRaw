@@ -248,6 +248,8 @@ Release 4.2.0 (25/11/2026): fasi 1–5 del Creative, supporti di visione e Log M
 IT/EN con pagina Audio (11 pagine), README e wiki aggiornati. Aperto: prova in Resolve e Fairlight, taratura.
 Release 4.3.0 (25/11/2026): Creative con pannello gerarchico, pellicole per formato, trascinamento, capello, console,
 scansione con perforazioni, base e negativo; guide IT/EN, README e wiki aggiornati. Aperto: prova in Resolve.
+Release 4.3.1 (25/11/2026): pelo nel finestrino, polvere e graffi realistici (segnalazione di Ivan: «righe disegnate
+con Paint»). Aperto: taratura a occhio della sfocatura dell'ombra in Resolve.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

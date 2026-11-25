@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -288,6 +288,12 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
+
+**Novidades da 4.3.1.**
+
+- **Pelo na janela, poeira e riscos reais**: o pelo afina para a ponta, tem densidade irregular e uma sombra
+  desfocada como no filme (mais no Super 8 e nas cópias); às vezes é encaracolado ou uma fibra de dois fios. A poeira
+  tem bordas irregulares e grãos de todo tamanho; os riscos mudam de espessura e intensidade.
 
 **Novidades da 4.3.0.**
 

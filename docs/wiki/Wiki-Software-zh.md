@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -281,6 +281,10 @@ Log MetaRaw  →  Log MetaRaw Creative  →  其余调色  →  输出 CST / LUT
 - 它在同一位置取代了 Detail 节点：用 Detail 保存的调色会以全新的 Creative 打开。
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
+
+**4.3.1 新功能。**
+
+- **片门毛发、灰尘和划痕更真实**：毛发向尖端变细，密度不均，阴影像胶片上一样模糊（Super 8 和拷贝上更明显）；有时卷曲，或是双股纤维。灰尘边缘不规则、大小不一；划痕沿线条改变粗细和强度。
 
 **4.3.0 新功能。**
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.3.1
 
 - **Creative, peli, polvere e graffi più veri**: il pelo nel finestrino non è più una riga nera disegnata. Si
   assottiglia verso la punta, ha densità irregolare, ombra sfocata come sulla pellicola (più su Super 8 e sulle copie)
