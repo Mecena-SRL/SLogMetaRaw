@@ -79,7 +79,11 @@ const char* const kCrMediumInfo[kCrMediumCount] = {
 const char* const kCrFormatNames[kCrFormatCount] = { "Super 8", "16 mm", "Super 35", "65 mm (Todd-AO, Panavision 70)",
                                                      "IMAX 15/70", "Lastra 9x12", "Super 16", "8 mm",
                                                      "9,5 mm Pathé-Baby", "35 mm anamorfico", "Techniscope",
-                                                     "VistaVision" };
+                                                     "VistaVision", "35 mm Academy", "135 (24x36, foto)",
+                                                     "120 (6x6, foto)" };
+const char* const kCrDeviceNames[kCrDeviceCount] = { "Processo a mano (tutti i procedimenti)",
+                                                     "Cinepresa o fotocamera a pellicola", "Videocamera analogica",
+                                                     "Cinema e video digitale", "Telefono, compatta e webcam" };
 const char* const kCrAnalogNames[kCrAnalogCount] = { "Broadcast", "VHS SP", "VHS LP", "S-VHS", "Betamax", "Video8",
                                                      "Hi8", "U-matic", "U-matic SP", "Betacam SP", "1 pollice tipo C" };
 const char* const kCrDigitalNames[kCrDigitalCount] = {
@@ -225,7 +229,9 @@ const Format kFormats[kCrFormatCount] = { { 2.6f, 1.6f, 2.2f, 0.008f }, { 1.7f, 
                                           { 0.4f, 0.5f, 0.4f, 0.0004f }, { 0.35f, 0.45f, 0.4f, 0.0f },
                                           { 1.55f, 1.25f, 1.4f, 0.003f }, { 2.9f, 1.75f, 2.4f, 0.010f },
                                           { 2.0f, 1.4f, 1.8f, 0.006f }, { 1.08f, 1.04f, 1.08f, 0.0012f },
-                                          { 1.3f, 1.1f, 1.3f, 0.0015f }, { 0.76f, 0.87f, 0.76f, 0.0008f } };
+                                          { 1.3f, 1.1f, 1.3f, 0.0015f }, { 0.76f, 0.87f, 0.76f, 0.0008f },
+                                          { 1.1f, 1.05f, 1.1f, 0.0013f },  { 0.82f, 0.9f, 0.8f, 0.0f },
+                                          { 0.54f, 0.74f, 0.55f, 0.0f } };
 
 // Analog formats: luma MHz, peaking, chroma kHz, Y/C delay ns, luma SNR dB, jitter ns (random), slow wave ns,
 // head-switching lines (of 480), colour-under (chroma shared by line pairs), dropouts per line at full wear.
@@ -334,14 +340,141 @@ CrMediumRows creativeMediumRows(int m)
     return { on, on, on && md.lines > 0 };
 }
 
-bool creativeNeedsPrevious(const CreativeControls& c)
+namespace {
+
+int pick(int i, int n) { return i >= 0 && i < n ? i : 0; }
+
+// The gauge (stock bits) a format belongs to: the 35 mm frames share their stock, so do 65 mm and IMAX.
+unsigned gaugeOf(int format)
 {
-    const bool log = c.process == kCrColourNegative && c.output == CR_OUT_LOG;
-    return c.medium > 0 && c.medium < kCrMediumCount && kMedia[c.medium].ghost > 0.0f && c.mediumAmount > 0.0 && !log;
+    static const unsigned g[kCrFormatCount] = { kGS8, kG16, kG35, kG65, kG65, 0, kG16, kG8, kG95, kG35, kG35, kG35,
+                                                kG35, kG135, kG120 };
+    return format >= 0 && format < kCrFormatCount ? g[format] : 0;
 }
 
-void creativeRecordTimes(const CreativeControls& c, double out[3])
+std::string gaugeList(unsigned bits)
 {
+    static const char* const names[] = { "8 mm", "Super 8", "9,5 mm", "16 mm", "35 mm", "65 mm", "135", "120" };
+    std::string out;
+    for (int i = 0; i < 8; ++i)
+        if (bits & (1u << i)) out += (out.empty() ? "" : ", ") + std::string(names[i]);
+    return out;
+}
+
+}  // namespace
+
+int creativeDeviceKey(const CreativeControls& c)
+{
+    switch (c.device) {
+    case kCrDevFilm: return 1000 + pick(c.filmCamera, kCrCameraCount);
+    case kCrDevVideo: return 2000 + pick(c.videoCamera, kCrVideoCameraCount);
+    case kCrDevCinema: return 3000 + pick(c.cinemaCamera, kCrCinemaCameraCount);
+    case kCrDevPhone: return 4000 + pick(c.phoneCamera, kCrPhoneCameraCount);
+    default: return 0;
+    }
+}
+
+void creativeLoadDevice(CreativeControls& c)
+{
+    if (c.device == kCrDevFilm) {
+        const CrCamera& m = kCrCameras[pick(c.filmCamera, kCrCameraCount)];
+        c.format = m.format;
+        c.weave = m.weave;
+        c.breath = m.breath;
+        c.vignette = m.vignette;
+        c.aberration = m.aberration;
+        c.bloom = m.bloom;
+    } else if (c.device == kCrDevVideo) {
+        const CrVideoCamera& m = kCrVideoCameras[pick(c.videoCamera, kCrVideoCameraCount)];
+        c.analog = m.tape;
+        c.wear = m.wear;
+        c.heads = m.heads;
+        c.instability = m.instability;
+    }
+    c.deviceLoaded = creativeDeviceKey(c);
+}
+
+const CrStock* creativeStock(const CreativeControls& c)
+{
+    if (c.device != kCrDevFilm) return nullptr;
+    const CrMaker& m = kCrMakers[pick(c.maker, kCrMakerCount)];
+    return &m.stocks[pick(c.stock[pick(c.maker, kCrMakerCount)], m.count)];
+}
+
+bool creativeStockFits(const CreativeControls& c)
+{
+    const CrStock* st = creativeStock(c);
+    return !st || (st->gauges & gaugeOf(c.format)) != 0;
+}
+
+CreativeControls creativeResolve(const CreativeControls& c)
+{
+    CreativeControls r = c;
+    if (c.device <= kCrDevManual || c.device >= kCrDeviceCount) {
+        r.device = kCrDevManual;
+        return r;
+    }
+    if (r.deviceLoaded != creativeDeviceKey(r)) creativeLoadDevice(r);
+    if (const CrStock* st = creativeStock(r)) {
+        static const int proc[3] = { kCrColourNegative, kCrReversal, kCrBlackWhite };
+        r.process = proc[st->process];
+        if (st->process == kStNeg) r.negative = st->row;
+        else if (st->process == kStRev) r.reversal = st->row;
+        else {
+            r.bwStock = st->row;
+            r.sensitivity = st->sens;
+        }
+    } else if (r.device == kCrDevVideo) {
+        r.process = kCrAnalog;
+    } else {
+        r.process = kCrDigital;
+        r.digital = r.device == kCrDevCinema ? kCrCinemaCameras[pick(r.cinemaCamera, kCrCinemaCameraCount)].row
+                                             : kCrPhoneCameras[pick(r.phoneCamera, kCrPhoneCameraCount)].row;
+    }
+    return r;
+}
+
+std::string creativeDeviceInfo(const CreativeControls& c0)
+{
+    const CreativeControls c = creativeResolve(c0);
+    if (c.device == kCrDevVideo) return std::string("Nastro: ") + kCrAnalogNames[pick(c.analog, kCrAnalogCount)];
+    if (c.device == kCrDevCinema || c.device == kCrDevPhone)
+        return std::string("Resa come: ") + kCrDigitalNames[pick(c.digital, kCrDigitalCount)];
+    const CrStock* st = creativeStock(c);
+    if (!st) return "";
+    const CrCamera& cam = kCrCameras[pick(c.filmCamera, kCrCameraCount)];
+    std::string formats;
+    for (int f = 0; f < kCrFormatCount; ++f)
+        if (cam.formats & (1u << f)) formats += (formats.empty() ? "" : ", ") + std::string(kCrFormatNames[f]);
+    static const char* const kind[3] = { "negativo colore", "invertibile colore", "bianco e nero" };
+    std::string text = "Formati della cinepresa: " + formats + " · " + st->name + ": " + kind[st->process]
+                       + ", prodotta in " + gaugeList(st->gauges);
+    const int f = pick(c.format, kCrFormatCount);
+    if (!(cam.formats & (1u << f))) text += " · la cinepresa non monta il " + std::string(kCrFormatNames[f]);
+    if (!creativeStockFits(c)) text += " · mai prodotta in " + std::string(kCrFormatNames[f]) + ": resa come se lo fosse";
+    return text;
+}
+
+bool creativeToggles(int process)
+{
+    return process == kCrColourNegative || process == kCrReversal || process == kCrBlackWhite;
+}
+
+bool creativeLogOut(const CreativeControls& r)
+{
+    return (r.process == kCrColourNegative && r.output == CR_OUT_LOG) || (creativeToggles(r.process) && !r.useTone);
+}
+
+bool creativeNeedsPrevious(const CreativeControls& c0)
+{
+    const CreativeControls c = creativeResolve(c0);
+    return c.medium > 0 && c.medium < kCrMediumCount && kMedia[c.medium].ghost > 0.0f && c.mediumAmount > 0.0
+           && !creativeLogOut(c);
+}
+
+void creativeRecordTimes(const CreativeControls& c0, double out[3])
+{
+    const CreativeControls c = creativeResolve(c0);
     const double d = clampd(c.interval, 0, 48);
     out[0] = out[1] = out[2] = 0;
     if (c.process == kCrThreePlates) {   // blue first, then green, then red
@@ -353,8 +486,16 @@ void creativeRecordTimes(const CreativeControls& c, double out[3])
     }
 }
 
-void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma)
+void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma)
 {
+    CreativeControls c = creativeResolve(c0);
+    const bool toggles = creativeToggles(c.process);
+    const bool useTone = !toggles || c.useTone, useColour = !toggles || c.useColour, useTexture = !toggles || c.useTexture;
+    if (!useTexture) {   // the film's grain, glows, lens and gate: none
+        c.grain = c.printGrain = c.halation = c.bloom = c.aberration = c.vignette = 0;
+        c.weave = c.breath = c.dust = c.scratches = 0;
+    }
+    if (!useTone) c.push = c.silver = c.flash = 0;   // the development's light and contrast
     p = CreativeParams();
     p.W = W;
     p.H = H;
@@ -703,6 +844,18 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         break;
     }
 
+    // the stock: its grain, saturation, contrast, halation and cast over the variant it starts from
+    if (const CrStock* st = creativeStock(c)) {
+        if (st->rms > 0) rms = st->rms;
+        p.saturation *= st->sat;
+        hal *= st->hal;
+        for (int k = 0; k < 3; ++k) {
+            if (proc != kCrReversal) p.slope[k] *= st->contrast;
+            p.offset[k] += st->cast[k];
+        }
+        if (proc == kCrReversal) printContrast *= st->contrast;
+    }
+
     // development: push/pull and silver kept, age (film processes)
     if (pushes) {
         const bool bw = proc == kCrBlackWhite;
@@ -820,6 +973,39 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
         p.splitHigh[k] = hi[k];
     }
     p.splitBalance = (float)clampd(c.balance, -3, 3);
+
+    // only some of the film: without its colour the records are the picture's own channels in equal layers (a black
+    // and white stock keeps the picture's colour); without its tone the curve is a straight line, back in the input
+    // encoding (no print, no medium)
+    if (!useColour) {
+        if (p.records == 1) {
+            p.records = 3;
+            p.image = CR_IMAGE_SUB;
+        }
+        for (int i = 0; i < 9; ++i) p.recW[i] = p.dye[i] = i % 4 == 0 ? 1.0f : 0.0f;
+        for (int k = 0; k < 3; ++k) p.recGain[k] = wb[k];
+        p.uv = 0;
+        p.interlayer = 1.0f;
+        p.saturation = (float)clampd(c.saturation, 0, 2);
+        const float slope = (p.slope[0] + p.slope[1] + p.slope[2]) / 3.0f, offset = (p.offset[0] + p.offset[1] + p.offset[2]) / 3.0f;
+        const float cast = (printCast[0] + printCast[1] + printCast[2]) / 3.0f;
+        const float fade = (p.fade[0] + p.fade[1] + p.fade[2]) / 3.0f, stain = (p.stain[0] + p.stain[1] + p.stain[2]) / 3.0f;
+        for (int k = 0; k < 3; ++k) {
+            p.slope[k] = slope;
+            p.offset[k] = offset;
+            p.printOffset[k] = cast + 0.083f * pts[k];
+            p.fade[k] = fade;
+            p.stain[k] = stain;
+        }
+    }
+    if (!useTone) {
+        for (int k = 0; k < 3; ++k) {
+            p.slope[k] = 1.0f;
+            p.offset[k] = 0.0f;
+        }
+        p.toe = p.shoulder = 1000.0f;
+        p.output = CR_OUT_LOG;
+    }
 
     // viewing medium: on the finished picture (not on a Log scan, which is graded afterwards)
     const Medium& md = kMedia[c.medium >= 0 && c.medium < kCrMediumCount ? c.medium : 0];

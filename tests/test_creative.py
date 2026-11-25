@@ -276,5 +276,62 @@ class Creative(unittest.TestCase):
         self.assertLess(vhs, bc)
 
 
+    # ---- presets: device, model, format, manufacturer, stock; what the film applies
+
+    FILM = {'device': 1, 'maker': 0, 'filmCamera': 17}   # Arriflex 435, Kodak
+
+    def grain(self, controls):
+        """Spread of the grey steps (rows 16-23, centre columns), averaged over steps 3-8 and channels."""
+        out = self.render(controls, [ramp()])
+        total = 0.0
+        for b in range(3, 9):
+            for c in range(3):
+                v = [out[y * W + x][c] for y in range(16, 24) for x in range(b * 8 + 1, b * 8 + 7)]
+                m = sum(v) / len(v)
+                total += math.sqrt(sum((a - m) ** 2 for a in v) / len(v))
+        return total / 18
+
+    def test_film_with_everything_off_is_the_input(self):
+        src = ramp(tinted=True)
+        out = self.render(dict(self.FILM, useTone=0, useColour=0, useTexture=0), [src])
+        self.assertLess(max(abs(a - b) for p, q in zip(out, src) for a, b in zip(p, q)), 2e-4)
+
+    def test_only_the_grain_keeps_the_picture_and_adds_the_stock_grain(self):
+        """Tone and colour off: the steps keep their code values on average, the grain grows with the stock (50D <
+        500T < 5247 of 1950) and with a smaller format (Super 8 over Super 35)."""
+        only = dict(self.FILM, useTone=0, useColour=0, deviceLoaded=1017)
+        src = self.steps([tuple(px) for px in ramp()])
+        got = self.steps(self.render(dict(only, stockKodak=0), [ramp()]))
+        for a, b in zip(src[2:-2], got[2:-2]):
+            for c in range(3):
+                self.assertAlmostEqual(a[c], b[c], delta=0.01)
+        fine, mid, coarse = (self.grain(dict(only, stockKodak=k)) for k in (3, 0, 15))
+        self.assertGreater(fine, 0.001)
+        self.assertLess(fine, mid)
+        self.assertLess(mid, coarse)
+        self.assertGreater(self.grain(dict(only, stockKodak=0, format=0)), 1.5 * mid)
+
+    def test_a_stock_sets_its_process(self):
+        """Double-X is black and white; without its colour it keeps the picture's colour; Kodachrome differs from
+        Vision3 (a reversal: its own tone scale)."""
+        def chroma(out):
+            return max(max(s) - min(s) for s in self.steps(out)[3:9])
+        bw = self.render(dict(self.FILM, stockKodak=38, useTexture=0), [ramp(tinted=True)])
+        self.assertLess(chroma(bw), 0.01)
+        kept = self.render(dict(self.FILM, stockKodak=38, useTexture=0, useColour=0), [ramp(tinted=True)])
+        self.assertGreater(chroma(kept), 0.05)
+        vision = self.steps(self.render(dict(self.FILM, stockKodak=0, useTexture=0), [ramp()]))
+        kodachrome = self.steps(self.render(dict(self.FILM, stockKodak=17, useTexture=0), [ramp()]))
+        self.assertGreater(max(abs(sum(a) - sum(b)) for a, b in zip(vision, kodachrome)), 0.1)
+
+    def test_a_device_is_the_process_it_names(self):
+        """A model picks the engine's row: the iPhone 3GS renders as the manual 2008 phone row, the Panasonic VHS
+        camera as the VHS SP tape with that camera's faults."""
+        self.assertEqual(self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)]),
+                         self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)]))
+        self.assertEqual(self.render({'device': 2, 'videoCamera': 5}, [ramp(tinted=True)]),
+                         self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3},
+                                     [ramp(tinted=True)]))
+
 if __name__ == '__main__':
     unittest.main()

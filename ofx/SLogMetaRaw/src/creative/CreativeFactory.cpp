@@ -8,6 +8,8 @@
 #include "CreativeEffect.h"
 #include "CreativePanel.h"
 
+#include <vector>
+
 using namespace OFX;
 
 CreativeFactory::CreativeFactory() : PluginFactoryHelper<CreativeFactory>(kCreativeIdentifier, 1, 0) {}
@@ -46,13 +48,23 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     for (int g = 0; g < kGrCount; ++g)
         groups[g] = defineGroup(d, page, kCrGroups[g].name, kCrGroups[g].label, kCrGroups[g].open);
     GroupParamDescriptor* proc = groups[kGrProcess];
-    defineChoice(d, page, "process", "Processo", kCrProcessNames, kCrProcessCount, kCrColourNegative,
-                 "Il procedimento: come la luce diventa immagine. Ognuno ha i suoi comandi qui sotto", proc);
-    defineInfo(d, page, proc, "processInfo", "Come funziona", kCrProcessInfo[kCrColourNegative]);
     auto choice = [&](const CrChoiceDef& c) {
         defineChoice(d, page, c.name, c.label, c.options, c.count, CreativeControls().*(c.field), c.hint,
                      groups[c.group]);
+        if (!std::strcmp(c.name, "process"))
+            defineInfo(d, page, proc, "processInfo", "Come funziona", kCrProcessInfo[kCrColourNegative]);
         if (!std::strcmp(c.name, "medium")) defineInfo(d, page, groups[kGrView], "mediumInfo", "Come si vede", "");
+        if (!std::strcmp(c.name, "maker")) {   // each manufacturer's stocks, then what the choice means
+            for (const CrMaker& m : kCrMakers) {
+                std::vector<const char*> names;
+                for (int i = 0; i < m.count; ++i) names.push_back(m.stocks[i].name);
+                defineChoice(d, page, m.param, "Pellicola", names.data(), m.count, 0,
+                             "La pellicola: curva, colore, grana, alone. Anno tra parentesi; foto = pellicola "
+                             "fotografica", proc);
+            }
+            defineInfo(d, page, proc, "deviceInfo", "Formati e pellicola", "");
+            for (const CrToggleDef& t : kCrToggles) defineCheck(d, page, t.name, t.label, true, t.hint, proc);
+        }
     };
     for (const CrChoiceDef& c : kCrChoices)
         if (std::strcmp(c.name, "mediumRoom") != 0) choice(c);   // the room goes with the light, below
@@ -79,6 +91,7 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     defineHiddenInt(d, page, "camGamma", -1);
     defineHiddenInt(d, page, "settingsVersion", 0);
     defineHiddenInt(d, page, "mediumLoaded", -1);   // the medium whose values the response sliders hold
+    defineHiddenInt(d, page, "deviceLoaded", -1);   // the model whose values the texture or tape rows hold
 }
 
 ImageEffect* CreativeFactory::createInstance(OfxImageEffectHandle p_Handle, ContextEnum)

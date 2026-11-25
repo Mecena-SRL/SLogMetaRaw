@@ -963,15 +963,27 @@
     {
      "id": "cr.panel",
      "kind": "event",
-     "label": "Processo e varianti",
-     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h); alcune righe si nascondono anche quando un'altra scelta le rende inutili (crRowIdle: senza stampa niente generazioni, con uscita Log niente supporto, e del supporto solo le righe che ha).",
+     "label": "Dispositivo, modello, pellicola",
+     "text": "Il Dispositivo (a mano, pellicola, video analogico, cinema digitale, telefono) sceglie i comandi: a mano il Processo; altrimenti il modello con nome commerciale (CreativePresets.h) e, per la pellicola, produttore e stock, che impostano processo e variante (creativeResolve). Scegliere un modello carica formato, instabilità, sfarfallio e ottica, o nastro e difetti (creativeLoadDevice, deviceLoaded). Ogni riga dice per quali processi compare; crRowIdle nasconde quelle rese inutili (dal dispositivo, dagli interruttori Tono, Colore, Grana, senza stampa niente generazioni, con uscita nella codifica d'ingresso niente supporto). Un rigo dice i formati della cinepresa e se lo stock esisteva in quel formato.",
      "basis": "dedotto",
      "refs": [
       {
        "cpp": "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess"
       },
       {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice"
+      },
+      {
        "param": "param:creative.process"
+      },
+      {
+       "param": "param:creative.device"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_device_is_the_process_it_names"
       }
      ]
     },
@@ -979,7 +991,7 @@
      "id": "cr.prepare",
      "kind": "function",
      "label": "Dai comandi ai parametri del motore",
-     "text": "creativePrepare traduce processo, variante, formato e comandi in pesi spettrali dei record, curva, coloranti o filtri, grana, alone, difetti; i numeri sono stime documentate in docs/CREATIVE.md.",
+     "text": "creativePrepare traduce processo, variante, stock, formato e comandi in pesi spettrali dei record, curva, coloranti o filtri, grana, alone, difetti. Lo stock cambia grana, saturazione, contrasto, alone e dominante della sua variante. Interruttori: senza Colore i record sono i canali del video in strati uguali; senza Tono la curva è una retta e si esce nella codifica d'ingresso; senza Grana e texture niente grana, alone, ottica, instabilità, polvere. I numeri sono stime documentate in docs/CREATIVE.md, non profili misurati.",
      "basis": "dedotto",
      "refs": [
       {
@@ -987,6 +999,12 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_only_the_grain_keeps_the_picture_and_adds_the_stock_grain"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_film_with_everything_off_is_the_input"
       }
      ]
     },
@@ -1324,14 +1342,16 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "011aaa631dff",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "4ce52e8c821f",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "2d366cf560f9",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "e6bf9a573f56",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "a848ce94e161",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "8e3dc45675fe",
    "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "de7aa054c7d4",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "2c34c6917c51"
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "177e384f8432",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "eadac621a263"
   }
  }
 }

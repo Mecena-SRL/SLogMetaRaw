@@ -14,10 +14,26 @@
   - La carta ha un gamut più piccolo che comprime i colori saturi.
   - Tubo PAL a 7500 K, NTSC giapponese a 9300 K con colore spinto, sala a 48 nit al buio, proiettore di casa a 15 nit e
     3200 K.
-- **Pannello del supporto**: scegliere *Visto su* carica i valori del supporto nei comandi qui sotto (Gamma, Contrasto,
+- **Pannello del supporto**: scegliere *Proiettato o visto su* (gruppo *Proiezione e visione*) carica i valori del supporto nei comandi qui sotto (Gamma, Contrasto,
   Luce della stanza, Luminanza, Stanza, Bianco, Colore, Overscan), che poi si possono cambiare. Si vedono solo le righe
   utili per quel supporto, e la riga «Come si vede» lo descrive. *Azzera comandi* riporta i valori del supporto. Un grade
   salvato con la 4.1.0 usa i valori del suo supporto. I numeri sono stime da tarare.
+- **Creative, preset per dispositivo**: in cima al pannello (gruppo *Dispositivo e pellicola*) si sceglie che cosa ha
+  ripreso l'immagine, poi il modello con il suo nome commerciale.
+  - Cinepresa o fotocamera a pellicola: 25 macchine, dalla Pathé-Baby alla IMAX, con Bolex, Krasnogorsk-3, Arri 16SR,
+    Aaton, Mitchell, Konvas, Panaflex, Arri 435, Todd-AO, Leica, Hasselblad. La macchina carica formato, instabilità del
+    quadro, sfarfallio e carattere dell'obiettivo (vignettatura, aberrazione, diffusione), che restano modificabili.
+  - Poi il produttore (Kodak, Fujifilm, Agfa, ORWO, Svema e Tasma, Ilford, Ferrania, Gevaert, Ansco, DuPont, CineStill,
+    Lomography, Konica) e la pellicola vera: 118 pellicole, dal Vision3 500T al Kodachrome 40, dalla Double-X alla
+    Pancro 30. Ognuna ha la sua grana, saturazione, contrasto, alone e dominante.
+  - Un rigo dice i formati della cinepresa, dove è stata prodotta la pellicola e se in quel formato non è mai esistita.
+  - Videocamera analogica (10 modelli, da Betacam SP a VHS-C e Hi8), cinema digitale (Alexa, F900, 5D Mark II, DVX100,
+    VX1000) e telefoni e compatte (iPhone 3GS, PowerShot, webcam, GoPro, iPhone 15 Pro): per ora usano le tabelle di
+    video e digitale esistenti.
+  - *Processo a mano* è il pannello di prima, con tutti i procedimenti; i grade salvati prima restano identici.
+  - Tre interruttori per le pellicole: *Curva e contrasto*, *Colore*, *Grana e texture*. Con solo la grana accesa il
+    video resta com'è e prende la grana di quella pellicola su quel formato. I numeri sono stime da tarare, non profili
+    misurati.
 
 ## Log MetaRaw 4.1.0
 
