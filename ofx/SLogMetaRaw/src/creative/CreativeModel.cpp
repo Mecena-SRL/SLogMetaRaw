@@ -77,6 +77,11 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Console 32 bit: Saturn (1994) su tubo, RGB" };
 const char* const kCrScanViewNames[3] = { "Il quadro", "Il quadro con i bordi del mascherino",
                                           "Da bordo a bordo, con le perforazioni" };
+const char* const kCrSoundNames[7] = { "Secondo epoca e formato", "Nessuna (copia muta)",
+                                       "Ottica a densità variabile (anni '30-'40)", "Ottica ad area variabile, mono",
+                                       "Ottica stereo (Dolby Stereo, dal 1976)",
+                                       "Stereo + Dolby Digital, DTS, SDDS (dal 1993)",
+                                       "Pista magnetica (Super 8, 16 mm)" };
 const char* const kCrBaseNames[5] = { "Secondo epoca e formato", "Nitrato di cellulosa (35 mm, fino al 1951)",
                                      "Diacetato (pellicola di sicurezza, 16, 9,5 e 8 mm dal 1909)",
                                      "Triacetato (dal 1948, negativo di ripresa)", "Poliestere (Estar, dal 1955)" };
@@ -1027,7 +1032,7 @@ static int edgeGlyph(char ch)
     return ch && at ? int(at - order) : 0;
 }
 
-static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame)
+static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame, bool print)
 {
     p.edgeN = p.barN = 0;
     const CrStock* st = creativeStock(c);
@@ -1059,11 +1064,19 @@ static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, cons
     if (maker == 10) brand = "KODAK";   // CineStill is Kodak stock
     const int base = creativeBase(c);
     const bool photo = (gauge & (kG135 | kG120)) != 0;
-    const bool keykode = !photo && year >= 1990 && (maker == 0 || maker == 1) && (gauge & (kG16 | kG35 | kG65));
+    const bool keykode = !print && !photo && year >= 1990 && (maker == 0 || maker == 1) && (gauge & (kG16 | kG35 | kG65));
     const char* const support = base == 1 ? "NITRATE FILM" : base == 4 ? "ESTAR" : "SAFETY FILM";
     std::string text;
     int digits = 0, step = 1;
-    if (photo) {
+    if (print) {   // a print shows its own stock's code, dark on the clear edge (Eastman, then Kodak) [gen codes]
+        const bool fuji = maker == 1 && year >= 1999;
+        const char* pc = c.process == kCrBlackWhite ? (year < 1990 ? "5302" : "2302")
+                         : fuji ? "3510" : year < 1974 ? "5385" : year < 1983 ? "5381" : year < 1998 ? "5384" : "2383";
+        const char* pb = fuji ? "FUJI" : year < 1990 ? "EASTMAN" : "KODAK";
+        const char* ps = year < 1951 ? "NITRATE FILM" : year < 1998 ? "SAFETY FILM" : "";
+        text = std::string(pc) + " " + pb + "  " + ps + (*ps ? "  " : "")
+               + (char)('A' + (unsigned)(cr_hash01(frame / 96, 6, 995) * 26)) + std::to_string(year % 10) + " ";
+    } else if (photo) {
         text = brand + " " + code + "  ";
         digits = 2;   // the frame's number
     } else if (keykode) {
@@ -1117,6 +1130,102 @@ static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, cons
     const int roll = int(cr_hash01(frame / 96, 4, 995) * 800000) + 100000;   // a roll's own numbers
     p.edgeNum = photo ? 1 + int(std::fmod(k, 36.0)) : keykode ? int(std::fmod(k + 1200, 1e4)) : int(std::fmod(roll + k, 1e6));
     p.edgeExp = 1.5f;   // a strong latent exposure: dense on the negative, clear on a reversal or a print
+}
+
+// The gauge a format's prints carry their sound on: 35 (the 35 mm frames printed 4-perf), 16 (16 mm), 8 (Super 8 and
+// 8 mm, a magnetic stripe), 0 none (Super 16 has no room for a track, the wide and still formats are left out).
+int creativeSoundGauge(int format)
+{
+    switch (format) {
+    case 2: case 9: case 10: case 12: return 35;
+    case 1: return 16;
+    case 0: case 7: return 8;
+    default: return 0;
+    }
+}
+
+// The stock's year, from its name ("... (1974)").
+static int creativeYear(const CreativeControls& c)
+{
+    const CrStock* st = creativeStock(c);
+    const std::string name = st ? st->name : (c.process == kCrBlackWhite ? "Double-X 5222 (1959)" : "5247 (1974)");
+    for (size_t k = name.find('('); k != std::string::npos; k = name.find('(', k + 1))
+        if (k + 4 < name.size() && std::isdigit((unsigned char)name[k + 1])) return std::atoi(name.c_str() + k + 1);
+    return 1975;
+}
+
+// The soundtrack the scanned strip shows (kCrSoundNames index, resolved: 1 none ... 6 magnetic), from the control and,
+// by era and gauge, from the stock's year: variable density until the mid-1950s, then variable area (from 1928 the
+// two coexisted), Dolby Stereo from 1976, the digital ones from 1993 (SDDS made until 2004). Optical only on a print.
+static int creativeSoundOf(const CreativeControls& c, bool print, int year)
+{
+    const int g = creativeSoundGauge(c.format);
+    int k = pick(c.printSound, 7);
+    if (k == 0) {
+        if (!print || g == 8 || g == 0) return 1;
+        if (g == 16) return year >= 1933 ? 3 : 1;
+        k = year < 1928 ? 1 : year < 1955 ? 2 : year < 1976 ? 3 : year < 1993 ? 4 : 5;
+    }
+    if (k == 6) return g == 8 || g == 16 ? 6 : 1;
+    if (k == 1 || !print || g != 35 && g != 16) return 1;
+    return g == 16 ? std::min(k, 3) : k;   // 16 mm: one optical track, no digital
+}
+
+// The print and its soundtrack on the strip (research COLONNA_SONORA.md, SMPTE 40, 41, 139, 164, 176, ST 203, RP 115,
+// ISO 17266; mm from the guided edge, here from the film's centre): 35 mm track 4.90-7.44 mm, modulated 5.21-7.14,
+// DTS 7.42-7.67, Dolby Digital blocks 2.41 mm in the perforation column, SDDS 0.295-1.831 mm from both edges; 16 mm
+// track 13.46-15.49 mm from the perforated edge, magnetic 14.55 (SMPTE 112); Super 8 stripe 7.24-7.92 mm, balance
+// 0.08-0.38. The printer leaves the perforations and the edges unexposed (Pritchard): the clear stock, its own edge
+// print dark. Cyan dye tracks from 2004.
+static void creativeSoundtrack(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame, int sound,
+                               bool print, int year)
+{
+    p.printClear = 0;
+    p.sndKind = p.sndN = p.sndDigital = p.sndDye = 0;
+    p.magW = p.balW = 0;
+    const int g = creativeSoundGauge(c.format);
+    const float half = 0.5f * fs.filmA;
+    // the film's travel, wrapped every 1000 frames (whole perforations) so a float keeps microns
+    p.sndPhase = float(std::fmod(double(frame) * fs.pitch, 1000.0 * fs.pitch));
+    p.sndSeed = int(cr_hash01(frame / 2400, 5, 995) * 1000);   // a reel's own sound
+    if (sound == 6) {   // the magnetic stripe, on the edge away from the perforations, its balance stripe beside them
+        if (g == 8 && c.format == 0) {
+            p.magAcross = half - 0.4f; p.magW = 0.69f; p.balAcross = -(half - 0.23f); p.balW = 0.30f;
+        } else if (g == 8) {   // 8 mm [gen]: a narrower stripe beside the picture
+            p.magAcross = half - 0.25f; p.magW = 0.4f; p.balAcross = -(half - 0.23f); p.balW = 0.30f;
+        } else {   // 16 mm: over the optical track's place [gen balance]
+            p.magAcross = 14.55f - half; p.magW = 2.41f; p.balAcross = -(half - 0.4f); p.balW = 0.6f;
+        }
+    }
+    if (!print) return;
+    p.printClear = 1;
+    // the printer's light: over the camera's full aperture (black where the negative is clear) and the track's area
+    const bool s35 = g == 35, track = sound >= 2 && sound <= 5;
+    p.printLo = s35 ? (track ? 4.88f - half : -12.45f) : -5.13f;
+    p.printHi = s35 ? 12.45f : (track ? 15.49f - half : 5.13f);
+    if (sound <= 1 || sound == 6) return;
+    p.sndKind = sound == 2 ? 1 : 2;
+    p.sndN = sound >= 4 ? 2 : 1;
+    if (g == 35) {   // the guided edge, the track's side, at -half
+        p.sndAcross = 6.17f - half;
+        p.sndW = 2.54f;
+        p.sndMod = 1.93f;
+        if (sound == 5) {
+            p.sndDigital = 1 | 2 | (year < 2008 ? 4 : 0);   // SDDS left the prints after its decoders stopped [gen]
+            p.ddAcross = -fs.perfX;
+            p.ddSize = 2.41f;
+            p.dtsAcross = 7.54f - half;
+            p.dtsW = 0.25f;
+            p.sddsIn = half - 1.831f;
+            p.sddsOut = half - 0.295f;
+            if (p.sndDigital & 4) p.edgeN = p.barN = 0;   // SDDS takes the edges
+        }
+    } else {   // 16 mm: the second row of perforations' place, the perforated edge at -half
+        p.sndAcross = 14.475f - half;
+        p.sndW = 2.03f;
+        p.sndMod = 1.80f;
+    }
+    p.sndDye = c.process == kCrColourNegative && year >= 2004 ? 1 : 0;
 }
 
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
@@ -1680,7 +1789,22 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
                || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;
     const bool strip = c.scanView > 0 && (proc == kCrColourNegative || proc == kCrReversal || proc == kCrBlackWhite);
     if (strip) {   // the scanned strip: the frame on the film, its gate, the perforations and the frames beside it
-        const FilmStrip& fs = kStrips[pick(c.format, kCrFormatCount)];
+        FilmStrip fs = kStrips[pick(c.format, kCrFormatCount)];
+        // a print (35 mm and 16 mm, Rec.709 through a positive): positive stock, its perforations, its soundtrack
+        const int year = creativeYear(c), sg = creativeSoundGauge(c.format);
+        const bool print = printed && p.output == CR_OUT_REC709 && (sg == 35 || sg == 16);
+        const int sound = creativeSoundOf(c, print, year);
+        if (print && sg == 35) {
+            fs.perfL = 1.981f;   // Kodak Standard (KS-1870) perforations
+            fs.perfR = 0.5f;
+            if (sound >= 2 && sound <= 5 && (c.format == 2 || c.format == 10)) {   // printed beside the track
+                fs.apA = c.format == 10 ? 21.95f : 22.0f;   // Super 35 reduced to Academy, Techniscope to 4-perf scope
+                fs.apL = c.format == 10 ? 18.59f : 16.03f;
+                fs.apOff = 1.3f;
+                fs.pitch = 19.0f;
+            }
+        }
+        if ((print && sg == 16 && sound >= 2) || (sg == 16 && sound == 6)) fs.sides = 1;   // single perforation
         p.strip = 1;
         p.travelH = fs.travelH;
         p.gate = pick(c.gateMask, 3);
@@ -1710,7 +1834,8 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         }
         p.sMM = std::max(vw / (float)W, vh / (float)H);
         p.moved = 1;
-        creativeEdgePrint(p, c, fs, frame);
+        creativeEdgePrint(p, c, fs, frame, print);
+        creativeSoundtrack(p, c, fs, frame, sound, print, year);
         // the scanner's light [gen]: a little fall-off, its optics' glow around the openings, the base piping the
         // light along its cut edges (polyester most, it is clearer), the perforations' punching tolerance
         const int b = creativeBase(c);

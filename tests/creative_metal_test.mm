@@ -46,7 +46,7 @@ int main()
     id<MTLBuffer> out = [device newBufferWithLength:img[0].size() * 4 options:MTLResourceStorageModeShared];
     CreativeParallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < kCrProcessCount + 12; ++k) {
+    for (int k = 0; k < kCrProcessCount + 14; ++k) {
         CreativeControls c;
         c.process = k % kCrProcessCount;
         c.interval = 1;
@@ -90,6 +90,22 @@ int main()
             c.gateMask = 1;
             c.base = 1;
             c.baseDecay = 0.5;
+        }
+        if (k == kCrProcessCount + 12) {   // a 2007 print edge to edge: cyan track, Dolby Digital, DTS, SDDS
+            c.process = kCrColourNegative;
+            c.print = 1;
+            c.scanView = 2;
+            c.format = 9;
+            c.printSound = 5;
+            c.device = kCrDevFilm;
+            c.maker = 0;
+            c.stock[0] = 0;
+        }
+        if (k == kCrProcessCount + 13) {   // Super 8 reversal with its magnetic stripe
+            c.process = kCrReversal;
+            c.scanView = 2;
+            c.format = 0;
+            c.printSound = 6;
         }
         double t[3];
         creativeRecordTimes(c, t);

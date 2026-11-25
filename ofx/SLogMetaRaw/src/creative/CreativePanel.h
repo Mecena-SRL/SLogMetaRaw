@@ -134,7 +134,15 @@ static const CrChoiceDef kCrChoices[] = {
       "squadrato, ad angoli arrotondati, o limato e aperto fino alle perforazioni (il quadro le circonda)",
       kGrShot },
     { "mediumRoom", "Stanza", &CreativeControls::mediumRoom, kCrRoomNames, 3, kCrAll,
-      "Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore", kGrView } };
+      "Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore", kGrView },
+    { "printSound", "Colonna sonora della copia", &CreativeControls::printSound, kCrSoundNames, 7,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "La colonna sonora che si vede nella scansione da bordo a bordo di una copia 35 mm o 16 mm (uscita Rec.709 con "
+      "un positivo): la pista ottica tra immagine e perforazioni (a densità variabile, ad area variabile, due piste "
+      "stereo), poi Dolby Digital tra le perforazioni, il codice DTS accanto all'immagine e l'SDDS sui bordi; ciano "
+      "sulle copie a colori dal 2002 circa. In 35 mm l'immagine si restringe al formato Academy accanto alla pista. "
+      "Super 8 e 16 mm, anche invertibile: la pista magnetica. Secondo epoca e formato: dall'anno della pellicola",
+      kGrView } };
 const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
 
 struct CrSliderDef
@@ -392,6 +400,7 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log || negView;
     if (!std::strcmp(name, "gateMask")) return c.scanView == 0;
     if (!std::strcmp(name, "scanOverscan")) return c.scanView == 0;
+    if (!std::strcmp(name, "printSound")) return c.scanView < 2 || creativeSoundGauge(c.format) == 0;
     if (!std::strcmp(name, "baseDecay")) return creativeBase(c) == 4;   // polyester does not decay
     if (negView && crIs(name, { "print", "printR", "printG", "printB", "printContrast" })) return true;
     const bool none = log || negView || c.medium <= 0 || c.medium >= kCrMediumCount;

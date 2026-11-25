@@ -230,6 +230,10 @@ tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS 
   FUJI, AGFA, ORWO…), the stock's code in that gauge, NITRATE FILM, SAFETY FILM or ESTAR, a running number and, from
   1990, KeyKode with its bar code; photo film numbers its frames. The scanner's light glows around the perforations
   and along the base's cut edge. New *Scan overscan* control.
+- **Soundtrack on prints**: edge to edge, a 35 mm or 16 mm print shows its soundtrack at the SMPTE positions:
+  the optical track (variable density, variable area, Dolby Stereo), from 1993 Dolby Digital between the
+  perforations, DTS and SDDS, the cyan track from 2004; Super 8 and 16 mm can carry a magnetic stripe. New *Print
+  soundtrack* menu (by era or by hand).
 
 **New in 4.3.0.**
 

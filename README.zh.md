@@ -159,6 +159,9 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 - **音频选项一致**：两个音频插件的每个菜单只提供与上方选择相符的项：先是录音机自带的介质、话筒和降噪，再是兼容选项（Nagra 不能录 VHS）；在 *Mix e supporto* 中，调音台决定母带介质，母带决定可转录到什么。
 - **片门毛发、灰尘和划痕更真实**：毛发向尖端变细，密度不均，阴影像胶片上一样模糊（Super 8 和拷贝上更明显）；有时卷曲，或是双股纤维。灰尘边缘不规则、大小不一；划痕沿线条改变粗细和强度。
 - **带厂商边缘印字的扫描**：边到边视图的片边印有品牌（1990 年前 EASTMAN，之后 KODAK；FUJI、AGFA、ORWO…）、该规格的片号、NITRATE FILM / SAFETY FILM / ESTAR、流水号，1990 年起还有 KeyKode 条码；照相胶片标出帧号。扫描仪光线在齿孔周围和片基切边处有光晕。新增「扫描过扫」控制。
+- **拷贝上的声带**：边到边扫描时，35 mm 或 16 mm 拷贝按 SMPTE 位置显示声带：光学声带（变密度、变面积、Dolby
+  Stereo），1993 年起片孔之间的 Dolby Digital、DTS 和 SDDS，2004 年起青色声带；Super 8 和 16 mm 可带磁条。新菜单
+  *Colonna sonora della copia*（按年代或手动）。
 
 **4.3.0 新功能。**
 

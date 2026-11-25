@@ -67,7 +67,8 @@ non profili misurati.
   o oltre la larghezza della pellicola (da bordo a bordo, ×0,7). Scritte sul bordo (`creativeEdgePrint` host,
   `cr_edge_print` kernel): font 5×7 a punti che si fondono (`kCrFont`), lettere alte ~0,7 mm (7 righe da 0,1 mm, meno
   se il margine è stretto) nel margine fuori dalle perforazioni (dalla parte della fila unica, letta al contrario),
-  esposizione latente 1,5: scure sul negativo, chiare sull'invertibile e sul bordo nero della copia. Testo: marca
+  esposizione latente 1,5: scure sul negativo, chiare sull'invertibile; sulla copia (`printClear`) il testo è quello
+  della pellicola da stampa (5385/5381/5384/2383, 5302/2302 in b/n, FUJI 3510 dal 1999 [gen]), scuro sul bordo chiaro. Testo: marca
   (EASTMAN prima del 1990, KODAK dopo; CineStill = KODAK), codice del formato (regola 5xxx→7xxx, 85xx→86xx come nelle
   liste per formato) o prima parola del nome, NITRATE FILM / SAFETY FILM / ESTAR da `creativeBase`, poi: dal 1990
   Kodak e Fuji in 16/35/65 il KeyKode (lettere, numeri del rotolo, metraggio a 4 cifre e 52 moduli di codice a barre);
@@ -77,6 +78,19 @@ non profili misurati.
   (`cr_strip_light`): calo verso gli angoli 5 %, alone delle ottiche 10 % con raggio max(0,04 mm, 5 px), riga del
   taglio della base 20 % nitrato, 28 % acetato, 45 % poliestere, larga max(0,015 mm, 1 px); tolleranza delle
   perforazioni ±4 µm per foro [gen].
+  Copia e colonna sonora (dalla 4.3.1, `creativeSoundtrack` host, `cr_sound`/`cr_margin`/`cr_mag` kernel; ricerca su
+  SMPTE 40, 41, 112, 139, 164, 176, 195, ST 203, RP 115, ISO 17266, Pritchard; mm dal bordo guida): la stampatrice
+  espone solo il quadro intero della cinepresa e la zona della pista (35 mm 4,88-7,82), il resto della copia resta
+  chiaro con le scritte scure della pellicola da stampa; perforazioni KS 2,794×1,981. Pista ottica 4,90-7,44 mm,
+  modulata 5,21-7,14 (due piste stereo affiancate); DTS 7,42-7,67; Dolby Digital 2,41 mm quadrato (76×76 bit, logo
+  DD al centro) in ogni intervallo tra le perforazioni lato pista; SDDS 0,295-1,831 mm da entrambi i bordi (al posto
+  delle scritte). Con la pista Super 35 e Techniscope si stampano Academy (22×16,03, centro +1,3 mm) o 4 perf scope.
+  16 mm: perforazione singola, pista 13,46-15,49 mm dal bordo perforato; magnetica 14,55 mm, larga 2,41. Super 8:
+  pista magnetica 7,24-7,92 mm, bilanciamento 0,08-0,38. Epoca (`printSound` = 0, anno della pellicola): muta prima
+  del 1928, densità variabile fino al 1954, area variabile mono, Dolby Stereo dal 1976, digitali dal 1993 (SDDS fino al
+  2007 [gen]); 16 mm area variabile dal 1933. Pista ciano (solo lo strato sensibile al rosso) sulle copie a colori dal
+  2004; i digitali sono solo colorante (ciano scuro). Il suono (inviluppo di frasi e portante, rumore) è [gen]; la
+  riduzione di rumore lascia una riga sottile nelle pause.
 - Il negativo com'è (*Uscita*, dalla 4.3, `cr_negative`): densità per strato = gamma del negativo 0,6 per log E (0,18
   per stop) da un piede morbido 4,5 stop sotto il grigio, coloranti complementari con il poco di assorbimento indesiderato
   che la maschera lascia (5-10 % [gen]), sulla base arancione (Status M 0,24 / 0,62 / 0,92, tipo Vision [gen]), vista

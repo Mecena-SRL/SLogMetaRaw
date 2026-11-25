@@ -226,6 +226,10 @@ ajustados com material real. Ainda não testado no Resolve; Metal verificado pel
   depois KODAK; FUJI, AGFA, ORWO…), o código do filme naquele formato, NITRATE FILM, SAFETY FILM ou ESTAR, um número
   progressivo e desde 1990 o KeyKode com código de barras; filmes de foto numeram os fotogramas. A luz do scanner
   brilha em volta das perfurações e no corte da base. Novo controle *Overscan*.
+- **Trilha sonora nas cópias**: de borda a borda, uma cópia de 35 mm ou 16 mm mostra a trilha sonora nas posições
+  SMPTE: pista óptica (densidade variável, área variável, Dolby Stereo), desde 1993 Dolby Digital entre as
+  perfurações, DTS e SDDS, desde 2004 a pista ciano; Super 8 e 16 mm podem ter pista magnética. Novo menu *Colonna
+  sonora della copia* (pela época ou à mão).
 
 **Novidades da 4.3.0.**
 

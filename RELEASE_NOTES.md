@@ -16,10 +16,17 @@
   in fabbrica: marca (EASTMAN prima del 1990, poi KODAK; FUJI, AGFA, ORWO…), codice della pellicola nel formato
   (5219 in 35 mm, 7219 in 16 mm), NITRATE FILM, SAFETY FILM o ESTAR secondo il supporto, numero progressivo con i
   simboli della data; dal 1990 il KeyKode con il codice a barre; sulle pellicole foto i numeri dei fotogrammi. Scure
-  sul negativo, chiare sul bordo nero della copia. La luce dello scanner ha un alone intorno alle perforazioni, una
+  sul negativo; sulla copia il bordo resta chiaro e porta le scritte scure della pellicola da stampa. La luce dello scanner ha un alone intorno alle perforazioni, una
   riga luminosa sul taglio della base (più sul poliestere), cala un poco verso gli angoli; ogni perforazione è
   fustellata con qualche micron di tolleranza. Nuovo *Overscan della scansione*: quanto margine si prende oltre il
   quadro o la larghezza della pellicola.
+- **Creative, colonna sonora sulle copie**: nella scansione da bordo a bordo di una copia 35 mm o 16 mm compare la
+  colonna sonora, con le misure SMPTE: la pista ottica tra immagine e perforazioni (a densità variabile fino agli anni
+  '50, poi ad area variabile; due piste Dolby Stereo dal 1976), dal 1993 Dolby Digital tra le perforazioni, il codice
+  DTS accanto all'immagine e l'SDDS sui due bordi; dal 2004 la pista ciano delle copie a colori. In 35 mm l'immagine
+  si restringe al formato Academy accanto alla pista; la copia 16 mm ha una sola fila di perforazioni. Super 8 e
+  16 mm possono avere la pista magnetica. Nuovo menu *Colonna sonora della copia* (secondo l'epoca e il formato, o
+  scelta a mano). Fuori dalla zona stampata la copia è chiara, come sulle copie vere.
 
 ## Log MetaRaw 4.3.0
 
