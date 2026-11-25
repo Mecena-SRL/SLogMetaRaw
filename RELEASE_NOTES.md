@@ -11,6 +11,9 @@
     riversaggi in più copie e ascolto (radio a valvole, transistor, juke-box, TV, sala).
   - Ogni stadio ha un interruttore; Saturazione, Rumori, Wow e flutter, Dry/wet e Uscita regolano il risultato. I valori
     sono stime da tarare a orecchio.
+- **Installer a componenti**, come quello di Resolve: Log MetaRaw (script e nodi Color) è sempre installato; Stabilize e
+  Motion Blur (Mac) e l'audio per Fairlight sono spuntati di serie e si possono togliere (Mac: «Personalizza»; Windows:
+  «Scegli i componenti»).
 
 - **Creative, Ingresso (IDT)**: oltre a DaVinci WG/Intermediate, S-Log3, S-Log2 e ACEScct ora anche Rec.709, ACEScg,
   ACES2065-1 e Cineon, per usarlo anche dopo un grade. Rec.709 si legge con la curva BT.709, quindi il grigio di un

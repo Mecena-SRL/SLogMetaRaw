@@ -12,7 +12,9 @@ dell'SDK richiede Xcode e l'SDK CoreAudio di Apple). Linux: Resolve non carica p
 compila solo per i controlli.
 
 Un solo modulo, `Log MetaRaw Audio.vst3`, contiene i due plugin. Installazione: `/Library/Audio/Plug-Ins/VST3/` su Mac
-(dal pkg), `%CommonProgramFiles%\VST3\` su Windows (setup o `install.ps1`).
+(dal pkg), `%CommonProgramFiles%\VST3\` su Windows (setup o `install.ps1`). Negli installer è un componente a sé,
+spuntato di serie: con «Personalizza» (Mac) o «Scegli i componenti» (Windows) si può lasciare fuori. Log MetaRaw
+(script e nodi Color) è sempre installato; su Mac anche Stabilize e Motion Blur sono un componente facoltativo.
 
 ```
 cmake -S audio/vst3 -B build/audio -DCMAKE_BUILD_TYPE=Release
