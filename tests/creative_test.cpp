@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -44,6 +45,20 @@ int main()
     int W, H, space, gamma, frame, frames, threads;
     char line[8192];
     if (!fgets(line, sizeof(line), stdin)) return 2;
+    if (!std::strncmp(line, "names", 5)) {   // every menu entry and every text the panel shows exists
+        int bad = 0;
+        for (const CrChoiceDef& d : kCrChoices)
+            for (int i = 0; i < d.count; ++i)
+                if (!d.options[i] || !*d.options[i]) printf("%s %d\n", d.name, i), ++bad;
+        for (int i = 0; i < kCrMediumCount; ++i)
+            if (!kCrMediumInfo[i]) printf("mediumInfo %d\n", i), ++bad;
+        for (int i = 0; i < kCrProcessCount; ++i)
+            if (!kCrProcessInfo[i] || !*kCrProcessInfo[i]) printf("processInfo %d\n", i), ++bad;
+        for (const CrMaker& m : kCrMakers)
+            for (int i = 0; i < m.count; ++i)
+                if (!m.stocks[i].name) printf("%s %d\n", m.param, i), ++bad;
+        return bad ? 1 : 0;
+    }
     int weaveFrames = 0;
     if (sscanf(line, "weave %d %d %d", &W, &H, &weaveFrames) == 3) {   // the unsteadiness offsets, frame by frame
         if (!fgets(line, sizeof(line), stdin)) return 2;

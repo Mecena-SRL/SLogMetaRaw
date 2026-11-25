@@ -2,6 +2,8 @@
 
 ## In sviluppo
 
+- **Creative, corretto un crash**: scegliere come supporto di visione il proiettore Super 8, il Trinitron, il plasma o
+  il primo LCD chiudeva Resolve (mancava il testo «Come si vede» di quei supporti). Un test ora controlla ogni voce.
 - **Creative, oscillazione della pellicola rifatta**: non più una sinusoide regolare ma tre cause separate, ognuna con
   il suo carattere.
   - *Ripresa* (spunta e ampiezza): la griffa sbaglia a ogni fotogramma in verticale, il pattino fa derivare di lato.

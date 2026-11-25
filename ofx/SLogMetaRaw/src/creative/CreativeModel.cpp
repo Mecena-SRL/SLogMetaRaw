@@ -89,7 +89,13 @@ const char* const kCrMediumInfo[kCrMediumCount] = {
     "righe sottili, fosfori a strisce",
     "LCD riflettente 160x144 a quattro toni di verde, retinatura ordinata, griglia fra i pixel, cornice, scia",
     "Carta: bianco della carta, nero massimo (Dmax 2,1), gamut più piccolo che comprime i colori saturi, fibre, luce "
-    "della lampada che cala ai bordi" };
+    "della lampada che cala ai bordi",
+    "Proiettore Super 8 di casa: alogena a 3100 K, macchia calda al centro, sfarfallio a 18 fotogrammi con otturatore "
+    "a tre pale, la griffa che fa saltare il quadro, obiettivo economico morbido, angoli del finestrino arrotondati",
+    "Trinitron: griglia ad apertura (strisce continue), più luce, vetro più scuro, i due fili di smorzamento a un "
+    "terzo e a due terzi dell'altezza",
+    "Plasma: nero profondo, gamma circa 2,3, dithering a impulsi nelle ombre che cambia a ogni fotogramma",
+    "Primo LCD: nero grigio-bluastro, pixel lenti che lasciano la scia, bianco freddo, 6 bit con bande morbide" };
 const char* const kCrFormatNames[kCrFormatCount] = { "Super 8", "16 mm", "Super 35", "65 mm (Todd-AO, Panavision 70)",
                                                      "IMAX 15/70", "Lastra 9x12", "Super 16", "8 mm",
                                                      "9,5 mm Pathé-Baby", "35 mm anamorfico", "Techniscope",

@@ -276,6 +276,13 @@ class Creative(unittest.TestCase):
         self.assertLess(vhs, bc)
 
 
+    def test_every_menu_entry_and_text_exists(self):
+        """A missing entry is a null pointer: Resolve crashed choosing the 4.2.0 viewing media without their text."""
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        res = subprocess.run([self.exe], input='names\n', capture_output=True, text=True, timeout=60)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+
     # ---- unsteadiness: camera, printer, projector
 
     def weave(self, controls, n=240, size=(1920, 1080)):
