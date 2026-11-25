@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.1.0
 
 - **Log MetaRaw Creative** al posto del Detail (stesso posto nel bundle, icona numero 5): sviluppo creativo con un
   solo motore che rifà il procedimento. 16 processi: negativo colore e stampa (14 pellicole, anche Sovcolor, ORWO,
