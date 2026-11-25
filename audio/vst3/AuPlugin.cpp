@@ -258,6 +258,7 @@ public:
     {
         timer_ = nullptr;
         controls_.clear();
+        menus_.clear();
         values_.clear();
         if (frame) {
             frame->forget();
@@ -268,15 +269,38 @@ public:
     void valueChanged(CControl* control) override
     {
         ParamID id = ParamID(control->getTag());
+        for (Menu& m : menus_)
+            if (m.menu == control) {   // a menu entry stands for a plain value; its children follow it
+                int i = int(m.menu->getCurrentIndex());
+                if (i < 0 || i >= int(m.plains.size()) || m.plains[size_t(i)] < 0) return sync(true);
+                edit(id, m.plains[size_t(i)]);
+                double v[kPCount];
+                values(v);
+                for (AuParamId child : auCoerce(v, mix_)) {
+                    getController()->beginEdit(child);
+                    edit(child, v[child]);
+                    getController()->endEdit(child);
+                }
+                return sync(true);
+            }
         ParamValue n = control->getValueNormalized();
         getController()->setParamNormalized(id, n);
         getController()->performEdit(id, n);
         showValue(id);
+        sync();
     }
     void controlBeginEdit(CControl* control) override { getController()->beginEdit(ParamID(control->getTag())); }
     void controlEndEdit(CControl* control) override { getController()->endEdit(ParamID(control->getTag())); }
 
 private:
+    struct Menu
+    {
+        COptionMenu* menu;
+        AuParamId id;
+        std::vector<int> plains;   // per entry: the parameter's plain value, -1 = a family title
+        std::vector<std::string> names;
+    };
+
     static void style(CTextLabel* l, const SharedPointer<CFontDesc>& font, CColor colour)
     {
         l->setFont(font);
@@ -297,14 +321,14 @@ private:
     }
     void addControl(AuParamId id, const CRect& r)
     {
-        if (auParam(id).kind == AuKind::List) {
+        if (auParam(id).kind == AuKind::List) {   // filled by sync(): its entries depend on the other menus
             auto* menu = new COptionMenu(r, this, id);
-            for (const std::string& name : auListNames(id, mix_)) menu->addEntry(name.c_str());
             menu->setFont(kNormalFont);
             menu->setFontColor(CColor(240, 234, 220));
             menu->setBackColor(CColor(52, 48, 44));
             menu->setFrameColor(CColor(120, 110, 96));
-            add(menu, id);
+            frame->addView(menu);
+            menus_.push_back({ menu, id });
             return;
         }
         auto* slider = new CSlider(CRect(r.left, r.top + 6, r.right, r.bottom - 6), this, id, 0, int32_t(r.getWidth()),
@@ -332,8 +356,64 @@ private:
                 text->setText(value.c_str());
             }
     }
+    void values(double* v)   // the plain values the controller holds now
+    {
+        defaults(v, mix_);
+        for (AuParamId id : auParams(mix_))
+            v[id] = getController()->normalizedParamToPlain(id, getController()->getParamNormalized(id));
+    }
+    void edit(int id, double plain)
+    {
+        ParamValue n = getController()->plainParamToNormalized(ParamID(id), plain);
+        getController()->setParamNormalized(ParamID(id), n);
+        getController()->performEdit(ParamID(id), n);
+    }
+    // A menu offers what its parents allow; the recorders come grouped under their family. A value loaded from an
+    // older project that no longer fits is kept and shown at the end, never changed behind the user's back.
+    void fill(Menu& m, const double* v)
+    {
+        std::vector<int> plains;
+        std::vector<std::string> names;
+        if (m.id == kPDevice)
+            for (int f = 0, flat = 0; f < int(std::size(kAuFamilies)); ++f) {
+                plains.push_back(-1);
+                names.push_back(kAuFamilies[f].name);
+                for (size_t i = 0; i < kAuFamilies[f].count; ++i, ++flat) {
+                    plains.push_back(flat);
+                    names.push_back(kAuFamilies[f].devices[i].name);
+                }
+            }
+        else
+            for (int p : auAllowed(m.id, v, mix_)) {
+                plains.push_back(p);
+                names.push_back(auEntryName(m.id, p, v, mix_));
+            }
+        const int current = auPlain(v, m.id);
+        if (std::find(plains.begin(), plains.end(), current) == plains.end()) {
+            plains.push_back(current);
+            names.push_back(auEntryName(m.id, current, v, mix_));
+        }
+        if (plains != m.plains || names != m.names) {
+            m.menu->removeAllEntry();
+            for (size_t i = 0; i < names.size(); ++i)
+                m.menu->addEntry(names[i].c_str(), -1,
+                                 plains[i] < 0 ? CMenuItem::kTitle | CMenuItem::kDisabled : CMenuItem::kNoFlags);
+            m.plains = std::move(plains);
+            m.names = std::move(names);
+        }
+        const int at = int(std::find(m.plains.begin(), m.plains.end(), current) - m.plains.begin());
+        if (m.menu->getCurrentIndex() != at) {
+            m.menu->setCurrent(at);
+            m.menu->invalid();
+        }
+    }
     void sync(bool all = false)   // the host or automation may have moved a parameter
     {
+        double v[kPCount];
+        values(v);
+        for (Menu& m : menus_)
+            if (all || !m.menu->isEditing()) fill(m, v);
+        const bool copies = v[kPTransfer] > 0;   // copies only count when there is a transfer
         for (auto& [control, id] : controls_) {
             if (control->isEditing()) continue;
             float n = float(getController()->getParamNormalized(ParamID(id)));
@@ -341,12 +421,17 @@ private:
                 control->setValueNormalized(n);
                 control->invalid();
             }
+            if (id == kPCopies && control->getMouseEnabled() != copies) {
+                control->setMouseEnabled(copies);
+                control->setAlphaValue(copies ? 1 : 0.35f);
+            }
             showValue(id);
         }
     }
 
     bool mix_;
     std::vector<std::pair<CControl*, int>> controls_;
+    std::vector<Menu> menus_;
     std::vector<std::pair<CTextLabel*, int>> values_;
     SharedPointer<CVSTGUITimer> timer_;
 };
