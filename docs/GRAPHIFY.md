@@ -50,7 +50,7 @@ Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Creative (sl
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp)
   ├──> creative/CreativeFactory.h ──> CreativeEffect, CreativePanel (tabella del pannello), CreativeModel (tabelle
-  │                                  dei processi → CreativeParams), CreativeEngine (CPU) | CreativeKernels (Metal)
+  │                                  dei processi → CreativeParams), CreativePresets (dispositivi, modelli, pellicole), CreativeEngine (CPU) | CreativeKernels (Metal)
   └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles, develop/ClipMeta (lettura clip)
                                     (tabella camere e formati, docs/DENOISE.md)
 
@@ -66,7 +66,8 @@ common/  (condiviso dai nodi)
   controlli di Toni e Zone). Pannello a gruppi annidati: Ripresa, Spazio colore (Ingresso, Senza metadata,
   Uscita), Toni, Zone, Dati di ripresa.
 - **Creative** (secondo nodo, slot e identificatore del vecchio Detail): sviluppo creativo, un motore unico per 16
-  processi (pellicole, procedimenti storici, video analogico, camere digitali). `CreativeModel::creativePrepare` porta
+  processi (pellicole, procedimenti storici, video analogico, camere digitali). `CreativePresets.h` tiene dispositivi, modelli e pellicole con nomi
+  reali (`creativeResolve` ne ricava processo e variante); `CreativeModel::creativePrepare` porta
   comandi e tabelle in `CreativeParams`; per pixel `math/Creative.h` (`cr_record`, `cr_glow_at`, `cr_process`,
   `cr_signal_at`), passi in `CreativeEngine` (CPU) e `metal/CreativeKernels.mm` + `metal/kernels/Creative.metal`.
   Accesso temporale OFX per le pose in sequenza. `docs/CREATIVE.md`, ricerche in `docs/creative/`.

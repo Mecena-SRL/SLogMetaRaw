@@ -36,6 +36,7 @@ private:
     void updateProcess();   // the rows and groups of the chosen process
     void resetAll();
     void loadMedium();      // the chosen medium's preset into the response rows
+    void loadDevice();      // the chosen model's preset into the format, texture or tape rows
     void fetchRecords(const CreativeControls& c, double t, const OFX::Image& layout, OFX::Image* frame,
                       std::unique_ptr<OFX::Image> keep[3], const float* out[3]);
 
@@ -51,6 +52,9 @@ private:
     OFX::IntParam* m_SettingsVersion = nullptr;
     OFX::ChoiceParam* m_Process = nullptr;
     OFX::IntParam* m_MediumLoaded = nullptr;
+    OFX::IntParam* m_DeviceLoaded = nullptr;
+    OFX::ChoiceParam* m_Stocks[kCrMakerCount] = {};
+    OFX::BooleanParam* m_Toggles[kCrToggleCount] = {};
     OFX::ChoiceParam* m_Choices[kCrChoiceCount] = {};
     OFX::DoubleParam* m_Sliders[kCrSliderCount] = {};
 };

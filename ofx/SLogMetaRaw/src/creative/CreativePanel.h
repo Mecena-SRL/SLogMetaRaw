@@ -3,6 +3,7 @@
 // effect reads it and shows each row only with its processes. Names are permanent (Resolve saves by name).
 #pragma once
 #include <cstring>
+#include <initializer_list>
 
 #include "CreativeModel.h"
 
@@ -26,11 +27,11 @@ enum CreativeGroup { kGrProcess, kGrShot, kGrPrint, kGrTexture, kGrSeparation, k
                      kGrColour, kGrView, kGrCount };
 struct CrGroupDef { const char* name; const char* label; bool open; };
 static const CrGroupDef kCrGroups[kGrCount] = {
-    { "processGroup", "Processo", true },       { "shotGroup", "Ripresa e sviluppo", true },
+    { "processGroup", "Dispositivo e pellicola", true },       { "shotGroup", "Ripresa e sviluppo", true },
     { "printGroup", "Stampa e copie", true },          { "textureGroup", "Grana e ottica", true },
     { "separationGroup", "Separazioni", true }, { "screenGroup", "Mosaico", true },
     { "plateGroup", "Lastra e carta", true },   { "signalGroup", "Segnale", true },
-    { "colourGroup", "Colore", false },        { "viewGroup", "Supporto di visione", true } };
+    { "colourGroup", "Colore", false },        { "viewGroup", "Proiezione e visione", true } };
 
 static const char* const kCrOutputNames[2] = { "Rec.709 Gamma 2.4 (stampa)", "Log d'ingresso (scansione del negativo)" };
 
@@ -46,6 +47,26 @@ struct CrChoiceDef
     int group = kGrProcess;
 };
 static const CrChoiceDef kCrChoices[] = {
+    { "device", "Dispositivo", &CreativeControls::device, kCrDeviceNames, kCrDeviceCount, kCrAll,
+      "Che cosa ha ripreso l'immagine. Poi il modello (nomi veri), il formato, il produttore e la pellicola: ogni "
+      "scelta carica il suo aspetto (curva, colore, grana, instabilità, ottica) nei comandi sotto, che restano "
+      "modificabili. A mano: tutti i procedimenti, Technicolor e lastre compresi" },
+    { "process", "Processo", &CreativeControls::process, kCrProcessNames, kCrProcessCount, kCrAll,
+      "Il procedimento: come la luce diventa immagine. Ognuno ha i suoi comandi qui sotto" },
+    { "filmCamera", "Cinepresa", &CreativeControls::filmCamera, kCrCameraNames.data(), kCrCameraCount, kCrAll,
+      "La macchina: carica formato, instabilità del quadro, sfarfallio e carattere dell'obiettivo (vignettatura, "
+      "aberrazione, diffusione)" },
+    { "videoCamera", "Videocamera", &CreativeControls::videoCamera, kCrVideoCameraNames.data(), kCrVideoCameraCount,
+      kCrAll, "La camera e il suo registratore: carica il nastro, l'usura, il cambio testine e l'instabilità" },
+    { "cinemaCamera", "Camera", &CreativeControls::cinemaCamera, kCrCinemaCameraNames.data(), kCrCinemaCameraCount,
+      kCrAll, "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento di quella camera" },
+    { "phoneCamera", "Modello", &CreativeControls::phoneCamera, kCrPhoneCameraNames.data(), kCrPhoneCameraCount,
+      kCrAll, "Il sensore, l'elaborazione e la compressione di quel telefono o di quella camera" },
+    { "format", "Formato", &CreativeControls::format, kCrFormatNames, kCrFormatCount, kCrPhoto,
+      "Le dimensioni del fotogramma: più piccolo = grana, alone e instabilità più grandi sull'immagine. La "
+      "cinepresa carica il suo; sotto, i formati che monta" },
+    { "maker", "Produttore", &CreativeControls::maker, kCrMakerNames.data(), kCrMakerCount, kCrAll,
+      "Chi ha fatto la pellicola: sotto, le sue pellicole" },
     { "negative", "Pellicola", &CreativeControls::negative, kCrNegativeNames, kCrNegativeCount,
       CR_BIT(kCrColourNegative), "Il negativo: contrasto per strato, piede e spalla, interimage, grana, alone, coloranti" },
     { "print", "Positivo", &CreativeControls::print, kCrPrintNames, kCrPrintCount, CR_BIT(kCrColourNegative),
@@ -70,8 +91,6 @@ static const CrChoiceDef kCrChoices[] = {
       CR_BIT(kCrCollodion), "Vetro su fondo nero o ferro laccato: il nero dietro l'argento" },
     { "paper", "Carta", &CreativeControls::paper, kCrPaperNames, kCrPaperCount, CR_BIT(kCrAlbumen),
       "Salata: opaca, nelle fibre. Albumina: lucida, neri più profondi" },
-    { "format", "Formato", &CreativeControls::format, kCrFormatNames, kCrFormatCount, kCrPhoto,
-      "Le dimensioni del fotogramma: più piccolo = grana, alone e instabilità più grandi sull'immagine" },
     { "analog", "Formato video", &CreativeControls::analog, kCrAnalogNames, kCrAnalogCount, CR_BIT(kCrAnalog),
       "Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato" },
     { "digital", "Camera", &CreativeControls::digital, kCrDigitalNames, kCrDigitalCount, CR_BIT(kCrDigital),
@@ -79,7 +98,7 @@ static const CrChoiceDef kCrChoices[] = {
     { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
       "Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. "
       "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
-    { "medium", "Visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
+    { "medium", "Proiettato o visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
       "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
       "console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, luce, bianco e colore di quel "
       "supporto: poi si possono cambiare. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView },
@@ -229,12 +248,52 @@ static const CrSliderDef kCrSliders[] = {
       "Il tubo di casa ingrandisce l'immagine e ne nasconde i bordi; il monitor da regia la mostra intera" } };
 const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);
 
-// Rows that depend on another choice, hidden while it makes them do nothing: no print (scan or Log output) has no
-// generations or print grain; the Log output has no medium; no medium has no intensity or response, and each medium
-// shows only the response rows it has (the console none, overscan only on tubes).
+// What the film applies, as check boxes (film processes only). Off: see CreativeControls.
+struct CrToggleDef { const char* name; const char* label; int CreativeControls::*field; const char* hint; };
+static const CrToggleDef kCrToggles[] = {
+    { "useTone", "Curva e contrasto della pellicola", &CreativeControls::useTone,
+      "Spento: la luce e il contrasto restano quelli del video, che esce nella sua codifica (niente stampa né "
+      "supporto di visione)" },
+    { "useColour", "Colore della pellicola", &CreativeControls::useColour,
+      "Spento: i colori restano quelli del video; la pellicola dà solo la sua luminosità (e una B/N tiene il colore)" },
+    { "useTexture", "Grana e texture", &CreativeControls::useTexture,
+      "Grana, alone, diffusione, obiettivo, instabilità, polvere e graffi. Solo questo acceso: la grana di quella "
+      "pellicola su quel formato sul tuo video, nient'altro" } };
+const int kCrToggleCount = sizeof(kCrToggles) / sizeof(kCrToggles[0]);
+
+inline bool crIs(const char* name, std::initializer_list<const char*> names)
+{
+    for (const char* n : names)
+        if (!std::strcmp(name, n)) return true;
+    return false;
+}
+
+// Rows that depend on another choice, hidden while they do nothing. c: the controls as the engine reads them
+// (creativeResolve). The device hides the process and the variants its model or stock sets; each family shows its
+// model; the film's toggles hide what they switch off. No print (scan or input encoding out) has no generations or
+// print grain; that output has no medium; no medium has no intensity or response, and each medium shows only the
+// response rows it has (the console none, overscan only on tubes).
 inline bool crRowIdle(const char* name, const CreativeControls& c)
 {
-    const bool log = c.process == kCrColourNegative && c.output == CR_OUT_LOG;
+    const bool film = c.device == kCrDevFilm, manual = c.device == kCrDevManual;
+    if (!std::strcmp(name, "process")) return !manual;
+    if (!std::strcmp(name, "filmCamera") || !std::strcmp(name, "maker")) return !film;
+    if (!std::strcmp(name, "videoCamera")) return c.device != kCrDevVideo;
+    if (!std::strcmp(name, "cinemaCamera")) return c.device != kCrDevCinema;
+    if (!std::strcmp(name, "phoneCamera")) return c.device != kCrDevPhone;
+    if (crIs(name, { "negative", "reversal", "bwStock", "sensitivity" })) return film;
+    if (!std::strcmp(name, "digital")) return !manual;
+    const bool toggles = creativeToggles(c.process);
+    if (crIs(name, { "useTone", "useColour", "useTexture" })) return !toggles;
+    const bool tone = !toggles || c.useTone, colour = !toggles || c.useColour, texture = !toggles || c.useTexture;
+    if (!tone && crIs(name, { "output", "print", "push", "silver", "flash", "printR", "printG", "printB",
+                              "printContrast", "printGrain", "generation" }))
+        return true;
+    if (!colour && !std::strcmp(name, "filter")) return true;   // the records are the picture's own channels
+    if (!texture && crIs(name, { "grain", "grainSize", "halation", "bloom", "bloomRadius", "aberration", "vignette",
+                                 "weave", "breath", "dust", "scratches", "printGrain" }))
+        return true;
+    const bool log = creativeLogOut(c);
     const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
     if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;
     if (!std::strcmp(name, "medium")) return log;

@@ -5,6 +5,10 @@
 #pragma once
 #include "../../gen/DevelopMath.h"
 
+#include <string>
+
+#include "CreativePresets.h"
+
 // "Processo": the order is permanent (Resolve saves the index); append only.
 enum CreativeProcess {
     kCrColourNegative, kCrReversal, kCrBlackWhite, kCrTechni3, kCrTechni2, kCrAutochrome, kCrDufay, kCrThreePlates,
@@ -16,7 +20,7 @@ extern const char* const kCrProcessInfo[kCrProcessCount];
 
 // The variants of each process (one choice parameter each, shown with its process). Append only.
 const int kCrNegativeCount = 20, kCrReversalCount = 6, kCrBWStockCount = 6, kCrSensitivityCount = 4, kCrFilterCount = 5,
-          kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 12,
+          kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 15,
           kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 8;
 extern const char* const kCrNegativeNames[kCrNegativeCount];
 extern const char* const kCrReversalNames[kCrReversalCount];
@@ -34,10 +38,23 @@ extern const char* const kCrGenerationNames[kCrGenerationCount];
 extern const char* const kCrMediumNames[kCrMediumCount];
 extern const char* const kCrMediumInfo[kCrMediumCount];
 
+// "Dispositivo": what took the picture. Manual = the process chosen by hand (every process); the others choose a
+// model, and film a manufacturer and stock, which set the process and its variant. Append only.
+enum CreativeDevice { kCrDevManual, kCrDevFilm, kCrDevVideo, kCrDevCinema, kCrDevPhone, kCrDeviceCount };
+extern const char* const kCrDeviceNames[kCrDeviceCount];
+
 // What the panel holds, in the panel's units. Defaults: a node that does nothing surprising.
 struct CreativeControls
 {
     int process = kCrColourNegative, output = 0;
+    // device and its preset: model per family, manufacturer, stock per manufacturer. deviceLoaded: the model whose
+    // values the texture rows (or the tape rows) hold, as creativeDeviceKey; any other renders the model's preset.
+    int device = kCrDevManual, filmCamera = 17, videoCamera = 5, cinemaCamera = 0, phoneCamera = 0, maker = 0;
+    int stock[kCrMakerCount] = {};
+    int deviceLoaded = -1;
+    // what the film applies (0 off): its curve and contrast, its colour, its grain and texture. Tone off = the
+    // picture's own light, back in the input encoding: with colour off too, only the film's grain on the video.
+    int useTone = 1, useColour = 1, useTexture = 1;
     int negative = 0, reversal = 0, bwStock = 0, sensitivity = 3, filter = 0, techniEra = 0, collodion = 0, paper = 1,
         print = 1, format = 2, analog = 1, digital = 0, generation = 0, medium = 0;
     // shot and development
@@ -72,6 +89,23 @@ void creativeLoadMedium(CreativeControls& c, int m);
 // Which response rows mean something for medium m: tone (gamma, contrast, light, peak, room), white, overscan.
 struct CrMediumRows { bool tone, white, overscan; };
 CrMediumRows creativeMediumRows(int m);
+
+// The device's model as one number (0 for manual), and its preset written into c's rows: format, weave, flicker and
+// lens for a film camera, tape and its faults for a video camera; c.deviceLoaded = the key.
+int creativeDeviceKey(const CreativeControls& c);
+void creativeLoadDevice(CreativeControls& c);
+// The controls as the engine reads them: the device's process and variant (stock, camera row), the model's preset
+// when the rows do not hold it. Manual: c as it is.
+CreativeControls creativeResolve(const CreativeControls& c);
+// The chosen stock (nullptr unless a film device) and whether it was made in the chosen format.
+const CrStock* creativeStock(const CreativeControls& c);
+bool creativeStockFits(const CreativeControls& c);
+// What the panel says about the device: the model, its formats, the stock (year, kind, gauges) and any mismatch.
+std::string creativeDeviceInfo(const CreativeControls& c);
+// Whether the output is the input encoding (Log output, or the film's tone off): no print, no viewing medium.
+bool creativeLogOut(const CreativeControls& resolved);
+// Whether the toggles apply (film processes: colour negative, reversal, black and white).
+bool creativeToggles(int process);
 
 // Whether the picture of the previous frame is needed too (an LCD's slow response).
 bool creativeNeedsPrevious(const CreativeControls& c);

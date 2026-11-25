@@ -46,6 +46,11 @@ CreativeEffect::CreativeEffect(OfxImageEffectHandle p_Handle) : ImageEffect(p_Ha
         for (int i = 0; i < kCrSliderCount; ++i)
             if (paramExists(kCrSliders[i].name)) m_Sliders[i] = fetchDoubleParam(kCrSliders[i].name);
         if (paramExists("mediumLoaded")) m_MediumLoaded = fetchIntParam("mediumLoaded");
+        if (paramExists("deviceLoaded")) m_DeviceLoaded = fetchIntParam("deviceLoaded");
+        for (int i = 0; i < kCrMakerCount; ++i)
+            if (paramExists(kCrMakers[i].param)) m_Stocks[i] = fetchChoiceParam(kCrMakers[i].param);
+        for (int i = 0; i < kCrToggleCount; ++i)
+            if (paramExists(kCrToggles[i].name)) m_Toggles[i] = fetchBooleanParam(kCrToggles[i].name);
     } catch (...) {
     }
     try {
@@ -128,19 +133,22 @@ CreativeControls CreativeEffect::readControls(double t) const
     for (int i = 0; i < kCrSliderCount; ++i)
         if (m_Sliders[i]) c.*(kCrSliders[i].field) = m_Sliders[i]->getValueAtTime(t);
     if (m_MediumLoaded) c.mediumLoaded = m_MediumLoaded->getValue();
+    if (m_DeviceLoaded) c.deviceLoaded = m_DeviceLoaded->getValue();
+    for (int i = 0; i < kCrMakerCount; ++i)
+        if (m_Stocks[i]) m_Stocks[i]->getValueAtTime(t, c.stock[i]);
+    for (int i = 0; i < kCrToggleCount; ++i)
+        if (m_Toggles[i]) c.*(kCrToggles[i].field) = m_Toggles[i]->getValueAtTime(t) ? 1 : 0;
     return c;
 }
 
 void CreativeEffect::updateProcess()
 {
-    int proc = 0;
-    m_Process->getValue(proc);
-    if (proc < 0 || proc >= kCrProcessCount) proc = kCrColourNegative;
-    const unsigned bit = CR_BIT(proc);
     auto show = [this](const char* name, bool on) {
         if (paramExists(name)) getParam(name)->setIsSecret(!on);
     };
-    const CreativeControls now = readControls(timeLineGetTime());
+    const CreativeControls now = creativeResolve(readControls(timeLineGetTime()));
+    const int proc = now.process >= 0 && now.process < kCrProcessCount ? now.process : kCrColourNegative;
+    const unsigned bit = CR_BIT(proc);
     bool used[kGrCount] = {};
     used[kGrProcess] = used[kGrColour] = true;
     for (const CrChoiceDef& c : kCrChoices) {
@@ -154,6 +162,8 @@ void CreativeEffect::updateProcess()
         used[s.group] = used[s.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
+    for (int i = 0; i < kCrMakerCount; ++i) show(kCrMakers[i].param, now.device == kCrDevFilm && now.maker == i);
+    for (const CrToggleDef& t : kCrToggles) show(t.name, !crRowIdle(t.name, now));
     auto setText = [this](const char* name, const std::string& text) {
         if (!paramExists(name)) return;
         OFX::StringParam* info = fetchStringParam(name);
@@ -162,6 +172,10 @@ void CreativeEffect::updateProcess()
         if (cur != text) info->setValue(text);
     };
     setText("processInfo", kCrProcessInfo[proc]);
+    show("processInfo", now.device == kCrDevManual);
+    const std::string device = creativeDeviceInfo(now);
+    show("deviceInfo", !device.empty());
+    setText("deviceInfo", device);
     const bool viewed = !crRowIdle("mediumInfo", now);
     show("mediumInfo", viewed);
     setText("mediumInfo", viewed ? kCrMediumInfo[now.medium] : "");
@@ -176,6 +190,31 @@ void CreativeEffect::resetAll()
             m_Sliders[i]->setValue(def.*(kCrSliders[i].field));
         }
     loadMedium();   // the response rows go back to the medium's own values, not to the monitor's
+    loadDevice();   // and the texture rows to the model's
+}
+
+void CreativeEffect::loadDevice()
+{
+    CreativeControls c = readControls(timeLineGetTime());
+    if (c.device == kCrDevManual) return;
+    creativeLoadDevice(c);
+    for (int i = 0; i < kCrChoiceCount; ++i) {
+        const char* n = kCrChoices[i].name;
+        if (m_Choices[i] && (!std::strcmp(n, "format") || !std::strcmp(n, "analog"))) {
+            int cur = 0;
+            m_Choices[i]->getValue(cur);
+            if (cur != c.*(kCrChoices[i].field)) m_Choices[i]->setValue(c.*(kCrChoices[i].field));
+        }
+    }
+    static const char* const rows[] = { "weave", "breath", "vignette", "aberration", "bloom", "wear", "heads",
+                                        "instability" };
+    for (int i = 0; i < kCrSliderCount; ++i)
+        for (const char* r : rows)
+            if (m_Sliders[i] && !std::strcmp(kCrSliders[i].name, r)) {
+                m_Sliders[i]->deleteAllKeys();
+                m_Sliders[i]->setValue(c.*(kCrSliders[i].field));
+            }
+    if (m_DeviceLoaded) m_DeviceLoaded->setValue(c.deviceLoaded);
 }
 
 void CreativeEffect::loadMedium()
@@ -203,6 +242,7 @@ void CreativeEffect::beginEdit()
         syncClip();
         const CreativeControls c = readControls(timeLineGetTime());
         if (c.medium > 0 && c.mediumLoaded != c.medium) loadMedium();   // a grade from before the response rows
+        if (c.device > 0 && c.deviceLoaded != creativeDeviceKey(c)) loadDevice();
         updateProcess();
         m_Badge.refresh(true);
     } catch (...) {
@@ -224,10 +264,16 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
         return;
     }
     if (p_ParamName == "creativeReset") resetAll();
-    if (p_ParamName == "medium" && p_Args.reason == OFX::eChangeUserEdit) loadMedium();
-    else if (p_ParamName == "nodeInput") refreshInfo();
-    else if (p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print" || p_ParamName == "output")
-        updateProcess();   // rows that depend on these choices
+    const bool user = p_Args.reason == OFX::eChangeUserEdit;
+    const bool model = p_ParamName == "device" || p_ParamName == "filmCamera" || p_ParamName == "videoCamera"
+                       || p_ParamName == "cinemaCamera" || p_ParamName == "phoneCamera";
+    if (p_ParamName == "medium" && user) loadMedium();
+    if (model && user) loadDevice();
+    if (p_ParamName == "nodeInput") refreshInfo();
+    else if (model || p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print"
+             || p_ParamName == "output" || p_ParamName == "format" || p_ParamName == "maker"
+             || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3))
+        updateProcess();   // rows and info that depend on these choices
     m_Badge.refresh(false);
 }
 

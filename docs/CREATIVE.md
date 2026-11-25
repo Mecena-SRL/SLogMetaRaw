@@ -28,10 +28,34 @@ in sequenza (Tre lastre, Kinemacolor), che leggono i fotogrammi successivi.
 Il rumore è un hash intero deterministico: stessi bit su CPU e Metal, a ogni render, diverso per fotogramma. I raggi
 seguono l'altezza del fotogramma: stesso aspetto in proxy e a piena risoluzione.
 
+## Preset (`src/creative/CreativePresets.h`)
+
+Il pannello parte dal **Dispositivo**: Processo a mano (tutti i processi, il pannello di sempre e il default, così i
+grade salvati prima non cambiano), cinepresa o fotocamera a pellicola, videocamera analogica, cinema digitale, telefono
+e compatta. Ogni famiglia ha i suoi modelli con nome commerciale, scelti diversi tra loro; il nome dice a quale look si
+mira, i numeri sono stime nostre dalle ricerche (`creative-ricerca/v2`: cineprese, formati, pellicole, digitali, video),
+non profili misurati.
+
+- Cinepresa (25): formato nativo e formati montati, instabilità (doppio pin 0,1 … manovella 1), sfarfallio, vignettatura,
+  aberrazione e diffusione dell'obiettivo. Sceglierla li carica nei comandi (`creativeLoadDevice`, `deviceLoaded`); un
+  grade che non li ha usa quelli del modello.
+- Produttore (13) e pellicola (118): processo (negativo, invertibile, B/N), variante del motore da cui parte, formati in cui
+  è esistita, grana (RMS; Vision3 relativa al 500T 5219: 50D 0,55, 250D 0,70, 200T 0,75, 800T 1,4, 5254 1,6, 5247 2,0),
+  saturazione, contrasto, alone (CineStill senza rem-jet), dominante (Fuji più fredda, Est verde-ciano, Agfa oliva),
+  sensibilità per le B/N antiche. `creativeResolve` ne ricava processo e variante; `creativeDeviceInfo` scrive i formati
+  della cinepresa, dove è esistita la pellicola e i casi fuori formato (resi lo stesso).
+- Formati nuovi: 35 mm Academy, 135 e 120 (grana e dimensione ∝ M^0,32 e M^0,65, M = √(area S35/area)).
+- Video, cinema digitale, telefoni: per ora scelgono un nastro (con usura, testine, instabilità) o una riga delle camere
+  esistenti; la riscrittura del segnale analogico e dei digitali è il passo successivo.
+- Interruttori (solo pellicole): *Curva e contrasto* spento = curva retta e uscita nella codifica d'ingresso (niente
+  stampa né supporto); *Colore* spento = record uguali ai canali del video, strati uguali, niente dominanti (una B/N tiene
+  il colore del video); *Grana e texture* spento = niente grana, alone, diffusione, ottica, instabilità, polvere, graffi.
+  Tutti e tre spenti = il video com'è (verificato); solo grana = la grana dello stock e del formato sul video.
+
 ## I dati (`src/creative/CreativeModel.cpp`, pannello `src/creative/CreativePanel.h`)
 
 Ogni processo è un caso di `creativePrepare` e righe di tabelle: negativi (20), invertibili (6), B/N (6) con sensibilità e
-filtri, positivi (9), generazioni (4), formati (12, da 8 mm a IMAX 15/70), nastri (11), camere (10), supporti di visione (8). Le tabelle crescono solo in coda: Resolve
+filtri, positivi (9), generazioni (4), formati (15, da 8 mm a IMAX 15/70, con 135 e 120), nastri (11), camere (10), supporti di visione (8). Le tabelle crescono solo in coda: Resolve
 salva l'indice delle scelte. Il pannello è una tabella di righe con il gruppo e i processi che le mostrano; i nomi OFX
 sono permanenti (`tests/golden/params_detail.txt`).
 
@@ -55,8 +79,11 @@ sono permanenti (`tests/golden/params_detail.txt`).
   con la luce; duplicati e grana della stampa aumentano la grana; ogni supporto cambia l'immagine e a intensità 0 la
   lascia com'è (salvo la console); l'uscita Log ignora il supporto; il tubo disegna righe e conserva la media; la
   console usa solo i suoi quattro verdi e tiene parte del fotogramma precedente; la carta ha il suo bianco e il suo nero;
-  le copie sfocano i bordi; sala e tubo fanno bagliore attorno alle luci.
-- Pannello: oltre al processo, alcune righe si nascondono quando un'altra scelta le rende inutili (`crRowIdle`):
+  le copie sfocano i bordi; sala e tubo fanno bagliore attorno alle luci; con tutto spento la pellicola restituisce il
+  video; la sola grana conserva i valori e cresce con lo stock (50D < 500T < 5247) e col formato piccolo; Double-X è B/N
+  e senza colore tiene quello del video; un modello digitale o video rende come la sua riga.
+- Pannello: il dispositivo nasconde il processo e le varianti che il modello o lo stock impostano; gli interruttori
+  nascondono ciò che spengono. Oltre al processo, alcune righe si nascondono quando un'altra scelta le rende inutili (`crRowIdle`):
   senza stampa niente Generazione e grana della stampa, con uscita Log niente supporto, senza supporto niente intensità.
   Le luci di stampa R G B compaiono solo dove si stampa a colori (negativo, Technicolor).
 - `tests/test_metal.py::CreativeMetal`: parità CPU/Metal per ogni processo (solo nella CI macOS).
