@@ -1427,15 +1427,16 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
 
     // the support: its own colour in what is seen through it (reversal, print, the negative as it is) and its decay
     if (proc == kCrColourNegative || proc == kCrReversal || proc == kCrBlackWhite) {
-        static const float baseD[5][3] = { { 0, 0, 0 }, { 0.02f, 0.04f, 0.10f }, { 0.02f, 0.02f, 0.04f },
-                                           { 0.01f, 0.01f, 0.02f }, { 0.02f, 0.02f, 0.02f } };   // [gen]
+        // a fresh base is clear: it yellows as it decays (nitrate to amber, acetate a little), polyester stays [gen]
+        static const float baseD[5][3] = { { 0, 0, 0 }, { 0.04f, 0.08f, 0.20f }, { 0.01f, 0.02f, 0.05f },
+                                           { 0.01f, 0.02f, 0.05f }, { 0, 0, 0 } };
         const int b = creativeBase(c);
-        for (int k = 0; k < 3; ++k) {
-            p.stain[k] += baseD[b][k];
-            p.negBase[k] += baseD[b][k];
-        }
         p.decayKind = b == 1 ? 1 : (b == 4 ? 0 : 2);
         p.decay = (float)clampd(c.baseDecay, 0, 1);
+        for (int k = 0; k < 3; ++k) {
+            p.stain[k] += baseD[b][k] * p.decay;
+            p.negBase[k] += baseD[b][k] * p.decay;
+        }
     }
     // the generations between negative and print: duplicates add contrast, lose saturation, add their grain
     const Generation& gen = kGenerations[c.generation >= 0 && c.generation < kCrGenerationCount ? c.generation : 0];

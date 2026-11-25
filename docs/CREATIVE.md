@@ -70,8 +70,9 @@ non profili misurati.
 - Supporto della pellicola (dalla 4.3, `creativeBase`, `cr_base`): nitrato, diacetato, triacetato, poliestere, oppure
   secondo epoca e formato dall'anno della pellicola (nitrato solo 35 mm e più larghi fino al 1951; i formati ridotti
   sempre di sicurezza, diacetato fino al 1948 e poi triacetato; il negativo di ripresa mai su poliestere [gen date]).
-  Il supporto aggiunge la sua densità a ciò che si vede attraverso (invertibile, stampa, negativo com'è: nitrato
-  ambrato 0,02/0,04/0,10, acetati quasi neutri [gen]). *Degrado del supporto*: nitrato, l'immagine sbiadisce verso il
+  Un supporto nuovo è trasparente: degradandosi ingiallisce, e la sua densità si aggiunge a ciò che si vede attraverso
+  (invertibile, stampa, negativo com'è: nitrato fino a 0,04/0,08/0,20, acetato 0,01/0,02/0,05, poliestere niente
+  [gen]); senza degrado l'immagine non cambia. *Degrado del supporto*: nitrato, l'immagine sbiadisce verso il
   centro e vira all'ambra a macchie che crescono dai bordi e restano da un quadro all'altro; acetato (sindrome
   dell'aceto), cristalli diversi a ogni quadro e la pellicola ritirata oscilla fino a 2,5 volte di più in stampa e in
   proiezione; poliestere: niente. Riversaggio: il supporto della copia non si sceglie (kinescopio su acetato, film-out
