@@ -299,6 +299,10 @@ riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI 
 - **Pelo nel finestrino, polvere e graffi veri**: il pelo si assottiglia verso la punta, ha densità irregolare e
   un'ombra sfocata come sulla pellicola (di più su Super 8 e sulle copie); a volte è arricciato o è una fibra a due
   fili. La polvere ha bordi irregolari e granelli di ogni misura; i graffi cambiano spessore e intensità lungo la riga.
+- **Scansione con le scritte del produttore**: da bordo a bordo il margine porta la marca (EASTMAN prima del 1990,
+  poi KODAK; FUJI, AGFA, ORWO…), il codice della pellicola nel formato, NITRATE FILM, SAFETY FILM o ESTAR, un numero
+  progressivo e dal 1990 il KeyKode con il codice a barre; le pellicole foto numerano i fotogrammi. La luce dello
+  scanner fa alone intorno alle perforazioni e lungo il taglio della base. Nuovo comando *Overscan della scansione*.
 
 **Novità della 4.3.0.**
 

@@ -337,7 +337,7 @@ class Creative(unittest.TestCase):
         w, h = 480, 270
         img = self.flat(0.0, w * h)
         ctl = {'process': NEGATIVE, 'print': 1, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0}
-        white = lambda px: min(px) > 0.97  # noqa: E731  (the scanner's light)
+        white = lambda px: min(px) > 0.85  # noqa: E731  (the scanner's light, a little less in the corners)
         out = self.render(ctl, [img], size=(w, h))
         # Super 35: 0.081 mm per px; perforations 14.09 mm either side of the centre, every 4.75 mm
         col = [white(out[y * w + 66]) for y in range(h)]
@@ -349,9 +349,28 @@ class Creative(unittest.TestCase):
         # the camera's weave moves the frame on the film, not the perforations
         moved = dict(ctl, weave=1, camWeave=1)
         a, b = (self.render(moved, [img], frame=f, size=(w, h)) for f in (3, 4))
-        self.assertEqual([white(px) for px in a], [white(px) for px in b])
+        left = lambda o: [white(px) for i, px in enumerate(o) if i % w < w // 2]  # noqa: E731  (the edge print runs on the right)
+        self.assertEqual(left(a), left(b))
         line = lambda o: min(range(4, 40), key=lambda y: sum(o[y * w + 240]))  # noqa: E731
         self.assertNotEqual((line(a), a), (line(b), b))
+
+    def test_scan_shows_the_makers_edge_print_and_takes_the_overscan(self):
+        """Edge to edge, the margin outside the perforations carries the maker's edge print (dense on the negative,
+        clear on the print's black edge); none on a plate; the overscan widens the view (the perforations shrink)."""
+        w, h = 480, 270
+        img = self.flat(0.0, w * h)
+        base = {'process': NEGATIVE, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0}
+        def margin(out):   # the right margin of Super 35, outside the perforations: 15.5-17.5 mm from the centre
+            return [sum(out[y * w + x]) / 3 for y in range(h) for x in range(w // 2 + 194, w // 2 + 212)]
+        neg = margin(self.render(dict(base, output=2), [img], size=(w, h)))
+        self.assertGreater(max(neg) - min(neg), 0.15)   # dark letters on the orange base
+        prt = margin(self.render(dict(base, print=1), [img], size=(w, h)))
+        self.assertGreater(sum(1 for v in prt if v > 0.3), 30)   # clear letters on black
+        self.assertGreater(sum(1 for v in prt if v < 0.05), len(prt) // 2)
+        def film_px(over):   # the film's width on the middle row: past it, the scanner's light
+            out = self.render(dict(base, print=1, scanOverscan=over), [img], size=(w, h))
+            return sum(1 for x in range(w) if min(out[(h // 2) * w + x]) < 0.85)
+        self.assertGreater(film_px(0.0), 1.3 * film_px(0.8))
 
     def test_the_negative_as_it_is_sits_on_its_orange_base(self):
         w, h = 160, 90

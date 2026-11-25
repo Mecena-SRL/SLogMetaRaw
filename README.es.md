@@ -223,6 +223,10 @@ que ajustarlos con material real. Aún no probado en Resolve; Metal verificado p
 - **Pelo en la ventanilla, polvo y rayas reales**: el pelo se afina hacia la punta, tiene densidad irregular y una
   sombra desenfocada como en la película (más en Super 8 y en las copias); a veces es rizado o una fibra de dos hilos.
   El polvo tiene bordes irregulares y granos de todo tamaño; las rayas cambian de grosor e intensidad.
+- **Escaneo con las marcas del fabricante**: de borde a borde el margen lleva la marca (EASTMAN antes de 1990, luego
+  KODAK; FUJI, AGFA, ORWO…), el código de la película en ese formato, NITRATE FILM, SAFETY FILM o ESTAR, un número
+  correlativo y desde 1990 el KeyKode con su código de barras; las películas de foto numeran los fotogramas. La luz
+  del escáner brilla alrededor de las perforaciones y en el corte de la base. Nuevo control *Overscan*.
 
 **Novedades de la 4.3.0.**
 

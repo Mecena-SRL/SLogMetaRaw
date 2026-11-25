@@ -6,6 +6,14 @@
   assottiglia verso la punta, ha densità irregolare, ombra sfocata come sulla pellicola (più su Super 8 e sulle copie)
   e una curva morbida; a volte è arricciato o è una fibra di lanugine a due fili. La polvere ha bordi irregolari,
   granelli di ogni misura e qualche fibra; i graffi cambiano spessore e intensità lungo la riga.
+- **Creative, scansione più vera**: sul bordo della pellicola compaiono le scritte del produttore, come le stampava
+  in fabbrica: marca (EASTMAN prima del 1990, poi KODAK; FUJI, AGFA, ORWO…), codice della pellicola nel formato
+  (5219 in 35 mm, 7219 in 16 mm), NITRATE FILM, SAFETY FILM o ESTAR secondo il supporto, numero progressivo con i
+  simboli della data; dal 1990 il KeyKode con il codice a barre; sulle pellicole foto i numeri dei fotogrammi. Scure
+  sul negativo, chiare sul bordo nero della copia. La luce dello scanner ha un alone intorno alle perforazioni, una
+  riga luminosa sul taglio della base (più sul poliestere), cala un poco verso gli angoli; ogni perforazione è
+  fustellata con qualche micron di tolleranza. Nuovo *Overscan della scansione*: quanto margine si prende oltre il
+  quadro o la larghezza della pellicola.
 
 ## Log MetaRaw 4.3.0
 

@@ -83,6 +83,7 @@ struct CreativeControls
     // unsteadiness, each from its own machine (0 off): the camera's (weave, above), each printing step's, the
     // projector's (multiple of its own, 1 = typical)
     int camWeave = 1, projWeave = 1;
+    double scanOverscan = 0.1;   // the scan's margin beyond the frame (or the film's width), share of it
     int scanView = 0, gateMask = 0;   // the scan: frame only, with the gate's edges, edge to edge; the gate's shape
     // a hair or a crumb of emulsion caught in the camera's gate: the share of shots that have one (0 none)
     double hair = 0;

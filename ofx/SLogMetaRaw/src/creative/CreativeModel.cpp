@@ -1014,6 +1014,111 @@ static void creativeHair(CreativeParams& p, double amount, int W, int H, int fra
     p.hairBox[3] = box[3] + m;
 }
 
+// The maker's edge print on the scanned strip [gen layout, sizes and spacing]: the brand as it reads on the film, the
+// product code of the gauge (or the stock's name), the base (NITRATE FILM, SAFETY FILM, ESTAR) and a running number.
+// From 1990 Kodak and Fuji motion picture negative carries KeyKode (maker and emulsion letters, roll, footage, a bar
+// code); before, a key number and the date marks (dot, triangle, square). Photo film numbers its frames instead.
+// Letters about 0.9 mm high in the margin outside the perforations, repeated along the whole strip (on real film the
+// product line and the key number come every half foot or foot: here closer, so a single frame shows them).
+static int edgeGlyph(char ch)
+{
+    static const char* const order = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+.o^#>/";
+    const char* at = std::strchr(order, ch);
+    return ch && at ? int(at - order) : 0;
+}
+
+static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame)
+{
+    p.edgeN = p.barN = 0;
+    const CrStock* st = creativeStock(c);
+    const unsigned gauge = gaugeOf(c.format);
+    if (!gauge) return;   // a glass plate
+    static const char* const brands[] = { "EASTMAN", "FUJI", "AGFA", "ORWO", "SVEMA", "ILFORD", "FERRANIA",
+                                          "GEVAERT", "ANSCO", "DU PONT", "KODAK", "LOMOGRAPHY", "KONICA" };
+    const int maker = c.device == kCrDevFilm ? pick(c.maker, kCrMakerCount) : 0;
+    std::string name = st ? st->name : (c.process == kCrBlackWhite ? "Double-X 5222 (1959)" : "5247 (1974)");
+    int year = 0;
+    for (size_t k = name.find('('); k != std::string::npos && !year; k = name.find('(', k + 1))
+        if (k + 4 < name.size() && std::isdigit((unsigned char)name[k + 1])) year = std::atoi(name.c_str() + k + 1);
+    if (!year) year = 1975;
+    std::string code;   // the product code as the gauge has it, else the stock's first word
+    for (size_t k = 0; k + 4 <= name.size() && code.empty(); ++k)
+        if (std::isdigit((unsigned char)name[k]) && std::isdigit((unsigned char)name[k + 3])
+            && (k == 0 || !std::isalnum((unsigned char)name[k - 1])) && std::isdigit((unsigned char)name[k + 1])
+            && std::isdigit((unsigned char)name[k + 2]) && (k + 4 == name.size() || !std::isdigit((unsigned char)name[k + 4])))
+            code = name.substr(k, 4);
+    if (!code.empty() && (gauge & (kG8 | kGS8 | kG16))) {
+        if (maker == 0 && code[0] == '5') code[0] = '7';
+        if (maker == 1 && code[0] == '8' && code[1] == '5') code[1] = '6';
+    }
+    if (code.empty()) code = name.substr(0, name.find_first_of(" ("));
+    for (char& ch : code) ch = (char)std::toupper((unsigned char)ch);
+    for (char& ch : code) if (!std::isalnum((unsigned char)ch)) ch = '-';
+    std::string brand = brands[maker];
+    if (maker == 0 && year >= 1990) brand = "KODAK";
+    if (maker == 10) brand = "KODAK";   // CineStill is Kodak stock
+    const int base = creativeBase(c);
+    const bool photo = (gauge & (kG135 | kG120)) != 0;
+    const bool keykode = !photo && year >= 1990 && (maker == 0 || maker == 1) && (gauge & (kG16 | kG35 | kG65));
+    const char* const support = base == 1 ? "NITRATE FILM" : base == 4 ? "ESTAR" : "SAFETY FILM";
+    std::string text;
+    int digits = 0, step = 1;
+    if (photo) {
+        text = brand + " " + code + "  ";
+        digits = 2;   // the frame's number
+    } else if (keykode) {
+        static const char* const em = "ABCDEFGHJKLMNPRSTUVWXYZ";
+        const int shot = frame / 96;
+        text = brand + " " + code + "  " + support + "  " + (maker == 0 ? "K" : "F") + em[(unsigned)year % 23]
+               + std::to_string(10 + (unsigned)(cr_hash01(shot, 1, 995) * 89)) + " "
+               + std::to_string(100000 + (unsigned)(cr_hash01(shot, 2, 995) * 899999)) + " ";
+        digits = 4;   // footage
+    } else {
+        static const char* const marks[] = { "o", "^", "#", "o^", "o#", "^#", "o^#" };
+        text = brand + " " + code + "  " + support + "  " + (year < 1990 && maker == 0 ? marks[year % 7] : "")
+               + (year < 1990 && maker == 0 ? " " : "")
+               + (char)('A' + (unsigned)(cr_hash01(frame / 96, 3, 995) * 26)) + std::to_string(year % 10) + " ";
+        digits = 6;
+    }
+    for (size_t i = 0; i < text.size() && p.edgeN < 48; ++i)
+        p.edgeGlyph[p.edgeN++] = edgeGlyph(text[i]);
+    for (int d = digits - 1; d >= 0 && p.edgeN < 48; --d) p.edgeGlyph[p.edgeN++] = 64 + d;
+    if (photo && p.edgeN + 5 <= 48) {   // "12  >12A"
+        p.edgeGlyph[p.edgeN++] = 0;
+        p.edgeGlyph[p.edgeN++] = edgeGlyph('>');
+        p.edgeGlyph[p.edgeN++] = 65;
+        p.edgeGlyph[p.edgeN++] = 64;
+        p.edgeGlyph[p.edgeN++] = edgeGlyph('A');
+    }
+    // the margin: outside the perforations, else beyond the picture
+    const float half = 0.5f * fs.filmA;
+    float inner = fs.sides == 1 || fs.sides == 2 ? fs.perfX + 0.5f * fs.perfA : 0.5f * fs.apA + std::fabs(fs.apOff);
+    int side = 1;
+    if (fs.sides == 1) side = -1;   // one row of perforations, on the side away from the picture's offset
+    const float margin = half - inner;
+    if (margin < 0.25f) { p.edgeN = 0; return; }
+    p.edgeCH = std::min(0.1f, 0.6f * margin / 7.0f);
+    p.edgeCW = 0.85f * p.edgeCH;
+    p.edgeSide = side;
+    p.edgeAcross = side * (inner + 0.5f * margin);   // cr_film's across is from the film's centre
+    p.edgeStart = 0;
+    p.barN = keykode ? 52 : 0;
+    p.barW = 0.6f * p.edgeCW;
+    p.barStart = p.edgeN * 6 * p.edgeCW + 4 * p.edgeCW;
+    const double len = p.barStart + p.barN * p.barW + 30 * p.edgeCW;
+    // repeats a whole number of frames apart for photo film (one number to a frame), else a whole number of
+    // perforations; the strip moves one pitch per frame, so the print runs past the gate with the film
+    const double unit = photo ? fs.pitch : (fs.perfPitch > 0 ? fs.perfPitch : fs.pitch);
+    p.edgeRepeat = float(photo ? fs.pitch : unit * std::ceil(len / unit));
+    const double at = double(frame) * fs.pitch;
+    const double k = std::floor(at / p.edgeRepeat);
+    p.edgePhase = -float(side) * (float(at - k * p.edgeRepeat) + 0.3f * fs.pitch);
+    p.edgeStep = step;
+    const int roll = int(cr_hash01(frame / 96, 4, 995) * 800000) + 100000;   // a roll's own numbers
+    p.edgeNum = photo ? 1 + int(std::fmod(k, 36.0)) : keykode ? int(std::fmod(k + 1200, 1e4)) : int(std::fmod(roll + k, 1e6));
+    p.edgeExp = 1.5f;   // a strong latent exposure: dense on the negative, clear on a reversal or a print
+}
+
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
                      int history)
 {
@@ -1593,16 +1698,28 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         p.perfPitch = fs.perfPitch;
         p.perfPhase = fs.perfPhase;
         p.sQ = std::max((float)W / p.apW, (float)H / p.apH);
-        float vw = 1.12f * p.apW, vh = 1.12f * p.apH;   // the frame with its edges
+        // the overscan: how much beyond the frame (or the film's width, edge to edge) the scan takes in
+        const float over = (float)clampd(c.scanOverscan, 0, 2);
+        float vw = (1.0f + over) * p.apW, vh = (1.0f + over) * p.apH;   // the frame with its edges
         if (c.scanView >= 2) {   // edge to edge: the film's width and a bit of the frames beside
-            const float across = 1.08f * fs.filmA, along = 1.15f * fs.pitch;
-            vw = fs.travelH ? std::min(along, 1.6f * p.apW) : across;
-            vh = fs.travelH ? across : std::min(along, 1.6f * p.apH);
+            const float across = (1.0f + 0.7f * over) * fs.filmA, along = (1.05f + over) * fs.pitch;
+            vw = fs.travelH ? std::min(along, (1.5f + over) * p.apW) : across;
+            vh = fs.travelH ? across : std::min(along, (1.5f + over) * p.apH);
             if (fs.travelH) p.sCY = p.aOff;
             else p.sCX = p.aOff;
         }
         p.sMM = std::max(vw / (float)W, vh / (float)H);
         p.moved = 1;
+        creativeEdgePrint(p, c, fs, frame);
+        // the scanner's light [gen]: a little fall-off, its optics' glow around the openings, the base piping the
+        // light along its cut edges (polyester most, it is clearer), the perforations' punching tolerance
+        const int b = creativeBase(c);
+        p.lampFall = 0.05f;
+        p.glow = 0.10f;
+        p.glowR = std::max(0.04f, 5.0f * p.sMM);
+        p.pipe = b == 4 ? 0.45f : b == 1 ? 0.2f : 0.28f;
+        p.pipeW = std::max(0.015f, 1.0f * p.sMM);
+        p.perfTol = 0.004f;
     }
     double when[3];
     creativeRecordTimes(c, when);

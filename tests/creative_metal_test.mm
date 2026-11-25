@@ -81,6 +81,7 @@ int main()
             c.scanView = 2;
             c.gateMask = 2;
             c.format = 6;
+            c.hair = 1;   // the gate's hair, the edge print and the scanner's light
         }
         if (k == kCrProcessCount + 11) {   // the negative as it is, rounded gate, nitrate decaying
             c.process = kCrColourNegative;

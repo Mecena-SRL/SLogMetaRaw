@@ -73,6 +73,7 @@ param:temperature|OfxParamTypeDouble|Temperatura|0|shotGroup|||-1|1|-1|1|0.01|2|
 param:tint|OfxParamTypeDouble|Tinta|0|shotGroup|||-1|1|-1|1|0.01|2||Verde (negativo) o magenta|||
 param:push|OfxParamTypeDouble|Sviluppo (stop)|0|shotGroup|||-2|3|-2|3|0.1|1||Spinto (positivo): più contrasto, più grana, ombre più dense. Tirato: più morbido|||
 param:baseDecay|OfxParamTypeDouble|Degrado del supporto|0|shotGroup|||0|1|0|1|0.01|2||Quanto il supporto si è decomposto. Nitrato: l'immagine sbiadisce verso l'ambra a macchie che crescono dai bordi. Acetato: cristalli, e la pellicola ritirata oscilla di più in stampa e in proiezione|||
+param:scanOverscan|OfxParamTypeDouble|Overscan della scansione|0.1|viewGroup|||0|2|0|2|0.01|2||Quanto margine oltre il quadro prende la scansione (con i bordi) o oltre la larghezza della pellicola (da bordo a bordo): 0 = stretto, 1 = il doppio; con valori alti si vedono più quadri vicini|||
 param:silver|OfxParamTypeDouble|Argento trattenuto|0|shotGroup|||0|1|0|1|0.01|2||Salto della sbianca (bleach bypass): l'argento resta con i coloranti, neri densi e colori spenti|||
 param:flash|OfxParamTypeDouble|Preflash|0|shotGroup|||0|0.3|0|0.3|0.005|2||Una luce uniforme prima o dopo la posa: apre le ombre e abbassa il contrasto|||
 param:age|OfxParamTypeDouble|Età|0|shotGroup|||0|1|0|1|0.01|2||Decadimento: coloranti che sbiadiscono a ritmi diversi (il ciano per primo), base che ingiallisce|||

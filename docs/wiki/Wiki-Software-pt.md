@@ -294,6 +294,10 @@ ajustados com material real. Ainda não testado no Resolve; Metal verificado pel
 - **Pelo na janela, poeira e riscos reais**: o pelo afina para a ponta, tem densidade irregular e uma sombra
   desfocada como no filme (mais no Super 8 e nas cópias); às vezes é encaracolado ou uma fibra de dois fios. A poeira
   tem bordas irregulares e grãos de todo tamanho; os riscos mudam de espessura e intensidade.
+- **Digitalização com as marcas do fabricante**: de borda a borda a margem traz a marca (EASTMAN antes de 1990,
+  depois KODAK; FUJI, AGFA, ORWO…), o código do filme naquele formato, NITRATE FILM, SAFETY FILM ou ESTAR, um número
+  progressivo e desde 1990 o KeyKode com código de barras; filmes de foto numeram os fotogramas. A luz do scanner
+  brilha em volta das perfurações e no corte da base. Novo controle *Overscan*.
 
 **Novidades da 4.3.0.**
 

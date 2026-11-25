@@ -299,6 +299,10 @@ tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS 
 - **Gate hair, dust and scratches look real**: the hair caught in the gate tapers to its tip, has uneven density and a
   shadow blurred as on film (more on Super 8 and on prints); now and then it curls or is a two-strand fibre of lint.
   Dust specks have ragged edges and every size; scratches change width and strength along the line.
+- **Scan with the maker's edge print**: edge to edge, the margin carries the brand (EASTMAN before 1990, then KODAK;
+  FUJI, AGFA, ORWO…), the stock's code in that gauge, NITRATE FILM, SAFETY FILM or ESTAR, a running number and, from
+  1990, KeyKode with its bar code; photo film numbers its frames. The scanner's light glows around the perforations
+  and along the base's cut edge. New *Scan overscan* control.
 
 **New in 4.3.0.**
 

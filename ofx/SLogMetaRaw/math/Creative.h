@@ -91,6 +91,16 @@ struct CreativeParams {
     // mm across from the film's centre, every perfPitch from perfPhase), the picture's px per mm (sQ)
     int strip, travelH, gate, perfSides;
     float sMM, sCX, sCY, filmA, aOff, apW, apH, pitch, gateR, perfA, perfL, perfR, perfX, perfPitch, perfPhase, sQ;
+    // the edge print exposed on the film by its maker (edgeN glyphs of kCrFont, 0: none; 64 + d stands for digit d,
+    // from the units, of edgeNum + edgeStep per repeat): columns of edgeCW mm along, rows of edgeCH mm across (7,
+    // upright towards edgeSide), centred edgeAcross mm from the film's centre, from edgeStart mm into every repeat of
+    // edgeRepeat mm counted from edgePhase; a bar code of barN modules barW mm wide from barStart; its latent exposure
+    int edgeN, edgeNum, edgeStep, edgeSide, barN;
+    int edgeGlyph[48];
+    float edgeCW, edgeCH, edgeAcross, edgeRepeat, edgePhase, edgeStart, barStart, barW, edgeExp;
+    // the scanner's light: its fall-off towards the corners, the glow its optics spread around every opening (share,
+    // mm), the light the base pipes along its cut edges (share, mm), the punching's tolerance on each perforation (mm)
+    float lampFall, glow, glowR, pipe, pipeW, perfTol;
     // the negative as it is: base density (orange mask) per channel, density per stop of the dyes
     float negBase[3], negGamma;
     // the film base's decay (decayKind 1 nitrate: amber fading in blotches from the edges; 2 acetate, vinegar
@@ -269,20 +279,96 @@ SM_FN CrFilm cr_film(float x, float y, SM_CREF(CreativeParams) p) {
 }
 
 // What the scanner sees at (x, y) through the film itself: 1 where it looks past the film or through a perforation
-// (the light, white), 0 on the film; soft over half a pixel.
+// (the light), 0 on the film, soft over half a pixel; near an opening the glow of the scanner's optics, and a thin
+// bright line where the base pipes the light along its cut edge. Each perforation sits a few microns off (punching).
 SM_FN float cr_strip_light(int x, int y, SM_CREF(CreativeParams) p) {
     const CrFilm f = cr_film((float)x, (float)y, p);
     const float h = 0.5f * p.sMM;
-    float light = cr_smooth(-h, h, SM_ABS(f.across) - 0.5f * p.filmA);
+    float d = 0.5f * p.filmA - SM_ABS(f.across);   // mm into the film from its nearest opening
     if (p.perfSides != 0) {
-        const float t = (f.along - p.perfPhase) / p.perfPitch;
-        const float l = (t - CR_FLOOR(t + 0.5f)) * p.perfPitch;   // along, from the nearest perforation
-        const float a1 = f.across + p.perfX, a2 = f.across - p.perfX;
-        float d = cr_rrect(p.perfSides == 3 ? f.across : a1, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR);
-        if (p.perfSides == 2) d = SM_MIN(d, cr_rrect(a2, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR));
-        light = SM_MAX(light, 1.0f - cr_smooth(-h, h, d));
+        const float t = (f.along - p.perfPhase) / p.perfPitch, n = CR_FLOOR(t + 0.5f);
+        const int ni = (int)n;
+        const float l = (t - n) * p.perfPitch + p.perfTol * cr_hash(ni, 0, 991);   // along, from the nearest one
+        const float a1 = f.across + p.perfX + p.perfTol * cr_hash(ni, 1, 991);
+        const float a2 = f.across - p.perfX + p.perfTol * cr_hash(ni, 2, 991);
+        float dp = cr_rrect(p.perfSides == 3 ? f.across : a1, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR);
+        if (p.perfSides == 2) dp = SM_MIN(dp, cr_rrect(a2, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR));
+        d = SM_MIN(d, dp);
     }
-    return light;
+    const float open = 1.0f - cr_smooth(-h, h, d);
+    const float on = SM_MAX(d, 0.0f);
+    const float glow = p.glow * SM_EXP(-on / p.glowR) + p.pipe * (1.0f - cr_smooth(0.0f, p.pipeW + h, on));
+    return SM_MAX(open, SM_MIN(glow, 1.0f) * (1.0f - open) + open);
+}
+
+// The edge print: a 5 x 7 font (rows top down, bit 4 the left column) for ' ', A-Z, 0-9, '-', '+', '.', and the
+// date marks dot, triangle and square, '>' and '/'.
+SM_CONST int kCrFont[315] = {
+    0, 0, 0, 0, 0, 0, 0, 14, 17, 17, 31, 17, 17, 17, 30, 17, 17, 30, 17, 17, 30,
+    14, 17, 16, 16, 16, 17, 14, 30, 17, 17, 17, 17, 17, 30, 31, 16, 16, 30, 16, 16, 31,
+    31, 16, 16, 30, 16, 16, 16, 14, 17, 16, 23, 17, 17, 15, 17, 17, 17, 31, 17, 17, 17,
+    14, 4, 4, 4, 4, 4, 14, 7, 2, 2, 2, 2, 18, 12, 17, 18, 20, 24, 20, 18, 17,
+    16, 16, 16, 16, 16, 16, 31, 17, 27, 21, 21, 17, 17, 17, 17, 17, 25, 21, 19, 17, 17,
+    14, 17, 17, 17, 17, 17, 14, 30, 17, 17, 30, 16, 16, 16, 14, 17, 17, 17, 21, 18, 13,
+    30, 17, 17, 30, 20, 18, 17, 15, 16, 16, 14, 1, 1, 30, 31, 4, 4, 4, 4, 4, 4,
+    17, 17, 17, 17, 17, 17, 14, 17, 17, 17, 17, 17, 10, 4, 17, 17, 17, 21, 21, 21, 10,
+    17, 17, 10, 4, 10, 17, 17, 17, 17, 10, 4, 4, 4, 4, 31, 1, 2, 4, 8, 16, 31,
+    14, 17, 19, 21, 25, 17, 14, 4, 12, 4, 4, 4, 4, 14, 14, 17, 1, 2, 4, 8, 31,
+    31, 2, 4, 2, 1, 17, 14, 2, 6, 10, 18, 31, 2, 2, 31, 16, 30, 1, 1, 17, 14,
+    6, 8, 16, 30, 17, 17, 14, 31, 1, 2, 4, 8, 8, 8, 14, 17, 17, 14, 17, 17, 14,
+    14, 17, 17, 15, 1, 2, 12, 0, 0, 0, 31, 0, 0, 0, 0, 4, 4, 31, 4, 4, 0,
+    0, 0, 0, 0, 0, 12, 12, 0, 14, 31, 31, 31, 14, 0, 0, 4, 4, 14, 14, 31, 0,
+    0, 31, 31, 31, 31, 31, 0, 8, 4, 2, 1, 2, 4, 8, 1, 1, 2, 4, 8, 16, 16,
+};
+
+// One dot of the edge print: column ci of a repeat (6 to a character, the 6th blank), row 0 (top) to 6.
+SM_FN int cr_edge_bit(int ci, int row, int num, SM_CREF(CreativeParams) p) {
+    if (ci < 0 || row < 0 || row > 6) return 0;
+    const int chr = ci / 6, col = ci - chr * 6;
+    if (chr >= p.edgeN || col > 4) return 0;
+    int g = p.edgeGlyph[chr];
+    if (g >= 64) {   // a digit of the running number
+        int v = num < 0 ? 0 : num;
+        for (int i = 64; i < g; ++i) v /= 10;
+        g = 27 + v % 10;
+    }
+    return (kCrFont[g * 7 + row] >> (4 - col)) & 1;
+}
+
+// The edge print's cover at pixel (x, y): the letters are dots that merge into strokes (an LED or a lamp behind a
+// mask exposed them), soft by the latent printing; the bar code's bars. It reads along the film, the letters' tops
+// towards the film's edge on a vertical strip and towards its middle on a horizontal one; on the side of a single
+// row of perforations it reads the other way.
+SM_FN float cr_edge_print(float x, float y, SM_CREF(CreativeParams) p) {
+    if (p.edgeN <= 0) return 0.0f;
+    const CrFilm f = cr_film(x, y, p);
+    if (SM_ABS(f.across - p.edgeAcross) > 4.0f * p.edgeCH + p.sMM) return 0.0f;
+    const float rs = (float)(p.travelH != 0 ? -p.edgeSide : p.edgeSide);
+    const float v = 3.5f - (f.across - p.edgeAcross) * rs / p.edgeCH;   // rows from the top
+    const float t = (float)p.edgeSide * f.along - p.edgePhase, k = CR_FLOOR(t / p.edgeRepeat);
+    const float local = t - k * p.edgeRepeat;
+    const int num = p.edgeNum + (int)k * p.edgeStep;
+    const float soft = 0.5f * p.sMM / p.edgeCH + 0.12f;
+    if (p.barN > 0 && local >= p.barStart) {
+        const float m = (local - p.barStart) / p.barW;
+        if (m < (float)p.barN) {
+            const int mi = (int)m;
+            const bool bar = mi < 2 || mi >= p.barN - 2 || cr_hash(num, mi, 993) > 0.0f;
+            const float sa = 0.5f * p.sMM / p.barW + 0.1f, fr = m - (float)mi;
+            const float in = cr_smooth(-sa, sa, fr - 0.1f) * (1.0f - cr_smooth(-sa, sa, fr - 0.9f));
+            return bar ? in * cr_smooth(-soft, soft, v) * (1.0f - cr_smooth(-soft, soft, v - 7.0f)) : 0.0f;
+        }
+    }
+    const float u = (local - p.edgeStart) / p.edgeCW;
+    const int u0 = (int)CR_FLOOR(u), v0 = (int)CR_FLOOR(v);
+    float best = 9.0f;
+    for (int j = -1; j <= 1; ++j)
+        for (int i = -1; i <= 1; ++i)
+            if (cr_edge_bit(u0 + i, v0 + j, num, p) != 0) {
+                const float du = u - ((float)(u0 + i) + 0.5f), dv = v - ((float)(v0 + j) + 0.5f);
+                best = SM_MIN(best, du * du + dv * dv);
+            }
+    return 1.0f - cr_smooth(0.58f - soft, 0.58f + soft, SM_SQRT(best));
 }
 
 // Where (x, y) falls in the picture of the frame it lies in (u, v px) and how much of the gate's light reached it
@@ -316,7 +402,10 @@ SM_FN SMf3 cr_source(CR_PLANE src, int k, int x, int y, SM_CREF(CreativeParams) 
     float gateW = 1.0f, u0 = (float)x, v0 = (float)y;
     if (p.strip != 0) {   // the frame on the scanned strip: its picture, or the film's own edge and frame lines
         const CrStrip st = cr_strip((float)x, (float)y, p.weaveX, p.weaveY, p);
-        if (st.w <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
+        if (st.w <= 0.0f) {   // outside the gate: only the maker's edge print exposed the film
+            const float e = p.edgeExp * cr_edge_print((float)x, (float)y, p);
+            return smf3(e, e, e);
+        }
         gateW = st.w;
         u0 = st.u - p.weaveX;   // the weave is in the frame's place on the film already
         v0 = st.v - p.weaveY;
@@ -872,7 +961,10 @@ SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.strip == 0) return o;
     const float L = cr_strip_light(x, y, p);
     if (L <= 0.0f) return o;
-    const SMf3 w = p.output == CR_OUT_LOG ? cr_encode_input(smf3(2.47f, 2.47f, 2.47f), p) : smf3(1.0f, 1.0f, 1.0f);
+    const float cx = ((float)x + 0.5f) / (float)p.W - 0.5f, cy = ((float)y + 0.5f) / (float)p.H - 0.5f;
+    const float lamp = 1.0f - p.lampFall * 4.0f * (cx * cx + cy * cy);   // the light falls off to the corners
+    const SMf3 w = p.output == CR_OUT_LOG ? cr_encode_input(smf3(2.47f * lamp, 2.47f * lamp, 2.47f * lamp), p)
+                                         : smf3(lamp, lamp, lamp);
     return smf3(o.x + (w.x - o.x) * L, o.y + (w.y - o.y) * L, o.z + (w.z - o.z) * L);
 }
 

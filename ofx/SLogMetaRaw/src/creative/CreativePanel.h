@@ -160,6 +160,10 @@ static const CrSliderDef kCrSliders[] = {
       CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
       "Quanto il supporto si è decomposto. Nitrato: l'immagine sbiadisce verso l'ambra a macchie che crescono dai "
       "bordi. Acetato: cristalli, e la pellicola ritirata oscilla di più in stampa e in proiezione" },
+    { "scanOverscan", "Overscan della scansione", &CreativeControls::scanOverscan, 0, 2, 0.01, kGrView,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "Quanto margine oltre il quadro prende la scansione (con i bordi) o oltre la larghezza della pellicola (da bordo "
+      "a bordo): 0 = stretto, 1 = il doppio; con valori alti si vedono più quadri vicini" },
     { "silver", "Argento trattenuto", &CreativeControls::silver, 0, 1, 0.01, kGrShot, kCrDeveloped,
       "Salto della sbianca (bleach bypass): l'argento resta con i coloranti, neri densi e colori spenti" },
     { "flash", "Preflash", &CreativeControls::flash, 0, 0.3, 0.005, kGrShot, kCrPhoto,
@@ -387,6 +391,7 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     const bool negView = c.process == kCrColourNegative && c.output == 2;   // the negative as it is: no print
     if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log || negView;
     if (!std::strcmp(name, "gateMask")) return c.scanView == 0;
+    if (!std::strcmp(name, "scanOverscan")) return c.scanView == 0;
     if (!std::strcmp(name, "baseDecay")) return creativeBase(c) == 4;   // polyester does not decay
     if (negView && crIs(name, { "print", "printR", "printG", "printB", "printContrast" })) return true;
     const bool none = log || negView || c.medium <= 0 || c.medium >= kCrMediumCount;

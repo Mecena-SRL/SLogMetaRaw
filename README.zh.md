@@ -157,6 +157,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 **4.3.1 新功能。**
 
 - **片门毛发、灰尘和划痕更真实**：毛发向尖端变细，密度不均，阴影像胶片上一样模糊（Super 8 和拷贝上更明显）；有时卷曲，或是双股纤维。灰尘边缘不规则、大小不一；划痕沿线条改变粗细和强度。
+- **带厂商边缘印字的扫描**：边到边视图的片边印有品牌（1990 年前 EASTMAN，之后 KODAK；FUJI、AGFA、ORWO…）、该规格的片号、NITRATE FILM / SAFETY FILM / ESTAR、流水号，1990 年起还有 KeyKode 条码；照相胶片标出帧号。扫描仪光线在齿孔周围和片基切边处有光晕。新增「扫描过扫」控制。
 
 **4.3.0 新功能。**
 

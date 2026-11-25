@@ -63,6 +63,20 @@ non profili misurati.
   irregolare di qualche centesimo di mm, l'immagine circonda le perforazioni). Fasi delle perforazioni del Super 8 e
   misure della perforazione del 9,5 mm e dello scostamento Academy: [gen]. Limiti: i quadri vicini ripetono il
   fotogramma corrente; vignettatura e pelo restano riferiti all'inquadratura, non al quadro.
+  Dalla 4.3.1: *Overscan della scansione* (`scanOverscan`, 0-2, predefinito 0,1): margine oltre il quadro (con i bordi)
+  o oltre la larghezza della pellicola (da bordo a bordo, ×0,7). Scritte sul bordo (`creativeEdgePrint` host,
+  `cr_edge_print` kernel): font 5×7 a punti che si fondono (`kCrFont`), lettere alte ~0,7 mm (7 righe da 0,1 mm, meno
+  se il margine è stretto) nel margine fuori dalle perforazioni (dalla parte della fila unica, letta al contrario),
+  esposizione latente 1,5: scure sul negativo, chiare sull'invertibile e sul bordo nero della copia. Testo: marca
+  (EASTMAN prima del 1990, KODAK dopo; CineStill = KODAK), codice del formato (regola 5xxx→7xxx, 85xx→86xx come nelle
+  liste per formato) o prima parola del nome, NITRATE FILM / SAFETY FILM / ESTAR da `creativeBase`, poi: dal 1990
+  Kodak e Fuji in 16/35/65 il KeyKode (lettere, numeri del rotolo, metraggio a 4 cifre e 52 moduli di codice a barre);
+  prima i segni della data Kodak (punto, triangolo, quadrato) e un numero di 6 cifre; 135 e 120 il numero del
+  fotogramma con «>nnA». Si ripete appena finita (multiplo del passo delle perforazioni) e scorre col film di un passo
+  per fotogramma: più fitta del vero (mezzo piede o un piede) perché si veda in un quadro solo [gen]. Luce
+  (`cr_strip_light`): calo verso gli angoli 5 %, alone delle ottiche 10 % con raggio max(0,04 mm, 5 px), riga del
+  taglio della base 20 % nitrato, 28 % acetato, 45 % poliestere, larga max(0,015 mm, 1 px); tolleranza delle
+  perforazioni ±4 µm per foro [gen].
 - Il negativo com'è (*Uscita*, dalla 4.3, `cr_negative`): densità per strato = gamma del negativo 0,6 per log E (0,18
   per stop) da un piede morbido 4,5 stop sotto il grigio, coloranti complementari con il poco di assorbimento indesiderato
   che la maschera lascia (5-10 % [gen]), sulla base arancione (Status M 0,24 / 0,62 / 0,92, tipo Vision [gen]), vista
