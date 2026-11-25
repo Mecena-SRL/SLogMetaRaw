@@ -192,7 +192,7 @@ Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--d
 un solo database, nessun parser IMU in Log MetaRaw (il lettore Sony provato su FX6/FX30 è stato tolto). Piano di
 integrazione Stabilize/Motion Blur: `docs/dev/STABILIZE.md`. Fatto anche: sorgenti di GyroMotion in `motion/` (copia senza storia, scelta di Ivan), categoria «Log MetaRaw», pkg
 macOS unico che compila Motion. Non provato su Mac. Aperto: DJI Action 4, Linux/Windows per Motion.
-Creative (24/11/2026, non rilasciato): scelta di Ivan, il Detail (Zonale, Split grade, Texture, Clarity, Dehaze, P-003)
+Creative (24/11/2026, rilasciato nella 4.1.0): scelta di Ivan, il Detail (Zonale, Split grade, Texture, Clarity, Dehaze, P-003)
 è sostituito per intero dal nodo Creative nello stesso slot (P-004 nell'Atlante). Ricerche in `docs/creative/`, motore e
 tabelle in `docs/CREATIVE.md`. Verificato: test CPU (`tests/test_creative.py`), host OFX, golden del pannello, controllo
 sintattico del codice Metal con spazi d'indirizzo simulati. Aperto: prova in Resolve, parità Metal (solo CI macOS),
