@@ -48,7 +48,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-4.2.0.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-4.3.0.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -135,7 +135,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v4.2.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v4.3.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -222,6 +222,21 @@ ombre e luci, saturazione, densità colore).
 I numeri sono stime dalle ricerche in [docs/CREATIVE.md](docs/CREATIVE.md), non profili di prodotti: vanno tarati su
 riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI macOS.
 
+**Novità della 4.3.0.**
+
+- **Pellicole per formato**: con una cinepresa scelta compaiono solo le pellicole fatte nel suo formato, di ogni
+  produttore e con il codice di quel formato (in 16 mm il 500T è 7219); i listini completi restano a una spunta.
+- **Scansione**: il quadro, il quadro con i bordi del mascherino o la pellicola da bordo a bordo con perforazioni,
+  interlinee e quadri vicini, con le misure vere di ogni formato. Mascherino squadrato, arrotondato o limato aperto.
+- **Il negativo com'è**: il negativo colore in trasparenza, complementare sulla maschera arancione, con la sua grana.
+- **Supporto della pellicola**: nitrato, acetato o poliestere (o secondo epoca e formato) e il suo degrado: macchie
+  ambrate del nitrato, cristalli e instabilità dell'acetato.
+- **Oscillazione realistica** in ripresa, in stampa e in proiezione, ognuna con la sua spunta; **pelo nel finestrino**
+  secondo la cinepresa.
+- **Console** come supporto di visione: NES, Master System, Mega Drive, Super Nintendo, PlayStation e Saturn sul
+  televisore a tubo.
+- Corretto il crash scegliendo i supporti di visione aggiunti nella 4.2.0.
+
 **Novità della 4.2.0.**
 
 - **Dispositivo › modello**: si parte dalla macchina (cinepresa, videocamera, cinema digitale, telefono), che carica
@@ -280,7 +295,7 @@ Fairlight.
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.2.0`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.3.0`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

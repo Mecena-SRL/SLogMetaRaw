@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -281,6 +281,16 @@ Log MetaRaw  →  Log MetaRaw Creative  →  其余调色  →  输出 CST / LUT
 - 它在同一位置取代了 Detail 节点：用 Detail 保存的调色会以全新的 Creative 打开。
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
+
+**4.3.0 新功能。**
+
+- **按画幅筛选胶片**：选定摄影机后只显示该画幅生产过的胶片，涵盖所有厂商并使用该画幅的编号（16 mm 中 500T 为 7219）；完整清单只需勾选即可。
+- **扫描视图**：仅画面、带片门边缘的画面，或带齿孔、画格线和相邻画格的整条胶片，按各画幅的真实尺寸。片门可选方形、圆角或锉开。
+- **负片原貌**：透光观看的彩色负片，在橙色片基上呈互补色，带有自身的颗粒。
+- **片基材料**：硝酸片基、醋酸片基或涤纶片基（或按年代和画幅自动选择）及其老化：硝酸片基的琥珀色斑块，醋酸片基的结晶与不稳定。
+- **真实的画面晃动**：拍摄、印片和放映各自独立，各有开关；按摄影机产生的**片门毛发**。
+- **游戏机**作为观看介质：NES、Master System、Mega Drive、Super Nintendo、PlayStation 与 Saturn，接显像管电视。
+- 修复了选择 4.2.0 新增观看介质时的崩溃。
 
 **4.2.0 新功能。**
 

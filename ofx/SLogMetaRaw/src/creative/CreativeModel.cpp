@@ -2,6 +2,8 @@
 #include "CreativeModel.h"
 
 #include <cctype>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 #include <cmath>
@@ -73,6 +75,12 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Console 16 bit: Super Nintendo (1990) su tubo, RGB",
                                                      "Console 32 bit: PlayStation (1994) su tubo, RGB",
                                                      "Console 32 bit: Saturn (1994) su tubo, RGB" };
+const char* const kCrScanViewNames[3] = { "Il quadro", "Il quadro con i bordi del mascherino",
+                                          "Da bordo a bordo, con le perforazioni" };
+const char* const kCrBaseNames[5] = { "Secondo epoca e formato", "Nitrato di cellulosa (35 mm, fino al 1951)",
+                                     "Diacetato (pellicola di sicurezza, 16, 9,5 e 8 mm dal 1909)",
+                                     "Triacetato (dal 1948, negativo di ripresa)", "Poliestere (Estar, dal 1955)" };
+const char* const kCrGateNames[3] = { "Squadrato", "Angoli arrotondati", "Limato, aperto fino alle perforazioni" };
 const char* const kCrSensorNames[kCrSensorCount] = { "Nessuno (il segnale com'è)", "3 tubi Plumbicon (anni '70)",
                                                      "3 tubi Plumbicon con bias light e ACT (anni '80)",
                                                      "3 tubi Saticon", "1 tubo Saticon a strisce (consumer)",
@@ -303,6 +311,31 @@ static void nesPalette(float out[192])
         for (int k = 0; k < 3; ++k) out[c * 3 + k] = (float)std::min(std::max(rgb[k], 0.0), 1.0);
     }
 }
+
+// The film strip of each format (kCrFormatNames order), in mm (SMPTE and ISO dimensions; [gen] where marked): travel
+// across the output (1: horizontal, stills and VistaVision, IMAX) or down; film width; the camera aperture across and
+// along; its centre's offset across from the film's centre (towards the side away from a single row of perforations);
+// frame pitch; perforations: sides (0 none, 1 one side, 2 both, 3 between the frames), size across and along, corner
+// radius, centre across from the film's centre, pitch, offset along from the frame's centre. BH (negative) 2.794 x
+// 1.854 with curved sides, KS 2.794 x 1.981, 16 mm 1.829 x 1.270, Super 8 0.914 x 1.143.
+struct FilmStrip { int travelH; float filmA, apA, apL, apOff, pitch; int sides; float perfA, perfL, perfR, perfX,
+                   perfPitch, perfPhase; };
+const FilmStrip kStrips[kCrFormatCount] = {
+    { 0, 7.976f, 5.79f, 4.01f, 0.38f, 4.234f, 1, 0.914f, 1.143f, 0.13f, 3.02f, 4.234f, 0 },   // Super 8 [gen phase]
+    { 0, 16.0f, 10.26f, 7.49f, 0, 7.62f, 2, 1.829f, 1.27f, 0.25f, 6.2f, 7.62f, 3.81f },        // 16 mm double perf
+    { 0, 35.0f, 24.89f, 18.66f, 0, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Super 35, 4 perf
+    { 0, 65.0f, 52.48f, 23.01f, 0, 23.75f, 2, 2.794f, 1.981f, 0.5f, 29.9f, 4.75f, 0 },         // 65 mm, 5 perf
+    { 1, 70.0f, 52.63f, 70.41f, 0, 71.25f, 2, 2.794f, 1.981f, 0.5f, 32.1f, 4.75f, 0 },         // IMAX 15/70
+    { 1, 90.0f, 86.0f, 116.0f, 0, 10000.0f, 0, 0, 0, 0, 0, 1, 0 },                              // plate 9x12
+    { 0, 16.0f, 12.52f, 7.41f, 1.0f, 7.62f, 1, 1.829f, 1.27f, 0.25f, 6.2f, 7.62f, 3.81f },     // Super 16
+    { 0, 8.0f, 4.88f, 3.68f, 1.13f, 3.81f, 1, 1.829f, 1.27f, 0.25f, 2.23f, 3.81f, 1.905f },    // 8 mm
+    { 0, 9.5f, 8.5f, 6.5f, 0, 7.54f, 3, 2.0f, 1.0f, 0.2f, 0, 7.54f, 3.77f },                    // 9.5 mm [gen perf]
+    { 0, 35.0f, 21.95f, 18.59f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // anamorphic
+    { 0, 35.0f, 22.0f, 9.47f, 1.3f, 9.5f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Techniscope 2 perf
+    { 1, 35.0f, 25.17f, 37.72f, 0, 38.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // VistaVision 8 perf
+    { 0, 35.0f, 22.0f, 16.03f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },  // Academy [gen offset]
+    { 1, 35.0f, 24.0f, 36.0f, 0, 38.0f, 2, 2.794f, 1.981f, 0.5f, 14.09f, 4.75f, 2.375f },      // 135, 8 perf
+    { 1, 61.5f, 56.0f, 56.0f, 0, 62.0f, 0, 0, 0, 0, 0, 1, 0 } };                                // 120 6x6
 
 // A white of Kelvin k on a D65 screen, as Rec.709 gains (largest 1), with the eye adapted most of the way: a 3200 K
 // lamp reads warm, not orange (adaptation share [gen]). Planckian locus: Krystek 1985 (as in math/HostOnly.h).
@@ -677,6 +710,25 @@ std::string creativePickLabel(int l, int i)
     return maker + " · " + name;
 }
 
+int creativeBase(const CreativeControls& c)
+{
+    if (c.base >= 1 && c.base <= 4) return c.base;
+    // by era and gauge: nitrate only in 35 mm and wider until the 1951 switch, small gauges always on safety film
+    // (diacetate until triacetate took over at the end of the 1940s); camera film never on polyester [gen dates]
+    int year = 0;
+    if (const CrStock* st = creativeStock(c)) {
+        const char* n = std::strchr(st->name, '(');
+        while (n && !year) {
+            if (std::isdigit((unsigned char)n[1]) && std::isdigit((unsigned char)n[4])) year = std::atoi(n + 1);
+            n = std::strchr(n + 1, '(');
+        }
+    }
+    if (year == 0) return 3;
+    const unsigned g = gaugeOf(c.format);
+    if ((g & (kG35 | kG65 | kG135 | kG120)) && year < 1951) return 1;
+    return year < 1948 ? 2 : 3;
+}
+
 void creativeLoadLens(CreativeControls& c, int l)
 {
     const CrLens& m = kCrLenses[pick(l, kCrLensCount)];
@@ -1038,6 +1090,11 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         printSilver = pr.silver;
         p.dustSign = c.print == 0 ? 1.0f : -1.0f;   // dust on the negative prints white
         if (c.output == CR_OUT_LOG) p.output = CR_OUT_LOG;
+        if (c.output == CR_OUT_NEGATIVE) {   // the negative on a white light: base (Status M, Vision-like) [gen]
+            p.output = CR_OUT_NEGATIVE;
+            set3(p.negBase, 0.24f, 0.62f, 0.92f);
+            p.negGamma = 0.6f * 0.30103f;   // a camera negative's gamma, per stop
+        }
         break;
     }
     case kCrReversal: {
@@ -1368,9 +1425,22 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         rms *= (float)(1.0 + 0.3 * age);
     }
 
+    // the support: its own colour in what is seen through it (reversal, print, the negative as it is) and its decay
+    if (proc == kCrColourNegative || proc == kCrReversal || proc == kCrBlackWhite) {
+        // a fresh base is clear: it yellows as it decays (nitrate to amber, acetate a little), polyester stays [gen]
+        static const float baseD[5][3] = { { 0, 0, 0 }, { 0.04f, 0.08f, 0.20f }, { 0.01f, 0.02f, 0.05f },
+                                           { 0.01f, 0.02f, 0.05f }, { 0, 0, 0 } };
+        const int b = creativeBase(c);
+        p.decayKind = b == 1 ? 1 : (b == 4 ? 0 : 2);
+        p.decay = (float)clampd(c.baseDecay, 0, 1);
+        for (int k = 0; k < 3; ++k) {
+            p.stain[k] += baseD[b][k] * p.decay;
+            p.negBase[k] += baseD[b][k] * p.decay;
+        }
+    }
     // the generations between negative and print: duplicates add contrast, lose saturation, add their grain
     const Generation& gen = kGenerations[c.generation >= 0 && c.generation < kCrGenerationCount ? c.generation : 0];
-    const bool printed = (proc == kCrColourNegative && c.print != 0 && p.output != CR_OUT_LOG) || proc == kCrBlackWhite;
+    const bool printed = (proc == kCrColourNegative && c.print != 0 && p.output == CR_OUT_REC709) || proc == kCrBlackWhite;
     if (printed) {
         printContrast *= gen.contrast;
         p.saturation *= gen.sat;
@@ -1428,6 +1498,8 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     // where the records are read: gate weave, breath, aberration, registration of separate records
     double wv[6];
     creativeWeave(c0, W, H, frame, wv);
+    if (p.decayKind == 2 && p.decay > 0)   // a shrunk acetate base: printer and projector hold it less steadily
+        for (int k = 2; k < 6; ++k) wv[k] *= 1.0 + 1.5 * p.decay;
     p.weaveX = film ? (float)(wv[0] + wv[2]) : 0.0f;   // camera and printer: the picture moves on the film
     p.weaveY = film ? (float)(wv[1] + wv[3]) : 0.0f;
     const double br = clampd(c.breath, 0, 1);
@@ -1478,6 +1550,37 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     p.scratches = film ? (float)clampd(c.scratches, 0, 1) : 0.0f;
     p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0
                || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;
+    const bool strip = c.scanView > 0 && (proc == kCrColourNegative || proc == kCrReversal || proc == kCrBlackWhite);
+    if (strip) {   // the scanned strip: the frame on the film, its gate, the perforations and the frames beside it
+        const FilmStrip& fs = kStrips[pick(c.format, kCrFormatCount)];
+        p.strip = 1;
+        p.travelH = fs.travelH;
+        p.gate = pick(c.gateMask, 3);
+        p.apW = fs.travelH ? fs.apL : fs.apA;
+        p.apH = fs.travelH ? fs.apA : fs.apL;
+        p.filmA = fs.filmA;
+        p.aOff = -fs.apOff;
+        p.pitch = fs.pitch;
+        p.gateR = 0.08f * std::min(fs.apA, fs.apL);   // a rounded gate, as on amateur cameras [gen]
+        p.perfSides = fs.sides;
+        p.perfA = fs.perfA;
+        p.perfL = fs.perfL;
+        p.perfR = fs.perfR;
+        p.perfX = fs.perfX;
+        p.perfPitch = fs.perfPitch;
+        p.perfPhase = fs.perfPhase;
+        p.sQ = std::max((float)W / p.apW, (float)H / p.apH);
+        float vw = 1.12f * p.apW, vh = 1.12f * p.apH;   // the frame with its edges
+        if (c.scanView >= 2) {   // edge to edge: the film's width and a bit of the frames beside
+            const float across = 1.08f * fs.filmA, along = 1.15f * fs.pitch;
+            vw = fs.travelH ? std::min(along, 1.6f * p.apW) : across;
+            vh = fs.travelH ? across : std::min(along, 1.6f * p.apH);
+            if (fs.travelH) p.sCY = p.aOff;
+            else p.sCX = p.aOff;
+        }
+        p.sMM = std::max(vw / (float)W, vh / (float)H);
+        p.moved = 1;
+    }
     double when[3];
     creativeRecordTimes(c, when);
     p.shared = (std::lround(when[0]) == std::lround(when[1]) && std::lround(when[1]) == std::lround(when[2])
@@ -1529,7 +1632,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     // viewing medium: on the finished picture (not on a Log scan, which is graded afterwards)
     const Medium& md = kMedia[c.medium >= 0 && c.medium < kCrMediumCount ? c.medium : 0];
     const float ma = (float)clampd(c.mediumAmount, 0, 1);
-    if (md.kind == CR_MEDIUM_NONE || p.output == CR_OUT_LOG) return;
+    if (md.kind == CR_MEDIUM_NONE || p.output != CR_OUT_REC709) return;
     p.medium = md.kind;
     p.mGain = 1.0f + md.flicker * ma * cr_hash(frame, 5, 81);
     CreativeControls r = c;   // the response: the panel's when it holds this medium's values, else the preset's

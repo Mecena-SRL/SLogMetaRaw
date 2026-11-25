@@ -2,7 +2,7 @@
 
 **English** · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home)
 
-> Version **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Version **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
 Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin, tint, EI, lens, aperture, shutter, colour profile) and uses it inside DaVinci Resolve. Resolve does this only for FX6/FX9 MXF files; for MP4 from FX30, FX3, a7 and a6000 series it ignores that data.
@@ -293,6 +293,20 @@ scratches; in multiples of the material's and the **Formato**'s own, 8 mm to IMA
 
 The numbers are estimates from the research in [docs/CREATIVE.md](docs/CREATIVE.md), not product profiles: they need
 tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS CI tests.
+
+**New in 4.3.0.**
+
+- **Stocks by gauge**: with a camera chosen, only the stocks made in its gauge show, from every maker and with that
+  gauge's code (500T is 7219 in 16 mm); the full lists are one tick away.
+- **Scan view**: the frame, the frame with the gate's edges, or the film edge to edge with perforations, frame lines
+  and the frames beside, at each format's real dimensions. Gate square, rounded or filed open.
+- **The negative as it is**: the colour negative on a light, complementary on its orange mask, with its own grain.
+- **Film base**: nitrate, acetate or polyester (or by era and gauge) and its decay: nitrate's amber blotches,
+  acetate's crystals and unsteadiness.
+- **Realistic weave** in the camera, the printer and the projector, each with its own switch; **gate hair** by
+  camera.
+- **Consoles** as viewing media: NES, Master System, Mega Drive, Super Nintendo, PlayStation and Saturn on a tube TV.
+- Fixed the crash when choosing the viewing media added in 4.2.0.
 
 **New in 4.2.0.**
 

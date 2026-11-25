@@ -1,7 +1,21 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.3.0
 
+- **Creative, supporto della pellicola**: puoi scegliere nitrato, diacetato, triacetato o poliestere, oppure lasciarlo
+  decidere in base all'anno e al formato della pellicola. Il *Degrado del supporto* cambia con il materiale:
+  - nitrato: l'immagine sbiadisce verso l'ambra, a macchie che partono dai bordi;
+  - acetato (sindrome dell'aceto): cristalli e più oscillazione in stampa e in proiezione;
+  - poliestere: resta com'è.
+- **Creative, scansione con perforazioni e mascherino**: nuova *Inquadratura della scansione*, con tre scelte:
+  - il quadro;
+  - il quadro con i bordi del mascherino;
+  - la pellicola da bordo a bordo, con le perforazioni bianche, le interlinee e i quadri vicini.
+  Le misure sono quelle vere di ogni formato, dal Super 8 all'IMAX, foto comprese. Il *Mascherino della cinepresa*
+  può essere squadrato, arrotondato o limato aperto fino alle perforazioni. L'oscillazione in ripresa muove il quadro
+  rispetto alle perforazioni.
+- **Creative, il negativo com'è**: una nuova uscita mostra il negativo colore sviluppato in trasparenza, con i colori
+  complementari sulla maschera arancione e la sua grana.
 - **Creative, pellicole per formato**: con una cinepresa scelta, il pannello propone solo le pellicole fatte nel suo
   formato, di tutti i produttori, con il codice di quel formato (una 16 mm mostra Vision3 500T 7219, non 5219). I
   listini completi per produttore restano a una spunta, *Tutte le pellicole, per produttore*. Una cinepresa con un solo

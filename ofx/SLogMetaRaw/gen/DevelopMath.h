@@ -1485,6 +1485,7 @@ typedef unsigned int CrU;
 #define CR_MOSAIC_RESEAU 2   // ruled lines and squares (Dufaycolor)
 #define CR_OUT_REC709 0
 #define CR_OUT_LOG 1
+#define CR_OUT_NEGATIVE 2   // the colour negative as it is: orange mask, complementary dyes, on a white light
 #define CR_GAMMA24 3         // gamma code of Gamma 2.4 (ColourSpaces.cpp)
 #define CR_MEDIUM_NONE 0
 #define CR_MEDIUM_SCREEN 1   // light on a screen: projection (lamp, lens) or a tube (beam, phosphors, curved glass)
@@ -1518,6 +1519,20 @@ struct CreativeParams {
     // something caught in the camera's gate (a hair or a crumb of emulsion): opacity, half width (px), a polyline
     // of five points (x, y) and its bounding box with the width in it (x0, y0, x1, y1)
     float hair, hairW, hairPt[10], hairBox[4];
+    // the scan of the film strip (strip != 0): output pixel -> mm on the film (sMM per px, the view centred on sCX,
+    // sCY mm from the frame's centre), travel across (travelH) or down; the film (filmA mm across, its centre aOff
+    // from the frame's), the frames (apW x apH mm in output orientation, every pitch mm), the camera gate (gate: 0
+    // square, 1 rounded, 2 filed open to the perforations; gateR its corner radius), the perforations (perfSides 0
+    // none, 1 one side, 2 both, 3 between the frames; perfA x perfL mm across and along, corner perfR, centre perfX
+    // mm across from the film's centre, every perfPitch from perfPhase), the picture's px per mm (sQ)
+    int strip, travelH, gate, perfSides;
+    float sMM, sCX, sCY, filmA, aOff, apW, apH, pitch, gateR, perfA, perfL, perfR, perfX, perfPitch, perfPhase, sQ;
+    // the negative as it is: base density (orange mask) per channel, density per stop of the dyes
+    float negBase[3], negGamma;
+    // the film base's decay (decayKind 1 nitrate: amber fading in blotches from the edges; 2 acetate, vinegar
+    // syndrome: crystals; 0 none), its amount
+    int decayKind;
+    float decay;
     float printOffset[3], printContrast[3], dmax;
     // colour (stops)
     float splitShadow[3], splitHigh[3], splitBalance, saturation, density;
@@ -1657,10 +1672,82 @@ SM_FN SMf3 cr_tap(CR_PLANE src, float u, float v, SM_CREF(CreativeParams) p) {
     return cr_mul(p.toRef, smf3(o[0], o[1], o[2]));
 }
 
+// ---- the scanned strip (research PELLICOLE_E_SVILUPPO.md: SMPTE perforations and apertures)
+
+// A rounded rectangle of half sizes (hx, hy), corner r: signed distance (mm, < 0 inside).
+SM_FN float cr_rrect(float x, float y, float hx, float hy, float r) {
+    r = SM_MIN(r, SM_MIN(hx, hy));
+    const float qx = SM_ABS(x) - (hx - r), qy = SM_ABS(y) - (hy - r);
+    const float ox = SM_MAX(qx, 0.0f), oy = SM_MAX(qy, 0.0f);
+    return SM_SQRT(ox * ox + oy * oy) + SM_MIN(SM_MAX(qx, qy), 0.0f) - r;
+}
+
+// Output pixel (x, y) on the film: X, Y mm from the current frame's centre, in the output's orientation.
+struct CrFilm { float X, Y, across, along; };
+SM_FN CrFilm cr_film(float x, float y, SM_CREF(CreativeParams) p) {
+    CrFilm f;
+    f.X = (x + 0.5f - 0.5f * (float)p.W) * p.sMM + p.sCX;
+    f.Y = (y + 0.5f - 0.5f * (float)p.H) * p.sMM + p.sCY;
+    f.across = (p.travelH != 0 ? f.Y : f.X) - p.aOff;   // from the film's centre
+    f.along = p.travelH != 0 ? f.X : f.Y;
+    return f;
+}
+
+// What the scanner sees at (x, y) through the film itself: 1 where it looks past the film or through a perforation
+// (the light, white), 0 on the film; soft over half a pixel.
+SM_FN float cr_strip_light(int x, int y, SM_CREF(CreativeParams) p) {
+    const CrFilm f = cr_film((float)x, (float)y, p);
+    const float h = 0.5f * p.sMM;
+    float light = cr_smooth(-h, h, SM_ABS(f.across) - 0.5f * p.filmA);
+    if (p.perfSides != 0) {
+        const float t = (f.along - p.perfPhase) / p.perfPitch;
+        const float l = (t - CR_FLOOR(t + 0.5f)) * p.perfPitch;   // along, from the nearest perforation
+        const float a1 = f.across + p.perfX, a2 = f.across - p.perfX;
+        float d = cr_rrect(p.perfSides == 3 ? f.across : a1, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR);
+        if (p.perfSides == 2) d = SM_MIN(d, cr_rrect(a2, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR));
+        light = SM_MAX(light, 1.0f - cr_smooth(-h, h, d));
+    }
+    return light;
+}
+
+// Where (x, y) falls in the picture of the frame it lies in (u, v px) and how much of the gate's light reached it
+// (w: 0 on the frame lines and the edges); the camera's and the printer's weave (wx, wy px) move the frame on the film.
+struct CrStrip { float u, v, w; };
+SM_FN CrStrip cr_strip(float x, float y, float wx, float wy, SM_CREF(CreativeParams) p) {
+    const CrFilm f = cr_film(x, y, p);
+    float X = f.X + wx / p.sQ, Y = f.Y + wy / p.sQ;
+    if (p.travelH != 0) X -= p.pitch * CR_FLOOR(X / p.pitch + 0.5f);
+    else Y -= p.pitch * CR_FLOOR(Y / p.pitch + 0.5f);
+    float hw = 0.5f * p.apW, hh = 0.5f * p.apH, r = p.gate == 1 ? p.gateR : 0.02f, edge = 0.5f * p.sMM + 0.015f;
+    if (p.gate == 2) {   // filed open: the light reaches the perforations, the filed edge is not straight
+        const float wide = 0.5f * p.filmA - 0.25f, frameLine = 0.5f * p.pitch - 0.12f;
+        if (p.travelH != 0) { hw = frameLine; hh = wide; } else { hw = wide; hh = frameLine; }
+        r = 0.3f;
+        edge += 0.06f;
+        X += 0.012f * cr_noise(Y * 6.0f, 3.3f, 961);   // a file's marks: a few hundredths of a millimetre
+        Y += 0.012f * cr_noise(X * 6.0f, 7.1f, 962);
+    }
+    CrStrip o;
+    o.w = 1.0f - cr_smooth(-edge, edge, cr_rrect(X, Y, hw, hh, r));
+    // the picture fills the exposed gate (the lens covers it); the nominal frame keeps the picture's centre
+    const float q = SM_MAX((float)p.W / (2.0f * hw), (float)p.H / (2.0f * hh));
+    o.u = 0.5f * (float)p.W + X * q - 0.5f;
+    o.v = 0.5f * (float)p.H + Y * q - 0.5f;
+    return o;
+}
+
 // Linear Rec.2020 seen by record k at pixel (x, y), from its own frame src.
 SM_FN SMf3 cr_source(CR_PLANE src, int k, int x, int y, SM_CREF(CreativeParams) p) {
-    if (p.moved != 0) {
-        float u = (float)x + p.weaveX + cr_line_shift(y, p), v = (float)y + p.weaveY;
+    float gateW = 1.0f, u0 = (float)x, v0 = (float)y;
+    if (p.strip != 0) {   // the frame on the scanned strip: its picture, or the film's own edge and frame lines
+        const CrStrip st = cr_strip((float)x, (float)y, p.weaveX, p.weaveY, p);
+        if (st.w <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
+        gateW = st.w;
+        u0 = st.u - p.weaveX;   // the weave is in the frame's place on the film already
+        v0 = st.v - p.weaveY;
+    }
+    if (p.moved != 0 || p.strip != 0) {
+        float u = u0 + p.weaveX + cr_line_shift(y, p), v = v0 + p.weaveY;
         if (p.flipX != 0) u = (float)(p.W - 1) - u;
         const float cx = 0.5f * (float)(p.W - 1), cy = 0.5f * (float)(p.H - 1);
         float du = u - cx, dv = v - cy;
@@ -1669,7 +1756,8 @@ SM_FN SMf3 cr_source(CR_PLANE src, int k, int x, int y, SM_CREF(CreativeParams) 
             du *= (1.0f + p.lDistX * rr) / (1.0f + p.lDistX);
             dv *= (1.0f + p.lDistY * rr) / (1.0f + p.lDistY);
         }
-        return cr_tap(src, cx + du * p.recScale[k] + p.recX[k], cy + dv * p.recScale[k] + p.recY[k], p);
+        const SMf3 c = cr_tap(src, cx + du * p.recScale[k] + p.recX[k], cy + dv * p.recScale[k] + p.recY[k], p);
+        return smf3(c.x * gateW, c.y * gateW, c.z * gateW);
     }
     const int i = (y * p.rowPixels + x) * 4;
     return cr_mul(p.toRef, smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma)));
@@ -2112,8 +2200,47 @@ SM_FN SMf3 cr_image(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
-// The process chain from the records' exposures (glows added) to the output code values.
-SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
+// The base decaying (research PELLICOLE_E_SVILUPPO.md, supports): nitrate fades amber in blotches that grow from the
+// edges of the frame and stay from frame to frame; acetate with vinegar syndrome grows crystals, new on every frame.
+// In stops, signed like dust: on a positive amber and dark specks, on a printed negative the opposite.
+SM_FN SMf3 cr_base(SMf3 s, int x, int y, SM_CREF(CreativeParams) p) {
+    if (p.decayKind == 0 || p.decay <= 0.0f) return s;
+    const float sg = p.dustSign;
+    if (p.decayKind == 1) {
+        const float S = (float)p.H / 5.0f, drift = (float)p.frame / 400.0f;
+        const float b = 0.6f * cr_value((float)x / S + drift, (float)y / S, 970)
+                        + 0.4f * cr_value(3.0f * (float)x / S, 3.0f * (float)y / S - drift, 971);
+        const float e = 1.0f - cr_smooth(0.0f, 0.45f, cr_edge(x, y, p));
+        const float a = p.decay * cr_smooth(0.15f, 0.85f, 0.45f + 0.35f * b + 0.6f * e * (0.4f + p.decay));
+        const float k = 1.0f - 0.55f * a;   // the image fades towards the middle
+        return smf3(s.x * k - 0.05f * a * sg, s.y * k - 0.35f * a * sg, s.z * k - 0.9f * a * sg);
+    }
+    const float cell = SM_MAX(3.0f, (float)p.H / 260.0f);
+    const int ci = (int)CR_FLOOR((float)x / cell), cj = (int)CR_FLOOR((float)y / cell);
+    float hit = 0.0f;
+    if (cr_hash01(ci, cj, p.frame * 16 + 980) < p.decay * 0.012f) {
+        const float px = ((float)ci + cr_hash01(ci, cj, 981)) * cell, py = ((float)cj + cr_hash01(ci, cj, 982)) * cell;
+        const float r = cell * (0.2f + 0.3f * cr_hash01(ci, cj, 983)), dx = (float)x - px, dy = (float)y - py;
+        hit = 1.0f - cr_smooth(r * 0.5f, r, SM_SQRT(dx * dx + dy * dy));
+    }
+    const float d = 2.5f * sg * hit;
+    return smf3(s.x - d, s.y - d, s.z - d);
+}
+
+// The developed colour negative on a white light: each record's dye (density above the base: the negative's gamma
+// per stop from its toe, softly), the complementary dyes with the little the mask leaves of their unwanted
+// absorptions [gen], over the orange base. Transmittance, as display-linear light.
+SM_FN SMf3 cr_negative(SMf3 s, SM_CREF(CreativeParams) p) {
+    const float g = p.negGamma;
+    const float dc = g * 0.6f * cr_softplus((s.x + 4.5f) / 0.6f), dm = g * 0.6f * cr_softplus((s.y + 4.5f) / 0.6f);
+    const float dy = g * 0.6f * cr_softplus((s.z + 4.5f) / 0.6f);
+    return smf3(cr_pow10m(p.negBase[0] + dc + 0.05f * dm), cr_pow10m(p.negBase[1] + 0.10f * dc + dm + 0.05f * dy),
+                cr_pow10m(p.negBase[2] + 0.05f * dc + 0.10f * dm + dy));
+}
+
+// The process chain from the records' exposures (glows added) to the output code values; on a scanned strip, the
+// scanner's light past the film and through the perforations.
+SM_FN SMf3 cr_process_film(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
     const float shade = 1.0f - cr_hair(x, y, p);   // light the gate's hair kept from the film
     e = smf3(e.x * shade, e.y * shade, e.z * shade);
     SMf3 s = smf3(cr_hd(cr_stops(e.x), 0, p), cr_hd(cr_stops(e.y), 1, p), cr_hd(cr_stops(e.z), 2, p));
@@ -2122,12 +2249,23 @@ SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
     s = smf3(m + (s.x - m) * p.interlayer, m + (s.y - m) * p.interlayer, m + (s.z - m) * p.interlayer);
     s = cr_grain(s, x, y, p);
     s = cr_damage(s, x, y, p);
+    s = cr_base(s, x, y, p);
     s = cr_colour(s, p);
     if (p.output == CR_OUT_LOG) return cr_encode_input(s, p);
+    if (p.output == CR_OUT_NEGATIVE) return cr_display(cr_negative(s, p), p);
     const SMf3 t = smf3(cr_positive(s.x + p.printOffset[0], p.printContrast[0]),
                         cr_positive(s.y + p.printOffset[1], p.printContrast[1]),
                         cr_positive(s.z + p.printOffset[2], p.printContrast[2]));
     return cr_display(cr_image(cr_print_grain(t, x, y, p), x, y, p), p);
+}
+
+SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
+    const SMf3 o = cr_process_film(e, x, y, p);
+    if (p.strip == 0) return o;
+    const float L = cr_strip_light(x, y, p);
+    if (L <= 0.0f) return o;
+    const SMf3 w = p.output == CR_OUT_LOG ? cr_encode_input(smf3(2.47f, 2.47f, 2.47f), p) : smf3(1.0f, 1.0f, 1.0f);
+    return smf3(o.x + (w.x - o.x) * L, o.y + (w.y - o.y) * L, o.z + (w.z - o.z) * L);
 }
 
 // ---- signal chains (analog video, digital cameras): Y Cb Cr planes of Gamma 2.4 code values

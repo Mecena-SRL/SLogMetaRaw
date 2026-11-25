@@ -48,7 +48,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-4.2.0.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-4.3.0.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -136,7 +136,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v4.2.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v4.3.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -214,6 +214,21 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
 
+**Novidades da 4.3.0.**
+
+- **Películas por formato**: com uma câmera escolhida aparecem só as películas feitas no seu formato, de todos os
+  fabricantes e com o código desse formato (em 16 mm a 500T é 7219); as listas completas ficam a uma caixa.
+- **Digitalização**: o quadro, o quadro com as bordas da janela ou a película de borda a borda com perfurações, linhas
+  entre quadros e quadros vizinhos, com as medidas reais de cada formato. Janela quadrada, arredondada ou limada aberta.
+- **O negativo como é**: o negativo colorido contra a luz, complementar sobre a máscara laranja, com o seu grão.
+- **Suporte da película**: nitrato, acetato ou poliéster (ou por época e formato) e a sua degradação: manchas âmbar do
+  nitrato, cristais e instabilidade do acetato.
+- **Oscilação realista** na filmagem, na cópia e na projeção, cada uma com a sua caixa; **pelo na janela** conforme a
+  câmera.
+- **Consoles** como meio de visualização: NES, Master System, Mega Drive, Super Nintendo, PlayStation e Saturn numa TV
+  de tubo.
+- Corrigido o fecho ao escolher os meios de visualização adicionados na 4.2.0.
+
 **Novidades da 4.2.0.**
 
 - **Dispositivo › modelo**: parte-se da máquina (câmera de cinema, videocâmera, cinema digital, telefone), que carrega
@@ -273,7 +288,7 @@ não testado no Fairlight.
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.2.0`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.3.0`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.

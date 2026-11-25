@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -288,6 +288,21 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
+
+**Novidades da 4.3.0.**
+
+- **Películas por formato**: com uma câmera escolhida aparecem só as películas feitas no seu formato, de todos os
+  fabricantes e com o código desse formato (em 16 mm a 500T é 7219); as listas completas ficam a uma caixa.
+- **Digitalização**: o quadro, o quadro com as bordas da janela ou a película de borda a borda com perfurações, linhas
+  entre quadros e quadros vizinhos, com as medidas reais de cada formato. Janela quadrada, arredondada ou limada aberta.
+- **O negativo como é**: o negativo colorido contra a luz, complementar sobre a máscara laranja, com o seu grão.
+- **Suporte da película**: nitrato, acetato ou poliéster (ou por época e formato) e a sua degradação: manchas âmbar do
+  nitrato, cristais e instabilidade do acetato.
+- **Oscilação realista** na filmagem, na cópia e na projeção, cada uma com a sua caixa; **pelo na janela** conforme a
+  câmera.
+- **Consoles** como meio de visualização: NES, Master System, Mega Drive, Super Nintendo, PlayStation e Saturn numa TV
+  de tubo.
+- Corrigido o fecho ao escolher os meios de visualização adicionados na 4.2.0.
 
 **Novidades da 4.2.0.**
 

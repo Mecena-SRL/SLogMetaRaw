@@ -50,6 +50,33 @@ non profili misurati.
   saturazione, contrasto, alone (CineStill senza rem-jet), dominante (Fuji più fredda, Est verde-ciano, Agfa oliva),
   sensibilità per le B/N antiche. `creativeResolve` ne ricava processo e variante; `creativeDeviceInfo` scrive i formati
   della cinepresa, dove è esistita la pellicola e i casi fuori formato (resi lo stesso).
+- Scansione della pellicola (dalla 4.3, `cr_strip`, `cr_strip_light`, tabella `kStrips`): *Inquadratura della
+  scansione* il quadro (com'era), il quadro con i bordi del mascherino (vista 1,12 volte il quadro) o da bordo a bordo
+  (larghezza della pellicola × 1,08, lungo il trascinamento 1,15 passi: si vedono i quadri vicini, con la stessa
+  immagine). Misure in mm per formato: pellicola, finestrino, scostamento del quadro, passo, perforazioni (BH
+  2,794×1,854 a lati curvi, KS 2,794×1,981, 16 mm 1,829×1,270, Super 8 0,914×1,143; 16 mm a doppia perforazione,
+  Super 16 e Super 8 da un lato, 9,5 mm al centro fra i quadri; foto, VistaVision e IMAX in orizzontale). Fuori dal
+  finestrino la pellicola non è esposta: il processo la rende come Dmin (arancione nel negativo com'è, nero nella
+  stampa e nell'invertibile); fuori dalla pellicola e nelle perforazioni la luce bianca dello scanner. L'oscillazione
+  della cinepresa e della stampa sposta il quadro sulla pellicola, le perforazioni restano ferme. *Mascherino della
+  cinepresa*: squadrato, arrotondato (raggio 8 % del lato corto [gen]) o limato aperto fino alle perforazioni (bordo
+  irregolare di qualche centesimo di mm, l'immagine circonda le perforazioni). Fasi delle perforazioni del Super 8 e
+  misure della perforazione del 9,5 mm e dello scostamento Academy: [gen]. Limiti: i quadri vicini ripetono il
+  fotogramma corrente; vignettatura e pelo restano riferiti all'inquadratura, non al quadro.
+- Il negativo com'è (*Uscita*, dalla 4.3, `cr_negative`): densità per strato = gamma del negativo 0,6 per log E (0,18
+  per stop) da un piede morbido 4,5 stop sotto il grigio, coloranti complementari con il poco di assorbimento indesiderato
+  che la maschera lascia (5-10 % [gen]), sulla base arancione (Status M 0,24 / 0,62 / 0,92, tipo Vision [gen]), vista
+  in trasparenza. La grana è quella del negativo, in densità; niente stampa, niente supporto di visione.
+- Supporto della pellicola (dalla 4.3, `creativeBase`, `cr_base`): nitrato, diacetato, triacetato, poliestere, oppure
+  secondo epoca e formato dall'anno della pellicola (nitrato solo 35 mm e più larghi fino al 1951; i formati ridotti
+  sempre di sicurezza, diacetato fino al 1948 e poi triacetato; il negativo di ripresa mai su poliestere [gen date]).
+  Un supporto nuovo è trasparente: degradandosi ingiallisce, e la sua densità si aggiunge a ciò che si vede attraverso
+  (invertibile, stampa, negativo com'è: nitrato fino a 0,04/0,08/0,20, acetato 0,01/0,02/0,05, poliestere niente
+  [gen]); senza degrado l'immagine non cambia. *Degrado del supporto*: nitrato, l'immagine sbiadisce verso il
+  centro e vira all'ambra a macchie che crescono dai bordi e restano da un quadro all'altro; acetato (sindrome
+  dell'aceto), cristalli diversi a ogni quadro e la pellicola ritirata oscilla fino a 2,5 volte di più in stampa e in
+  proiezione; poliestere: niente. Riversaggio: il supporto della copia non si sceglie (kinescopio su acetato, film-out
+  su poliestere).
 - Pellicola per formato (dalla 4.3): il pannello mostra prima la lista del calibro del formato scelto (`kCrGaugeLists`:
   8, Super 8, 9,5, 16, 35, 65, 135, 120), con le pellicole di tutti i produttori fatte in quel calibro e il codice di
   quel calibro (`creativePickLabel`: Kodak 5xxx → 7xxx in 16 mm e 8 mm, Fuji 85xx → 86xx in 16 mm). È una vista:
