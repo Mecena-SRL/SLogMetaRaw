@@ -537,6 +537,7 @@ void creativeLoadDevice(CreativeControls& c)
         c.vignette = m.vignette;
         c.aberration = m.aberration;
         c.bloom = m.bloom;
+        c.hair = m.hair;
     } else if (c.device == kCrDevVideo) {
         const CrVideoCamera& m = kCrVideoCameras[pick(c.videoCamera, kCrVideoCameraCount)];
         c.analog = m.tape;
@@ -774,6 +775,55 @@ void creativeWeave(const CreativeControls& c0, int W, int H, int frame, double o
     }
 }
 
+// Something caught in the camera's gate, for the shot this frame belongs to (shots of 96 frames, [gen]): in a share
+// `amount` of them a hair (thin, long, curling in from an edge of the aperture) or a crumb of emulsion scraped off
+// the film (short, thick); it trembles a little with the film's passage and stays for the whole shot.
+// The camera aperture's height in mm per format (kCrFormatNames order; SMPTE and makers' figures, plates and stills
+// their picture height): a hair is the same 60-90 um everywhere, huge on Super 8, a thread on 65 mm.
+static const double kGateMM[kCrFormatCount] = { 4.01, 7.49, 18.66, 23.01, 52.63, 90.0, 7.41, 3.68,
+                                                6.5, 18.59, 9.47, 25.17, 16.03, 24.0, 56.0 };
+
+static void creativeHair(CreativeParams& p, double amount, int W, int H, int frame, int format)
+{
+    const double mm = H / kGateMM[format >= 0 && format < kCrFormatCount ? format : 2];   // pixels per mm
+    p.hair = 0;
+    if (amount <= 0) return;
+    const int shot = (int)std::floor(frame / 96.0);
+    if (cr_hash01(shot, 1, 920) >= amount) return;
+    const bool crumb = cr_hash01(shot, 2, 920) < 0.35f;
+    const int side = (int)(cr_hash01(shot, 3, 920) * 4.0f) & 3;   // left, top, right, bottom
+    const double along = 0.1 + 0.8 * cr_hash01(shot, 4, 920);
+    // a hair: 60-90 um thick, 0.6-2.5 mm into the aperture; a crumb: 0.1-0.25 mm thick, 0.15-0.5 mm long
+    const double len = mm * (crumb ? 0.15 + 0.35 * cr_hash01(shot, 5, 920) : 0.6 + 1.9 * cr_hash01(shot, 5, 920));
+    p.hairW = (float)(0.5 * mm * (crumb ? 0.10 + 0.15 * cr_hash01(shot, 6, 920) : 0.06 + 0.03 * cr_hash01(shot, 6, 920)));
+    p.hair = crumb ? 0.92f : 0.97f;
+    // from just outside the edge, inward, each step turning a little more (a curl)
+    double x = side == 0 ? -0.1 * mm : side == 2 ? W + 0.1 * mm : along * W;
+    double y = side == 1 ? -0.1 * mm : side == 3 ? H + 0.1 * mm : along * H;
+    double a = (side == 0 ? 0.0 : side == 1 ? 0.5 : side == 2 ? 1.0 : 1.5) * 3.14159265358979 + 0.6 * cr_hash(shot, 7, 920);
+    const double turn = (crumb ? 0.5 : 0.9) * cr_hash(shot, 8, 920);
+    float box[4] = { 1e9f, 1e9f, -1e9f, -1e9f };
+    for (int i = 0; i < 5; ++i) {
+        // the free end trembles more than the root, a little at every frame
+        const double shake = 0.012 * mm * i / 4.0;   // up to 12 um at the free end
+        const float px = (float)(x + shake * cr_hash(frame, 10 + i, 921)), py = (float)(y + shake * cr_hash(frame, 20 + i, 921));
+        p.hairPt[2 * i] = px;
+        p.hairPt[2 * i + 1] = py;
+        box[0] = std::min(box[0], px);
+        box[1] = std::min(box[1], py);
+        box[2] = std::max(box[2], px);
+        box[3] = std::max(box[3], py);
+        x += std::cos(a) * len / 4.0;
+        y += std::sin(a) * len / 4.0;
+        a += turn;
+    }
+    const float m = p.hairW + 2.0f;
+    p.hairBox[0] = box[0] - m;
+    p.hairBox[1] = box[1] - m;
+    p.hairBox[2] = box[2] + m;
+    p.hairBox[3] = box[3] + m;
+}
+
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
                      int history)
 {
@@ -782,7 +832,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     const bool useTone = !toggles || c.useTone, useColour = !toggles || c.useColour, useTexture = !toggles || c.useTexture;
     if (!useTexture) {   // the film's grain, glows, lens and gate: none
         c.grain = c.printGrain = c.halation = c.bloom = c.aberration = c.vignette = 0;
-        c.weave = c.breath = c.dust = c.scratches = 0;
+        c.weave = c.hair = c.breath = c.dust = c.scratches = 0;
         c.distortion = c.edgeSoft = c.swirl = c.glare = c.streak = 0;
         c.lens = 0;
     }
@@ -1309,6 +1359,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     p.lStreak *= (float)(1.0 - std::exp(-1.0 / std::max((double)p.lStreakLen, 1.0)));
 
     p.dust = (float)clampd(c.dust, 0, 1);
+    if (film) creativeHair(p, clampd(c.hair, 0, 1), W, H, frame, c.format);
     p.scratches = film ? (float)clampd(c.scratches, 0, 1) : 0.0f;
     p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0
                || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;

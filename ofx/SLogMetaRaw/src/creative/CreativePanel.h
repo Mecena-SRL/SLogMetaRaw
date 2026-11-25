@@ -189,6 +189,11 @@ static const CrSliderDef kCrSliders[] = {
       "La griffa della cinepresa lascia la pellicola un poco fuori posto a ogni fotogramma (soprattutto in verticale) "
       "e il pattino laterale la fa derivare di lato, lentamente: l'immagine si muove sulla pellicola. La cinepresa "
       "carica la sua: 0,1 a perni di registro, 0,5 a sola griffa, 0,85 il caricatore Super 8, 1 a manovella" },
+    { "hair", "Pelo nel finestrino", &CreativeControls::hair, 0, 1, 0.01, kGrTexture, kCrFilm,
+      "Un pelo o un grumo di emulsione raschiato dalla pellicola che resta nel finestrino della cinepresa: scuro, "
+      "nitido, entra da un bordo, trema un poco e dura tutta l'inquadratura. Quota delle inquadrature che ne hanno "
+      "uno: la cinepresa carica la sua (caricatori Super 8 e cineprese amatoriali più spesso, cineprese da studio "
+      "pulite a ogni caricatore quasi mai)" },
     { "breath", "Sfarfallio", &CreativeControls::breath, 0, 1, 0.01, kGrTexture, kCrPhoto,
       "Densità e colore che cambiano un poco da un fotogramma all'altro" },
     { "dust", "Polvere", &CreativeControls::dust, 0, 1, 0.01, kGrTexture, kCrPhoto,
@@ -344,7 +349,7 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     if (!colour && !std::strcmp(name, "filter")) return true;   // the records are the picture's own channels
     if (!texture && crIs(name, { "lens", "distortion", "edgeSoft", "swirl", "glare", "streak" })) return true;
     if (!texture && crIs(name, { "grain", "grainSize", "halation", "bloom", "bloomRadius", "aberration", "vignette",
-                                 "weave", "breath", "dust", "scratches", "printGrain" }))
+                                 "weave", "hair", "breath", "dust", "scratches", "printGrain" }))
         return true;
     if (!texture && crIs(name, { "camWeave", "printWeave" })) return true;
     if (!std::strcmp(name, "weave") && !c.camWeave) return true;

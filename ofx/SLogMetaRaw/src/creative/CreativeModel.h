@@ -80,6 +80,8 @@ struct CreativeControls
     // unsteadiness, each from its own machine (0 off): the camera's (weave, above), each printing step's, the
     // projector's (multiple of its own, 1 = typical)
     int camWeave = 1, projWeave = 1;
+    // a hair or a crumb of emulsion caught in the camera's gate: the share of shots that have one (0 none)
+    double hair = 0;
     double printWeave = 1, projectorWeave = 1;
     // separations, screens, plates
     double registration = 0, interval = 0, keyImage = -1, dyeDensity = 1;   // keyImage -1: the era's own

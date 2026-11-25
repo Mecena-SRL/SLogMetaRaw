@@ -10,6 +10,10 @@
   - *Stampa*: ogni passaggio in stampatrice aggiunge una deriva lenta (una copia di distribuzione ne ha tre).
   - *Proiezione* (spunta e ampiezza, su sala e proiettori): in sala il rocchetto ripete il salto ogni 4 fotogrammi; i
     proiettori 16 mm e Super 8 a griffa sbagliano a ogni fotogramma e muovono tutta la pellicola.
+- **Creative, pelo nel finestrino**: in ripresa un pelo o un ricciolo d'emulsione entra da un bordo del finestrino e
+  resta per tutta l'inquadratura, tremando appena. Quanto spesso dipende dalla cinepresa (Pathé e Krasnogorsk spesso,
+  Arri 435 e IMAX quasi mai); la misura è reale (pelo 60-90 µm, ricciolo 0,1-0,25 mm), quindi pesa di più nei formati
+  piccoli. È luce tolta prima della curva: resta scuro anche dopo stampa e scansione.
 
 ## Log MetaRaw 4.2.0
 

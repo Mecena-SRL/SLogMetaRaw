@@ -217,7 +217,7 @@ void CreativeEffect::loadDevice()
             if (cur != c.*(kCrChoices[i].field)) m_Choices[i]->setValue(c.*(kCrChoices[i].field));
         }
     }
-    static const char* const rows[] = { "weave", "breath", "vignette", "aberration", "bloom", "wear", "heads",
+    static const char* const rows[] = { "weave", "hair", "breath", "vignette", "aberration", "bloom", "wear", "heads",
                                         "instability" };
     for (int i = 0; i < kCrSliderCount; ++i)
         for (const char* r : rows)

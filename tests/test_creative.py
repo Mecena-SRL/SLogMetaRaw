@@ -349,6 +349,28 @@ class Creative(unittest.TestCase):
         self.assertGreater(r3, 1.5 * r1)
         self.assertTrue(all(r[2] == 0 and r[3] == 0 for r in scan))   # a scanned negative was never printed
 
+    def test_gate_hair_comes_in_from_an_edge_and_stays_for_the_shot(self):
+        """A hair caught in the gate: a dark, sharp shape touching an edge of the frame, in the same place for the
+        whole shot, bigger on Super 8 than on Super 35 (it is 60-90 um everywhere); none at 0."""
+        w, h = 320, 180
+        flat = [[dm.encode1(0.18, GAMMA)] * 3 for _ in range(w * h)]
+        render = lambda ctl, frame: self.render(ctl, [flat], frame=frame, size=(w, h))
+        def dark(out):
+            m = sorted(sum(px) / 3 for px in out)[len(out) // 2]
+            return [(i % w, i // w) for i, px in enumerate(out) if sum(px) / 3 < 0.5 * m]
+        for fmt in (0, 2):
+            with self.subTest(format=fmt):
+                a = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': fmt}, 5))
+                b = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': fmt}, 40))
+                self.assertTrue(a)
+                xs, ys = [x for x, _ in a], [y for _, y in a]
+                self.assertTrue(min(xs) <= 4 or min(ys) <= 4 or max(xs) >= w - 5 or max(ys) >= h - 5)
+                self.assertGreater(len(set(a) & set(b)), len(a) // 2)   # same shot: it barely moves
+        s8 = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 0}, 5))
+        s35 = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 2}, 5))
+        self.assertGreater(len(s8), 2 * len(s35))
+        self.assertFalse(dark(render({'process': NEGATIVE, 'hair': 0, 'grain': 0}, 5)))
+
     # ---- presets: device, model, format, manufacturer, stock; what the film applies
 
     FILM = {'device': 1, 'maker': 0, 'filmCamera': 17}   # Arriflex 435, Kodak

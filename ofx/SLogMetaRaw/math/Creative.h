@@ -77,6 +77,9 @@ struct CreativeParams {
     float slope[3], offset[3], shoulder, toe, interlayer;
     float grainAmount, grainSize, grainColor, grainLayer[3];
     float dust, scratches, dustSign;
+    // something caught in the camera's gate (a hair or a crumb of emulsion): opacity, half width (px), a polyline
+    // of five points (x, y) and its bounding box with the width in it (x0, y0, x1, y1)
+    float hair, hairW, hairPt[10], hairBox[4];
     float printOffset[3], printContrast[3], dmax;
     // colour (stops)
     float splitShadow[3], splitHigh[3], splitBalance, saturation, density;
@@ -495,6 +498,24 @@ SM_FN SMf3 cr_print_grain(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
+// What a hair or a crumb of emulsion caught in the gate hides from the film: 0 (open) to its opacity. It sits on the
+// film plane, so it is sharp but for the emulsion's depth (half a pixel at 1080).
+SM_FN float cr_hair(int x, int y, SM_CREF(CreativeParams) p) {
+    if (p.hair <= 0.0f) return 0.0f;
+    const float fx = (float)x + 0.5f, fy = (float)y + 0.5f;
+    if (fx < p.hairBox[0] || fx > p.hairBox[2] || fy < p.hairBox[1] || fy > p.hairBox[3]) return 0.0f;
+    float d = 1e9f;
+    for (int i = 0; i < 4; ++i) {
+        const float ax = p.hairPt[2 * i], ay = p.hairPt[2 * i + 1];
+        const float bx = p.hairPt[2 * i + 2] - ax, by = p.hairPt[2 * i + 3] - ay;
+        const float t = SM_MIN(SM_MAX(((fx - ax) * bx + (fy - ay) * by) / SM_MAX(bx * bx + by * by, 1e-6f), 0.0f), 1.0f);
+        const float dx = fx - ax - t * bx, dy = fy - ay - t * by;
+        d = SM_MIN(d, SM_SQRT(dx * dx + dy * dy));
+    }
+    const float soft = SM_MAX(0.5f, (float)p.H / 2160.0f);
+    return p.hair * (1.0f - cr_smooth(p.hairW - soft, p.hairW + soft, d));
+}
+
 // Dust (specks, per record when the records were separate plates) and vertical scratches, in stops.
 SM_FN SMf3 cr_damage(SMf3 s, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.dust <= 0.0f && p.scratches <= 0.0f) return s;
@@ -650,6 +671,8 @@ SM_FN SMf3 cr_image(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
 
 // The process chain from the records' exposures (glows added) to the output code values.
 SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
+    const float shade = 1.0f - cr_hair(x, y, p);   // light the gate's hair kept from the film
+    e = smf3(e.x * shade, e.y * shade, e.z * shade);
     SMf3 s = smf3(cr_hd(cr_stops(e.x), 0, p), cr_hd(cr_stops(e.y), 1, p), cr_hd(cr_stops(e.z), 2, p));
     if (p.records == 1) s = smf3(s.x, s.x, s.x);
     const float m = (s.x + s.y + s.z) * (1.0f / 3.0f);
