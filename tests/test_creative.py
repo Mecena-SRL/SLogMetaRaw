@@ -156,7 +156,7 @@ class Creative(unittest.TestCase):
 
     def test_every_medium_renders_and_changes_the_picture(self):
         plain = self.render({'process': NEGATIVE, 'grain': 0}, [ramp(tinted=True)])
-        for medium in range(1, 8):
+        for medium in range(1, 12):
             with self.subTest(medium=medium):
                 out = self.render({'process': NEGATIVE, 'grain': 0, 'medium': medium}, [ramp(tinted=True)])
                 vals = [c for px in out for c in px]
@@ -575,6 +575,29 @@ class Creative(unittest.TestCase):
         none = self.lens(scene, {}, (w, h))[18][32]
         tak = self.lens(scene, {'lens': 12, 'lensLoaded': 12}, (w, h))[18][32]
         self.assertLess(tak[2] / tak[1], none[2] / none[1] - 0.02)
+
+    def test_new_screens_show_their_own_faults(self):
+        """Trinitron: two dark damper wires across a white field; plasma: a speckle in the shadows that changes from
+        frame to frame; early LCD: a bluish black and bands on a smooth ramp."""
+        w, h = 160, 120
+        white = [(0.8, 0.8, 0.8)] * (w * h)
+        tri = self.render({'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': 9}, [white],
+                          size=(w, h), enc=(1, 3))
+        row = lambda y: sum(px[1] for px in tri[y * w + 20: y * w + 140]) / 120  # noqa: E731
+        self.assertLess(row(h // 3), 0.9 * row(h // 3 + 8))   # rows are bottom-up: the wire at a third either way
+        dark = [(0.02, 0.02, 0.02)] * (w * h)
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': 10}
+        a = self.render(ctl, [dark], frame=3, size=(w, h), enc=(1, 3))
+        b = self.render(ctl, [dark], frame=4, size=(w, h), enc=(1, 3))
+        self.assertGreater(sum(abs(p[1] - q[1]) for p, q in zip(a, b)) / len(a), 0.002)
+        black = [(0.0, 0.0, 0.0)] * (w * h)
+        lcd = self.render(dict(ctl, medium=11), [black], size=(w, h), enc=(1, 3))[60 * w + 80]
+        self.assertGreater(lcd[2], lcd[0] + 0.01)
+        ramp_px = [(0.2 + 0.3 * x / w,) * 3 for y in range(h) for x in range(w)]
+        lcd = self.render(dict(ctl, medium=11), [ramp_px], size=(w, h), enc=(1, 3))
+        line = [lcd[60 * w + x][1] for x in range(20, 140)]
+        steps = [abs(b - a) for a, b in zip(line, line[1:])]
+        self.assertGreater(max(steps), 3 * sorted(steps)[len(steps) // 2] + 1e-4)   # flat runs, then a jump
 
 if __name__ == '__main__':
     unittest.main()

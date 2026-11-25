@@ -240,6 +240,10 @@ Ottiche (25/11/2026, fase 5): tabella `kCrLenses` (`CreativePresets.h`, 14 ottic
 `math/Creative.h`, kernel Metal `cr_lens_soft_k`, `cr_streak_k`, `cr_lens_add_k`. Verificato: test CPU (barilotto,
 bordi e vortice, striscia, velo, caricamento e vetro), golden; parità Metal solo in CI macOS. Aperto: bokeh, ghost,
 desqueeze, vortice a 16 campioni granuloso con raggi grandi (4K), taratura su riprese vere.
+Supporti di visione (25/11/2026, dopo la fase 5): quattro righe in coda a `kMedia` (Super 8, Trinitron, plasma, primo
+LCD; gli indici di prima restano) e campi `damper`, `plasma`, `levels`, `blackTint` in `cr_medium_at`. Verificato:
+test CPU (fili, formicolio che cambia per fotogramma, nero bluastro e bande), golden; parità Metal solo in CI macOS.
+Aperto: ABL del plasma, angolo di visione dell'LCD, pulldown 3:2, proiettore DLP.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

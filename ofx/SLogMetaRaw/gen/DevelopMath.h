@@ -1562,6 +1562,9 @@ struct CreativeParams {
     float mPalette[12], mUnlit[3], mBezelTint[3], mBodyTint[3];   // LCD: code values (Gamma 2.4)
     int mGS, mGW, mGH;                     // the glow's grid (scale, size) of the picture's luminance
     float mGlow, mGlowSigma, mGhost;       // mGhost: share of the previous picture an LCD still shows
+    // a Trinitron's two damper wires, a plasma's dithering in the shadows, a panel's few bits (levels, 0: none),
+    // the colour of the screen's black
+    float mDamper, mPlasma, mLevels, mBlackTint[3];
 };
 
 SM_FN SMf3 cr_mul(SM_CPTR m, SMf3 c) {
@@ -2629,16 +2632,30 @@ SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, CR_PLANE glow, in
         c = smf3(c.x * (1.0f - p.mGlow) + h, c.y * (1.0f - p.mGlow) + h, c.z * (1.0f - p.mGlow) + h);
     }
     c = cr_device(c, p);
+    if (p.mPlasma > 0.0f) {   // a plasma's pulse dithering: a moving speckle in the shadows only
+        const float Y = 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z;
+        const float n = p.mPlasma * 0.015f * cr_hash(x, y, 4001 + (p.frame & 1023)) * (1.0f - cr_smooth(0.0f, 0.08f, Y));
+        c = smf3(SM_MAX(c.x + n, 0.0f), SM_MAX(c.y + n, 0.0f), SM_MAX(c.z + n, 0.0f));
+    }
     float light = p.mGain * (1.0f - p.mFalloff * r2) * inside;
+    if (p.mDamper > 0.0f) {   // a Trinitron's damper wires: two thin dark lines across, at a third and two thirds
+        const float w = SM_MAX(0.6f, 1.2f * H / 1080.0f), d1 = ((float)y - H / 3.0f) / w, d2 = ((float)y - 2.0f * H / 3.0f) / w;
+        light *= 1.0f - p.mDamper * (SM_EXP(-d1 * d1) + SM_EXP(-d2 * d2));
+    }
     if (p.mTexture > 0.0f) {   // paper fibres: still, the same on every frame
         const float t = (1.5f * H / 1080.0f) + 0.5f;
         light *= 1.0f + p.mTexture * (0.020f * cr_value((float)x / t, (float)y / t, 977)
                                       + 0.010f * cr_value((float)x / (6.0f * t), (float)y / (6.0f * t), 978));
     }
     float o[3];
-    for (int k = 0; k < 3; ++k)
-        o[k] = sm_encode(sm_clamp(p.mBlack * inside + (p.mWhite[k] - p.mBlack) * cr_at(c, k) * light, 0.0f, 1.0f),
-                         CR_GAMMA24);
+    for (int k = 0; k < 3; ++k) {
+        const float b = p.mBlack * p.mBlackTint[k];
+        o[k] = sm_encode(sm_clamp(b * inside + (p.mWhite[k] - b) * cr_at(c, k) * light, 0.0f, 1.0f), CR_GAMMA24);
+        if (p.mLevels > 1.0f) {   // a panel's few bits: bands, rounded softly (the same on CPU and GPU)
+            const float q = o[k] * (p.mLevels - 1.0f), n = CR_FLOOR(q);
+            o[k] = (n + cr_smooth(0.35f, 0.65f, q - n)) / (p.mLevels - 1.0f);
+        }
+    }
     return smf3(o[0], o[1], o[2]);
 }
 
