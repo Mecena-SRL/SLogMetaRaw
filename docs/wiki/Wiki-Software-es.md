@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · **Español** · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-es)
 
-> Versión **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versión **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Probado solo en DaVinci Resolve Studio 21.1 en macOS.
 
 Log MetaRaw lee los datos de rodaje que las cámaras Sony escriben en cada archivo (Kelvin, tinte, EI, objetivo, diafragma, obturador, perfil de color) y los usa dentro de DaVinci Resolve. Resolve hace esto solo con los MXF de FX6/FX9; en los MP4 de FX30, FX3, serie a7 y a6000 los ignora.
@@ -289,6 +289,22 @@ proceso elegido.
 
 Los números son estimaciones de la investigación en [docs/CREATIVE.md](docs/CREATIVE.md), no perfiles de productos: hay
 que ajustarlos con material real. Aún no probado en Resolve; Metal verificado por los tests de la CI de macOS.
+
+**Novedades de la 4.3.0.**
+
+- **Películas por formato**: con una cámara elegida solo aparecen las películas fabricadas en su formato, de todos los
+  fabricantes y con el código de ese formato (en 16 mm la 500T es 7219); las listas completas quedan a una casilla.
+- **Escaneo**: el cuadro, el cuadro con los bordes de la ventanilla o la película de borde a borde con perforaciones,
+  líneas entre cuadros y cuadros vecinos, con las medidas reales de cada formato. Ventanilla cuadrada, redondeada o
+  limada abierta.
+- **El negativo tal cual**: el negativo color al trasluz, complementario sobre la máscara naranja, con su grano.
+- **Soporte de la película**: nitrato, acetato o poliéster (o según época y formato) y su deterioro: manchas ámbar del
+  nitrato, cristales e inestabilidad del acetato.
+- **Oscilación realista** en el rodaje, el copiado y la proyección, cada una con su casilla; **pelo en la ventanilla**
+  según la cámara.
+- **Consolas** como medio de visionado: NES, Master System, Mega Drive, Super Nintendo, PlayStation y Saturn en un
+  televisor de tubo.
+- Corregido el cierre al elegir los medios de visionado añadidos en la 4.2.0.
 
 **Novedades de la 4.2.0.**
 

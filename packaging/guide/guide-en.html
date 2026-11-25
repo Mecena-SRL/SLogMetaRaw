@@ -120,11 +120,11 @@
     <tr><td class="k">Zone</td><td>Zones Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; zone view</td><td class="pg">6</td></tr>
     <tr><td class="k">Dati di ripresa</td><td>Shooting data: lens, focal length, iris, focus, shutter, ISO/EI, WB, fps, ND</td><td class="pg">4</td></tr>
     <tr class="grp"><td colspan="3">Log MetaRaw Creative node <span>· right after · spatial, left out of Generate LUT</span> <span class="new">4.1</span></td></tr>
-    <tr><td class="k">Dispositivo › Modello</td><td>Film and video cameras (tubes, CCD), digital cinema, phone <span class="new">4.2</span></td><td class="pg">8</td></tr>
+    <tr><td class="k">Dispositivo › Modello</td><td>Film and video cameras (tubes, CCD), digital cinema, phone, consoles <span class="new">4.3</span></td><td class="pg">8</td></tr>
     <tr><td class="k">Processo</td><td>16 processes, from daguerreotype to Technicolor, analog video and digital</td><td class="pg">8</td></tr>
     <tr><td class="k">Varianti</td><td>Stock, positive, generation, output, sensitivity, filter, era, paper, format, camera</td><td class="pg">8</td></tr>
     <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Exposure, temperature, tint, push/pull, silver, flash, age; printer lights, contrast</td><td class="pg">8</td></tr>
-    <tr><td class="k">Grana e ottica</td><td>Grain, halation, diffusion, vignette, dust, scratches; <b>Ottica</b>: 14 lenses <span class="new">4.2</span></td><td class="pg">8</td></tr>
+    <tr><td class="k">Grana e ottica</td><td>Grain, halation, diffusion, vignette, dust, scratches, hair, weave; <b>Ottica</b>: 14 lenses; <b>Base</b>, scan <span class="new">4.3</span></td><td class="pg">8</td></tr>
     <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registration, K key; mosaic; mirror, oxidation, toning; tape, heads, noise</td><td class="pg">8</td></tr>
     <tr><td class="k">Riversato su · Visto su</td><td>VHS, Betacam, kinescope, film-out; cinema, tube, plasma, LCD <span class="new">4.2</span></td><td class="pg">8</td></tr>
     <tr class="grp"><td colspan="3">Log MetaRaw Audio <span>· Fairlight › VST3 · Mac and Windows</span> <span class="new">4.2</span></td></tr>
@@ -562,11 +562,11 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <tr><td class="k">Ingresso (IDT)</td><td>Also Rec.709, DaVinci WG, ACES, Cineon: after a grade.</td></tr>
         <tr><td class="k">Ripresa e sviluppo</td><td>Exposure, light balance, <b>push</b> or pull, <b>retained silver</b>, flash, age.</td></tr>
         <tr><td class="k">Stampa e copie</td><td>Positive (9), <b>Generation</b> (answer print to dupe), print grain, printer points, contrast.</td></tr>
-        <tr><td class="k">Dispositivo</td><td><span class="new">4.2</span> Film camera, video camera, digital cinema, phone: the model loads format, tape, <b>Sensor</b> (tube lag, CCD smear), sharpening, codec. <b>Tone, Colour, Texture</b>: to use only part of it.</td></tr>
+        <tr><td class="k">Dispositivo</td><td><span class="new">4.2</span> Film camera, video camera, digital cinema, phone, console <span class="new">4.3</span> (palette and DAC steps): the model loads format, tape, <b>Sensor</b> (tube lag, CCD smear), sharpening, codec. <b>Tone, Colour, Texture</b>: to use only part of it.</td></tr>
         <tr><td class="k">Riversato su</td><td><span class="new">4.2</span> Telecine to VHS or Betacam, third-generation VHS, kinescope, film-out.</td></tr>
         <tr><td class="k">Supporto di visione</td><td>Cinema, projectors, PAL and NTSC tube, Trinitron, monitor, plasma, early LCD, handheld, paper: gamma, light, white and colour. <b>Intensity</b> 0 = monitor.</td></tr>
         <tr><td class="k">Grana e ottica</td><td>In multiples of the material's and the <b>format</b>'s own (8 mm to IMAX 15/70):
-          1 = as it was. Halation, diffusion, vignette, dust, scratches. <b>Ottica</b> <span class="new">4.2</span>: 14 lenses (Cooke, Panavision, LOMO, Helios, Petzval…).</td></tr>
+          1 = as it was. Halation, diffusion, vignette, dust, scratches. <b>Ottica</b> <span class="new">4.2</span>: 14 lenses (Cooke, Panavision, LOMO, Helios, Petzval…). <span class="new">4.3</span> Stocks per gauge, gate hair, camera, printer and projector weave; <b>Base</b> (nitrate, acetate, polyester) and its decay; <b>Uscita</b> Negative (orange base); full-frame <b>scan</b> with perforations and gate mask.</td></tr>
         <tr><td class="k">Separazioni</td><td>Registration of strips and plates, interval between exposures, K key, dye density.</td></tr>
         <tr><td class="k">Lastra e carta</td><td>Mirror viewing angle, UV, oxidation, border, toning.</td></tr>
         <tr><td class="k">Segnale</td><td>Wear, heads, instability, colour bleed, noise, sharpness; for digital, dynamic range,

@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · **Italiano** · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home-it)
 
-> Versione **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versione **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testato solo su DaVinci Resolve Studio 21.1 su macOS.
 
 Log MetaRaw legge i dati di ripresa che le camere Sony scrivono in ogni file (Kelvin, tinta, EI, obiettivo, diaframma, shutter, profilo colore) e li usa dentro DaVinci Resolve. Resolve lo fa solo per i file MXF di FX6/FX9; per gli MP4 di FX30, FX3, serie a7 e a6000 ignora questi dati.
@@ -293,6 +293,21 @@ ombre e luci, saturazione, densità colore).
 
 I numeri sono stime dalle ricerche in [docs/CREATIVE.md](docs/CREATIVE.md), non profili di prodotti: vanno tarati su
 riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI macOS.
+
+**Novità della 4.3.0.**
+
+- **Pellicole per formato**: con una cinepresa scelta compaiono solo le pellicole fatte nel suo formato, di ogni
+  produttore e con il codice di quel formato (in 16 mm il 500T è 7219); i listini completi restano a una spunta.
+- **Scansione**: il quadro, il quadro con i bordi del mascherino o la pellicola da bordo a bordo con perforazioni,
+  interlinee e quadri vicini, con le misure vere di ogni formato. Mascherino squadrato, arrotondato o limato aperto.
+- **Il negativo com'è**: il negativo colore in trasparenza, complementare sulla maschera arancione, con la sua grana.
+- **Supporto della pellicola**: nitrato, acetato o poliestere (o secondo epoca e formato) e il suo degrado: macchie
+  ambrate del nitrato, cristalli e instabilità dell'acetato.
+- **Oscillazione realistica** in ripresa, in stampa e in proiezione, ognuna con la sua spunta; **pelo nel finestrino**
+  secondo la cinepresa.
+- **Console** come supporto di visione: NES, Master System, Mega Drive, Super Nintendo, PlayStation e Saturn sul
+  televisore a tubo.
+- Corretto il crash scegliendo i supporti di visione aggiunti nella 4.2.0.
 
 **Novità della 4.2.0.**
 

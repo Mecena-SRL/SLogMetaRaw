@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.3.0
 
 - **Creative, supporto della pellicola**: puoi scegliere nitrato, diacetato, triacetato o poliestere, oppure lasciarlo
   decidere in base all'anno e al formato della pellicola. Il *Degrado del supporto* cambia con il materiale:
