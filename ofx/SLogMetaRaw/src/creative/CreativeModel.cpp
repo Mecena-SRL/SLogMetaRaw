@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 const char* const kCrProcessNames[kCrProcessCount] = {
     "Negativo colore e stampa", "Invertibile colore (diapositiva)", "Bianco e nero", "Technicolor tre strisce",
@@ -244,6 +245,27 @@ const Tape kTapes[kCrAnalogCount] = {
     { 4.0f, 0.30f, 600, 25, 45, 5, 30, 4, 1, 0.04f },    { 4.5f, 0.20f, 1500, 20, 47, 2, 10, 0, 0, 0.02f },
     { 4.6f, 0.20f, 1300, 10, 43, 2, 10, 0, 0, 0.02f } };
 
+// The same formats as the player emulates them (VIDEO_EMULAZIONE.md §4.4, values to calibrate): playback low-pass
+// at -3 dB (MHz) and its Q pair (Butterworth or Bessel, 4th order), pre-emphasis time constant (µs, 0 = none) and HF
+// gain, white clip (1 = white, black clip at 1 - clip), colour low-pass (kHz) and its delay (ns), unweighted luma
+// SNR (dB), colour-under frequency (kHz, 0 = colour on its own channel: no hue noise), crispener, comb (field lines),
+// timebase after the TV's lock: slow wave and scrape (ns), head switch step (µs), flagging (ns), dropouts per field
+// line at the format's typical wear.
+struct TapeEmu { float lpMHz, q1, q2, emphUs, emphG, clip, chromaKHz, delayNs, snr, fcuKHz, crisp; int comb;
+                 float waveNs, scrapeNs, headUs, flagNs, drop; };
+const TapeEmu kTapeEmu[kCrAnalogCount] = {
+    { 5.0f, 0.5219f, 0.8055f, 0, 0, 2.0f, 1300, 0, 52, 0, 0.1f, 0, 0, 0, 0, 0, 0 },                 // broadcast live
+    { 2.1f, 0.5412f, 1.3066f, 1.3f, 4, 1.6f, 400, 220, 39, 627, 0.45f, 1, 60, 8, 1.5f, 80, 0.004f },  // VHS SP
+    { 1.8f, 0.5412f, 1.3066f, 1.3f, 4, 1.6f, 350, 260, 37, 627, 0.5f, 1, 80, 12, 2.0f, 100, 0.006f }, // VHS LP
+    { 4.2f, 0.5412f, 1.3066f, 1.3f, 4, 2.1f, 400, 160, 42, 627, 0.3f, 1, 50, 8, 1.2f, 70, 0.004f },   // S-VHS
+    { 2.3f, 0.5412f, 1.3066f, 1.3f, 2.5f, 1.6f, 400, 200, 40, 688, 0.4f, 1, 50, 8, 1.2f, 70, 0.004f },// Betamax
+    { 2.5f, 0.5412f, 1.3066f, 1.3f, 4, 1.6f, 400, 200, 40, 743, 0.4f, 1, 40, 6, 1.0f, 60, 0.006f },   // Video8
+    { 4.0f, 0.5412f, 1.3066f, 0.47f, 4, 2.2f, 450, 160, 42, 743, 0.3f, 1, 40, 6, 1.0f, 60, 0.008f },  // Hi8
+    { 3.0f, 0.5412f, 1.3066f, 0.6f, 3, 1.8f, 500, 60, 44, 686, 0.2f, 1, 30, 5, 0.8f, 40, 0.003f },    // U-matic
+    { 3.8f, 0.5412f, 1.3066f, 0.8f, 3, 2.0f, 600, 40, 45, 686, 0.2f, 1, 25, 4, 0.6f, 30, 0.002f },    // U-matic SP
+    { 4.5f, 0.5219f, 0.8055f, 0.3f, 2, 2.5f, 1500, 20, 48, 0, 0.1f, 0, 2, 1, 0, 0, 0.001f },          // Betacam SP
+    { 4.6f, 0.5412f, 1.3066f, 0.24f, 3, 2.5f, 1300, 10, 45, 0, 0.1f, 0, 2, 1, 0, 0, 0.002f } };       // 1" type C
+
 // Digital cameras: stops above grey before the clip, knee (0 hard .. 1 soft), saturation, highlight desaturation,
 // sharpening amount and radius (px at 1080), noise luma and chroma (stops), contrast, banding (0 none .. 1),
 // chroma block (4:1:1 = 4x1, 4:2:0 = 2x2; in source pixels) and source lines (480 SD, 1080 HD).
@@ -313,6 +335,84 @@ void glowGrid(int W, int H, float sigma, int& s, int& w, int& h, float& onGrid)
     w = (W + s - 1) / s;
     h = (H + s - 1) / s;
     onGrid = sigma / (float)s;
+}
+
+// The tape's line-by-line emulation for a W x H frame (cr_tape_row, cr_tape_out): filters in pixels of this width
+// (a 52 µs active line), FM noise calibrated so a grey line comes out with the format's SNR.
+void tapeEmulation(CreativeParams& p, const TapeEmu& te, int W, int H, double bleed, double wear, double inst,
+                   double heads, double noise, double sharp)
+{
+    const double pxus = std::max(W, 8) / 52.0;   // samples per µs
+    const double tau = 2.0 * kPi;
+    p.tape = 1;
+    p.fieldLines = 288;
+    p.emphG = te.emphUs > 0 ? te.emphG : 0.0f;
+    p.emphK = te.emphUs > 0 ? (float)(1.0 - exp(-1.0 / (te.emphUs * pxus))) : 1.0f;
+    p.clipHi = te.clip;
+    p.clipLo = 1.0f - te.clip;
+    const double fc = std::min(te.lpMHz / pxus, 0.45);   // cycles per sample
+    const double q[2] = { te.q1, te.q2 };
+    for (int s = 0; s < 2; ++s) {   // RBJ low-pass biquads
+        const double w0 = tau * fc, al = sin(w0) / (2.0 * q[s]), cw = cos(w0), a0 = 1.0 + al;
+        p.lp[s * 5 + 0] = (float)((1.0 - cw) / 2.0 / a0);
+        p.lp[s * 5 + 1] = (float)((1.0 - cw) / a0);
+        p.lp[s * 5 + 2] = (float)((1.0 - cw) / 2.0 / a0);
+        p.lp[s * 5 + 3] = (float)(-2.0 * cw / a0);
+        p.lp[s * 5 + 4] = (float)((1.0 - al) / a0);
+    }
+    p.crispK = (float)(1.0 - exp(-tau * std::min(2.5 / pxus, 0.45)));
+    p.crisp = (float)(te.crisp * (1.0 + sharp));
+    // colour: three one-poles, -3 dB at chromaKHz together (each at 1 / 0.5098 of it), narrower with more bleed
+    const double cfc = te.chromaKHz / 1000.0 / std::max(bleed, 0.1) / 0.5098 / pxus;
+    p.chromaK = (float)(1.0 - exp(-tau * std::min(cfc, 0.45)));
+    p.delayPx = (float)(te.delayNs / 1000.0 * pxus * bleed);
+    const int rowsPerLine = std::max(1, (int)lround((double)H / (2.0 * p.fieldLines)));
+    p.combRows = te.comb ? 2 * rowsPerLine : 0;   // the same field's previous line
+    p.docRows = 2 * rowsPerLine;
+    // rad per px of timebase error, of which the burst lock (APC) leaves about a third
+    p.hueGain = te.fcuKHz > 0 ? (float)(0.3 * tau * te.fcuKHz / 1000.0 / pxus) : 0.0f;
+    p.huePhase = te.fcuKHz > 0 ? (float)(0.03 + 0.12 * wear) : 0.0f;
+    p.chromaLimit = 0.45f;
+    // timebase (px): ns -> px
+    p.tbWave = (float)(te.waveNs / 1000.0 * pxus * inst);
+    p.tbWaveLines = 9.0f;
+    p.tbScrape = (float)(te.scrapeNs / 1000.0 * pxus * inst * 0.6);
+    p.headStep = (float)(te.headUs * pxus * heads);
+    p.headRows = 7.0f;   // 6.5 H before the vertical sync
+    p.headTau = 2.5f;
+    p.flagAmp = (float)(te.flagNs / 1000.0 * pxus * inst);
+    p.flagRows = 14.0f;
+    p.headNoise = te.headUs > 0 ? (float)(0.08 * heads) : 0.0f;
+    p.dropDensity = (float)(te.drop * (0.3 + 6.0 * wear * wear));
+    p.dropSlide = 1.5f;
+    p.dropLife = 6.0f;
+    // FM noise: a flat grey line through the same filters, then the amplitude that gives the SNR (minus the wear's)
+    const double snr = te.snr - 8.0 * wear;
+    p.fmNoise = 0.0f;
+    if (noise > 0) {
+        CreativeParams t = p;
+        const int n = 2048;
+        t.W = n;
+        t.H = 1;
+        t.fieldLines = 1;
+        t.fmNoise = 1.0f;
+        t.huePhase = t.hueGain = 0.0f;
+        t.chromaSigmaN = t.chromaAM = 0.0f;
+        t.tbWave = t.tbScrape = t.headStep = t.flagAmp = 0.0f;
+        std::vector<float> in(n, 0.5f), zero(n, 0.0f), yo(n), cbo(n), cro(n);
+        cr_tape_row(in.data(), zero.data(), zero.data(), yo.data(), cbo.data(), cro.data(), 0, t);
+        double sum = 0, sq = 0;
+        for (int i = 256; i < n; ++i) {
+            sum += yo[i];
+            sq += yo[i] * yo[i];
+        }
+        const double m = sum / (n - 256), sigma = sqrt(std::max(sq / (n - 256) - m * m, 1e-12));
+        p.fmNoise = (float)(pow(10.0, -snr / 20.0) / sigma * noise);
+    }
+    // colour noise: about 3 dB under the luma's, after one of its low-passes
+    const double k = p.chromaK, gain = sqrt(k / (2.0 - k));
+    p.chromaSigmaN = (float)(pow(10.0, -(snr - 3.0) / 20.0) / std::max(gain, 1e-3) * 0.5 * noise);
+    p.chromaAM = (float)((0.02 + 0.1 * wear) / std::max(gain, 1e-3) * noise);
 }
 
 }  // namespace
@@ -791,24 +891,12 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     }
     case kCrAnalog: {
         const Tape& tp = kTapes[c.analog >= 0 && c.analog < kCrAnalogCount ? c.analog : 1];
+        const TapeEmu& te = kTapeEmu[c.analog >= 0 && c.analog < kCrAnalogCount ? c.analog : 1];
         p.kind = CR_KIND_ANALOG;
-        const float pxus = 36.5f * k1080;   // pixels per microsecond of a 16:9 line at this height
         const double bleed = clampd(c.colourBleed, 0, 2), wear = clampd(c.wear, 0, 1);
-        p.lumaSigma = 0.1325f * pxus / tp.lumaMHz;
-        p.ringSigma = 2.5f * p.lumaSigma + 0.5f;
-        p.sharp = (float)(tp.peaking * (1.0 + clampd(c.sharpness, -1, 1)));
-        p.chromaSigma = (float)(0.1325 * pxus / (tp.chromaKHz / 1000.0) * pow(std::max(bleed, 0.1), 0.8));
-        p.chromaDelay = (int)lround(tp.delayNs / 1000.0 * pxus * bleed);
-        const double snr = tp.snr - 20.0 * log10(std::max(clampd(c.noise, 0, 2), 1e-3)) - 8.0 * wear;
-        p.noise = c.noise > 0 ? (float)pow(10.0, -snr / 20.0) * 2.0f : 0.0f;
-        p.chromaNoise = p.noise * (float)(0.6 * std::max(bleed, 0.3));
-        const double inst = clampd(c.instability, 0, 1);
-        p.jitter = (float)((tp.jitterNs + tp.waveNs * 0.3) / 1000.0 * pxus * 2.0 * inst);
-        const double heads = clampd(c.heads, 0, 1);
-        p.headLines = tp.headLines > 0 ? (float)((2.0 + 8.0 * heads) * H / 480.0 * tp.headLines / 5.0) : 0.0f;
-        p.headShift = tp.headLines > 0 ? (float)((0.5 + 4.0 * heads) * pxus * 0.5) : 0.0f;
-        p.dropouts = (float)(tp.drop * wear * wear);
-        p.chromaBlockY = tp.colourUnder ? std::max(1, (int)lround(2.0 * H / 480.0)) : 1;
+        const double inst = clampd(c.instability, 0, 1) * 4.0, heads = clampd(c.heads, 0, 1) / 0.3;
+        tapeEmulation(p, te, W, H, bleed, wear, inst, heads, clampd(c.noise, 0, 2), clampd(c.sharpness, -1, 1));
+        p.chromaBlockY = tp.colourUnder ? std::max(1, (int)lround(2.0 * H / 480.0)) : 1;   // unused by the tape
         p.saturation *= (float)(1.0 - 0.15 * wear);
         p.contrast = 1.15f;
         p.clip = 3.0f;

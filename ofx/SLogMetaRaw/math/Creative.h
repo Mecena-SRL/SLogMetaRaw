@@ -20,6 +20,7 @@
 
 #ifdef __METAL_VERSION__
 #define CR_PLANE const device float*
+#define CR_OUT device float*
 #define CR_FLOOR floor
 #define CR_CEIL ceil
 #define CR_SIN precise::sin
@@ -27,6 +28,7 @@
 typedef uint CrU;
 #else
 #define CR_PLANE const float*
+#define CR_OUT float*
 #define CR_FLOOR floorf
 #define CR_CEIL ceilf
 #define CR_SIN sinf
@@ -89,6 +91,13 @@ struct CreativeParams {
     float lumaSigma, ringSigma, chromaSigma, sharp, noise, chromaNoise, dropouts;
     int chromaDelay, lumaAxes, chromaBlockX, chromaBlockY;
     float clip, knee, contrast, highDesat, levels;
+    // analog tape, emulated line by line (tape != 0): field raster, record and playback filters (one-pole k, biquads
+    // b0 b1 b2 a1 a2), FM noise, colour-under, timebase residual after the TV's line lock (px), dropouts
+    int tape, fieldLines, combRows, docRows;
+    float emphK, emphG, clipLo, clipHi, fmNoise, lp[10], crispK, crisp;
+    float chromaK, chromaSigmaN, chromaAM, chromaLimit, delayPx, hueGain, huePhase;
+    float tbWave, tbWaveLines, tbScrape, headStep, headRows, headTau, flagAmp, flagRows, headNoise;
+    float dropDensity, dropSlide, dropLife;
     // duplicates and print: grain of the intermediates (stops), of the print (density)
     float genGrain, genSize, printGrain, printGrainSize, genSoft;   // genSoft: the duplicates' blur (px)
     // viewing medium, on the finished picture (display-linear Rec.709)
@@ -572,6 +581,131 @@ SM_FN SMf3 cr_signal_at(CR_PLANE Y, CR_PLANE Yb, CR_PLANE Cb, CR_PLANE Cr, int x
         }
     const int k = y * p.W + x;
     return cr_signal_out(Y[k], Yb[k], cb / (float)n, cr / (float)n, x, y, p);
+}
+
+// ---- analog tape, emulated: a signal along each line, causal filters, one cause for many symptoms
+// (docs/CREATIVE.md, research VIDEO_EMULAZIONE.md). Rows are bottom-up (OFX): frame line l counts from the top; its
+// field is l & 1 and its field line l >> 1. Noise, timebase and dropouts belong to the field line of their field.
+
+SM_FN int cr_frame_line(int y, SM_CREF(CreativeParams) p) {
+    const int lines = 2 * p.fieldLines;
+    return cr_clamp_i((int)((float)(p.H - 1 - y) * (float)lines / (float)p.H), lines);
+}
+// About unit-variance Gaussian noise (three uniform hashes).
+SM_FN float cr_gauss(int x, int y, int z) { return cr_hash(x, y, z) + cr_hash(x, y, z + 1) + cr_hash(x, y, z + 2); }
+
+// Horizontal displacement (px, + to the right) of output row y: what the TV's line lock leaves of the tape's timebase
+// error. A slow wave, the scrape of the tape, the head switch near the bottom of the field (a step the lock recovers
+// over a few lines) and the flagging at the top of the next field, all from the same field's error.
+SM_FN float cr_tape_jitter(int r, int F, SM_CREF(CreativeParams) p) {
+    return p.tbWave * cr_value((float)r / p.tbWaveLines, (float)F * 0.37f, 901) + p.tbScrape * cr_gauss(r, F, 905);
+}
+SM_FN float cr_tape_shift(int y, SM_CREF(CreativeParams) p) {
+    const int l = cr_frame_line(y, p), F = p.frame * 2 + (l & 1), r = l >> 1;
+    float d = cr_tape_jitter(r, F, p);
+    const float fromBottom = (float)(p.fieldLines - 1 - r);
+    if (p.headStep != 0.0f && fromBottom < p.headRows)
+        d += p.headStep * (1.0f + 0.2f * cr_hash(F, 0, 911)) * SM_EXP(-(p.headRows - fromBottom) / p.headTau);
+    if (p.flagAmp != 0.0f && (float)r < p.flagRows)
+        d += p.flagAmp * (1.0f + 0.3f * cr_hash(F, 1, 913)) * SM_EXP(-3.0f * (float)r / p.flagRows);
+    return d;
+}
+
+// One output row through the recorder and the player (serial along the line). Luma: pre-emphasis, the FM clip,
+// FM noise (white, differentiated: it grows with frequency), de-emphasis (its exact inverse, so only the clip and the
+// noise remain), the playback low-pass (two biquads, causal: overshoot after the edge) and the crispener. Colour:
+// three one-pole low-passes, AM and phase noise, the hue turned by the same timebase error, saturated colour
+// compressed. Y Cb Cr in, out to (Yo, Cbo, Cro) of the same layout.
+SM_FN void cr_tape_row(CR_PLANE Y, CR_PLANE Cb, CR_PLANE Cr, CR_OUT Yo, CR_OUT Cbo, CR_OUT Cro, int y,
+                       SM_CREF(CreativeParams) p) {
+    const int l = cr_frame_line(y, p), F = p.frame * 2 + (l & 1), r = l >> 1;
+    const int row = y * p.W;
+    // the colour circuit locks to each line's burst: of the timebase only the fast jitter turns the hue
+    const float phi = p.hueGain * cr_tape_jitter(r, F, p) + p.huePhase * cr_gauss(r, F, 921);
+    const float cs = CR_COS(phi), sn = CR_SIN(phi);
+    float se = Y[row], sd = Y[row];
+    float x1a = Y[row], x2a = Y[row], y1a = Y[row], y2a = Y[row], x1b = Y[row], x2b = Y[row], y1b = Y[row], y2b = Y[row];
+    float sc = Y[row], wPrev = cr_gauss(-1, r, F * 7 + 931);
+    float u1 = Cb[row], u2 = Cb[row], u3 = Cb[row], v1 = Cr[row], v2 = Cr[row], v3 = Cr[row];
+    float nu = 0.0f, nv = 0.0f;
+    for (int x = 0; x < p.W; ++x) {
+        const int k = row + x;
+        // luma
+        const float e = Y[k];
+        se += p.emphK * (e - se);
+        float m = e + p.emphG * (e - se);
+        m = sm_clamp(m, p.clipLo, p.clipHi);
+        const float w = cr_gauss(x, r, F * 7 + 931);
+        m += p.fmNoise * (0.6f + 0.4f * sm_clamp(e, 0.0f, 1.2f)) * (w - wPrev);
+        wPrev = w;
+        const float dd = (m + p.emphG * (1.0f - p.emphK) * sd) / (1.0f + p.emphG - p.emphG * p.emphK);
+        sd += p.emphK * (dd - sd);
+        const float a = p.lp[0] * dd + p.lp[1] * x1a + p.lp[2] * x2a - p.lp[3] * y1a - p.lp[4] * y2a;
+        x2a = x1a; x1a = dd; y2a = y1a; y1a = a;
+        const float b = p.lp[5] * a + p.lp[6] * x1b + p.lp[7] * x2b - p.lp[8] * y1b - p.lp[9] * y2b;
+        x2b = x1b; x1b = a; y2b = y1b; y1b = b;
+        sc += p.crispK * (b - sc);
+        Yo[k] = b + p.crisp * (b - sc);
+        // colour
+        u1 += p.chromaK * (Cb[k] - u1); u2 += p.chromaK * (u1 - u2); u3 += p.chromaK * (u2 - u3);
+        v1 += p.chromaK * (Cr[k] - v1); v2 += p.chromaK * (v1 - v2); v3 += p.chromaK * (v2 - v3);
+        nu += p.chromaK * (cr_gauss(x, r, F * 7 + 941) - nu);
+        nv += p.chromaK * (cr_gauss(x, r, F * 7 + 951) - nv);
+        const float am = 1.0f + p.chromaAM * nu;
+        float cu = (u3 * cs - v3 * sn) * am + p.chromaSigmaN * nu, cv = (u3 * sn + v3 * cs) * am + p.chromaSigmaN * nv;
+        const float mag = SM_SQRT(cu * cu + cv * cv), lim = 1.0f / SM_SQRT(1.0f + mag * mag / (p.chromaLimit * p.chromaLimit));
+        Cbo[k] = cu * lim;
+        Cro[k] = cv * lim;
+    }
+}
+
+// Linear read of row y of a plane at the fractional x; outside the line on the left: blanking (0).
+SM_FN float cr_row_at(CR_PLANE P, int y, float x, SM_CREF(CreativeParams) p) {
+    if (x < -1.0f) return 0.0f;
+    const float fx = CR_FLOOR(x);
+    const int i = (int)fx;
+    const float t = x - fx;
+    const float a = i < 0 ? 0.0f : P[y * p.W + cr_clamp_i(i, p.W)], b = P[y * p.W + cr_clamp_i(i + 1, p.W)];
+    return a + (b - a) * t;
+}
+
+// The player's output at (x, y), as the TV shows it: the line displaced by the timebase, the colour later still and
+// averaged with the field's previous line (comb), dropouts replaced by the line above (the compensator) and colourless,
+// the noisy band of the head switch; then R'G'B' code values.
+SM_FN SMf3 cr_tape_out(CR_PLANE Yp, CR_PLANE Cbp, CR_PLANE Crp, int x, int y, SM_CREF(CreativeParams) p) {
+    const int l = cr_frame_line(y, p), F = p.frame * 2 + (l & 1), r = l >> 1;
+    const float xs = (float)x - cr_tape_shift(y, p);
+    int src = y;
+    bool drop = false;
+    if (p.dropDensity > 0.0f) {   // defects on the tape: they live some fields and slide up the picture
+        const int epoch = (int)CR_FLOOR((float)F / p.dropLife);
+        const int cell = (int)CR_FLOOR((float)r + p.dropSlide * (float)(F - epoch * (int)p.dropLife));
+        if (cr_hash01(cell, epoch, 961) < p.dropDensity) {
+            const float h = cr_hash01(cell, epoch, 963);
+            const float start = cr_hash01(cell, epoch, 965) * (float)p.W, len = (0.004f + 0.08f * h * h * h) * (float)p.W;
+            drop = xs >= start && xs < start + len;
+        }
+    }
+    if (drop) src = cr_clamp_i(y + p.docRows, p.H);
+    float Yv = cr_row_at(Yp, src, xs, p);
+    const float xc = xs - p.delayPx;
+    const int up = cr_clamp_i(y + p.combRows, p.H);
+    float cb = cr_row_at(Cbp, y, xc, p), cr = cr_row_at(Crp, y, xc, p);
+    if (p.combRows > 0) {
+        cb = 0.5f * (cb + cr_row_at(Cbp, up, xc, p));
+        cr = 0.5f * (cr + cr_row_at(Crp, up, xc, p));
+    }
+    if (drop) {
+        cb = 0.0f;
+        cr = 0.0f;
+    }
+    if ((float)(p.fieldLines - 1 - r) < 1.5f && p.headNoise > 0.0f) {   // the switching lines themselves
+        Yv += p.headNoise * cr_gauss(x / 2, r, F + 971);
+        cb *= 0.3f;
+        cr *= 0.3f;
+    }
+    const SMf3 d = smf3(Yv + 1.402f * cr, Yv - 0.344136f * cb - 0.714136f * cr, Yv + 1.772f * cb);
+    return smf3(sm_clamp(d.x, 0.0f, 1.0f), sm_clamp(d.y, 0.0f, 1.0f), sm_clamp(d.z, 0.0f, 1.0f));
 }
 
 // ---- viewing medium: the finished picture (planes M, display-linear Rec.709) as a screen or a print shows it

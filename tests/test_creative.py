@@ -327,11 +327,67 @@ class Creative(unittest.TestCase):
     def test_a_device_is_the_process_it_names(self):
         """A model picks the engine's row: the iPhone 3GS renders as the manual 2008 phone row, the Panasonic VHS
         camera as the VHS SP tape with that camera's faults."""
-        self.assertEqual(self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)]),
-                         self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)]))
-        self.assertEqual(self.render({'device': 2, 'videoCamera': 5}, [ramp(tinted=True)]),
-                         self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3},
-                                     [ramp(tinted=True)]))
+        def same(a, b):
+            self.assertLess(max(abs(u - v) for p, q in zip(a, b) for u, v in zip(p, q)), 1e-5)
+        same(self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)]),
+             self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)]))
+        same(self.render({'device': 2, 'videoCamera': 5}, [ramp(tinted=True)]),
+             self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3},
+                         [ramp(tinted=True)]))
+
+
+    # ---- analog tape, emulated line by line
+
+    def tape(self, rows, controls, size):
+        """Render picture rows (top first, Gamma 2.4 Rec.709 code values) through a tape; rows of output, top first."""
+        w, h = size
+        px = [rows[h - 1 - y][x] for y in range(h) for x in range(w)]   # bottom-up
+        out = self.render(dict({'process': ANALOG}, **controls), [px], size=size, enc=(1, 3))
+        return [out[(h - 1 - y) * w: (h - y) * w] for y in range(h)]
+
+    def test_tape_edges_ring_after_and_big_edges_soften(self):
+        """Causal filters: the left of a step stays flat, the tail comes after it. The FM clip: a full black-to-white
+        step rises more slowly than a small one of the same shape."""
+        w, h = 720, 4
+        def step(lo, hi):
+            return [[(lo,) * 3 if x < 360 else (hi,) * 3 for x in range(w)] for _ in range(h)]
+        quiet = {'analog': 1, 'noise': 0, 'instability': 0, 'heads': 0, 'wear': 0}
+        def rise(lo, hi):   # samples from 10 % to 90 % of the step, and the flatness before it
+            row = [px[0] for px in self.tape(step(lo, hi), quiet, (w, h))[2]]
+            a, b = sum(row[300:340]) / 40, sum(row[600:700]) / 100
+            ys = [(v - a) / (b - a) for v in row[340:500]]
+            before = ys[:18]
+            self.assertLess(max(before) - min(before), 0.02)
+            return next(i for i, v in enumerate(ys) if v > 0.9) - next(i for i, v in enumerate(ys) if v > 0.1)
+        self.assertGreater(rise(0.0, 1.0), rise(0.45, 0.55))
+
+    def test_tape_noise_is_a_horizontal_grain_per_line(self):
+        """FM noise through the playback low-pass: correlated along the line, independent from line to line (each
+        frame line is its own field line)."""
+        w, h = 720, 576
+        grey = [[(0.5, 0.5, 0.5)] * w for _ in range(h)]
+        out = self.tape(grey, {'analog': 1, 'instability': 0, 'heads': 0, 'wear': 0}, (w, h))
+        rows = [[px[1] for px in row[100:600]] for row in out[40:240]]
+        mean = sum(map(sum, rows)) / (200 * 500)
+        v = [[a - mean for a in r] for r in rows]
+        def corr(pairs):
+            num = sum(a * b for a, b in pairs)
+            return num / math.sqrt(sum(a * a for a, _ in pairs) * sum(b * b for _, b in pairs))
+        horiz = corr([(r[i], r[i + 1]) for r in v for i in range(len(r) - 1)])
+        vert = corr([(v[j][i], v[j + 1][i]) for j in range(len(v) - 1) for i in range(len(v[0]))])
+        self.assertGreater(horiz, 0.5)
+        self.assertLess(abs(vert), 0.15)
+
+    def test_tape_colour_arrives_late_and_soft(self):
+        """Colour-under: the colour edge is wider than the luma's and centred to the right of it."""
+        w, h = 720, 4
+        rows = [[(0.5, 0.5, 0.5) if x < 360 else (0.7, 0.45, 0.3) for x in range(w)] for _ in range(h)]
+        quiet = {'analog': 1, 'noise': 0, 'instability': 0, 'heads': 0, 'wear': 0}
+        row = self.tape(rows, quiet, (w, h))[2]
+        red = [px[0] - px[2] for px in row]
+        lo, hi = sum(red[250:340]) / 90, sum(red[600:700]) / 100
+        centre = next(i for i in range(340, 700) if (red[i] - lo) / (hi - lo) > 0.5)
+        self.assertGreater(centre, 363)
 
 if __name__ == '__main__':
     unittest.main()

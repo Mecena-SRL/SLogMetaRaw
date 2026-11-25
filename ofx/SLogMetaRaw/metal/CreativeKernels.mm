@@ -188,6 +188,13 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         // V = Y Cb Cr; T = filtered luma (0), its blur (1), Cb (2), Cr (3)
         ps = e.use("cr_signal_k");
         e.buf(E, 0); e.buf(hal, 1); e.buf(bl, 2); e.buf(V, 3); e.bytes(q, 4); e.grid(ps, q.W, q.H);
+        if (q.tape != 0) {   // the tape, line by line, then the picture the TV shows
+            ps = e.use("cr_tape_row_k");
+            e.buf(V, 0); e.buf(T, 1); e.bytes(q, 2); e.grid(ps, q.H, 1);
+            ps = e.use("cr_tape_out_k");
+            e.buf(in[0], 0); e.buf(out, 1); e.buf(T, 2); e.bytes(q, 3); e.grid(ps, q.W, q.H);
+            return;
+        }
         size_t Y = 0, Yb = N;   // offsets into T, or V for Yb when the luma is filtered along the lines only
         id<MTLBuffer> YbBuf = T;
         e.blur(V, 0, T, 0, q.W, q.H, 0, q.lumaSigma, 0);

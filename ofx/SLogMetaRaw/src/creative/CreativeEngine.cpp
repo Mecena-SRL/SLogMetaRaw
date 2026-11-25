@@ -177,6 +177,18 @@ void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeS
                 s.V[2][k] = v.z;
             }
     });
+    if (q.tape != 0) {   // the tape, line by line: record and playback filters, then the picture the TV shows
+        float* T0 = s.T[0].data();
+        float* T2 = s.T[2].data();
+        float* T3 = s.T[3].data();
+        par(H, [&](int b, int e) {
+            for (int y = b; y < e; ++y)
+                cr_tape_row(s.V[0].data(), s.V[1].data(), s.V[2].data(), T0, T2, T3, y, q);
+        });
+        writeOut(par, q, alpha, srcRowFloats, dst, dstRowFloats,
+                 [&](int x, int y) { return cr_tape_out(T0, T2, T3, x, y, q); });
+        return;
+    }
     // luma: its bandwidth (along the line; both axes for a digital camera's optics), then the peaking's blur
     float* Y = s.T[0].data();
     float* Yb = s.T[1].data();
