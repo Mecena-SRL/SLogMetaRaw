@@ -98,6 +98,15 @@ common/  (condiviso dai nodi)
 - `common/Child.h` dichiara l'API, `Child.cpp`/`ChildWin.cpp` la implementano per piattaforma
   (spawn, redirect, timeout del processo Python).
 
+## C++ — `audio/src/` (Log MetaRaw Audio, plugin per Fairlight, in sviluppo)
+
+```
+AudioPresets.h  (tabelle: dispositivi, microfoni, supporti, NR, banchi, ascolto)
+      └──> AudioEngine.h/.cpp  (catena per blocchi, indipendente dall'host; wrapper VST3/AU da fare)
+tests/audio_test.cpp  (compilato dal CMake di ofx/SLogMetaRaw, guidato da tests/test_audio.py)
+```
+Non dipende dal plugin OFX. Documento: `docs/audio/AUDIO.md`.
+
 ## Packaging e release (non runtime)
 
 ```
