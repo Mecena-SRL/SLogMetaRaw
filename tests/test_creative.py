@@ -467,14 +467,14 @@ class Creative(unittest.TestCase):
         self.assertTrue(all(r[2] == 0 and r[3] == 0 for r in scan))   # a scanned negative was never printed
 
     def test_gate_hair_comes_in_from_an_edge_and_stays_for_the_shot(self):
-        """A hair caught in the gate: a dark, sharp shape touching an edge of the frame, in the same place for the
+        """A hair caught in the gate: a dark shape touching an edge of the frame, in the same place for the
         whole shot, bigger on Super 8 than on Super 35 (it is 60-90 um everywhere); none at 0."""
         w, h = 320, 180
         flat = [[dm.encode1(0.18, GAMMA)] * 3 for _ in range(w * h)]
         render = lambda ctl, frame: self.render(ctl, [flat], frame=frame, size=(w, h))
         def dark(out):
             m = sorted(sum(px) / 3 for px in out)[len(out) // 2]
-            return [(i % w, i // w) for i, px in enumerate(out) if sum(px) / 3 < 0.5 * m]
+            return [(i % w, i // w) for i, px in enumerate(out) if sum(px) / 3 < 0.75 * m]
         for fmt in (0, 2):
             with self.subTest(format=fmt):
                 a = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': fmt}, 5))
@@ -487,6 +487,25 @@ class Creative(unittest.TestCase):
         s35 = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 2}, 5))
         self.assertGreater(len(s8), 2 * len(s35))
         self.assertFalse(dark(render({'process': NEGATIVE, 'hair': 0, 'grain': 0}, 5)))
+
+    def test_gate_hair_and_dust_have_soft_uneven_edges(self):
+        """Not a drawn stroke: the hair's shadow fades over its edge (blur of the light's cone, the emulsion, the
+        scan) and thins towards its free end; dust specks are not all equally dark."""
+        w, h = 480, 270
+        flat = [[dm.encode1(0.18, GAMMA)] * 3 for _ in range(w * h)]
+        def shade(ctl, frame):
+            out = self.render(ctl, [flat], frame=frame, size=(w, h))
+            m = sorted(sum(px) / 3 for px in out)[len(out) // 2]
+            return [sum(px) / 3 / m for px in out]
+        s = shade({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 0}, 293)
+        core = sum(1 for v in s if v < 0.6)
+        edge = sum(1 for v in s if 0.6 <= v < 0.95)
+        self.assertGreater(core, 0)
+        self.assertGreater(edge, core // 2)
+        d = shade({'process': BW, 'dust': 1, 'grain': 0, 'format': 2}, 7)
+        hit = sorted(v for v in d if v > 1.05)   # white on the print of a negative
+        self.assertGreater(len(hit), 50)
+        self.assertGreater(hit[-1] - hit[len(hit) // 2], 0.1)
 
     # ---- presets: device, model, format, manufacturer, stock; what the film applies
 

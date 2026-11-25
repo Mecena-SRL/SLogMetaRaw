@@ -1,5 +1,12 @@
 # Changelog
 
+## In sviluppo
+
+- **Creative, peli, polvere e graffi più veri**: il pelo nel finestrino non è più una riga nera disegnata. Si
+  assottiglia verso la punta, ha densità irregolare, ombra sfocata come sulla pellicola (più su Super 8 e sulle copie)
+  e una curva morbida; a volte è arricciato o è una fibra di lanugine a due fili. La polvere ha bordi irregolari,
+  granelli di ogni misura e qualche fibra; i graffi cambiano spessore e intensità lungo la riga.
+
 ## Log MetaRaw 4.3.0
 
 - **Creative, supporto della pellicola**: puoi scegliere nitrato, diacetato, triacetato o poliestere, oppure lasciarlo
