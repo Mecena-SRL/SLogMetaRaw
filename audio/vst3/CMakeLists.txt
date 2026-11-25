@@ -98,7 +98,7 @@ if(APPLE)
   add_custom_target(LogMetaRawAU)
   # name: bundle name; only: which plugin; subtype: its four-letter Audio Unit code (maker code Mcna)
   function(lmr_add_au target name only subtype)
-    lmr_add_vst3(${target}Vst3 "${name} (AU)" ${only} com.slogmetaraw.audio.au${only}.vst3)
+    lmr_add_vst3(${target}Vst3 ${target}Vst3 ${only} com.slogmetaraw.audio.au${only}.vst3)   # no spaces: the SDK quotes poorly
     set(AU_NAME "${name}")
     set(AU_SUBTYPE "${subtype}")
     set(AU_BUNDLE_ID "com.slogmetaraw.audio.au${only}")
