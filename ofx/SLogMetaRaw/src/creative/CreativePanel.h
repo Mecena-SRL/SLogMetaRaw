@@ -335,6 +335,11 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     const bool film = c.device == kCrDevFilm, manual = c.device == kCrDevManual;
     if (!std::strcmp(name, "process")) return !manual;
     if (!std::strcmp(name, "filmCamera") || !std::strcmp(name, "maker")) return !film;
+    if (film && !std::strcmp(name, "format")) {   // a camera made for one format: nothing to choose (unless off it)
+        const unsigned f = kCrCameras[c.filmCamera >= 0 && c.filmCamera < kCrCameraCount ? c.filmCamera : 0].formats;
+        const bool in = c.format >= 0 && c.format < kCrFormatCount && (f & (1u << c.format)) != 0;
+        return (f & (f - 1)) == 0 && in;
+    }
     if (!std::strcmp(name, "videoCamera")) return c.device != kCrDevVideo;
     if (!std::strcmp(name, "cinemaCamera")) return c.device != kCrDevCinema;
     if (!std::strcmp(name, "phoneCamera")) return c.device != kCrDevPhone;

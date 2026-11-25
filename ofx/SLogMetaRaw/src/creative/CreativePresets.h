@@ -194,6 +194,59 @@ inline constexpr CrMaker kCrMakers[] = {
     { "Konica", "stockKonica", kCrKonica, (int)std::size(kCrKonica) } };
 const int kCrMakerCount = (int)std::size(kCrMakers);
 
+// The stocks made in each gauge, every manufacturer's together: what the panel offers first for the camera's format
+// (the manufacturer's whole list stays one switch away). Each list is its own choice; Resolve saves the index, so
+// each list is append only: a new stock goes at the end of every gauge it was made in, wherever it sits in its
+// manufacturer's list. Pairs: kCrMakers index, stock index. Frozen from the gauge bits of 4.3.
+struct CrPick { unsigned char maker, stock; };
+inline constexpr CrPick kCrPick8[] = {
+    { 0, 18 }, { 0, 19 }, { 0, 42 }, { 0, 43 }, { 2, 2 }, { 3, 3 }, { 3, 4 }, { 4, 3 }, { 4, 4 }, { 5, 0 },
+    { 5, 1 } };   // 11
+inline constexpr CrPick kCrPickS8[] = {
+    { 0, 0 }, { 0, 1 }, { 0, 3 }, { 0, 4 }, { 0, 17 }, { 0, 18 }, { 0, 23 }, { 0, 24 }, { 0, 25 }, { 0, 26 },
+    { 0, 42 }, { 1, 9 }, { 2, 2 }, { 2, 3 }, { 3, 3 }, { 4, 3 }, { 4, 4 } };   // 17
+inline constexpr CrPick kCrPick95[] = {
+    { 3, 4 }, { 6, 2 } };   // 2
+inline constexpr CrPick kCrPick16[] = {
+    { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 5 }, { 0, 6 }, { 0, 7 }, { 0, 8 }, { 0, 9 },
+    { 0, 10 }, { 0, 11 }, { 0, 12 }, { 0, 13 }, { 0, 16 }, { 0, 17 }, { 0, 18 }, { 0, 19 }, { 0, 23 }, { 0, 24 },
+    { 0, 27 }, { 0, 28 }, { 0, 38 }, { 0, 39 }, { 0, 41 }, { 0, 42 }, { 0, 43 }, { 1, 0 }, { 1, 1 }, { 1, 2 },
+    { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 }, { 1, 8 }, { 2, 0 }, { 2, 2 }, { 2, 4 }, { 2, 5 },
+    { 3, 0 }, { 3, 1 }, { 3, 3 }, { 3, 4 }, { 3, 5 }, { 3, 6 }, { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 },
+    { 4, 5 }, { 5, 0 }, { 5, 1 }, { 6, 0 }, { 7, 1 }, { 7, 2 }, { 8, 0 }, { 8, 2 }, { 9, 0 }, { 9, 1 },
+    { 9, 2 } };   // 61
+inline constexpr CrPick kCrPick35[] = {
+    { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 5 }, { 0, 6 }, { 0, 7 }, { 0, 8 }, { 0, 9 },
+    { 0, 10 }, { 0, 11 }, { 0, 12 }, { 0, 13 }, { 0, 14 }, { 0, 15 }, { 0, 16 }, { 0, 24 }, { 0, 38 }, { 0, 39 },
+    { 0, 40 }, { 0, 41 }, { 1, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 },
+    { 1, 8 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 5 }, { 3, 6 }, { 4, 0 },
+    { 4, 1 }, { 4, 2 }, { 4, 5 }, { 6, 0 }, { 6, 1 }, { 7, 0 }, { 7, 1 }, { 7, 2 }, { 8, 0 }, { 8, 1 },
+    { 8, 3 }, { 9, 0 }, { 9, 1 } };   // 53
+inline constexpr CrPick kCrPick65[] = {
+    { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 12 }, { 0, 13 }, { 0, 38 }, { 3, 0 }, { 3, 1 } };   // 10
+inline constexpr CrPick kCrPick135[] = {
+    { 0, 18 }, { 0, 19 }, { 0, 20 }, { 0, 21 }, { 0, 22 }, { 0, 29 }, { 0, 30 }, { 0, 31 }, { 0, 32 }, { 0, 33 },
+    { 0, 34 }, { 0, 35 }, { 0, 36 }, { 0, 37 }, { 0, 44 }, { 0, 45 }, { 0, 46 }, { 1, 10 }, { 1, 11 }, { 1, 12 },
+    { 1, 13 }, { 1, 14 }, { 2, 0 }, { 2, 2 }, { 2, 6 }, { 2, 7 }, { 2, 8 }, { 2, 9 }, { 4, 6 }, { 5, 0 },
+    { 5, 1 }, { 5, 2 }, { 5, 3 }, { 5, 4 }, { 5, 5 }, { 5, 6 }, { 6, 0 }, { 6, 3 }, { 6, 4 }, { 6, 5 },
+    { 10, 0 }, { 10, 1 }, { 10, 2 }, { 10, 3 }, { 11, 0 }, { 11, 1 }, { 11, 2 }, { 12, 0 }, { 12, 1 } };   // 49
+inline constexpr CrPick kCrPick120[] = {
+    { 0, 21 }, { 0, 29 }, { 0, 30 }, { 0, 31 }, { 0, 32 }, { 0, 33 }, { 0, 34 }, { 0, 44 }, { 0, 45 }, { 0, 46 },
+    { 1, 10 }, { 1, 11 }, { 1, 12 }, { 1, 13 }, { 2, 8 }, { 2, 9 }, { 5, 0 }, { 5, 1 }, { 5, 2 }, { 5, 3 },
+    { 5, 4 }, { 5, 5 }, { 5, 6 }, { 6, 5 }, { 10, 0 }, { 10, 1 }, { 10, 2 }, { 10, 3 }, { 11, 0 }, { 11, 1 },
+    { 11, 2 } };   // 31
+struct CrGaugeList { const char* param; unsigned gauge; const CrPick* picks; int count; };
+inline constexpr CrGaugeList kCrGaugeLists[] = {
+    { "stockFor8", kG8, kCrPick8, (int)std::size(kCrPick8) },
+    { "stockForS8", kGS8, kCrPickS8, (int)std::size(kCrPickS8) },
+    { "stockFor95", kG95, kCrPick95, (int)std::size(kCrPick95) },
+    { "stockFor16", kG16, kCrPick16, (int)std::size(kCrPick16) },
+    { "stockFor35", kG35, kCrPick35, (int)std::size(kCrPick35) },
+    { "stockFor65", kG65, kCrPick65, (int)std::size(kCrPick65) },
+    { "stockFor135", kG135, kCrPick135, (int)std::size(kCrPick135) },
+    { "stockFor120", kG120, kCrPick120, (int)std::size(kCrPick120) } };
+const int kCrGaugeListCount = (int)std::size(kCrGaugeLists);
+
 // Film cameras: the native format (kCrFormatNames index), the formats it takes (bits of format indices), and what it
 // loads into the texture rows: gate weave and flicker (0..1, multiples of the format's own), the lens's vignetting
 // (stops), chromatic aberration and diffusion. Weave classes from the research: double pin 0.1-0.15, single pin

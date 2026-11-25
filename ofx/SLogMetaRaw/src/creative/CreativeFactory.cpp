@@ -8,6 +8,7 @@
 #include "CreativeEffect.h"
 #include "CreativePanel.h"
 
+#include <string>
 #include <vector>
 
 using namespace OFX;
@@ -49,6 +50,21 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
         groups[g] = defineGroup(d, page, kCrGroups[g].name, kCrGroups[g].label, kCrGroups[g].open);
     GroupParamDescriptor* proc = groups[kGrProcess];
     auto choice = [&](const CrChoiceDef& c) {
+        if (!std::strcmp(c.name, "maker")) {   // first the stocks made for the camera's gauge, then every list
+            for (int l = 0; l < kCrGaugeListCount; ++l) {
+                std::vector<std::string> labels;
+                std::vector<const char*> names;
+                for (int i = 0; i < kCrGaugeLists[l].count; ++i) labels.push_back(creativePickLabel(l, i));
+                for (const std::string& n : labels) names.push_back(n.c_str());
+                defineChoice(d, page, kCrGaugeLists[l].param, "Pellicola", names.data(), kCrGaugeLists[l].count, 0,
+                             "Le pellicole fatte nel formato della cinepresa, di ogni produttore, con il codice di quel "
+                             "formato. Anno tra parentesi; foto = pellicola fotografica",
+                             proc);
+            }
+            defineCheck(d, page, "allStocks", "Tutte le pellicole, per produttore", false,
+                        "Mostra i listini completi dei produttori, anche le pellicole mai fatte in questo formato",
+                        proc);
+        }
         defineChoice(d, page, c.name, c.label, c.options, c.count, CreativeControls().*(c.field), c.hint,
                      groups[c.group]);
         if (!std::strcmp(c.name, "process"))

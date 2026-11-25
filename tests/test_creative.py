@@ -333,6 +333,20 @@ class Creative(unittest.TestCase):
         self.assertLess(vhs, bc)
 
 
+    def test_the_camera_gauge_lists_its_own_stocks_with_their_codes(self):
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        res = subprocess.run([self.exe], input='picks\n', capture_output=True, text=True, timeout=20)
+        lists = {}
+        for line in res.stdout.splitlines():
+            param, label = line.split('\t')
+            lists.setdefault(param, []).append(label)
+        self.assertIn('Kodak · Vision3 500T 7219 (2007)', lists['stockFor16'])
+        self.assertIn('Kodak · Vision3 500T 5219 (2007)', lists['stockFor35'])
+        self.assertNotIn('Kodak · Vision3 250D 7207 (2010)', lists['stockForS8'])   # never made in Super 8
+        self.assertTrue(all('5219' not in s for s in lists['stockFor16']))
+        self.assertTrue(any(s.startswith('Fujifilm · ') and ' 86' in s for s in lists['stockFor16']))
+
     def test_every_menu_entry_and_text_exists(self):
         """A missing entry is a null pointer: Resolve crashed choosing the 4.2.0 viewing media without their text."""
         if not self.exe:

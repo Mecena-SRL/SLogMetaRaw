@@ -126,6 +126,21 @@ class OfxHost(unittest.TestCase):
         self.assertIn('secret:wear=0', vhs)
         self.assertIn('secret:grain=1', vhs)
 
+    def test_creative_offers_the_stocks_of_the_camera_gauge(self):
+        """A film camera shows the stocks made in its gauge (every manufacturer); picking one sets manufacturer and
+        stock; the manufacturers' lists come back on the switch. A camera of one format hides the format."""
+        s35 = self.values('--change', 'device=1', plugin=1)   # Arriflex 435: Super 35
+        self.assertEqual((s35['secret:stockFor35'], s35['secret:stockFor16']), ('0', '1'))
+        self.assertEqual((s35['secret:maker'], s35['secret:stockKodak'], s35['secret:format']), ('1', '1', '0'))
+        sr = self.values('--change', 'device=1', '--change', 'filmCamera=9', '--change', 'stockFor16=27', plugin=1)
+        self.assertEqual((sr['secret:stockFor16'], sr['secret:stockFor35']), ('0', '1'))   # Arriflex 16SR: 16 mm
+        self.assertEqual((sr['maker'], sr['stockFuji']), ('1', '0'))   # Fujifilm Eterna 500, 8673 in 16 mm
+        one = self.values('--change', 'device=1', '--change', 'filmCamera=11', plugin=1)   # Arriflex 416: Super 16
+        self.assertEqual(one['secret:format'], '1')
+        every = self.values('--change', 'device=1', '--change', 'allStocks=1', plugin=1)
+        self.assertEqual((every['secret:maker'], every['secret:stockKodak'], every['secret:stockFor35']),
+                         ('0', '0', '1'))
+
     def test_the_old_input_list_fills_the_two_choices(self):
         """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""
         values = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5')

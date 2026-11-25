@@ -37,7 +37,9 @@ private:
     void resetAll();
     void loadLens();        // the chosen lens's preset into the texture rows
     void loadMedium();      // the chosen medium's preset into the response rows
-    void loadDevice();      // the chosen model's preset into the format, texture or tape rows
+    void loadDevice();
+    void syncPick();                     // the gauge list shows the manufacturer's stock, when it holds it
+    void pickStock(const std::string& list);   // a stock picked from a gauge list: manufacturer and stock follow      // the chosen model's preset into the format, texture or tape rows
     void fetchRecords(const CreativeControls& c, double t, const OFX::Image& layout, OFX::Image* frame,
                       std::unique_ptr<OFX::Image> keep[3], const float* out[3]);
 

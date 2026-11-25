@@ -50,6 +50,15 @@ non profili misurati.
   saturazione, contrasto, alone (CineStill senza rem-jet), dominante (Fuji più fredda, Est verde-ciano, Agfa oliva),
   sensibilità per le B/N antiche. `creativeResolve` ne ricava processo e variante; `creativeDeviceInfo` scrive i formati
   della cinepresa, dove è esistita la pellicola e i casi fuori formato (resi lo stesso).
+- Pellicola per formato (dalla 4.3): il pannello mostra prima la lista del calibro del formato scelto (`kCrGaugeLists`:
+  8, Super 8, 9,5, 16, 35, 65, 135, 120), con le pellicole di tutti i produttori fatte in quel calibro e il codice di
+  quel calibro (`creativePickLabel`: Kodak 5xxx → 7xxx in 16 mm e 8 mm, Fuji 85xx → 86xx in 16 mm). È una vista:
+  sceglierne una scrive produttore e pellicola (`pickStock`), che restano lo stato salvato, quindi i grade di prima non
+  cambiano; cambiare cinepresa, formato o produttore riallinea la lista (`syncPick`). Le liste sono fisse e si
+  allungano solo in fondo (Resolve salva l'indice); un test verifica che ogni pellicola compaia una volta in ogni
+  calibro in cui è esistita. La spunta *Tutte le pellicole, per produttore* riporta i listini completi, che compaiono
+  anche quando la pellicola scelta non è mai esistita in quel calibro. Una cinepresa di un solo formato nasconde il
+  formato.
 - Formati nuovi: 35 mm Academy, 135 e 120 (grana e dimensione ∝ M^0,32 e M^0,65, M = √(area S35/area)).
 - Videocamere (13): nastro (con usura, testine, instabilità) e sensore (tubi a 3 o a 1 tubo a strisce, CCD a 1 o 3
   chip).

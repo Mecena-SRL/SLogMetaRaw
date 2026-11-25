@@ -57,7 +57,28 @@ int main()
         for (const CrMaker& m : kCrMakers)
             for (int i = 0; i < m.count; ++i)
                 if (!m.stocks[i].name) printf("%s %d\n", m.param, i), ++bad;
+        for (const CrGaugeList& g : kCrGaugeLists) {   // each gauge list: every stock made in it, once, and no other
+            for (int i = 0; i < g.count; ++i) {
+                const CrPick& p = g.picks[i];
+                if (p.maker >= kCrMakerCount || p.stock >= kCrMakers[p.maker].count
+                    || !(kCrMakers[p.maker].stocks[p.stock].gauges & g.gauge))
+                    printf("%s %d not of this gauge\n", g.param, i), ++bad;
+            }
+            for (int m = 0; m < kCrMakerCount; ++m)
+                for (int s = 0; s < kCrMakers[m].count; ++s) {
+                    int n = 0;
+                    for (int i = 0; i < g.count; ++i) n += g.picks[i].maker == m && g.picks[i].stock == s;
+                    if (n != ((kCrMakers[m].stocks[s].gauges & g.gauge) ? 1 : 0))
+                        printf("%s: %s %s listed %d times\n", g.param, kCrMakers[m].param, kCrMakers[m].stocks[s].name,
+                               n), ++bad;
+                }
+        }
         return bad ? 1 : 0;
+    }
+    if (!std::strncmp(line, "picks", 5)) {   // the gauge lists as the panel shows them
+        for (int l = 0; l < kCrGaugeListCount; ++l)
+            for (int i = 0; i < kCrGaugeLists[l].count; ++i) printf("%s\t%s\n", kCrGaugeLists[l].param, creativePickLabel(l, i).c_str());
+        return 0;
     }
     int weaveFrames = 0;
     if (sscanf(line, "weave %d %d %d", &W, &H, &weaveFrames) == 3) {   // the unsteadiness offsets, frame by frame
