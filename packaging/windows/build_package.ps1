@@ -18,10 +18,18 @@ if ($LASTEXITCODE) { throw 'cmake configure failed' }
 cmake --build $Build --config Release --parallel
 if ($LASTEXITCODE) { throw 'cmake build failed' }
 
+# Log MetaRaw Audio (VST3 for Fairlight)
+$AudioBuild = Join-Path $Root 'build\audio'
+cmake -S (Join-Path $Root 'audio\vst3') -B $AudioBuild
+if ($LASTEXITCODE) { throw 'cmake configure (audio) failed' }
+cmake --build $AudioBuild --config Release --parallel --target LogMetaRawAudio
+if ($LASTEXITCODE) { throw 'cmake build (audio) failed' }
+
 if (Test-Path -LiteralPath $Stage) { Remove-Item -Recurse -Force -LiteralPath $Stage }
 New-Item -ItemType Directory -Force (Join-Path $Stage 'tools'), (Join-Path $Stage 'resolve_script'), $Dist | Out-Null
 Copy-Item -Recurse (Join-Path $Build 'SLogMetaRaw.ofx.bundle') $Stage
 Copy-Item -Recurse (Join-Path $Root 'slogmetaraw') $Stage
+Copy-Item -Recurse -LiteralPath (Join-Path $AudioBuild 'VST3\Release\Log MetaRaw Audio.vst3') $Stage
 Get-ChildItem -Recurse -Directory -Filter '__pycache__' $Stage | Remove-Item -Recurse -Force
 Copy-Item (Join-Path $Root 'tools\render_launcher.py') (Join-Path $Stage 'tools')
 Copy-Item (Join-Path $Root 'resolve_script\SLogMetaRaw.py') (Join-Path $Stage 'resolve_script')

@@ -31,6 +31,8 @@ struct AuSettings
 class AuEngine
 {
 public:
+    // Builds the chain; called again with new settings it keeps the running state of every block whose shape is
+    // unchanged (no click when a knob moves). Allocates: call it outside the audio thread or between blocks.
     void prepare(double sampleRate, int channels, const AuSettings& s);
     void reset();
     // In place, planar float, any block size.
@@ -68,6 +70,7 @@ private:
     };
 
     void add(Block b);
+    void fresh(Block& b, size_t index) const;
     void run(Block& b, float* const* ch, int frames);
 
     double fs_ = 48000;

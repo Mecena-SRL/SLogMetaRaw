@@ -21,6 +21,28 @@ jobs:
   linux-packages:
     uses: ./.github/workflows/linux-packages.yml
 
+  audio:
+    # Log MetaRaw Audio (VST3): builds the plugin and runs Steinberg's validator on it (a post-build step that fails
+    # the build). Linux only checks the code: Resolve loads VST3 on macOS and Windows.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux libraries for VSTGUI
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libxcb-util-dev libxcb-cursor-dev libxcb-xkb-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb-keysyms1-dev libcairo2-dev libpango1.0-dev libfontconfig1-dev libgtkmm-3.0-dev \
+            libsqlite3-dev
+      - name: Build and validate
+        run: |
+          cmake -S audio/vst3 -B build/audio -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/audio --config Release --parallel --target LogMetaRawAudio
+
   macos:
     # Compiles the plugin (Metal included) and runs the whole suite on a real Mac. It builds with CMake against the
     # public OpenFX SDK, as the .dmg of release.yml does (packaging/build_installer.sh).

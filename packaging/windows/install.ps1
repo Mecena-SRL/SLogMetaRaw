@@ -26,9 +26,15 @@ function Invoke-Elevated([string]$Command) {
 }
 
 $PluginTarget = Join-Path $Plugins 'SLogMetaRaw.ofx.bundle'
+# Log MetaRaw Audio (VST3 for Fairlight), when the release or the build has it
+$Vst3 = Join-Path $env:CommonProgramFiles 'VST3'
+$Audio = Join-Path $Here 'Log MetaRaw Audio.vst3'
+if (-not (Test-Path -LiteralPath $Audio)) { $Audio = Join-Path $Root 'build\audio\VST3\Release\Log MetaRaw Audio.vst3' }
+$AudioTarget = Join-Path $Vst3 'Log MetaRaw Audio.vst3'
 
 if ($Uninstall) {
-    Invoke-Elevated "Remove-Item -Recurse -Force -LiteralPath '$PluginTarget' -ErrorAction SilentlyContinue"
+    Invoke-Elevated ("Remove-Item -Recurse -Force -LiteralPath '$PluginTarget' -ErrorAction SilentlyContinue; " +
+        "Remove-Item -Recurse -Force -LiteralPath '$AudioTarget' -ErrorAction SilentlyContinue")
     foreach ($p in @('lib', 'lib_path', 'pycache')) {
         Remove-Item -Recurse -Force -LiteralPath (Join-Path $Support $p) -ErrorAction SilentlyContinue
     }
@@ -49,7 +55,13 @@ Get-ChildItem -Recurse -Directory -Filter '__pycache__' $Lib | Remove-Item -Recu
 [IO.File]::WriteAllText((Join-Path $Support 'lib_path'), "$Lib`n", (New-Object Text.UTF8Encoding $false))
 Copy-Item -LiteralPath (Join-Path $Root 'resolve_script\SLogMetaRaw.py') -Destination (Join-Path $Scripts 'Log MetaRaw.py') -Force
 
-Invoke-Elevated ("New-Item -ItemType Directory -Force -Path '$Plugins' | Out-Null; " +
+$Copy = "New-Item -ItemType Directory -Force -Path '$Plugins' | Out-Null; " +
     "Remove-Item -Recurse -Force -LiteralPath '$PluginTarget' -ErrorAction SilentlyContinue; " +
-    "Copy-Item -Recurse -LiteralPath '$Bundle' -Destination '$Plugins'")
+    "Copy-Item -Recurse -LiteralPath '$Bundle' -Destination '$Plugins'"
+if (Test-Path -LiteralPath $Audio) {
+    $Copy += "; New-Item -ItemType Directory -Force -Path '$Vst3' | Out-Null; " +
+        "Remove-Item -Recurse -Force -LiteralPath '$AudioTarget' -ErrorAction SilentlyContinue; " +
+        "Copy-Item -Recurse -LiteralPath '$Audio' -Destination '$Vst3'"
+}
+Invoke-Elevated $Copy
 Write-Host 'Fatto. Riavvia DaVinci Resolve: il nodo e in OpenFX, lo script in Workspace > Scripts > Log MetaRaw.'

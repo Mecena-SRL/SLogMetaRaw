@@ -79,6 +79,13 @@ rsync -a --exclude "__pycache__" "$ROOT/slogmetaraw" "$R/Library/Application Sup
 python3 "$ROOT/tools/render_launcher.py" "$ROOT/resolve_script/SLogMetaRaw.py" \
     "/Library/Application Support/SLogMetaRaw/lib" \
     "$R/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py"
+# Log MetaRaw Audio (VST3 for Fairlight): Ripresa and Mix e supporto
+AUDIO_BUILD="$BUILD/audio"
+cmake -S "$ROOT/audio/vst3" -B "$AUDIO_BUILD" -DCMAKE_BUILD_TYPE=Release > "$BUILD/audio-build.log" 2>&1 &&
+  cmake --build "$AUDIO_BUILD" --config Release --parallel --target LogMetaRawAudio >> "$BUILD/audio-build.log" 2>&1 ||
+  { tail -40 "$BUILD/audio-build.log" >&2; exit 1; }
+mkdir -p "$R/Library/Audio/Plug-Ins/VST3"
+cp -R "$AUDIO_BUILD/VST3/Release/Log MetaRaw Audio.vst3" "$R/Library/Audio/Plug-Ins/VST3/"
 find "$R" -name ".DS_Store" -delete
 xattr -rc "$R"
 

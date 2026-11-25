@@ -5,9 +5,24 @@ G.257 a 4,75 cm/s col suo microfono piezo, mix su EMI REDD.51, stampato su 78 gi
 
 ## Formato
 
-OFX non elabora audio: in Resolve serve un plugin per Fairlight. Destinazione: **VST3** (macOS e Windows) e **AU**
-(macOS), scritti con l'SDK VST3 di Steinberg (licenza MIT dalla 3.8, ottobre 2025), senza JUCE. Linux: Resolve non
-carica plugin VST nativi, quindi resta escluso finché non lo fa.
+OFX non elabora audio: in Resolve serve un plugin per Fairlight. Formato: **VST3** (macOS universale e Windows x64),
+con l'SDK VST3 di Steinberg (licenza MIT dalla 3.8, ottobre 2025, scaricato dal CMake al tag `v3.8.1_build_84`) e
+VSTGUI per il pannello, senza JUCE. Fairlight carica il VST3 anche su Mac, quindi l'AU non serve (il wrapper AU
+dell'SDK richiede Xcode e l'SDK CoreAudio di Apple). Linux: Resolve non carica plugin VST nativi; lì il plugin si
+compila solo per i controlli.
+
+Un solo modulo, `Log MetaRaw Audio.vst3`, contiene i due plugin. Installazione: `/Library/Audio/Plug-Ins/VST3/` su Mac
+(dal pkg), `%CommonProgramFiles%\VST3\` su Windows (setup o `install.ps1`).
+
+```
+cmake -S audio/vst3 -B build/audio -DCMAKE_BUILD_TYPE=Release
+cmake --build build/audio --config Release --target LogMetaRawAudio   # esegue anche il validatore Steinberg
+```
+
+Codice: `audio/vst3/AuParams.h` (parametri e righe del pannello come dati; id permanenti), `audio/vst3/AuPlugin.cpp`
+(processore, controller, pannello disegnato dalle righe, factory). Lo stato salvato tiene il registratore come famiglia e
+modello, così un modello aggiunto in coda a una famiglia non sposta quelli salvati. Ogni istanza ha il suo seme del
+rumore (due tracce non condividono lo stesso soffio).
 
 ## Due plugin, un motore
 
@@ -45,6 +60,11 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Implementato e verificato da test (`tests/audio_test.cpp`, `tests/test_audio.py`): motore, tabelle, bypass esatto,
   determinismo indipendente dalla dimensione del blocco, banda del telefono, risonanza piezo, soffio per velocità e
   Dolby, wow misurato sugli attraversamenti dello zero, supporti mono, perdita di acuti per copia, dry/wet e uscita.
-- Pianificato: wrapper VST3/AU con pannello a menu contestuali (fase 2), build in CI e installer, prova in Fairlight e
-  taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/` (fase 4). Dolby come compander,
+- Implementato e verificato: plugin VST3 (validatore Steinberg 94/94 su Linux), pannello aperto e fotografato nell'host
+  VST3 di prova dell'SDK (editorhost), job CI `audio` su Linux, macOS e Windows, pkg Mac e setup Windows.
+- Incerto: comportamento in Fairlight (mai caricato in Resolve), build Mac e Windows finché la CI non passa.
+- Limiti noti: i menu non si filtrano per dispositivo (VST3 ha liste fisse), il supporto scelto vale anche se il
+  registratore non lo usava; cambiare un menu durante la riproduzione può dare un piccolo scatto.
+- Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
+  (fase 4). Dolby come compander,
   isteresi del nastro, distorsione di tracciamento del vinile, sibilanti della banda ottica.

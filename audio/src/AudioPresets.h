@@ -14,7 +14,7 @@ struct AuMic
 };
 
 inline constexpr AuMic kAuMics[] = {
-    { "Di serie del dispositivo", 0, 0, 1000, 0, 1, 0, 0 },                    // the device row picks it
+    { "Di serie del registratore", 0, 0, 1000, 0, 1, 0, 0 },                    // the device row picks it
     { "Tromba acustica (registrazione a cilindro)", 300, 3500, 1200, 9, 3, 0, 0.3f },
     { "Microfono a carbone", 300, 3400, 1500, 6, 1.5f, 0, 0.8f },
     { "Piezoelettrico a cristallo", 150, 6000, 3000, 8, 2, 0, 0.2f },

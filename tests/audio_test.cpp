@@ -214,6 +214,20 @@ int main()
         check(std::fabs(gainDb(g, 1000) + 6) < 0.05, "output trim");
     }
 
+    // Preparing again mid-stream with the same chain shape continues the sound instead of restarting it.
+    {
+        AuSettings s;
+        Buffer whole = render(s, music), split = music;
+        AuEngine e;
+        e.prepare(kFs, 2, s);
+        float* half[2] = { split[0].data(), split[1].data() };
+        e.process(half, 4800);
+        e.prepare(kFs, 2, s);
+        float* rest[2] = { split[0].data() + 4800, split[1].data() + 4800 };
+        e.process(rest, 4800);
+        check(split == whole, "prepare keeps the running state");
+    }
+
     if (!failures) std::printf("audio_test OK\n");
     return failures ? 1 : 0;
 }

@@ -91,12 +91,15 @@ void AuEngine::add(Block b)
 
 void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
 {
+    // A knob turned while playing keeps the sound running: blocks of the same shape keep their state.
+    const bool same = sampleRate == fs_ && channels == channels_ && (s.seed ? s.seed : 1) == seed_;
+    std::vector<Block> old;
+    old.swap(blocks_);
     fs_ = sampleRate;
     channels_ = channels;
-    seed_ = s.seed ? s.seed : 1;
+    seed_ = s.seed ? s.seed : 1;   // after `same`: compared with the previous seed
     wet_ = std::clamp(s.mix, 0.0f, 1.0f);
     out_ = dbToGain(s.outDb);
-    blocks_.clear();
     const double fs = fs_;
     const float drive = std::max(0.0f, s.drive);
     const bool noise = s.on[kStNoise];
@@ -176,28 +179,41 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         b.mono = l.mono;
         add(std::move(b));
     }
-    reset();
+    for (size_t i = 0; i < blocks_.size(); ++i) {
+        Block& b = blocks_[i];
+        if (same && i < old.size() && old[i].eq.size() == b.eq.size() &&
+            old[i].line.empty() == !(b.wowA > 0 || b.flutA > 0)) {
+            const Block& o = old[i];
+            b.z = o.z, b.env = o.env, b.line = o.line, b.tail = o.tail, b.hissZ = o.hissZ;
+            b.pos = o.pos, b.rumbleZ = o.rumbleZ, b.drop = o.drop, b.dropTo = o.dropTo, b.dropLeft = o.dropLeft;
+            b.rng = o.rng;
+        } else {
+            fresh(b, i);
+        }
+    }
+}
+
+void AuEngine::fresh(Block& b, size_t index) const
+{
+    const int n = channels_;
+    size_t line = 16;
+    while (line < fs_ * 0.05) line <<= 1;   // 50 ms covers the widest wow
+    b.z.assign(b.eq.size() * 2 * n, 0);
+    b.env.assign(n, 0);
+    b.line.assign(b.wowA > 0 || b.flutA > 0 ? line * n : 0, 0);
+    b.tail.assign(n, 0);
+    b.hissZ.assign(2 * n, 0);
+    b.pos = 0;
+    b.rumbleZ = 0;
+    b.drop = b.dropTo = 1;
+    b.dropLeft = 0;
+    b.rng = seed_ * 2654435761u + uint32_t(index + 1) * 40503u;
+    if (!b.rng) b.rng = 1;
 }
 
 void AuEngine::reset()
 {
-    int n = channels_;
-    size_t line = 16;
-    while (line < fs_ * 0.05) line <<= 1;   // 50 ms covers the widest wow
-    for (size_t i = 0; i < blocks_.size(); ++i) {
-        Block& b = blocks_[i];
-        b.z.assign(b.eq.size() * 2 * n, 0);
-        b.env.assign(n, 0);
-        b.line.assign(b.wowA > 0 || b.flutA > 0 ? line * n : 0, 0);
-        b.tail.assign(n, 0);
-        b.hissZ.assign(2 * n, 0);
-        b.pos = 0;
-        b.rumbleZ = 0;
-        b.drop = b.dropTo = 1;
-        b.dropLeft = 0;
-        b.rng = seed_ * 2654435761u + uint32_t(i + 1) * 40503u;
-        if (!b.rng) b.rng = 1;
-    }
+    for (size_t i = 0; i < blocks_.size(); ++i) fresh(blocks_[i], i);
 }
 
 void AuEngine::run(Block& b, float* const* ch, int frames)

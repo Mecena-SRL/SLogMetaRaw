@@ -25,6 +25,7 @@ O Log MetaRaw lê esses dados e usa-os. É um script e cinco nós, numerados nos
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | estabilização por giroscópio (Gyroflow integrado) e desfoque de movimento a partir do fluxo óptico; só Mac Apple silicon |
 | Nó **4 · Log MetaRaw** | Color › OpenFX | revela um clipe a partir dos valores de gravação: balanço, exposição, espaço de cor, tons por zonas, falsa cor |
 | Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; um suporte de visualização (sala, projetor doméstico, TV CRT, console LCD, papel) |
+| Plugins **Log MetaRaw Ripresa** e **Mix e supporto** (VST3) | Fairlight › Efeitos › VST3 | som de época: gravadores e microfones reais nas faixas, mesa, suporte (fita, cassete, vinil, VHS, banda ótica, rádio, telefone), cópias e escuta em buses e master; cada etapa pode ser desligada; Mac e Windows |
 
 Nenhum arquivo é transcodificado e nenhum original é alterado.
 

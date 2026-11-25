@@ -25,6 +25,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 | **2 · Stabilize**、**3 · Motion Blur** | Color › OpenFX › Log MetaRaw | 陀螺仪稳定（内置 Gyroflow）与基于光流重建的运动模糊；仅限 Apple 芯片 Mac |
 | **4 · Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
 | **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；观看介质（影院、家用放映机、CRT 电视、掌机 LCD、相纸） |
+| **Log MetaRaw Ripresa** 与 **Mix e supporto** 插件（VST3） | Fairlight › 效果 › VST3 | 年代声音：音轨上的真实录音机与麦克风，总线和母带上的调音台、载体（磁带、卡带、黑胶、VHS、光学声带、广播、电话）、转录与回放；每个环节可单独关闭；Mac 与 Windows |
 
 不转码任何文件，也从不写入任何原始文件。
 

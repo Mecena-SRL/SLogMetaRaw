@@ -20,6 +20,8 @@ Uninstallable=yes
 [Files]
 ; the OpenFX bundle goes where Resolve looks for plugins
 Source: "{#StageDir}\SLogMetaRaw.ofx.bundle\*"; DestDir: "{commoncf64}\OFX\Plugins\SLogMetaRaw.ofx.bundle"; Flags: recursesubdirs ignoreversion
+; Log MetaRaw Audio, where Fairlight looks for VST3 plugins
+Source: "{#StageDir}\Log MetaRaw Audio.vst3\*"; DestDir: "{commoncf64}\VST3\Log MetaRaw Audio.vst3"; Flags: recursesubdirs ignoreversion
 ; the Python library and the launcher script, per user (the user running the installer)
 Source: "{#StageDir}\slogmetaraw\*"; DestDir: "{userappdata}\SLogMetaRaw\lib\slogmetaraw"; Flags: recursesubdirs ignoreversion
 ; the launcher goes in as is: it finds the library through lib_path, so no Python is needed to install it

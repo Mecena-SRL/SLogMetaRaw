@@ -25,6 +25,7 @@ Log MetaRaw reads that data and uses it. It is a script and five nodes, numbered
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | gyro stabilisation (built-in Gyroflow) and motion blur rebuilt from optical flow; Apple silicon Macs only |
 | **4 · Log MetaRaw** node | Color › OpenFX | develops one clip from its as-shot values: white balance, exposure, colour space, tone by zones, false colour |
 | **5 · Log MetaRaw Creative** node | Color › OpenFX | creative development: 16 photographic processes (film negatives and prints, reversal, black and white, Technicolor, Autochrome, three plates, daguerreotype, collodion, early prints), analog video and vintage digital cameras; prints and print generations; a viewing medium (cinema, home projector, CRT TV, handheld LCD, paper) |
+| **Log MetaRaw Ripresa** and **Mix e supporto** plugins (VST3) | Fairlight › Effects › VST3 | period sound: real recorders and microphones on tracks (Geloso, Nagra, Uher, Walkman…), desk, medium (tape, cassette, vinyl, VHS, optical track, radio, telephone), transfers and playback on buses and master; every stage can be switched off; Mac and Windows |
 
 No file is transcoded and no original file is ever written.
 
