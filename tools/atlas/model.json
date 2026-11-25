@@ -1165,7 +1165,7 @@
      "id": "cr.medium",
      "kind": "function",
      "label": "Supporto di visione",
-     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log. Ogni supporto ha geometria (curvatura, righe, fosfori, caduta di luce, sfarfallio, bagliore) e risposta (cr_device): gamma del dispositivo, nero proprio in stile BT.1886, luce della stanza, luminanza (meno colore e contrasto sotto i 100 nit), bianco in K adattato in parte, colore, overscan, stanza (il buio appiattisce il contrasto), limite di gamut per la carta. Scegliere il supporto carica questi valori nei comandi (creativeLoadMedium, mediumLoaded); un grade senza valori caricati usa quelli del supporto. Console LCD a quattro verdi con la scia del fotogramma precedente.",
+     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log. Ogni supporto ha geometria (curvatura, righe, fosfori, caduta di luce, sfarfallio, bagliore) e risposta (cr_device): gamma del dispositivo, nero proprio in stile BT.1886, luce della stanza, luminanza (meno colore e contrasto sotto i 100 nit), bianco in K adattato in parte, colore, overscan, stanza (il buio appiattisce il contrasto), limite di gamut per la carta. Scegliere il supporto carica questi valori nei comandi (creativeLoadMedium, mediumLoaded); un grade senza valori caricati usa quelli del supporto. Console LCD a quattro verdi con la scia del fotogramma precedente. Supporti aggiunti: proiettore Super 8, Trinitron (fili di smorzamento), plasma (dithering nelle ombre), primo LCD (nero bluastro, scia, 6 bit).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1194,6 +1194,9 @@
       },
       {
        "test": "tests/test_creative.py::Creative.test_panel_values_drive_the_medium_once_loaded"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_new_screens_show_their_own_faults"
       }
      ]
     },
@@ -1423,7 +1426,7 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
    "ofx/SLogMetaRaw/math/Creative.h::cr_lens_add": "8f2f8368c77e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_lens_soft": "dc8c8087d29b",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "a4e0c5767b25",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "e8dd1ac7b3a6",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "20226fd76450",
@@ -1444,7 +1447,7 @@
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "0faaefc77ea8",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadLens": "be29af39e278",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "d6a9bdb2dec6",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "5d13d8cc3627",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepareTransfer": "74534c96e297",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "b09c74d88479"
   }

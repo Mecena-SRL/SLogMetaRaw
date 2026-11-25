@@ -21,7 +21,7 @@ extern const char* const kCrProcessInfo[kCrProcessCount];
 // The variants of each process (one choice parameter each, shown with its process). Append only.
 const int kCrNegativeCount = 20, kCrReversalCount = 6, kCrBWStockCount = 6, kCrSensitivityCount = 4, kCrFilterCount = 5,
           kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 15,
-          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 8,
+          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 12,
           kCrSensorCount = 10, kCrTransferCount = 6;
 extern const char* const kCrNegativeNames[kCrNegativeCount];
 extern const char* const kCrReversalNames[kCrReversalCount];

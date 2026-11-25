@@ -87,6 +87,12 @@
     aberrazione e diffusione, e porta il colore del suo vetro e dei suoi riflessi.
   - Comandi nuovi: *Distorsione*, *Bordi morbidi*, *Vortice*, *Velo* e *Striscia anamorfica*. Nessuna ottica = come
     prima. I valori sono stimati, da tarare.
+- **Creative, Proiettato o visto su**: quattro supporti nuovi.
+  - Proiettore Super 8: lampada calda, centro più chiaro, sfarfallio a 18 fps, quadro che balla, angoli arrotondati.
+  - Televisore Trinitron: strisce continue e i due fili scuri orizzontali.
+  - Televisore al plasma: formicolio nelle ombre.
+  - Primo schermo LCD: nero bluastro, scia dei pixel lenti, bianco freddo e bande da 6 bit.
+  - Il proiettore domestico di prima ora si chiama *16 mm*. I supporti già scelti non cambiano.
 
 ## Log MetaRaw 4.1.0
 

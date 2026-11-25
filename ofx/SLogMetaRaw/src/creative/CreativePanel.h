@@ -112,8 +112,9 @@ static const CrChoiceDef kCrChoices[] = {
       "film-out. Il risultato passa per quel supporto e ne prende i difetti, grana sopra grana. Nessuno = l'originale. "
       "Non vale con Uscita Log", kGrView },
     { "medium", "Proiettato o visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
-      "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
-      "console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, luce, bianco e colore di quel "
+      "Dove si guarda il risultato, dopo l'uscita: sala, proiettore 16 mm o Super 8, televisore a tubo o Trinitron, "
+      "monitor da regia, plasma, primo LCD, console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, "
+      "luce, bianco e colore di quel "
       "supporto: poi si possono cambiare. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView },
     { "mediumRoom", "Stanza", &CreativeControls::mediumRoom, kCrRoomNames, 3, kCrAll,
       "Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore", kGrView } };

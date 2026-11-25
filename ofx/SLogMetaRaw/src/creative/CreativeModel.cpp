@@ -58,10 +58,13 @@ const char* const kCrGenerationNames[kCrGenerationCount] = { "Copia campione dal
                                                              "Riduzione 16 mm da 35 mm",
                                                              "Controtipo di controtipo (archivio)" };
 const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)", "Proiezione in sala (xeno)",
-                                                     "Proiettore domestico 8/16 mm (alogena)",
+                                                     "Proiettore domestico 16 mm (alogena)",
                                                      "Televisore a tubo PAL (576 righe)", "Televisore a tubo NTSC (480 righe)",
                                                      "Monitor broadcast a tubo", "Console portatile LCD verde (160x144)",
-                                                     "Stampa fotografica su carta" };
+                                                     "Stampa fotografica su carta",
+                                                     "Proiettore Super 8 (alogena, 18 fps)",
+                                                     "Televisore Trinitron (anni '90)", "Televisore al plasma (anni 2000)",
+                                                     "Primo schermo LCD (anni 2000)" };
 const char* const kCrSensorNames[kCrSensorCount] = { "Nessuno (il segnale com'è)", "3 tubi Plumbicon (anni '70)",
                                                      "3 tubi Plumbicon con bias light e ACT (anni '80)",
                                                      "3 tubi Saticon", "1 tubo Saticon a strisce (consumer)",
@@ -186,7 +189,8 @@ const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00
 // under a 3200 K lamp; photo paper Dmax ~2.1 under ~130 nit of room light.
 struct Medium { int kind, lines; float curve, beamMin, beamMax, mask; int maskType; float triads, falloff, flicker,
                 white[3], unsteady, soft, corner, edge, glow, glowRadius, ghost;
-                float gamma, contrast, ambient, nits, kelvin, colour, overscan; int room; float chroma; };
+                float gamma, contrast, ambient, nits, kelvin, colour, overscan; int room; float chroma;
+                float damper, plasma, levels, blackTint[3]; };   // blackTint 0: neutral
 const Medium kMedia[kCrMediumCount] = {
     { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0,
       2.4f, 2000, 0, 100, 6500, 100, 0, 1, 0 },
@@ -203,7 +207,20 @@ const Medium kMedia[kCrMediumCount] = {
     { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0.45f,
       2.4f, 2000, 0, 100, 6500, 100, 0, 2, 0 },
     { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0, 0, 0, 0,
-      2.4f, 125, 0, 130, 6500, 92, 0, 2, 0.55f } };
+      2.4f, 125, 0, 130, 6500, 92, 0, 2, 0.55f },
+    // Super 8 at home (research DIGITALI_OTTICHE.md C.7, [gen]): a hot halogen lamp, strong hot spot, 18 fps on a
+    // three-blade shutter, a lot of jitter, a soft cheap lens, the gate's rounded corners
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.70f, 0.080f, { 1, 1, 1 }, 0.008f, 1.8f, 0.06f, 0.008f, 0.040f, 0.03f, 0,
+      2.4f, 200, 0.015f, 12, 3100, 95, 0, 0, 0 },
+    // Trinitron (C.4): aperture grille (continuous stripes), brighter, darker glass, the two damper wires
+    { CR_MEDIUM_SCREEN, 576, 0.03f, 0.20f, 0.42f, 0.30f, 0, 700, 0.10f, 0, { 1, 1, 1 }, 0, 0.6f, 0.03f, 0.003f, 0.050f,
+      0.012f, 0, 2.4f, 500, 0.010f, 150, 7000, 105, 4, 2, 0, 0.25f },
+    // plasma (C.5): deep black, pulse dithering in the shadows, gamma about 2.3
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.02f, 0, { 1, 1, 1 }, 0, 0, 0, 0.002f, 0, 0, 0,
+      2.3f, 3000, 0.004f, 150, 6500, 102, 2, 2, 0, 0, 1 },
+    // an early LCD (C.6): grey-blue black, slow pixels, cold white, 6 bits
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.06f, 0, { 1, 1, 1 }, 0, 0, 0, 0.002f, 0, 0, 0.35f,
+      2.2f, 500, 0.012f, 200, 8000, 95, 0, 2, 0, 0, 0, 64, { 0.85f, 0.95f, 1.25f } } };
 
 // A white of Kelvin k on a D65 screen, as Rec.709 gains (largest 1), with the eye adapted most of the way: a 3200 K
 // lamp reads warm, not orange (adaptation share [gen]). Planckian locus: Krystek 1985 (as in math/HostOnly.h).
@@ -1324,6 +1341,12 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         glowGrid(W, H, md.glowRadius * H, p.mGS, p.mGW, p.mGH, p.mGlowSigma);
     }
     p.mGhost = md.ghost * ma;
+    p.mDamper = md.damper * ma;
+    p.mPlasma = md.plasma * ma;
+    p.mLevels = md.levels > 1.0f && ma > 0.0f ? md.levels / ma : 0.0f;   // half the effect: twice the levels
+    for (int k = 0; k < 3; ++k)
+        p.mBlackTint[k] = md.blackTint[0] + md.blackTint[1] + md.blackTint[2] > 0.0f
+                              ? 1.0f + (md.blackTint[k] - 1.0f) * ma : 1.0f;
     if (md.kind == CR_MEDIUM_LCD) {   // 160 x 144, four shades of green (emulator values, [gen])
         p.mCols = 160;
         p.mRows = 144;
