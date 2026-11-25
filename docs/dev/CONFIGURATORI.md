@@ -214,6 +214,12 @@ nomi reali, interruttori per usare solo la grana): `src/creative/CreativePresets
 salvati non cambiano. Verificato: test CPU e host (518). Aperto: taratura degli stock, prova in Resolve, emulazione vera
 del segnale VHS/Betamax (ricerca in `creative-ricerca/v2/VIDEO_EMULAZIONE.md`), digitali e telefoni, riversaggio,
 ottiche complete.
+
+Nastro emulato (25/11/2026, fase 2, richiesta di Ivan: «VHS e Beta si sente che è finto»): `cr_tape_row` (per riga,
+seriale lungo x: enfasi, clip FM, rumore FM, de-enfasi, biquad, colore), `cr_tape_out` (timebase, comb, dropout, cambio
+testina), `tapeEmulation` in `CreativeModel.cpp` con la tabella `kTapeEmu`; kernel Metal `cr_tape_row_k` (un thread per
+riga) e `cr_tape_out_k`. Verificato: test CPU (asimmetria dei bordi, clip, grana per riga, ritardo del colore), sintassi
+Metal simulata; parità Metal solo in CI macOS. Aperto: camera a tubo e CCD, campi interlacciati nel movimento, taratura.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

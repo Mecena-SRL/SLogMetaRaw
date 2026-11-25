@@ -1066,7 +1066,7 @@
      "id": "cr.signal",
      "kind": "function",
      "label": "Catena del segnale",
-     "text": "Y Cb Cr, banda del luma e del colore, peaking, ritardo del colore, rumore, testine, dropout, clip e knee della camera.",
+     "text": "Y Cb Cr con clip e knee della camera. Digitale: banda del luma e del colore, peaking, blocchi di colore, rumore, banding. Nastro analogico emulato riga per riga (cr_tape_row, cr_tape_out): pre-enfasi, clip FM, rumore FM derivato, de-enfasi esatta, passa-basso causale a biquad e crispener (sbavature e ringing a destra, bordi grandi più morbidi dei piccoli); colore su tre poli, rumore AM e di fase, tinta mossa dallo stesso errore di timebase, comb con la riga precedente del campo; timebase residua dopo l'aggancio del TV (onda, scrape, gradino del cambio testina recuperato in poche righe, flagging in alto); dropout sul nastro che durano più campi e salgono, sostituiti dalla riga sopra e senza colore; rumore per riga di campo. Il rumore FM è tarato in creativePrepare sul rapporto S/R del formato.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1074,6 +1074,21 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_tape_row"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_tape_out"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_tape_edges_ring_after_and_big_edges_soften"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_tape_noise_is_a_horizontal_grain_per_line"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_tape_colour_arrives_late_and_soft"
       }
      ]
     },
@@ -1341,6 +1356,8 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_tape_out": "b5eff409b227",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_tape_row": "1c492defbd03",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "4ce52e8c821f",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
@@ -1350,7 +1367,7 @@
    "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "de7aa054c7d4",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "177e384f8432",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "6334e9dff94a",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "eadac621a263"
   }
  }

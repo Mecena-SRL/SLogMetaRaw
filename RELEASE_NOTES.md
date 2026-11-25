@@ -34,6 +34,15 @@
   - Tre interruttori per le pellicole: *Curva e contrasto*, *Colore*, *Grana e texture*. Con solo la grana accesa il
     video resta com'è e prende la grana di quella pellicola su quel formato. I numeri sono stime da tarare, non profili
     misurati.
+- **Creative, nastro analogico emulato**: VHS, S-VHS, Betamax, Video8, Hi8, U-matic, Betacam SP e 1 pollice non sono
+  più filtri sull'immagine ma il segnale rifatto riga per riga come lo registra e lo rilegge il videoregistratore.
+  - Pre-enfasi e clip del modulatore FM: i bordi grandi escono morbidi, i dettagli piccoli restano.
+  - Filtri causali: sbavature, ringing e colore stanno a destra del bordo, come sul nastro.
+  - Rumore FM a grana orizzontale, diverso per ogni riga di campo, tarato sul rapporto segnale/rumore del formato.
+  - Colore sotto-portante (colour-under) morbido e in ritardo, con rumore e tinta che trema con il jitter.
+  - Un solo errore di timebase muove le righe, la banda del cambio testina in basso e la piega in alto.
+  - Dropout che restano per più campi e salgono nel quadro, coperti dalla riga sopra e senza colore.
+  - Usura, Cambio testine, Instabilità, Rumore, Sbavatura colore e Nitidezza guidano le stesse grandezze fisiche.
 
 ## Log MetaRaw 4.1.0
 
