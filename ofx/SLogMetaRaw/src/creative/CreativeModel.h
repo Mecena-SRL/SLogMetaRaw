@@ -90,6 +90,10 @@ struct CreativeControls
     double lag = 1, comet = 1, smear = 1;
     // the copy the picture went through before it was seen (0 none)
     int transfer = 0;
+    // the lens (0: the camera's own) and what it loads: distortion (%), edge softness, swirl, veiling glare (%),
+    // anamorphic streak; lensLoaded: the lens whose values the rows hold
+    int lens = 0, lensLoaded = -1;
+    double distortion = 0, edgeSoft = 0, swirl = 0, glare = 0, streak = 0;
     // colour
     double shadowHue = 200, shadowAmount = 0, highHue = 40, highAmount = 0, balance = 0, saturation = 1, density = 0;
 };
@@ -134,6 +138,9 @@ void creativeRecordTimes(const CreativeControls& c, double out[3]);
 // (space, gamma) and source pixel aspect.
 // The second pass of a transfer (c.transfer): the parameters that take the finished picture (Rec.709 Gamma 2.4) through
 // the copy, the viewing medium included; false when there is none (or the output is the input encoding).
+// The lens l's preset written into c's rows (distortion, softness, swirl, glare, streak, vignetting, aberration,
+// diffusion), and c.lensLoaded = l.
+void creativeLoadLens(CreativeControls& c, int l);
 bool creativePrepareTransfer(CreativeParams& p, const CreativeControls& c, int W, int H, int frame);
 // history: how many of the frames before this one the host passes (creativeHistory or fewer, at the clip's start).
 void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma,

@@ -46,7 +46,7 @@ int main()
     id<MTLBuffer> out = [device newBufferWithLength:img[0].size() * 4 options:MTLResourceStorageModeShared];
     CreativeParallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < kCrProcessCount + 8; ++k) {
+    for (int k = 0; k < kCrProcessCount + 10; ++k) {
         CreativeControls c;
         c.process = k % kCrProcessCount;
         c.interval = 1;
@@ -74,6 +74,8 @@ int main()
         if (k == kCrProcessCount + 5) { c.device = kCrDevCinema; c.cinemaCamera = 2; }   // line skipping
         if (k == kCrProcessCount + 6) { c.process = kCrColourNegative; c.transfer = 1; c.medium = 3; }   // to VHS
         if (k == kCrProcessCount + 7) { c.process = kCrAnalog; c.analog = 1; c.transfer = 4; }   // kinescope
+        if (k == kCrProcessCount + 8) { c.lens = 6; c.lensLoaded = 6; c.streak = 1; c.glare = 4; }   // anamorphic
+        if (k == kCrProcessCount + 9) { c.process = kCrAnalog; c.lens = 13; }   // Petzval: soft, swirl, veil
         double t[3];
         creativeRecordTimes(c, t);
         const float* cpuIn[3];

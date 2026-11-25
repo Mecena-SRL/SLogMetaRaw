@@ -1548,6 +1548,12 @@ struct CreativeParams {
     float dSharp, dQ;
     // duplicates and print: grain of the intermediates (stops), of the print (density)
     float genGrain, genSize, printGrain, printGrainSize, genSoft;   // genSoft: the duplicates' blur (px)
+    // the lens (lens != 0), on the records: barrel distortion per axis (at the corners, which stay), colour of the
+    // glass, edge softness and swirl (tangential blur, px at the corner), veiling glare (share of the local mean
+    // luminance, its grid), anamorphic streak (highlights above lStreakThr spread along the line, decay length px)
+    int lens, lgS, lgW, lgH;
+    float lDistX, lDistY, lTint[3], lSoft, lSwirl, lGlare, lGlareTint[3], lgSigma, lStreak, lStreakTint[3],
+        lStreakLen, lStreakThr;
     // viewing medium, on the finished picture (display-linear Rec.709)
     int medium, mLines, mMaskType, mCols, mRows;
     float mCurve, mBeamMin, mBeamMax, mMask, mPitch, mFalloff, mGain, mBlack, mWhite[3], mShiftX, mShiftY, mSoft;
@@ -1646,7 +1652,13 @@ SM_FN SMf3 cr_source(CR_PLANE src, int k, int x, int y, SM_CREF(CreativeParams) 
         float u = (float)x + p.weaveX + cr_line_shift(y, p), v = (float)y + p.weaveY;
         if (p.flipX != 0) u = (float)(p.W - 1) - u;
         const float cx = 0.5f * (float)(p.W - 1), cy = 0.5f * (float)(p.H - 1);
-        return cr_tap(src, cx + (u - cx) * p.recScale[k] + p.recX[k], cy + (v - cy) * p.recScale[k] + p.recY[k], p);
+        float du = u - cx, dv = v - cy;
+        if (p.lDistX != 0.0f || p.lDistY != 0.0f) {   // barrel: the corners stay, the middle grows
+            const float rr = (du * du + dv * dv) / (cx * cx + cy * cy);
+            du *= (1.0f + p.lDistX * rr) / (1.0f + p.lDistX);
+            dv *= (1.0f + p.lDistY * rr) / (1.0f + p.lDistY);
+        }
+        return cr_tap(src, cx + du * p.recScale[k] + p.recX[k], cy + dv * p.recScale[k] + p.recY[k], p);
     }
     const int i = (y * p.rowPixels + x) * 4;
     return cr_mul(p.toRef, smf3(sm_decode(src[i], p.gamma), sm_decode(src[i + 1], p.gamma), sm_decode(src[i + 2], p.gamma)));
@@ -1664,12 +1676,85 @@ SM_FN float cr_expose(SMf3 c, int k, int x, int y, SM_CREF(CreativeParams) p) {
     return e;
 }
 
+// The lens glass's colour on the light it lets through.
+SM_FN SMf3 cr_glass(SMf3 c, SM_CREF(CreativeParams) p) {
+    return smf3(c.x * p.lTint[0], c.y * p.lTint[1], c.z * p.lTint[2]);
+}
+
 // The three records at (x, y). When they share frame and place (p.shared), the source is read and decoded once.
 SM_FN SMf3 cr_records(CR_PLANE s0, CR_PLANE s1, CR_PLANE s2, int x, int y, SM_CREF(CreativeParams) p) {
-    const SMf3 c0 = cr_source(s0, 0, x, y, p);
-    const SMf3 c1 = p.shared != 0 ? c0 : cr_source(s1, 1, x, y, p);
-    const SMf3 c2 = p.shared != 0 ? c0 : cr_source(s2, 2, x, y, p);
+    const SMf3 c0 = cr_glass(cr_source(s0, 0, x, y, p), p);
+    const SMf3 c1 = p.shared != 0 ? c0 : cr_glass(cr_source(s1, 1, x, y, p), p);
+    const SMf3 c2 = p.shared != 0 ? c0 : cr_glass(cr_source(s2, 2, x, y, p), p);
     return smf3(cr_expose(c0, 0, x, y, p), cr_expose(c1, 1, x, y, p), cr_expose(c2, 2, x, y, p));
+}
+
+// ---- the lens (research DIGITALI_OTTICHE.md, B.14-B.15)
+
+// Plane P (W x H) at the fractional pixel (u, v), bilinear, clamped to the frame.
+SM_FN float cr_bilinear(CR_PLANE P, float u, float v, SM_CREF(CreativeParams) p) {
+    u = sm_clamp(u, 0.0f, (float)(p.W - 1));
+    v = sm_clamp(v, 0.0f, (float)(p.H - 1));
+    const int i0 = (int)u, j0 = (int)v;
+    const int i1 = i0 + 1 < p.W ? i0 + 1 : p.W - 1, j1 = j0 + 1 < p.H ? j0 + 1 : p.H - 1;
+    const float fx = u - (float)i0, fy = v - (float)j0;
+    const float top = P[j0 * p.W + i0] + (P[j0 * p.W + i1] - P[j0 * p.W + i0]) * fx;
+    const float bot = P[j1 * p.W + i0] + (P[j1 * p.W + i1] - P[j1 * p.W + i0]) * fx;
+    return top + (bot - top) * fy;
+}
+
+// The records at (x, y) through an old lens's edges: softer towards the corners (field curvature, astigmatism), the
+// blur stretched along the circle around the centre (the swirl of a Petzval or a Helios). 16 taps on a golden-angle
+// spiral inside an ellipse: tangential half-axis a, radial b.
+SM_FN SMf3 cr_lens_soft(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, int x, int y, SM_CREF(CreativeParams) p) {
+    const int k = y * p.W + x;
+    const float cx = 0.5f * (float)(p.W - 1), cy = 0.5f * (float)(p.H - 1);
+    const float dx = (float)x - cx, dy = (float)y - cy, len = SM_SQRT(dx * dx + dy * dy);
+    const float w = cr_smooth(0.2f, 1.0f, len / SM_SQRT(cx * cx + cy * cy));
+    const float sig = (p.lSoft * w * w + p.lSwirl * w) * (float)p.H * 0.003f;
+    if (sig < 0.3f) return smf3(E0[k], E1[k], E2[k]);
+    const float rx = len > 0.0f ? dx / len : 1.0f, ry = len > 0.0f ? dy / len : 0.0f;
+    const float a = sig * (1.0f + 2.0f * p.lSwirl * w), b = sig * SM_MAX(1.0f - 0.6f * p.lSwirl, 0.3f);
+    float o0 = 0.0f, o1 = 0.0f, o2 = 0.0f;
+    for (int i = 0; i < 16; ++i) {
+        const float rad = SM_SQRT(((float)i + 0.5f) / 16.0f), ang = (float)i * 2.39996323f;
+        const float t = CR_COS(ang) * rad * a, r = CR_SIN(ang) * rad * b;
+        const float u = (float)x - ry * t + rx * r, v = (float)y + rx * t + ry * r;
+        o0 += cr_bilinear(E0, u, v, p);
+        o1 += cr_bilinear(E1, u, v, p);
+        o2 += cr_bilinear(E2, u, v, p);
+    }
+    return smf3(o0 / 16.0f, o1 / 16.0f, o2 / 16.0f);
+}
+
+// What a highlight puts into an anamorphic streak: its luminance above the threshold.
+SM_FN float cr_streak_source(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, int k, SM_CREF(CreativeParams) p) {
+    return SM_MAX(0.2126f * E0[k] + 0.7152f * E1[k] + 0.0722f * E2[k] - p.lStreakThr, 0.0f);
+}
+
+// Line y's streak (one thread per line): each highlight decays exponentially both ways along the line.
+SM_FN void cr_streak_row(CR_PLANE E0, CR_PLANE E1, CR_PLANE E2, CR_OUT St, int y, SM_CREF(CreativeParams) p) {
+    const float d = SM_EXP(-1.0f / SM_MAX(p.lStreakLen, 1.0f));
+    const int row = y * p.W;
+    float acc = 0.0f;
+    for (int x = 0; x < p.W; ++x) {
+        acc = acc * d + cr_streak_source(E0, E1, E2, row + x, p);
+        St[row + x] = acc;
+    }
+    acc = 0.0f;
+    for (int x = p.W - 1; x >= 0; --x) {
+        const float s = cr_streak_source(E0, E1, E2, row + x, p);
+        acc = acc * d + s;
+        St[row + x] += acc - s;
+    }
+}
+
+// The records with the light the lens scatters: the veil (glare) from the local mean and the streak.
+SM_FN SMf3 cr_lens_add(SMf3 e, CR_PLANE gl, CR_PLANE St, int x, int y, SM_CREF(CreativeParams) p) {
+    const float g = p.lGlare > 0.0f ? p.lGlare * cr_grid(gl, p.lgW, p.lgH, p.lgS, x, y) : 0.0f;
+    const float s = p.lStreak > 0.0f ? p.lStreak * St[y * p.W + x] : 0.0f;
+    return smf3(e.x + g * p.lGlareTint[0] + s * p.lStreakTint[0], e.y + g * p.lGlareTint[1] + s * p.lStreakTint[1],
+                e.z + g * p.lGlareTint[2] + s * p.lStreakTint[2]);
 }
 
 // ---- the video camera's sensor (research VIDEO_EMULAZIONE.md, 1.1-1.2)
@@ -1706,6 +1791,13 @@ SM_FN SMf3 cr_tube_frame(SMf3 q, SMf3 L, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
+// A frame before, as the tube saw it: the three records from one reading of it (the place of the first record; a
+// lighter read than cr_records, which a kernel inlines three times here).
+SM_FN SMf3 cr_history_records(CR_PLANE h, int x, int y, SM_CREF(CreativeParams) p) {
+    const SMf3 c = cr_glass(cr_source(h, 0, x, y, p), p);
+    return smf3(cr_expose(c, 0, x, y, p), cr_expose(c, 1, x, y, p), cr_expose(c, 2, x, y, p));
+}
+
 // The records of this pixel through the sensor. h0..h2: the source frames 1, 2, 3 before this one (the first
 // `history` of them exist); S: the CCD's smear per column (3 planes of W).
 SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, int x, int y,
@@ -1713,9 +1805,9 @@ SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, 
     if (p.sensor == CR_SENSOR_TUBE) {
         // the charge before the oldest frame: that frame's light held a few fields, then every frame two fields
         const int n = p.history;
-        const SMf3 L2 = n > 2 ? cr_records(h2, h2, h2, x, y, p) : e;
-        const SMf3 L1 = n > 1 ? cr_records(h1, h1, h1, x, y, p) : e;
-        const SMf3 L0 = n > 0 ? cr_records(h0, h0, h0, x, y, p) : e;
+        const SMf3 L2 = n > 2 ? cr_history_records(h2, x, y, p) : e;
+        const SMf3 L1 = n > 1 ? cr_history_records(h1, x, y, p) : e;
+        const SMf3 L0 = n > 0 ? cr_history_records(h0, x, y, p) : e;
         const SMf3 oldest = n > 2 ? L2 : (n > 1 ? L1 : L0);
         SMf3 q = cr_tube_frame(cr_tube_frame(smf3(0.0f, 0.0f, 0.0f), oldest, p), oldest, p);
         if (n > 2) q = cr_tube_frame(q, L2, p);

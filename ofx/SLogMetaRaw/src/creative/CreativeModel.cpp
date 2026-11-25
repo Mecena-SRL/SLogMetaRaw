@@ -538,7 +538,30 @@ bool creativeStockFits(const CreativeControls& c)
     return !st || (st->gauges & gaugeOf(c.format)) != 0;
 }
 
+void creativeLoadLens(CreativeControls& c, int l)
+{
+    const CrLens& m = kCrLenses[pick(l, kCrLensCount)];
+    c.distortion = m.distortion;
+    c.edgeSoft = m.soft;
+    c.swirl = m.swirl;
+    c.glare = m.glare;
+    c.streak = m.streak;
+    c.vignette = m.vignette;
+    c.aberration = m.aberration;
+    c.bloom = m.bloom;
+    c.lensLoaded = l;
+}
+
+static CreativeControls resolveDevice(const CreativeControls& c);
+
 CreativeControls creativeResolve(const CreativeControls& c)
+{
+    CreativeControls r = resolveDevice(c);
+    if (r.lens > 0 && r.lens < kCrLensCount && r.lensLoaded != r.lens) creativeLoadLens(r, r.lens);
+    return r;
+}
+
+static CreativeControls resolveDevice(const CreativeControls& c)
 {
     CreativeControls r = c;
     if (c.device <= kCrDevManual || c.device >= kCrDeviceCount) {
@@ -677,6 +700,8 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     if (!useTexture) {   // the film's grain, glows, lens and gate: none
         c.grain = c.printGrain = c.halation = c.bloom = c.aberration = c.vignette = 0;
         c.weave = c.breath = c.dust = c.scratches = 0;
+        c.distortion = c.edgeSoft = c.swirl = c.glare = c.streak = 0;
+        c.lens = 0;
     }
     if (!useTone) c.push = c.silver = c.flash = 0;   // the development's light and contrast
     p = CreativeParams();
@@ -1173,9 +1198,36 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
             p.recY[k] = (float)(reg * dir[k][1] * osc);
         }
     }
+    // the lens: distortion and the glass's colour where the records are read, then its own pass on them (soft
+    // edges, swirl, veil, streak)
+    const CrLens& ln = kCrLenses[pick(c.lens, kCrLensCount)];
+    for (int k = 0; k < 3; ++k) {
+        p.lTint[k] = c.lens > 0 ? ln.tint[k] : 1.0f;
+        p.lGlareTint[k] = ln.glareTint[k];
+        p.lStreakTint[k] = ln.streakTint[k];
+    }
+    const double dist = clampd(c.distortion, -10, 10) / 100.0;
+    p.lDistX = (float)dist;
+    p.lDistY = (float)(dist * (c.lens > 0 ? ln.distV : 1.0f));
+    p.lSoft = (float)clampd(c.edgeSoft, 0, 3);
+    p.lSwirl = (float)clampd(c.swirl, 0, 3);
+    p.lGlare = (float)(clampd(c.glare, 0, 20) / 100.0);
+    p.lStreak = (float)clampd(c.streak, 0, 3);
+    p.lens = (p.lSoft > 0 || p.lSwirl > 0 || p.lGlare > 0 || p.lStreak > 0) ? 1 : 0;
+    if (p.lGlare > 0.0f) {   // the veil: a quarter of the height around each point, a share of its mean light
+        p.lgSigma = 0.25f * (float)H;
+        glowGrid(W, H, p.lgSigma, p.lgS, p.lgW, p.lgH, p.lgSigma);
+    }
+    p.lStreakLen = 0.12f * (float)W;
+    p.lStreakThr = CR_GREY * 4.0f;   // two stops over grey
+    // each side of the streak carries the share lStreak of the light above the threshold: a wide bright area makes a
+    // faint band, a very bright point a visible line
+    p.lStreak *= (float)(1.0 - std::exp(-1.0 / std::max((double)p.lStreakLen, 1.0)));
+
     p.dust = (float)clampd(c.dust, 0, 1);
     p.scratches = film ? (float)clampd(c.scratches, 0, 1) : 0.0f;
-    p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0) ? 1 : 0;
+    p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0
+               || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;
     double when[3];
     creativeRecordTimes(c, when);
     p.shared = (std::lround(when[0]) == std::lround(when[1]) && std::lround(when[1]) == std::lround(when[2])

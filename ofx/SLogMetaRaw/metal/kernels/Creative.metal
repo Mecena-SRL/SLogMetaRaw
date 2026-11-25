@@ -20,6 +20,42 @@ kernel void cr_record_k(const device float* s0 [[buffer(0)]], const device float
     E[2 * N + k] = e.z;
 }
 
+// The lens: its soft edges and swirl from E into L, a streak per line from L into St, then the scattered light
+// (veil from the grid gl, streak) added back: L -> E.
+kernel void cr_lens_soft_k(const device float* E [[buffer(0)]], device float* L [[buffer(1)]],
+                           constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x, y = (int)id.y;
+    if (x >= p.W || y >= p.H) return;
+    const int N = p.W * p.H, k = y * p.W + x;
+    const SMf3 e = cr_lens_soft(E, E + N, E + 2 * N, x, y, p);
+    L[k] = e.x;
+    L[N + k] = e.y;
+    L[2 * N + k] = e.z;
+}
+
+kernel void cr_streak_k(const device float* L [[buffer(0)]], device float* St [[buffer(1)]],
+                        constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+    const int y = (int)id.x;
+    if (y >= p.H) return;
+    const int N = p.W * p.H;
+    cr_streak_row(L, L + N, L + 2 * N, St, y, p);
+}
+
+kernel void cr_lens_add_k(const device float* L [[buffer(0)]], const device float* gl [[buffer(1)]],
+                          const device float* St [[buffer(2)]], device float* E [[buffer(3)]],
+                          constant CreativeParams& p [[buffer(4)]], uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x, y = (int)id.y;
+    if (x >= p.W || y >= p.H) return;
+    const int N = p.W * p.H, k = y * p.W + x;
+    const SMf3 e = cr_lens_add(smf3(L[k], L[N + k], L[2 * N + k]), gl, St, x, y, p);
+    E[k] = e.x;
+    E[N + k] = e.y;
+    E[2 * N + k] = e.z;
+}
+
 // The video camera's sensor, in place on E: a CCD's smear per column first (one thread per column), then every pixel
 // (a tube reads the frames before, h0..h2).
 kernel void cr_smear_k(const device float* E [[buffer(0)]], device float* S [[buffer(1)]],

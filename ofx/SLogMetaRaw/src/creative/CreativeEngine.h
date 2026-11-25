@@ -25,6 +25,7 @@ struct CreativeScratch
     std::vector<float> S;                    // a CCD's smear per column (3 x W)
     std::vector<float> D;                    // a digital camera's planes at its sensor's size
     std::vector<float> xfer;                 // the picture before its transfer (a copy onto tape or film)
+    std::vector<float> L[3], St, gl;         // the lens: soft records, streak per line, veiling glare grid
 };
 
 // The previous frame, for an LCD's slow response (CreativeParams::mGhost): its own parameters and source frames.

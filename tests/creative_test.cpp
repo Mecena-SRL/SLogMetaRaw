@@ -23,6 +23,7 @@ static void set(CreativeControls& c, const std::string& name, double v)
     if (name == "process") { c.process = (int)v; return; }
     if (name == "mediumLoaded") { c.mediumLoaded = (int)v; return; }
     if (name == "deviceLoaded") { c.deviceLoaded = (int)v; return; }
+    if (name == "lensLoaded") { c.lensLoaded = (int)v; return; }
     for (int i = 0; i < kCrMakerCount; ++i)
         if (name == kCrMakers[i].param) { c.stock[i] = (int)v; return; }
     for (const CrToggleDef& d : kCrToggles)

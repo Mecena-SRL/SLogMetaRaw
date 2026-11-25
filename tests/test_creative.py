@@ -512,5 +512,69 @@ class Creative(unittest.TestCase):
         ctl = {'process': NEGATIVE, 'output': 1, 'print': 0}
         self.assertEqual(self.render(ctl, [ramp()]), self.render(dict(ctl, transfer=4), [ramp()]))
 
+    def lens(self, scene, controls, size):
+        """Scene-linear rows (top first, S-Log3) through a colour negative with no grain or halation, and a lens."""
+        w, h = size
+        px = [[dm.encode1(v, GAMMA) for v in scene[h - 1 - y][x]] for y in range(h) for x in range(w)]
+        ctl = dict({'process': NEGATIVE, 'grain': 0, 'halation': 0, 'printGrain': 0}, **controls)
+        out = self.render(ctl, [px], size=size)
+        return [out[(h - 1 - y) * w: (h - y) * w] for y in range(h)]
+
+    def test_barrel_distortion_bows_straight_lines_out(self):
+        """A vertical line near the left edge stays at the corners and moves outwards at mid-height."""
+        w, h = 160, 90
+        scene = [[(0.02,) * 3 if x == 24 else (0.18,) * 3 for x in range(w)] for _ in range(h)]
+        def where(out, y):
+            row = [px[1] for px in out[y]]
+            return min(range(w), key=lambda x: row[x])
+        flat = self.lens(scene, {}, (w, h))
+        bent = self.lens(scene, {'distortion': 6}, (w, h))
+        self.assertEqual(where(flat, 45), where(flat, 1))
+        self.assertLess(where(bent, 45), where(bent, 1))
+
+    def test_soft_edges_and_swirl_blur_the_corners_not_the_centre(self):
+        w, h = 160, 90
+        scene = [[(0.6,) * 3 if (x + y) % 2 else (0.05,) * 3 for x in range(w)] for y in range(h)]
+        spread = lambda out, x0, y0: max(px[1] for r in out[y0:y0 + 6] for px in r[x0:x0 + 6]) - min(  # noqa
+            px[1] for r in out[y0:y0 + 6] for px in r[x0:x0 + 6])
+        flat = self.lens(scene, {}, (w, h))
+        soft = self.lens(scene, {'edgeSoft': 1, 'swirl': 1}, (w, h))
+        self.assertAlmostEqual(spread(soft, 77, 42), spread(flat, 77, 42), delta=0.02)
+        self.assertLess(spread(soft, 2, 2), 0.5 * spread(flat, 2, 2))
+
+    def test_an_anamorphic_streak_runs_along_the_line(self):
+        """A bright point on black: the streak lights the line far to both sides, not the rows above."""
+        w, h = 200, 60
+        scene = [[(0.002,) * 3] * w for _ in range(h)]
+        for y in range(29, 31):
+            for x in range(99, 101):
+                scene[y][x] = (30.0,) * 3
+        flat = self.lens(scene, {}, (w, h))
+        lit = self.lens(scene, {'streak': 0.3}, (w, h))
+        self.assertGreater(lit[30][40][2] - flat[30][40][2], 0.02)
+        self.assertGreater(lit[30][160][2] - flat[30][160][2], 0.02)
+        self.assertLess(abs(lit[10][100][2] - flat[10][100][2]), 0.005)
+        self.assertGreater(lit[30][40][2], lit[30][40][0])   # the Panavision's blue, with no lens chosen
+
+    def test_veiling_glare_lifts_the_blacks_near_the_light(self):
+        w, h = 160, 90
+        scene = [[(4.0,) * 3 if x > 110 else (0.003,) * 3 for x in range(w)] for _ in range(h)]
+        flat = self.lens(scene, {}, (w, h))
+        veil = self.lens(scene, {'glare': 5}, (w, h))
+        self.assertGreater(veil[45][100][1] - flat[45][100][1], 0.02)
+        self.assertGreater(veil[45][100][1] - flat[45][100][1], veil[45][5][1] - flat[45][5][1])
+
+    def test_a_lens_loads_its_rows_and_brings_its_glass(self):
+        """A lens chosen with no values loaded behaves as its preset written in the rows; the Super-Takumar's
+        yellowed glass takes blue away."""
+        w, h = 64, 36
+        scene = [[(0.18,) * 3] * w for _ in range(h)]
+        rows = {'lens': 12, 'lensLoaded': 12, 'distortion': 0.5, 'edgeSoft': 0.1, 'swirl': 0.1, 'glare': 2,
+                'streak': 0, 'vignette': 1, 'aberration': 0.25, 'bloom': 0.15}
+        self.assertEqual(self.lens(scene, {'lens': 12}, (w, h)), self.lens(scene, rows, (w, h)))
+        none = self.lens(scene, {}, (w, h))[18][32]
+        tak = self.lens(scene, {'lens': 12, 'lensLoaded': 12}, (w, h))[18][32]
+        self.assertLess(tak[2] / tak[1], none[2] / none[1] - 0.02)
+
 if __name__ == '__main__':
     unittest.main()

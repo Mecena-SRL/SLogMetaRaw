@@ -277,6 +277,48 @@ inline constexpr CrDigitalCamera kCrPhoneCameras[] = {
     { "Kodak Zi8 (2009)", 8, 1080, 50, 2, 0.5f, 1.3f, 0 } };
 const int kCrCinemaCameraCount = (int)std::size(kCrCinemaCameras), kCrPhoneCameraCount = (int)std::size(kCrPhoneCameras);
 
+// Lenses (research DIGITALI_OTTICHE.md B.1-B.14, all [gen]: starting values to match on real footage). What a lens
+// loads into the rows: barrel distortion (%, at the corners; anamorphics: the vertical is a share of it), edge
+// softness and swirl, veiling glare (% of the local mean), anamorphic streak, vignetting (stops), chromatic
+// aberration and diffusion (the rows' units); and its own colours: of the glass, of the veil, of the streak.
+struct CrLens
+{
+    const char* name;
+    float distortion, distV, soft, swirl, glare, streak, vignette, aberration, bloom;
+    float tint[3], glareTint[3], streakTint[3];
+};
+inline constexpr CrLens kCrLenses[] = {
+    { "Nessuna (quella della camera)", 0, 1, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, { 1, 1, 1 }, { 0.35f, 0.55f, 1 } },
+    { "Cooke Speed Panchro (anni '30-'50)", 0.7f, 1, 0.2f, 0.1f, 1.5f, 0, 1.2f, 0.25f, 0.25f, { 1.03f, 1, 0.95f },
+      { 1, 0.8f, 0.55f }, { 1, 0.7f, 0.4f } },
+    { "Zeiss Super Speed Mk I (anni '70)", 0.5f, 1, 0.1f, 0.05f, 1, 0, 1, 0.2f, 0.15f, { 1, 1, 1 },
+      { 0.8f, 1, 0.75f }, { 0.8f, 1, 0.75f } },
+    { "Canon K35 (1975)", 0.8f, 1, 0.1f, 0.05f, 4, 0, 1, 0.25f, 0.3f, { 1.03f, 1, 0.94f }, { 1, 0.7f, 0.4f },
+      { 1, 0.7f, 0.4f } },
+    { "Bausch & Lomb Baltar (anni '40-'60)", 0.5f, 1, 0.2f, 0.1f, 3, 0, 1.3f, 0.3f, 0.4f, { 1.02f, 1, 0.96f },
+      { 1, 0.8f, 0.55f }, { 1, 0.75f, 0.5f } },
+    { "Angénieux 25-250 (zoom, anni '60-'80)", 1.5f, 1, 0.2f, 0.05f, 3, 0, 1, 0.35f, 0.15f, { 1, 1, 1 },
+      { 0.9f, 1, 0.9f }, { 0.9f, 1, 0.9f } },
+    { "Panavision serie C (anamorfico, 1968)", 3, 0.33f, 0.3f, 0, 2, 0.15f, 1.3f, 0.35f, 0.2f, { 1, 1, 1 },
+      { 0.9f, 0.95f, 1 }, { 0.35f, 0.55f, 1 } },
+    { "Panavision serie G (anamorfico, anni 2000)", 1.5f, 0.33f, 0.1f, 0, 1, 0.1f, 0.8f, 0.2f, 0.1f, { 1, 1, 1 },
+      { 0.9f, 0.95f, 1 }, { 0.35f, 0.55f, 1 } },
+    { "LOMO anamorfico round front (URSS, anni '70)", 2, 0.35f, 0.3f, 0.1f, 3, 0.15f, 1.5f, 0.5f, 0.35f,
+      { 1.03f, 1, 0.92f }, { 1, 0.9f, 0.85f }, { 0.6f, 0.4f, 1 } },
+    { "Kowa anamorfico (anni '60-'70)", 2, 0.35f, 0.25f, 0, 3, 0.12f, 1.3f, 0.35f, 0.25f, { 1.05f, 1, 0.9f },
+      { 1, 0.8f, 0.55f }, { 1, 0.6f, 0.25f } },
+    { "Helios 44-2 58 mm (URSS)", 0.5f, 1, 0.2f, 0.6f, 2, 0, 1.2f, 0.3f, 0.2f, { 1, 1, 1 }, { 1, 0.65f, 0.35f },
+      { 1, 0.6f, 0.3f } },
+    { "Jupiter-9 85 mm (URSS)", 0.5f, 1, 0.2f, 0.2f, 2, 0, 0.8f, 0.25f, 0.3f, { 1.02f, 1, 0.97f },
+      { 1, 0.8f, 0.55f }, { 1, 0.75f, 0.5f } },
+    { "Asahi Super-Takumar 50 mm (torio, ingiallito)", 0.5f, 1, 0.1f, 0.1f, 2, 0, 1, 0.25f, 0.15f,
+      { 1, 0.97f, 0.85f }, { 1, 0.65f, 0.4f }, { 1, 0.65f, 0.4f } },
+    { "Petzval (ottone, 1840)", 0, 1, 1, 1, 6, 0, 2.5f, 0.35f, 0.3f, { 1, 1, 0.97f }, { 1, 0.92f, 0.8f },
+      { 1, 0.9f, 0.8f } },
+    { "Ottica da telefono", 0, 1, 0.05f, 0, 1, 0, 0.6f, 0.2f, 0.05f, { 1, 1, 1 }, { 0.85f, 0.75f, 1 },
+      { 0.85f, 0.75f, 1 } } };
+const int kCrLensCount = (int)std::size(kCrLenses);
+
 // The names of a table's rows, for its choice parameter.
 template <class T, std::size_t N> constexpr std::array<const char*, N> crNames(const T (&t)[N])
 {
@@ -289,3 +331,4 @@ inline constexpr auto kCrVideoCameraNames = crNames(kCrVideoCameras);
 inline constexpr auto kCrCinemaCameraNames = crNames(kCrCinemaCameras);
 inline constexpr auto kCrPhoneCameraNames = crNames(kCrPhoneCameras);
 inline constexpr auto kCrMakerNames = crNames(kCrMakers);
+inline constexpr auto kCrLensNames = crNames(kCrLenses);
