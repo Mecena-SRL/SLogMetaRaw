@@ -63,7 +63,7 @@ Without that step Resolve would keep showing the old panel and would not list th
 | The menu script | `…/DaVinci Resolve/Fusion/Scripts/Utility/Log MetaRaw.py` |
 
 While it runs it keeps a small JSON record per clip in `~/Library/Application Support/SLogMetaRaw/cache`. The disk image
-also holds the illustrated ten-page guides in Italian and English.
+also holds the illustrated eleven-page guides in Italian and English.
 
 **Clean install and uninstall.** Every install starts clean: the installer replaces the previous plugin and library
 entirely and removes developer installs, so no file from an older version stays behind. **Disinstalla S-Log

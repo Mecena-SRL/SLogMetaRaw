@@ -184,7 +184,7 @@ Noise 4.0.3 (segnalazione di Ivan su FX6): con uno spazio colore di Resolve non 
 ora segue la regola di Develop (codifica camera dal record). Rileggi metadata in cima al pannello, come Develop.
 Il pannello della segnalazione era quello della 4.0.0 (Temporale, nessun tasto): Ivan non aveva ancora installato
 la 4.0.2. Aperto: il nome che Resolve dà sul suo progetto (la riga Noise lo mostra se resta neutro).
-Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine (limite in
+Guide 3.2.0: `packaging/guide/guida.html` e `guide-en.html` illustrate, 10 pagine, 11 dalla 4.2.0 con la pagina Audio (limite in
 `packaging/build_installer.sh`), figure da `tools/make_guide_figures.py` sui modelli in `tests/`. Stampa su macOS non
 verificata (font diverso da Linux).
 Acquisizione profonda (24/11/2026, non rilasciata): spunta nella finestra e `--deep`; `slogmetaraw/clipdb.py` lancia
