@@ -126,6 +126,8 @@ SM_FN SMf3 cr_mul(SM_CPTR m, SMf3 c) {
 }
 SM_FN float cr_at(SMf3 v, int k) { return k == 0 ? v.x : (k == 1 ? v.y : v.z); }
 SM_FN int cr_clamp_i(int i, int n) { return i < 0 ? 0 : (i >= n ? n - 1 : i); }
+SM_FN int cr_max_i(int a, int b) { return a > b ? a : b; }   // SM_MAX is fmax: ambiguous on ints in Metal
+SM_FN int cr_min_i(int a, int b) { return a < b ? a : b; }
 SM_FN float cr_luma(SMf3 c) { return 0.2627f * c.x + 0.6780f * c.y + 0.0593f * c.z; }   // Rec.2020 Y
 SM_FN float cr_smooth(float a, float b, float x) {
     const float t = sm_clamp((x - a) / (b - a), 0.0f, 1.0f);
@@ -727,7 +729,7 @@ SM_FN float cr_dig_down(CR_PLANE P, int i, int j, int w, int h, SM_CREF(Creative
     if (p.dAlias != 0)
         return P[cr_clamp_i((int)(((float)j + 0.5f) * sy), p.H) * p.W + cr_clamp_i((int)(((float)i + 0.5f) * sx), p.W)];
     const int x0 = (int)CR_FLOOR((float)i * sx), y0 = (int)CR_FLOOR((float)j * sy);
-    const int x1 = SM_MAX(x0 + 1, (int)CR_FLOOR((float)(i + 1) * sx)), y1 = SM_MAX(y0 + 1, (int)CR_FLOOR((float)(j + 1) * sy));
+    const int x1 = cr_max_i(x0 + 1, (int)CR_FLOOR((float)(i + 1) * sx)), y1 = cr_max_i(y0 + 1, (int)CR_FLOOR((float)(j + 1) * sy));
     float s = 0.0f;
     int n = 0;
     for (int y = y0; y < y1 && y < p.H; ++y)
@@ -788,8 +790,8 @@ SM_FN void cr_dig_dct(CR_PLANE in, CR_OUT out, int w, int h, int bx, int by, int
 SM_FN float cr_dig_sample(CR_PLANE P, int w, int h, float u, float v) {
     u = sm_clamp(u, 0.0f, (float)(w - 1));
     v = sm_clamp(v, 0.0f, (float)(h - 1));
-    const int i = SM_MIN((int)CR_FLOOR(u), w - 1), j = SM_MIN((int)CR_FLOOR(v), h - 1);
-    const int i1 = SM_MIN(i + 1, w - 1), j1 = SM_MIN(j + 1, h - 1);
+    const int i = cr_min_i((int)CR_FLOOR(u), w - 1), j = cr_min_i((int)CR_FLOOR(v), h - 1);
+    const int i1 = cr_min_i(i + 1, w - 1), j1 = cr_min_i(j + 1, h - 1);
     const float a = u - (float)i, b = v - (float)j;
     const float top = P[j * w + i] + (P[j * w + i1] - P[j * w + i]) * a;
     const float bot = P[j1 * w + i] + (P[j1 * w + i1] - P[j1 * w + i]) * a;
