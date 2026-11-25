@@ -244,13 +244,15 @@ Supporti di visione (25/11/2026, dopo la fase 5): quattro righe in coda a `kMedi
 LCD; gli indici di prima restano) e campi `damper`, `plasma`, `levels`, `blackTint` in `cr_medium_at`. Verificato:
 test CPU (fili, formicolio che cambia per fotogramma, nero bluastro e bande), golden; parità Metal solo in CI macOS.
 Aperto: ABL del plasma, angolo di visione dell'LCD, pulldown 3:2, proiettore DLP.
+Release 4.2.0 (25/11/2026): fasi 1–5 del Creative, supporti di visione e Log MetaRaw Audio in una sola release; guide
+IT/EN con pagina Audio (11 pagine), README e wiki aggiornati. Aperto: prova in Resolve e Fairlight, taratura.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per
 escludere la texture), torna dove c'è mosso. Aperto: diagnostica «Verifica ultimo render» di Ivan in Resolve (subframe
 e posa letta davvero), velocità su GPU reale.
 
-Log MetaRaw Audio (25/11/2026, non rilasciato): simulatore di registrazione e mix d'epoca per Fairlight. Decisioni di
+Log MetaRaw Audio (25/11/2026, rilasciato nella 4.2.0): simulatore di registrazione e mix d'epoca per Fairlight. Decisioni di
 Ivan: due plugin («Ripresa» per le tracce, «Mix e supporto» per bus e master) sullo stesso motore, preset con nomi
 reali e interruttore per ogni stadio. Fatto: motore e tabelle in `audio/src/`, test; plugin VST3 con pannello (`audio/vst3/`),
 CI e installer. Deciso: niente AU (Fairlight carica il VST3 anche su Mac). Aperto: prova in Fairlight, taratura. Dettagli: `docs/audio/AUDIO.md`.

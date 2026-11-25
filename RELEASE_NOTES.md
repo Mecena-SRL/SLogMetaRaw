@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.2.0
 
 - **Log MetaRaw Audio** (nuovo, VST3 per Fairlight su Mac e Windows): due plugin per il suono d'epoca.
   - *Ripresa*, sulle tracce: registratore (Geloso G.257, Nagra III e 4.2, Uher 4000 Report-L, Ampex 350, Studer J37 e

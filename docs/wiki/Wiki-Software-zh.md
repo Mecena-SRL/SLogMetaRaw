@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **3.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -36,7 +36,7 @@ Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文�
 |---|---|---|
 | **脚本** | Workspace › Scripts › Log MetaRaw | 读取每个片段的元数据并写入媒体池。修正每个片段的 Data Level。 |
 | **Log MetaRaw** 节点 | Color › OpenFX —— **第一个节点** | 以拍摄时的数值为起点显影片段：白平衡、曝光、色彩空间、分区影调、伪色。 |
-| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；观看介质（影院、家用放映机、CRT 电视、掌机 LCD、相纸） |
+| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；按设备与型号的预设（电影摄影机、摄像管与 CCD 摄像机、数码相机与手机）、14 支老镜头、转录（胶转磁、显像管录片、胶片输出）与观看介质（影院、放映机、CRT 与 Trinitron 电视、等离子、早期 LCD、掌机、相纸） |
 
 原始文件**绝不会被修改**：不转码，不重新封装。
 
@@ -282,6 +282,15 @@ Log MetaRaw  →  Log MetaRaw Creative  →  其余调色  →  输出 CST / LUT
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
 
+**4.2.0 新功能。**
+
+- **设备 › 型号**：从机器出发（电影摄影机、摄像机、数字电影机、手机），自动载入画幅、磁带、传感器与缺陷；再选厂商与胶片，均为真实名称。*色调*、*色彩*、*纹理* 开关可以只在自己的视频上使用颗粒等单项。
+- **模拟视频**：VHS 与 Betacam 磁带逐行重建（FM 噪声、色度延迟、磁头切换、信号脱落），以及摄像机传感器：摄像管拖影与彗尾、CCD 拖尾、条纹管的伪色。
+- **按型号的数码相机**：传感器尺寸与混叠、机内锐化、编码器的 8x8 块与色度抽样（从 Motorola RAZR 到 ARRI Alexa）。
+- **转录到**：转录到 VHS、Betacam、第三代 VHS、16 mm 显像管录片或 35 mm 胶片输出，颗粒叠加。
+- **镜头**：14 支镜头（Cooke、Zeiss Super Speed、Canon K35、Panavision、LOMO、Helios、Petzval…），含畸变、边缘柔化、旋涡、眩光与变形宽银幕拉丝。
+- **新的观看介质**：Super 8 放映机、Trinitron、等离子、早期 LCD。
+
 ---
 
 ## Noise、Stabilize 与 Motion Blur 节点（4.0.0）
@@ -302,6 +311,17 @@ Log MetaRaw  →  Log MetaRaw Creative  →  其余调色  →  输出 CST / LUT
 - **深度采集**是脚本窗口中的一个勾选项：把每一帧的陀螺仪和镜头数据存入 MecenaClipDB，供 Stabilize 使用。
 
 这三个节点都尚未在 Resolve 中用真实片段测试。
+
+## Log MetaRaw Audio（VST3，4.2.0）
+
+Creative 的声音孪生，用于 **Fairlight**（Mac 与 Windows）：一个模块 `Log MetaRaw Audio.vst3` 含两个插件。
+
+- **Ripresa**（录音），用于音轨：录音机（Geloso G.257、Nagra、Uher、Studer、Revox、Walkman、Auricon、爱迪生留声机、钢丝录音机…）、话筒（原配或 RCA 44、U 47、C12、SM58、MKH 416…）、介质与降噪。
+- **Mix e supporto**（混音与介质），用于总线与母带：调音台（RCA、EMI REDD.51、Neve、SSL、Mackie）、介质（磁带、卡带、78/45/33 转、VHS、光学声迹、收音机、电话）、转录与收听（电子管收音机、点唱机、电视、影院）。
+- 每一级都有开关；饱和、噪声、抖晃、干/湿与输出调整结果。
+- 在安装程序中为独立组件，默认勾选。Linux：Resolve 不加载原生 VST3。
+
+数值为根据当年规格与描述得出的估计（[docs/audio/AUDIO.md](docs/audio/AUDIO.md)）；尚未在 Fairlight 中测试。
 
 ## 9. 工作流程：每个节点放在哪里
 
