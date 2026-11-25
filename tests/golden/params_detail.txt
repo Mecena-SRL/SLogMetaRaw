@@ -67,6 +67,7 @@ param:printR|OfxParamTypeDouble|Luci di stampa R|0|printGroup|||-24|24|-24|24|1|
 param:printG|OfxParamTypeDouble|Luci di stampa G|0|printGroup|||-24|24|-24|24|1|0||Più verde = stampa più magenta|||
 param:printB|OfxParamTypeDouble|Luci di stampa B|0|printGroup|||-24|24|-24|24|1|0||Più blu = stampa più gialla|||
 param:printContrast|OfxParamTypeDouble|Contrasto|1|printGroup|||0.5|2|0.5|2|0.01|2||Il contrasto del positivo (o del segnale), moltiplicato su quello del processo|||
+param:printWeave|OfxParamTypeDouble|Oscillazione della stampa|1|printGroup|||0|3|0|3|0.01|2||Ogni passaggio in stampatrice a contatto aggiunge una deriva lenta, le due pellicole scivolano un poco sul rocchetto: una copia campione ne ha uno, una copia di distribuzione tre. 1 = tipica|||
 param:printGrain|OfxParamTypeDouble|Grana della stampa|1|printGroup|||0|3|0|3|0.01|2||La grana propria del positivo, nelle sue densità, più fine di quella del negativo: 1 = com'era|||
 param:grain|OfxParamTypeDouble|Grana|1|textureGroup|||0|3|0|3|0.01|2||Quantità rispetto a quella del materiale e del formato: 1 = com'era|||
 param:grainSize|OfxParamTypeDouble|Dimensione grana|1|textureGroup|||0.25|4|0.25|4|0.01|2||Rispetto a quella del materiale e del formato|||
@@ -80,7 +81,8 @@ param:edgeSoft|OfxParamTypeDouble|Bordi morbidi|0|textureGroup|||0|3|0|3|0.01|2|
 param:swirl|OfxParamTypeDouble|Vortice|0|textureGroup|||0|3|0|3|0.01|2||La sfocatura dei bordi allungata in cerchio attorno al centro (Helios, Petzval); dedotta senza profondità, quindi anche sui soggetti ai bordi|||
 param:glare|OfxParamTypeDouble|Velo (%)|0|textureGroup|||0|20|0|20|0.1|1||La luce diffusa nell'obiettivo che solleva i neri vicino alle zone chiare, nel colore del suo trattamento|||
 param:streak|OfxParamTypeDouble|Striscia anamorfica|0|textureGroup|||0|3|0|3|0.01|2||Le luci forti si allungano in orizzontale, nel colore della serie (blu Panavision, viola LOMO, ambra Kowa)|||
-param:weave|OfxParamTypeDouble|Instabilità del quadro|0|textureGroup|||0|1|0|1|0.01|2||Il fotogramma oscilla nel passo della macchina, in proporzione al formato|||
+param:camWeave|OfxParamTypeBoolean|Oscillazione in ripresa|1|textureGroup|||||||||0|Spento: il fotogramma resta fermo sulla pellicola, come con una cinepresa perfetta|||
+param:weave|OfxParamTypeDouble|Ampiezza in ripresa|0|textureGroup|||0|1|0|1|0.01|2||La griffa della cinepresa lascia la pellicola un poco fuori posto a ogni fotogramma (soprattutto in verticale) e il pattino laterale la fa derivare di lato, lentamente: l'immagine si muove sulla pellicola. La cinepresa carica la sua: 0,1 a perni di registro, 0,5 a sola griffa, 0,85 il caricatore Super 8, 1 a manovella|||
 param:breath|OfxParamTypeDouble|Sfarfallio|0|textureGroup|||0|1|0|1|0.01|2||Densità e colore che cambiano un poco da un fotogramma all'altro|||
 param:dust|OfxParamTypeDouble|Polvere|0|textureGroup|||0|1|0|1|0.01|2||Granelli e peli, diversi a ogni fotogramma: bianchi se sul negativo, neri se sul positivo|||
 param:scratches|OfxParamTypeDouble|Graffi|0|textureGroup|||0|1|0|1|0.01|2||Righe verticali lasciate dal passaggio nella macchina|||
@@ -123,6 +125,8 @@ param:mediumNits|OfxParamTypeDouble|Luminanza (nit)|100|viewGroup|||5|400|5|400|
 param:mediumRoom|OfxParamTypeChoice|Stanza|1|viewGroup|||||||||0|Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore|Buia,Penombra,Illuminata||
 param:mediumKelvin|OfxParamTypeDouble|Bianco (K)|6500|viewGroup|||3000|10000|3000|10000|50|0||Il bianco del supporto, con l'occhio adattato in gran parte: lampada 3200, xenon 6000, PAL 7500, NTSC giapponese 9300, monitor 6500|||
 param:mediumColour|OfxParamTypeDouble|Colore (%)|100|viewGroup|||50|150|50|150|1|0||La manopola del colore del televisore: i televisori di casa erano spesso un po' alti|||
+param:projWeave|OfxParamTypeBoolean|Oscillazione in proiezione|1|viewGroup|||||||||0|Spento: la pellicola resta ferma sullo schermo, come in un proiettore perfetto|||
+param:projectorWeave|OfxParamTypeDouble|Ampiezza in proiezione|1|viewGroup|||0|3|0|3|0.01|2||Il proiettore muove tutta la pellicola sullo schermo, bordi compresi. In sala il rocchetto a croce di Malta gira di un quarto a fotogramma: un dente consumato ripete il suo salto ogni 4 fotogrammi. I proiettori 16 mm e Super 8 a griffa sbagliano a ogni fotogramma. Di lato la pellicola ondeggia fra i pattini. 1 = tipica|||
 param:mediumOverscan|OfxParamTypeDouble|Overscan (%)|0|viewGroup|||0|10|0|10|0.5|1||Il tubo di casa ingrandisce l'immagine e ne nasconde i bordi; il monitor da regia la mostra intera|||
 param:creativeReset|OfxParamTypePushButton|Azzera comandi||processGroup||||||||||Riporta ai valori del processo tutti i comandi; processo e varianti restano|||
 param:boundPath|OfxParamTypeString||||1||||||||0||||

@@ -52,6 +52,8 @@ CreativeEffect::CreativeEffect(OfxImageEffectHandle p_Handle) : ImageEffect(p_Ha
             if (paramExists(kCrMakers[i].param)) m_Stocks[i] = fetchChoiceParam(kCrMakers[i].param);
         for (int i = 0; i < kCrToggleCount; ++i)
             if (paramExists(kCrToggles[i].name)) m_Toggles[i] = fetchBooleanParam(kCrToggles[i].name);
+        for (int i = 0; i < kCrCheckCount; ++i)
+            if (paramExists(kCrChecks[i].name)) m_Checks[i] = fetchBooleanParam(kCrChecks[i].name);
     } catch (...) {
     }
     try {
@@ -140,6 +142,8 @@ CreativeControls CreativeEffect::readControls(double t) const
         if (m_Stocks[i]) m_Stocks[i]->getValueAtTime(t, c.stock[i]);
     for (int i = 0; i < kCrToggleCount; ++i)
         if (m_Toggles[i]) c.*(kCrToggles[i].field) = m_Toggles[i]->getValueAtTime(t) ? 1 : 0;
+    for (int i = 0; i < kCrCheckCount; ++i)
+        if (m_Checks[i]) c.*(kCrChecks[i].field) = m_Checks[i]->getValueAtTime(t) ? 1 : 0;
     return c;
 }
 
@@ -162,6 +166,11 @@ void CreativeEffect::updateProcess()
         const bool on = (s.shows & bit) != 0 && !crRowIdle(s.name, now);
         show(s.name, on);
         used[s.group] = used[s.group] || on;
+    }
+    for (const CrCheckDef& k : kCrChecks) {
+        const bool on = (k.shows & bit) != 0 && !crRowIdle(k.name, now);
+        show(k.name, on);
+        used[k.group] = used[k.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
     for (int i = 0; i < kCrMakerCount; ++i) show(kCrMakers[i].param, now.device == kCrDevFilm && now.maker == i);
@@ -294,7 +303,8 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
     if (p_ParamName == "nodeInput") refreshInfo();
     else if (model || p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print"
              || p_ParamName == "output" || p_ParamName == "format" || p_ParamName == "maker"
-             || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3))
+             || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3)
+             || p_ParamName == "camWeave" || p_ParamName == "projWeave" || p_ParamName == "generation")
         updateProcess();   // rows and info that depend on these choices
     m_Badge.refresh(false);
 }

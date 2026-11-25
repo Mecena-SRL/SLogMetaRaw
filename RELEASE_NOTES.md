@@ -1,5 +1,14 @@
 # Changelog
 
+## In sviluppo
+
+- **Creative, oscillazione della pellicola rifatta**: non più una sinusoide regolare ma tre cause separate, ognuna con
+  il suo carattere.
+  - *Ripresa* (spunta e ampiezza): la griffa sbaglia a ogni fotogramma in verticale, il pattino fa derivare di lato.
+  - *Stampa*: ogni passaggio in stampatrice aggiunge una deriva lenta (una copia di distribuzione ne ha tre).
+  - *Proiezione* (spunta e ampiezza, su sala e proiettori): in sala il rocchetto ripete il salto ogni 4 fotogrammi; i
+    proiettori 16 mm e Super 8 a griffa sbagliano a ogni fotogramma e muovono tutta la pellicola.
+
 ## Log MetaRaw 4.2.0
 
 - **Log MetaRaw Audio** (nuovo, VST3 per Fairlight su Mac e Windows): due plugin per il suono d'epoca.

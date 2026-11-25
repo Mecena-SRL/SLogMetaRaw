@@ -6,6 +6,7 @@
 //         medium shows the previous picture and frames > 1, the last frame is the previous one; when a pickup tube
 //         remembers the frames before, frames 1, 2, 3 are 1, 2, 3 frames before this one)
 // stdout: W*H lines "r g b"
+// Or: "weave W H N", then the controls: N lines of creativeWeave's six offsets (camera, printer, projector x y)
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -28,6 +29,8 @@ static void set(CreativeControls& c, const std::string& name, double v)
         if (name == kCrMakers[i].param) { c.stock[i] = (int)v; return; }
     for (const CrToggleDef& d : kCrToggles)
         if (name == d.name) { c.*(d.field) = (int)v; return; }
+    for (const CrCheckDef& d : kCrChecks)
+        if (name == d.name) { c.*(d.field) = (int)v; return; }
     for (const CrChoiceDef& d : kCrChoices)
         if (name == d.name) { c.*(d.field) = (int)v; return; }
     for (const CrSliderDef& d : kCrSliders)
@@ -40,8 +43,25 @@ int main()
 {
     int W, H, space, gamma, frame, frames, threads;
     char line[8192];
-    if (!fgets(line, sizeof(line), stdin)
-        || sscanf(line, "%d %d %d %d %d %d %d", &W, &H, &space, &gamma, &frame, &frames, &threads) != 7 || frames < 1)
+    if (!fgets(line, sizeof(line), stdin)) return 2;
+    int weaveFrames = 0;
+    if (sscanf(line, "weave %d %d %d", &W, &H, &weaveFrames) == 3) {   // the unsteadiness offsets, frame by frame
+        if (!fgets(line, sizeof(line), stdin)) return 2;
+        CreativeControls c;
+        std::istringstream in(line);
+        std::string kv;
+        while (in >> kv) {
+            const size_t eq = kv.find('=');
+            set(c, kv.substr(0, eq), atof(kv.substr(eq + 1).c_str()));
+        }
+        for (int f = 0; f < weaveFrames; ++f) {
+            double o[6];
+            creativeWeave(c, W, H, f, o);
+            printf("%.6f %.6f %.6f %.6f %.6f %.6f\n", o[0], o[1], o[2], o[3], o[4], o[5]);
+        }
+        return 0;
+    }
+    if (sscanf(line, "%d %d %d %d %d %d %d", &W, &H, &space, &gamma, &frame, &frames, &threads) != 7 || frames < 1)
         return 2;
     if (!fgets(line, sizeof(line), stdin)) return 2;   // the controls, possibly none
     CreativeControls c;

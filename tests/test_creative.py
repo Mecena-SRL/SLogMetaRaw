@@ -276,6 +276,72 @@ class Creative(unittest.TestCase):
         self.assertLess(vhs, bc)
 
 
+    # ---- unsteadiness: camera, printer, projector
+
+    def weave(self, controls, n=240, size=(1920, 1080)):
+        """creativeWeave's offsets for frames 0..n-1: rows of (camera x, y, printer x, y, projector x, y)."""
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        ctl = ' '.join('%s=%s' % kv for kv in controls.items()) + '\n'
+        res = subprocess.run([self.exe], input='weave %d %d %d\n' % (size[0], size[1], n) + ctl,
+                             capture_output=True, text=True, timeout=60)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        return [tuple(map(float, line.split())) for line in res.stdout.splitlines()]
+
+    @staticmethod
+    def rms(v):
+        return math.sqrt(sum(x * x for x in v) / len(v))
+
+    @staticmethod
+    def corr(v, lag):
+        a, b = v[:-lag], v[lag:]
+        ma, mb = sum(a) / len(a), sum(b) / len(b)
+        num = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+        den = math.sqrt(sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b))
+        return num / den
+
+    def test_camera_weave_drifts_sideways_and_jumps_vertically(self):
+        """The claw errs at every frame (vertical, little memory); the side rail drifts (lateral, smooth); no
+        rhythm (the old sine repeated every 7 frames)."""
+        w = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0})   # Canon 1014 XL-S, Super 8
+        x, y = [r[0] for r in w], [r[1] for r in w]
+        self.assertGreater(self.corr(x, 1), 0.75)
+        self.assertLess(self.corr(y, 1), 0.5)
+        self.assertLess(abs(self.corr(x, 7)), 0.6)
+        # RMS about a third of the peak (0.9 * 0.8 % of the width, research: Super 8 cartridge), a few pixels in HD
+        self.assertGreater(self.rms(x), 2)
+        self.assertLess(self.rms(x), 8)
+
+    def test_camera_weave_follows_the_mechanism_and_switches_off(self):
+        s8 = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0})
+        arri = self.weave({'device': 1, 'filmCamera': 17, 'maker': 0})   # Arriflex 435, pin registered, Super 35
+        self.assertGreater(self.rms([r[0] for r in s8]), 20 * self.rms([r[0] for r in arri]))
+        off = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0, 'camWeave': 0})
+        self.assertTrue(all(r[0] == 0 and r[1] == 0 for r in off))
+
+    def test_projector_weave_repeats_the_sprocket_every_four_frames(self):
+        """35 mm: the intermittent sprocket turns a quarter per frame, a worn tooth jumps again 4 frames later; a
+        Super 8 projector's claw has no such period and moves more."""
+        sala = self.weave({'process': NEGATIVE, 'medium': 1})
+        y = [r[5] for r in sala]
+        self.assertGreater(self.corr(y, 4), self.corr(y, 1) + 0.3)
+        s8 = self.weave({'process': NEGATIVE, 'medium': 8})
+        self.assertGreater(self.rms([r[5] for r in s8]), 3 * self.rms(y))
+        self.assertLess(abs(self.corr([r[5] for r in s8], 4)), 0.4)
+        off = self.weave({'process': NEGATIVE, 'medium': 8, 'projWeave': 0})
+        self.assertTrue(all(r[4] == 0 and r[5] == 0 for r in off))
+        none = self.weave({'process': NEGATIVE, 'medium': 0})
+        self.assertTrue(all(r[4] == 0 and r[5] == 0 for r in none))
+
+    def test_each_printing_step_adds_its_drift(self):
+        one = self.weave({'process': NEGATIVE, 'generation': 0})
+        three = self.weave({'process': NEGATIVE, 'generation': 1})
+        scan = self.weave({'process': NEGATIVE, 'print': 0})
+        r1, r3 = self.rms([r[2] for r in one]), self.rms([r[2] for r in three])
+        self.assertGreater(r1, 0)
+        self.assertGreater(r3, 1.5 * r1)
+        self.assertTrue(all(r[2] == 0 and r[3] == 0 for r in scan))   # a scanned negative was never printed
+
     # ---- presets: device, model, format, manufacturer, stock; what the film applies
 
     FILM = {'device': 1, 'maker': 0, 'filmCamera': 17}   # Arriflex 435, Kodak
