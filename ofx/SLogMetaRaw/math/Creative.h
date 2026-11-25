@@ -94,6 +94,7 @@ struct CreativeParams {
     // viewing medium, on the finished picture (display-linear Rec.709)
     int medium, mLines, mMaskType, mCols, mRows;
     float mCurve, mBeamMin, mBeamMax, mMask, mPitch, mFalloff, mGain, mBlack, mWhite[3], mShiftX, mShiftY, mSoft;
+    float mTone, mCutoff, mSat, mChroma, mZoom;   // device response (cr_device), overscan
     float mCorner, mEdge, mTexture, mScreenW, mScreenH, mBezel, mDither, mGrid;
     float mPalette[12], mUnlit[3], mBezelTint[3], mBodyTint[3];   // LCD: code values (Gamma 2.4)
     int mGS, mGW, mGH;                     // the glow's grid (scale, size) of the picture's luminance
@@ -675,6 +676,31 @@ SM_FN SMf3 cr_lcd(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, int x, int y, SM_CREF(C
 // The medium at (x, y), as code values (Gamma 2.4): geometry (curved glass, unsteadiness), the screen's edge, the
 // raster or the lens, phosphors, the glow of glass or lens (grid of the picture's luminance; read only when mGlow > 0),
 // paper fibres, light falloff and flicker, then black (flare, Dmax) and white (lamp, paper).
+// The device's own response to a Rec.709 picture c (display-linear, 1 = reference white): colourfulness (mSat; the
+// Hunt effect of a dimmer screen, or a set turned up), a gamut that runs out (mChroma: paper), then the tone of its
+// light. mTone is the device's exponent on the signal over the reference 2.4, times the surround's (Bartleson-
+// Breneman: a dark room flattens what it shows); mCutoff the black of the device itself, BT.1886-style: it lifts
+// the shadows, not the whites. Identity at mSat 1, mChroma 0, mTone 1, mCutoff 0.
+SM_FN SMf3 cr_device(SMf3 c, SM_CREF(CreativeParams) p) {
+    const float Y = 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z;
+    float k = p.mSat;
+    if (p.mChroma > 0.0f) {   // chroma relative to Y, compressed softly from 60% of the limit
+        const float d = SM_MAX(SM_MAX(SM_ABS(c.x - Y), SM_ABS(c.y - Y)), SM_ABS(c.z - Y)) * k / SM_MAX(Y, 1e-4f);
+        const float t = 0.6f * p.mChroma;
+        if (d > t) k *= (t + (d - t) / (1.0f + (d - t) / (p.mChroma - t))) / d;
+    }
+    float o[3] = { Y + k * (c.x - Y), Y + k * (c.y - Y), Y + k * (c.z - Y) };
+    if (p.mTone != 1.0f || p.mCutoff > 0.0f) {
+        const float g = 2.4f * p.mTone, lb = SM_POW(p.mCutoff, 1.0f / g);
+        const float a = SM_POW(1.0f - lb, g), b = lb / (1.0f - lb);
+        for (int i = 0; i < 3; ++i) {
+            const float v = SM_POW(SM_MAX(o[i], 0.0f), 1.0f / 2.4f);   // the signal the device receives
+            o[i] = a * SM_POW(SM_MAX(v + b, 0.0f), g);
+        }
+    }
+    return smf3(o[0], o[1], o[2]);
+}
+
 SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, CR_PLANE glow, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.medium == CR_MEDIUM_LCD) return cr_lcd(M0, M1, M2, x, y, p);
     const float W = (float)p.W, H = (float)p.H;
@@ -682,13 +708,13 @@ SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, CR_PLANE glow, in
     const float a2 = (W / H) * (W / H);
     const float r2 = (u * u * a2 + v * v) / (a2 + 1.0f);   // 0 at the centre, 1 at the corners
     const float g = 1.0f + p.mCurve * r2;                  // curved glass: the picture bulges, its edges recede
-    const float cu = u * g, cv = v * g;
+    const float cu = u * g, cv = v * g, zu = cu / p.mZoom, zv = cv / p.mZoom;   // overscan: the edges hidden
     const float qx = SM_ABS(cu) * 0.5f * W - (0.5f * W - p.mCorner), qy = SM_ABS(cv) * 0.5f * H - (0.5f * H - p.mCorner);
     const float ox = SM_MAX(qx, 0.0f), oy = SM_MAX(qy, 0.0f);
     const float edge = SM_SQRT(ox * ox + oy * oy) + SM_MIN(SM_MAX(qx, qy), 0.0f) - p.mCorner;   // px, < 0 inside
     const float inside = 1.0f - cr_smooth(-p.mEdge, 0.0f, edge);
     if (inside <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
-    const float sx = (cu + 1.0f) * 0.5f * W - 0.5f + p.mShiftX, sy = (cv + 1.0f) * 0.5f * H - 0.5f + p.mShiftY;
+    const float sx = (zu + 1.0f) * 0.5f * W - 0.5f + p.mShiftX, sy = (zv + 1.0f) * 0.5f * H - 0.5f + p.mShiftY;
     SMf3 c;
     if (p.mLines > 0) {
         c = cr_phosphor(cr_scan(M0, M1, M2, sx, sy, p), x, y, p);
@@ -705,6 +731,7 @@ SM_FN SMf3 cr_medium_at(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, CR_PLANE glow, in
                                           (int)sm_clamp(sy, 0.0f, H - 1.0f));
         c = smf3(c.x * (1.0f - p.mGlow) + h, c.y * (1.0f - p.mGlow) + h, c.z * (1.0f - p.mGlow) + h);
     }
+    c = cr_device(c, p);
     float light = p.mGain * (1.0f - p.mFalloff * r2) * inside;
     if (p.mTexture > 0.0f) {   // paper fibres: still, the same on every frame
         const float t = (1.5f * H / 1080.0f) + 0.5f;

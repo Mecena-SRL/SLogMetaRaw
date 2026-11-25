@@ -19,6 +19,7 @@
 static void set(CreativeControls& c, const std::string& name, double v)
 {
     if (name == "process") { c.process = (int)v; return; }
+    if (name == "mediumLoaded") { c.mediumLoaded = (int)v; return; }
     for (const CrChoiceDef& d : kCrChoices)
         if (name == d.name) { c.*(d.field) = (int)v; return; }
     for (const CrSliderDef& d : kCrSliders)

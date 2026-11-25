@@ -44,8 +44,13 @@ struct CreativeControls
     double exposure = 0, temperature = 0, tint = 0, push = 0, silver = 0, flash = 0, age = 0;
     // print
     double printR = 0, printG = 0, printB = 0, printContrast = 1, printGrain = 1;
-    // viewing medium: how much of it (0 = the plain picture, 1 = as it is)
+    // viewing medium: how much of it (0 = the plain picture, 1 = as it is), then the device's response in physical
+    // units, loaded from the medium's preset when it is chosen (creativeLoadMedium). mediumLoaded: the medium whose
+    // values the panel holds; any other (a grade saved before 4.1.1, a keyframed medium) renders its preset.
     double mediumAmount = 1;
+    int mediumRoom = 1, mediumLoaded = -1;   // room: 0 dark, 1 dim, 2 lit
+    double mediumGamma = 2.4, mediumContrast = 2000, mediumAmbient = 0, mediumNits = 100, mediumKelvin = 6500,
+           mediumColour = 100, mediumOverscan = 0;
     // texture and optics (amounts are multiples of the process's own, 1 = as it was)
     double grain = 1, grainSize = 1, halation = 1, bloom = 0, bloomRadius = 2, aberration = 0, vignette = 0,
            weave = 0, breath = 0, dust = 0, scratches = 0;
@@ -59,6 +64,14 @@ struct CreativeControls
     // colour
     double shadowHue = 200, shadowAmount = 0, highHue = 40, highAmount = 0, balance = 0, saturation = 1, density = 0;
 };
+
+extern const char* const kCrRoomNames[3];
+// The preset of medium m written into c's response fields (gamma, contrast, ambient light, peak, white, colour,
+// overscan, room), and c.mediumLoaded = m.
+void creativeLoadMedium(CreativeControls& c, int m);
+// Which response rows mean something for medium m: tone (gamma, contrast, light, peak, room), white, overscan.
+struct CrMediumRows { bool tone, white, overscan; };
+CrMediumRows creativeMediumRows(int m);
 
 // Whether the picture of the previous frame is needed too (an LCD's slow response).
 bool creativeNeedsPrevious(const CreativeControls& c);

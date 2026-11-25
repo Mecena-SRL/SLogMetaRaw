@@ -33,6 +33,11 @@ def ramp(shift=0, tinted=False, gamma=GAMMA):
     return img
 
 
+# The response rows set to the reference monitor's (the panel holds them: mediumLoaded = the medium shown).
+FLAT_RESPONSE = {'mediumGamma': 2.4, 'mediumContrast': 100000, 'mediumAmbient': 0, 'mediumNits': 100,
+                 'mediumKelvin': 6504, 'mediumColour': 100, 'mediumOverscan': 0, 'mediumRoom': 1}
+
+
 class Creative(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -171,11 +176,12 @@ class Creative(unittest.TestCase):
         img = self.flat(-1.0, w * h)
         ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0}
         plain = self.render(ctl, [img], size=(w, h))
-        tube = self.render(dict(ctl, medium=3), [img], size=(w, h))
+        tube = self.render(dict(ctl, medium=3, mediumLoaded=3, **FLAT_RESPONSE), [img], size=(w, h))   # lines alone
         lin = lambda v: max(v, 0.0) ** 2.4  # noqa: E731  (Gamma 2.4)
         rows = [lin(tube[y * w + 4][1]) for y in range(h // 2 - 8, h // 2 + 8)]
         self.assertGreater(max(rows), 1.5 * min(rows))   # bright line centres, dark gaps
-        mean = sum(lin(tube[y * w + x][1]) for y in range(h // 2 - 40, h // 2 + 40) for x in range(w)) / (80 * w)
+        centre = [(x, y) for y in range(h // 2 - 40, h // 2 + 40) for x in range(18, 30)]   # clear of the edge
+        mean = sum(lin(tube[y * w + x][1]) for x, y in centre) / len(centre)
         ref = lin(plain[(h // 2) * w + 4][1])
         self.assertAlmostEqual(mean / ref, 1.0, delta=0.12)   # masks and lines move light, they do not remove it
 
@@ -217,6 +223,26 @@ class Creative(unittest.TestCase):
         trail = self.render(ctl, [white, black], size=(w, h))   # the last frame is the previous one
         centre = lambda out: sum(out[y * w + x][1] for y in range(130, 158) for x in range(140, 180))  # noqa: E731
         self.assertLess(centre(trail), centre(still))
+
+    def test_each_medium_answers_with_its_own_tone_white_and_colour(self):
+        """The preset's response: a home tube lifts the black (300:1) and closes the mids (gamma 2.5), the Japanese
+        NTSC set is bluer than the PAL one, the cinema in the dark shows less contrast than the studio monitor."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'sharpness': 0}
+        steps = lambda m, **kw: self.steps(self.render(dict(ctl, medium=m, **kw), [ramp()]))  # noqa: E731
+        studio, pal, ntsc, cinema = steps(5), steps(3), steps(4), steps(1)
+        self.assertGreater(pal[1][1], studio[1][1] + 0.02)      # deep shadow lifted by the tube's own black
+        self.assertGreater(ntsc[8][2] / ntsc[8][0], pal[8][2] / pal[8][0] + 0.03)   # 9300 K against 7500 K
+        span = lambda s: s[9][1] - s[2][1]  # noqa: E731
+        self.assertLess(span(cinema), span(studio))
+
+    def test_panel_values_drive_the_medium_once_loaded(self):
+        """With the panel holding the medium's values (mediumLoaded), its rows count; without, the preset does."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': 5}
+        preset = self.steps(self.render(ctl, [ramp()]))
+        ignored = self.steps(self.render(dict(ctl, mediumGamma=2.8), [ramp()]))
+        used = self.steps(self.render(dict(ctl, mediumGamma=2.8, mediumLoaded=5), [ramp()]))
+        self.assertEqual(preset, ignored)
+        self.assertLess(used[6][1], preset[6][1] - 0.02)        # a higher gamma darkens the middle
 
     def test_paper_has_its_white_and_its_black(self):
         out = self.render({'process': NEGATIVE, 'medium': 7, 'mediumAmount': 1}, [ramp()])

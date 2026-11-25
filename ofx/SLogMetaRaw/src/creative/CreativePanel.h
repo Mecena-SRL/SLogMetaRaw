@@ -81,7 +81,10 @@ static const CrChoiceDef kCrChoices[] = {
       "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
     { "medium", "Visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
       "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
-      "console portatile, carta. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView } };
+      "console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, luce, bianco e colore di quel "
+      "supporto: poi si possono cambiare. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView },
+    { "mediumRoom", "Stanza", &CreativeControls::mediumRoom, kCrRoomNames, 3, kCrAll,
+      "Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore", kGrView } };
 const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
 
 struct CrSliderDef
@@ -204,18 +207,42 @@ static const CrSliderDef kCrSliders[] = {
       "Colori saturi più scuri, come i coloranti veri" },
     // viewing medium
     { "mediumAmount", "Intensità del supporto", &CreativeControls::mediumAmount, 0, 1, 0.01, kGrView, kCrAll,
-      "1 = com'è davvero. Sala e proiettore: caduta di luce, sfarfallio, instabilità. Tubo: curvatura, righe, "
-      "fosfori. Console: retinatura e griglia. Carta: fibre, bianco e nero della carta" } };
+      "1 = com'è davvero, 0 = il monitor Rec.709. Vale per tutto il supporto: risposta, geometria, righe, fosfori, "
+      "retinatura, fibre" },
+    { "mediumGamma", "Gamma del supporto", &CreativeControls::mediumGamma, 1.8, 2.8, 0.01, kGrView, kCrAll,
+      "Come il supporto trasforma il segnale in luce: 2,4 = il monitor di riferimento (BT.1886), un tubo di casa "
+      "2,5 (ombre più chiuse)" },
+    { "mediumContrast", "Contrasto (x:1)", &CreativeControls::mediumContrast, 20, 10000, 10, kGrView, kCrAll,
+      "Bianco diviso nero del supporto da solo: alza le ombre, non i bianchi. Tubo di casa 300, proiettore di casa "
+      "300, carta 125 (Dmax 2,1), sala e monitor da regia 2000" },
+    { "mediumAmbient", "Luce della stanza (%)", &CreativeControls::mediumAmbient, 0, 10, 0.1, kGrView, kCrAll,
+      "Luce che cade sullo schermo e torna indietro: un velo uniforme su tutta l'immagine" },
+    { "mediumNits", "Luminanza (nit)", &CreativeControls::mediumNits, 5, 400, 1, kGrView, kCrAll,
+      "Luce del bianco. Più bassa del monitor (100) = meno colore e meno contrasto percepiti: sala 48, "
+      "proiettore di casa 15, tubo 120-150" },
+    { "mediumKelvin", "Bianco (K)", &CreativeControls::mediumKelvin, 3000, 10000, 50, kGrView, kCrAll,
+      "Il bianco del supporto, con l'occhio adattato in gran parte: lampada 3200, xenon 6000, PAL 7500, NTSC "
+      "giapponese 9300, monitor 6500" },
+    { "mediumColour", "Colore (%)", &CreativeControls::mediumColour, 50, 150, 1, kGrView, kCrAll,
+      "La manopola del colore del televisore: i televisori di casa erano spesso un po' alti" },
+    { "mediumOverscan", "Overscan (%)", &CreativeControls::mediumOverscan, 0, 10, 0.5, kGrView, kCrAll,
+      "Il tubo di casa ingrandisce l'immagine e ne nasconde i bordi; il monitor da regia la mostra intera" } };
 const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);
 
 // Rows that depend on another choice, hidden while it makes them do nothing: no print (scan or Log output) has no
-// generations or print grain; the Log output has no medium; no medium has no intensity.
+// generations or print grain; the Log output has no medium; no medium has no intensity or response, and each medium
+// shows only the response rows it has (the console none, overscan only on tubes).
 inline bool crRowIdle(const char* name, const CreativeControls& c)
 {
     const bool log = c.process == kCrColourNegative && c.output == CR_OUT_LOG;
     const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
     if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;
     if (!std::strcmp(name, "medium")) return log;
-    if (!std::strcmp(name, "mediumAmount")) return log || c.medium == 0;
+    const bool none = log || c.medium <= 0 || c.medium >= kCrMediumCount;
+    if (!std::strcmp(name, "mediumAmount") || !std::strcmp(name, "mediumInfo")) return none;
+    const CrMediumRows rows = creativeMediumRows(c.medium);
+    if (!std::strcmp(name, "mediumKelvin")) return none || !rows.white;
+    if (!std::strcmp(name, "mediumOverscan")) return none || !rows.overscan;
+    if (!std::strncmp(name, "medium", 6) && std::strcmp(name, "medium") != 0) return none || !rows.tone;
     return false;
 }

@@ -45,6 +45,7 @@ CreativeEffect::CreativeEffect(OfxImageEffectHandle p_Handle) : ImageEffect(p_Ha
             if (paramExists(kCrChoices[i].name)) m_Choices[i] = fetchChoiceParam(kCrChoices[i].name);
         for (int i = 0; i < kCrSliderCount; ++i)
             if (paramExists(kCrSliders[i].name)) m_Sliders[i] = fetchDoubleParam(kCrSliders[i].name);
+        if (paramExists("mediumLoaded")) m_MediumLoaded = fetchIntParam("mediumLoaded");
     } catch (...) {
     }
     try {
@@ -126,6 +127,7 @@ CreativeControls CreativeEffect::readControls(double t) const
         if (m_Choices[i]) m_Choices[i]->getValueAtTime(t, c.*(kCrChoices[i].field));
     for (int i = 0; i < kCrSliderCount; ++i)
         if (m_Sliders[i]) c.*(kCrSliders[i].field) = m_Sliders[i]->getValueAtTime(t);
+    if (m_MediumLoaded) c.mediumLoaded = m_MediumLoaded->getValue();
     return c;
 }
 
@@ -152,15 +154,17 @@ void CreativeEffect::updateProcess()
         used[s.group] = used[s.group] || on;
     }
     for (int g = 0; g < kGrCount; ++g) show(kCrGroups[g].name, used[g]);
-    if (paramExists("processInfo")) {   // the process, then the medium it is seen on
-        const int medium = crRowIdle("medium", now) ? 0 : now.medium;
-        std::string text = kCrProcessInfo[proc];
-        if (medium > 0 && medium < kCrMediumCount) text += std::string(" · ") + kCrMediumInfo[medium];
-        OFX::StringParam* info = fetchStringParam("processInfo");
+    auto setText = [this](const char* name, const std::string& text) {
+        if (!paramExists(name)) return;
+        OFX::StringParam* info = fetchStringParam(name);
         std::string cur;
         info->getValue(cur);
         if (cur != text) info->setValue(text);
-    }
+    };
+    setText("processInfo", kCrProcessInfo[proc]);
+    const bool viewed = !crRowIdle("mediumInfo", now);
+    show("mediumInfo", viewed);
+    setText("mediumInfo", viewed ? kCrMediumInfo[now.medium] : "");
 }
 
 void CreativeEffect::resetAll()
@@ -171,6 +175,25 @@ void CreativeEffect::resetAll()
             m_Sliders[i]->deleteAllKeys();
             m_Sliders[i]->setValue(def.*(kCrSliders[i].field));
         }
+    loadMedium();   // the response rows go back to the medium's own values, not to the monitor's
+}
+
+void CreativeEffect::loadMedium()
+{
+    int medium = 0;
+    for (int i = 0; i < kCrChoiceCount; ++i)
+        if (m_Choices[i] && !std::strcmp(kCrChoices[i].name, "medium")) m_Choices[i]->getValue(medium);
+    CreativeControls c;
+    creativeLoadMedium(c, medium);
+    for (int i = 0; i < kCrSliderCount; ++i)
+        if (m_Sliders[i] && !std::strncmp(kCrSliders[i].name, "medium", 6)
+            && std::strcmp(kCrSliders[i].name, "mediumAmount") != 0) {
+            m_Sliders[i]->deleteAllKeys();
+            m_Sliders[i]->setValue(c.*(kCrSliders[i].field));
+        }
+    for (int i = 0; i < kCrChoiceCount; ++i)
+        if (m_Choices[i] && !std::strcmp(kCrChoices[i].name, "mediumRoom")) m_Choices[i]->setValue(c.mediumRoom);
+    if (m_MediumLoaded) m_MediumLoaded->setValue(medium);
 }
 
 void CreativeEffect::beginEdit()
@@ -178,6 +201,8 @@ void CreativeEffect::beginEdit()
     if (!m_Ready) return;
     try {
         syncClip();
+        const CreativeControls c = readControls(timeLineGetTime());
+        if (c.medium > 0 && c.mediumLoaded != c.medium) loadMedium();   // a grade from before the response rows
         updateProcess();
         m_Badge.refresh(true);
     } catch (...) {
@@ -191,7 +216,7 @@ void CreativeEffect::changedClip(const OFX::InstanceChangedArgs&, const std::str
     m_Badge.refresh(false);
 }
 
-void CreativeEffect::changedParam(const OFX::InstanceChangedArgs&, const std::string& p_ParamName)
+void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const std::string& p_ParamName)
 {
     if (!m_Ready) return;
     if (p_ParamName == "version") {
@@ -199,6 +224,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs&, const std::st
         return;
     }
     if (p_ParamName == "creativeReset") resetAll();
+    if (p_ParamName == "medium" && p_Args.reason == OFX::eChangeUserEdit) loadMedium();
     else if (p_ParamName == "nodeInput") refreshInfo();
     else if (p_ParamName == "process" || p_ParamName == "medium" || p_ParamName == "print" || p_ParamName == "output")
         updateProcess();   // rows that depend on these choices
