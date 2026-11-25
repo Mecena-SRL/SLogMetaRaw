@@ -46,7 +46,7 @@ int main()
     id<MTLBuffer> out = [device newBufferWithLength:img[0].size() * 4 options:MTLResourceStorageModeShared];
     CreativeParallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < kCrProcessCount + 6; ++k) {
+    for (int k = 0; k < kCrProcessCount + 8; ++k) {
         CreativeControls c;
         c.process = k % kCrProcessCount;
         c.interval = 1;
@@ -72,6 +72,8 @@ int main()
         if (k == kCrProcessCount + 3) { c.process = kCrAnalog; c.analog = 9; c.sensor = 7; c.smear = 3; }   // CCD
         if (k == kCrProcessCount + 4) { c.device = kCrDevPhone; c.phoneCamera = 5; c.compression = 2; }   // codec, small
         if (k == kCrProcessCount + 5) { c.device = kCrDevCinema; c.cinemaCamera = 2; }   // line skipping
+        if (k == kCrProcessCount + 6) { c.process = kCrColourNegative; c.transfer = 1; c.medium = 3; }   // to VHS
+        if (k == kCrProcessCount + 7) { c.process = kCrAnalog; c.analog = 1; c.transfer = 4; }   // kinescope
         double t[3];
         creativeRecordTimes(c, t);
         const float* cpuIn[3];
@@ -89,10 +91,14 @@ int main()
         creativePrepare(p, c, W, H, 11, 8, 9, 3);
         std::vector<float> cpu(img[0].size());
         CreativeScratch scratch;
-        creativeRenderCPU(p, cpuIn, (size_t)W * 4, cpu.data(), (size_t)W * 4, serial, scratch, nullptr, &hist);
+        CreativeParams copy;
+        const bool transfer = creativePrepareTransfer(copy, c, W, H, 11);
+        creativeRenderCPU(p, cpuIn, (size_t)W * 4, cpu.data(), (size_t)W * 4, serial, scratch, nullptr, &hist,
+                          transfer ? &copy : nullptr);
         p.rowPixels = p.dstRowPixels = W;
+        copy.rowPixels = copy.dstRowPixels = W;
         if (!RunCreativeKernels((__bridge void*)queue, p, gpuIn, (float*)(__bridge void*)out, nullptr, nullptr,
-                                gpuHist)) {
+                                gpuHist, transfer ? &copy : nullptr)) {
             printf("KERNEL_FAILED %d\n", k);
             return 1;
         }

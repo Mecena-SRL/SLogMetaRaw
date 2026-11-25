@@ -103,6 +103,10 @@ static const CrChoiceDef kCrChoices[] = {
     { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
       "Quante copie separano la stampa dal negativo: ogni duplicato aggiunge grana e contrasto e toglie colore. "
       "Le copie viste in sala erano di solito di distribuzione", kGrPrint },
+    { "transfer", "Riversato su", &CreativeControls::transfer, kCrTransferNames, kCrTransferCount, kCrAll,
+      "La copia che se ne faceva: un telecinema su cassetta, una copia VHS di copia, un kinescopio su pellicola, un "
+      "film-out. Il risultato passa per quel supporto e ne prende i difetti, grana sopra grana. Nessuno = l'originale. "
+      "Non vale con Uscita Log", kGrView },
     { "medium", "Proiettato o visto su", &CreativeControls::medium, kCrMediumNames, kCrMediumCount, kCrAll,
       "Dove si guarda il risultato, dopo l'uscita: sala, proiettore di casa, televisore a tubo, monitor da regia, "
       "console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, luce, bianco e colore di quel "
@@ -311,7 +315,7 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     const bool log = creativeLogOut(c);
     const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
     if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;
-    if (!std::strcmp(name, "medium")) return log;
+    if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log;
     const bool none = log || c.medium <= 0 || c.medium >= kCrMediumCount;
     if (!std::strcmp(name, "mediumAmount") || !std::strcmp(name, "mediumInfo")) return none;
     const CrMediumRows rows = creativeMediumRows(c.medium);

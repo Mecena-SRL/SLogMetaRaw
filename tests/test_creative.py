@@ -479,5 +479,38 @@ class Creative(unittest.TestCase):
         self.assertLess(spread(razr), 0.25)
         self.assertGreater(spread(alexa), 0.4)
 
+    def test_a_copy_to_tape_takes_the_tape_s_softness_and_noise(self):
+        """A telecine to VHS: the colour picture passes through the tape, so fine stripes soften along the line and
+        a flat grey gets the tape's noise; with no copy the same picture is the original."""
+        w, h = 640, 480
+        rows = [[(0.8,) * 3 if (x // 2) % 2 else (0.2,) * 3 for x in range(w // 2)] + [(0.5,) * 3] * (w // 2)
+                for _ in range(h)]
+        ctl = {'process': NEGATIVE, 'grain': 0, 'noise': 0}
+        orig = self.device(rows, ctl, (w, h))
+        vhs = self.device(rows, dict(ctl, transfer=1), (w, h))
+        spread = lambda out: sum(abs(r[x + 2][1] - r[x][1]) for r in out[100:380] for x in range(60, 260)) / 56000  # noqa
+        flat = lambda out: [px[1] for r in out[100:380] for px in r[400:600]]  # noqa
+        sd = lambda v: math.sqrt(sum((a - sum(v) / len(v)) ** 2 for a in v) / len(v))  # noqa
+        self.assertLess(spread(vhs), 0.6 * spread(orig))
+        self.assertGreater(sd(flat(vhs)), sd(flat(orig)) + 0.003)
+
+    def test_a_kinescope_is_black_and_white_with_grain_on_top(self):
+        """A kinescope of a colour tape: no colour left, and the film's grain adds to the picture's."""
+        w, h = 160, 64
+        rows = [[(0.7, 0.3, 0.2)] * (w // 2) + [(0.2, 0.4, 0.7)] * (w // 2) for _ in range(h)]
+        ctl = {'process': ANALOG, 'analog': 1, 'noise': 0, 'wear': 0, 'heads': 0}
+        orig = self.tape(rows, ctl, (w, h))
+        kine = self.tape(rows, dict(ctl, transfer=4), (w, h))
+        chroma = lambda out: max(max(px) - min(px) for r in out[10:50] for px in r[10:70])  # noqa
+        self.assertGreater(chroma(orig), 0.1)
+        self.assertLess(chroma(kine), 0.02)
+        flat = [px[1] for r in kine[10:50] for px in r[100:150]]
+        m = sum(flat) / len(flat)
+        self.assertGreater(math.sqrt(sum((a - m) ** 2 for a in flat) / len(flat)), 0.005)
+
+    def test_log_output_ignores_the_copy(self):
+        ctl = {'process': NEGATIVE, 'output': 1, 'print': 0}
+        self.assertEqual(self.render(ctl, [ramp()]), self.render(dict(ctl, transfer=4), [ramp()]))
+
 if __name__ == '__main__':
     unittest.main()

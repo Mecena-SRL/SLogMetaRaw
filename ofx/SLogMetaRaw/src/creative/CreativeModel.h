@@ -22,7 +22,7 @@ extern const char* const kCrProcessInfo[kCrProcessCount];
 const int kCrNegativeCount = 20, kCrReversalCount = 6, kCrBWStockCount = 6, kCrSensitivityCount = 4, kCrFilterCount = 5,
           kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 15,
           kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 8,
-          kCrSensorCount = 10;
+          kCrSensorCount = 10, kCrTransferCount = 6;
 extern const char* const kCrNegativeNames[kCrNegativeCount];
 extern const char* const kCrReversalNames[kCrReversalCount];
 extern const char* const kCrBWStockNames[kCrBWStockCount];
@@ -40,6 +40,9 @@ extern const char* const kCrMediumNames[kCrMediumCount];
 extern const char* const kCrMediumInfo[kCrMediumCount];
 // The video camera's sensor (analog video): pickup tubes, CCD, MOS. Append only.
 extern const char* const kCrSensorNames[kCrSensorCount];
+// "Riversato su": what the finished picture was copied onto before it was seen (telecine, tape dub, kinescope,
+// film-out). Append only.
+extern const char* const kCrTransferNames[kCrTransferCount];
 
 // "Dispositivo": what took the picture. Manual = the process chosen by hand (every process); the others choose a
 // model, and film a manufacturer and stock, which set the process and its variant. Append only.
@@ -85,6 +88,8 @@ struct CreativeControls
     // (multiples of the sensor's own, 1 = typical)
     int sensor = 0;
     double lag = 1, comet = 1, smear = 1;
+    // the copy the picture went through before it was seen (0 none)
+    int transfer = 0;
     // colour
     double shadowHue = 200, shadowAmount = 0, highHue = 40, highAmount = 0, balance = 0, saturation = 1, density = 0;
 };
@@ -127,6 +132,9 @@ void creativeRecordTimes(const CreativeControls& c, double out[3]);
 
 // The engine's parameters for a W x H frame (the whole frame: no tiles), frame number `frame`, input encoding
 // (space, gamma) and source pixel aspect.
+// The second pass of a transfer (c.transfer): the parameters that take the finished picture (Rec.709 Gamma 2.4) through
+// the copy, the viewing medium included; false when there is none (or the output is the input encoding).
+bool creativePrepareTransfer(CreativeParams& p, const CreativeControls& c, int W, int H, int frame);
 // history: how many of the frames before this one the host passes (creativeHistory or fewer, at the clip's start).
 void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma,
                      int history = 0);
