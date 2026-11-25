@@ -46,7 +46,7 @@ int main()
     id<MTLBuffer> out = [device newBufferWithLength:img[0].size() * 4 options:MTLResourceStorageModeShared];
     CreativeParallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < kCrProcessCount + 4; ++k) {
+    for (int k = 0; k < kCrProcessCount + 6; ++k) {
         CreativeControls c;
         c.process = k % kCrProcessCount;
         c.interval = 1;
@@ -70,6 +70,8 @@ int main()
         if (k == kCrProcessCount + 1) { c.process = kCrAnalog; c.analog = 2; c.wear = 1; c.heads = 1; }
         if (k == kCrProcessCount + 2) { c.process = kCrAnalog; c.analog = 1; c.sensor = 5; c.comet = 2; }   // tube
         if (k == kCrProcessCount + 3) { c.process = kCrAnalog; c.analog = 9; c.sensor = 7; c.smear = 3; }   // CCD
+        if (k == kCrProcessCount + 4) { c.device = kCrDevPhone; c.phoneCamera = 5; c.compression = 2; }   // codec, small
+        if (k == kCrProcessCount + 5) { c.device = kCrDevCinema; c.cinemaCamera = 2; }   // line skipping
         double t[3];
         creativeRecordTimes(c, t);
         const float* cpuIn[3];

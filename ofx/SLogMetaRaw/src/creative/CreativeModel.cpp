@@ -566,8 +566,16 @@ std::string creativeDeviceInfo(const CreativeControls& c0)
     if (c.device == kCrDevVideo)
         return std::string("Nastro: ") + kCrAnalogNames[pick(c.analog, kCrAnalogCount)] + ". Sensore: "
                + kCrSensorNames[pick(c.sensor, kCrSensorCount)];
-    if (c.device == kCrDevCinema || c.device == kCrDevPhone)
-        return std::string("Resa come: ") + kCrDigitalNames[pick(c.digital, kCrDigitalCount)];
+    if (c.device == kCrDevCinema || c.device == kCrDevPhone) {
+        const CrDigitalCamera& m = c.device == kCrDevCinema ? kCrCinemaCameras[pick(c.cinemaCamera, kCrCinemaCameraCount)]
+                                                            : kCrPhoneCameras[pick(c.phoneCamera, kCrPhoneCameraCount)];
+        static const char* const subs[4] = { "4:4:4", "4:2:2", "4:2:0", "4:1:1" };
+        std::string r = std::string("Sensore: ") + (m.lines > 0 ? std::to_string(m.lines) + " righe" : "piena risoluzione");
+        if (m.alias) r += " con aliasing";
+        r += m.quality > 0 ? ". Codec: qualità " + std::to_string(m.quality) + ", colore " + subs[std::max(0, std::min(m.sub, 3))]
+                           : ". Codec: invisibile";
+        return r + ". Curva e colore: " + kCrDigitalNames[pick(c.digital, kCrDigitalCount)];
+    }
     const CrStock* st = creativeStock(c);
     if (!st) return "";
     const CrCamera& cam = kCrCameras[pick(c.filmCamera, kCrCameraCount)];
@@ -984,6 +992,30 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         p.chromaBlockX = comp > 0 ? std::max(1, (int)lround(cam.cbx * src)) : 1;
         p.chromaBlockY = comp > 0 ? std::max(1, (int)lround(cam.cby * src)) : 1;
         p.levels = cam.banding * comp > 0 ? (float)(255.0 / (1.0 + 3.0 * cam.banding * comp)) : 0.0f;
+        // a modelled device: its own sensor size, sharpening and codec instead of the row's blurs
+        const CrDigitalCamera* dev = c.device == kCrDevCinema ? &kCrCinemaCameras[pick(c.cinemaCamera, kCrCinemaCameraCount)]
+                                     : (c.device == kCrDevPhone ? &kCrPhoneCameras[pick(c.phoneCamera, kCrPhoneCameraCount)]
+                                                                : nullptr);
+        if (dev) {
+            p.dig = 1;
+            const double aspect = (double)W / H;
+            p.dH = dev->lines > 0 && dev->lines < H ? dev->lines : H;
+            p.dW = p.dH == H ? W : std::max(1, (int)lround(p.dH * aspect));
+            p.dAlias = dev->alias;
+            static const int subX[4] = { 1, 2, 2, 4 }, subY[4] = { 1, 1, 2, 1 };
+            const int sb = std::max(0, std::min(dev->sub, 3));
+            p.cW = (p.dW + subX[sb] - 1) / subX[sb];
+            p.cH = (p.dH + subY[sb] - 1) / subY[sb];
+            p.dSharp = (float)(dev->sharp * clampd(1.0 + c.sharpness, 0, 2));
+            const double qual = dev->quality;
+            p.dQ = qual > 0 ? (float)((qual < 50 ? 50.0 / qual : 2.0 - qual / 50.0) * comp) : 0.0f;
+            // noise: the device's, made at the picture's size and averaged over each sensor pixel
+            const double fp = dev->alias ? 1.0 : (double)W / p.dW;
+            p.noise = (float)(p.noise * dev->noise * fp);
+            p.chromaNoise = (float)(p.chromaNoise * dev->noise * fp);
+            p.sharp = 0.0f;
+            p.chromaBlockX = p.chromaBlockY = 1;
+        }
         film = false;
         pushes = false;
         break;

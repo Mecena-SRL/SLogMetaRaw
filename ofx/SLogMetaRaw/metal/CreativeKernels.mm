@@ -18,6 +18,7 @@ namespace {
 // Same layout as in Creative.metal.
 struct CrBlur { int w, h, axis, shift; float sigma; };
 struct CrGrid { int s, w, h, c; };
+struct CrDig { int w, h, chroma; };
 
 struct Scratch
 {
@@ -161,6 +162,9 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
         s->planes.erase("T");
     }
     id<MTLBuffer> V = signal ? P("V", 3 * N) : E, T = signal ? P("T", 4 * N) : E;
+    const size_t nY = (size_t)p.dW * p.dH, nC = (size_t)p.cW * p.cH;
+    id<MTLBuffer> D = p.dig != 0 ? P("D", 2 * nY + 4 * nC) : E;   // Y, sharpened Y, Cb, Cr, coded Cb, Cr
+    if (p.dig == 0) s->planes.erase("D");
 
     id<MTLCommandBuffer> commands = [queue commandBuffer];
     commands.label = @"SLogMetaRawCreative";
@@ -208,6 +212,30 @@ bool RunCreativeKernels(void* p_CmdQ, const CreativeParams& p_Params, const floa
             e.buf(V, 0); e.buf(T, 1); e.bytes(q, 2); e.grid(ps, q.H, 1);
             ps = e.use("cr_tape_out_k");
             e.buf(in[0], 0); e.buf(out, 1); e.buf(T, 2); e.bytes(q, 3); e.grid(ps, q.W, q.H);
+            return;
+        }
+        if (q.dig != 0) {   // a digital camera: the sensor's size, the ISP's sharpening, the codec, scaled back up
+            const size_t cOff = 2 * nY;
+            const CrDig dl = { q.dW, q.dH, 0 }, dc = { q.cW, q.cH, 1 };
+            ps = e.use("cr_dig_down_k");
+            e.buf(V, 0); e.buf(D, 1, 0); e.bytes(dl, 2); e.bytes(q, 3); e.grid(ps, q.dW, q.dH);
+            e.buf(V, 0, N); e.buf(D, 1, cOff); e.bytes(dc, 2); e.grid(ps, q.cW, q.cH);
+            e.buf(V, 0, 2 * N); e.buf(D, 1, cOff + nC); e.grid(ps, q.cW, q.cH);
+            ps = e.use("cr_dig_sharp_k");
+            e.buf(D, 0, 0); e.buf(D, 1, nY); e.bytes(q, 2); e.grid(ps, q.dW, q.dH);
+            size_t Yf = nY, Cb = cOff, Cr = cOff + nC;
+            if (q.dQ > 0.0f) {
+                ps = e.use("cr_dig_dct_k");
+                e.buf(D, 0, nY); e.buf(D, 1, 0); e.bytes(dl, 2); e.bytes(q, 3); e.grid(ps, (q.dW + 7) / 8, (q.dH + 7) / 8);
+                e.buf(D, 0, cOff); e.buf(D, 1, cOff + 2 * nC); e.bytes(dc, 2); e.grid(ps, (q.cW + 7) / 8, (q.cH + 7) / 8);
+                e.buf(D, 0, cOff + nC); e.buf(D, 1, cOff + 3 * nC); e.grid(ps, (q.cW + 7) / 8, (q.cH + 7) / 8);
+                Yf = 0;
+                Cb = cOff + 2 * nC;
+                Cr = cOff + 3 * nC;
+            }
+            ps = e.use("cr_dig_out_k");
+            e.buf(in[0], 0); e.buf(out, 1); e.buf(D, 2, Yf); e.buf(D, 3, Cb); e.buf(D, 4, Cr); e.bytes(q, 5);
+            e.grid(ps, q.W, q.H);
             return;
         }
         size_t Y = 0, Yb = N;   // offsets into T, or V for Yb when the luma is filtered along the lines only

@@ -325,12 +325,13 @@ class Creative(unittest.TestCase):
         self.assertGreater(max(abs(sum(a) - sum(b)) for a, b in zip(vision, kodachrome)), 0.1)
 
     def test_a_device_is_the_process_it_names(self):
-        """A model picks the engine's row: the iPhone 3GS renders as the manual 2008 phone row, the Panasonic VHS
-        camera as the VHS SP tape with that camera's faults."""
+        """A model picks the engine's row: the Panasonic VHS camera renders as the VHS SP tape with that camera's
+        faults and sensor. A digital model adds its own pipeline (sensor size, codec) to its row: not the row alone."""
         def same(a, b):
             self.assertLess(max(abs(u - v) for p, q in zip(a, b) for u, v in zip(p, q)), 1e-5)
-        same(self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)]),
-             self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)]))
+        phone = self.render({'device': 4, 'phoneCamera': 0}, [ramp(tinted=True)])
+        row = self.render({'process': DIGITAL, 'digital': 6}, [ramp(tinted=True)])
+        self.assertGreater(max(abs(u - v) for p, q in zip(phone, row) for u, v in zip(p, q)), 0.01)
         same(self.render({'device': 2, 'videoCamera': 5}, [ramp(tinted=True)]),
              self.render({'process': ANALOG, 'analog': 1, 'wear': 0.2, 'heads': 0.35, 'instability': 0.3, 'sensor': 7},
                          [ramp(tinted=True)]))
@@ -443,6 +444,40 @@ class Creative(unittest.TestCase):
             row = self.tape(lines, dict(self.QUIET, sensor=sensor, lag=0, comet=0), (w, h))[4]
             return sum(abs(px[0] - px[2]) + abs(px[1] - 0.5 * (px[0] + px[2])) for px in row[100:600]) / 500
         self.assertGreater(chroma(5), chroma(0) + 0.02)
+
+    # ---- digital devices, emulated
+
+    def device(self, rows, controls, size):
+        """Rows (top first, Gamma 2.4 Rec.709) through a digital device; rows out, top first."""
+        w, h = size
+        px = [rows[h - 1 - y][x] for y in range(h) for x in range(w)]
+        out = self.render(dict({'noise': 0}, **controls), [px], size=size, enc=(1, 3))
+        return [out[(h - 1 - y) * w: (h - y) * w] for y in range(h)]
+
+    def test_a_codec_leaves_its_8x8_blocks(self):
+        """The DCT's quantiser: on a smooth picture the steps between neighbours are larger across the 8x8 block
+        edges than inside the blocks, and grow with the compression."""
+        w, h = 256, 64
+        rows = [[(0.3 + 0.4 * x / w + 0.03 * math.sin(y * 0.2),) * 3 for x in range(w)] for y in range(h)]
+        def jumps(comp):   # the GoPro: 1080 lines, so no scaling here and the blocks sit on the pixels
+            out = self.device(rows, {'device': 4, 'phoneCamera': 3, 'compression': comp, 'sharpness': -1}, (w, h))
+            edge = [abs(r[x + 1][1] - r[x][1]) for r in out for x in range(7, w - 1, 8)]
+            inner = [abs(r[x + 1][1] - r[x][1]) for r in out for x in range(w - 1) if x % 8 not in (7, 0, 6)]
+            return sum(edge) / len(edge), sum(inner) / len(inner)
+        e0, i0 = jumps(0)
+        e2, i2 = jumps(2)
+        self.assertGreater(e2, 1.3 * i2)
+        self.assertGreater(e2 - i2, e0 - i0 + 0.002)
+
+    def test_a_tiny_phone_sensor_loses_the_fine_detail(self):
+        """A 176x144 phone keeps almost nothing of 1-pixel stripes; a camera at the picture's own size keeps them."""
+        w, h = 640, 360
+        rows = [[(0.8,) * 3 if x % 2 else (0.2,) * 3 for x in range(w)] for _ in range(h)]
+        spread = lambda out: max(px[1] for px in out[180][200:400]) - min(px[1] for px in out[180][200:400])  # noqa
+        razr = self.device(rows, {'device': 4, 'phoneCamera': 5, 'compression': 0, 'sharpness': -1}, (w, h))
+        alexa = self.device(rows, {'device': 3, 'cinemaCamera': 0}, (w, h))
+        self.assertLess(spread(razr), 0.25)
+        self.assertGreater(spread(alexa), 0.4)
 
 if __name__ == '__main__':
     unittest.main()

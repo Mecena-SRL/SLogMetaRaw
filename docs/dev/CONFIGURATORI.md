@@ -226,6 +226,10 @@ CCD smear da `cr_smear_col`, MOS), falso colore in `cr_tape_row`; tabella `kSens
 `cr_smear_k`, `cr_sensor_k`). Verificato: test CPU (scia nelle ombre, cometa, smear per colonna, falso colore), sintassi
 Metal simulata; parità Metal solo in CI macOS. Aperto: campi interlacciati nel movimento, otturatore a righe del tubo,
 taratura su riprese vere.
+Digitali per modello (25/11/2026, fase 3): `cr_dig_*` in `math/Creative.h` (sensore, ISP, DCT 8x8 JPEG, uscita),
+campi del modello in `CrDigitalCamera` (`CreativePresets.h`), kernel Metal `cr_dig_*_k`. Verificato: test CPU (blocchi
+8x8 crescono con la compressione, il RAZR perde il dettaglio fine), sintassi Metal simulata; parità Metal solo in CI
+macOS. Aperto: rolling shutter, AE/AWB, GOP; valori da tarare su clip vere.
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per

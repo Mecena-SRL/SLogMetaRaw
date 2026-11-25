@@ -4,6 +4,7 @@
 
 struct CrBlur { int w, h, axis, shift; float sigma; };
 struct CrGrid { int s, w, h, c; };
+struct CrDig { int w, h, chroma; };
 
 // The three records, each from its own frame (the same buffer when the records are simultaneous).
 kernel void cr_record_k(const device float* s0 [[buffer(0)]], const device float* s1 [[buffer(1)]],
@@ -102,6 +103,49 @@ kernel void cr_signal_out_k(const device float* src [[buffer(0)]], device float*
     const int x = (int)id.x, y = (int)id.y;
     if (x >= p.W || y >= p.H) return;
     const SMf3 o = cr_signal_at(Y, Yb, Cb, Cr, x, y, p);
+    const int d = (y * p.dstRowPixels + x) * 4;
+    dst[d] = o.x;
+    dst[d + 1] = o.y;
+    dst[d + 2] = o.z;
+    dst[d + 3] = src[(y * p.rowPixels + x) * 4 + 3];
+}
+
+// Digital camera: a plane at the sensor's size (one thread per sensor pixel), the ISP's sharpening, the codec (one
+// thread per 8x8 block), then every output pixel.
+kernel void cr_dig_down_k(const device float* P [[buffer(0)]], device float* out [[buffer(1)]],
+                          constant CrDig& d [[buffer(2)]], constant CreativeParams& p [[buffer(3)]],
+                          uint2 id [[thread_position_in_grid]])
+{
+    const int i = (int)id.x, j = (int)id.y;
+    if (i >= d.w || j >= d.h) return;
+    out[j * d.w + i] = cr_dig_down(P, i, j, d.w, d.h, p);
+}
+
+kernel void cr_dig_sharp_k(const device float* Y [[buffer(0)]], device float* out [[buffer(1)]],
+                           constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+    const int i = (int)id.x, j = (int)id.y;
+    if (i >= p.dW || j >= p.dH) return;
+    out[j * p.dW + i] = cr_dig_sharp(Y, i, j, p);
+}
+
+kernel void cr_dig_dct_k(const device float* in [[buffer(0)]], device float* out [[buffer(1)]],
+                         constant CrDig& d [[buffer(2)]], constant CreativeParams& p [[buffer(3)]],
+                         uint2 id [[thread_position_in_grid]])
+{
+    const int bx = (int)id.x, by = (int)id.y;
+    if (bx >= (d.w + 7) / 8 || by >= (d.h + 7) / 8) return;
+    cr_dig_dct(in, out, d.w, d.h, bx, by, d.chroma, p);
+}
+
+kernel void cr_dig_out_k(const device float* src [[buffer(0)]], device float* dst [[buffer(1)]],
+                         const device float* Y [[buffer(2)]], const device float* Cb [[buffer(3)]],
+                         const device float* Cr [[buffer(4)]], constant CreativeParams& p [[buffer(5)]],
+                         uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x, y = (int)id.y;
+    if (x >= p.W || y >= p.H) return;
+    const SMf3 o = cr_dig_out(Y, Cb, Cr, x, y, p);
     const int d = (y * p.dstRowPixels + x) * 4;
     dst[d] = o.x;
     dst[d + 1] = o.y;
