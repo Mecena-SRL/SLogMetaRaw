@@ -5,7 +5,8 @@
 // codes: 0 DaVinci Intermediate, 1 Linear, 2 Gamma 2.2, 3 Gamma 2.4, 4 Gamma 2.6,
 //        5 Rec.709 (BT.709 OETF), 6 sRGB, 7 SLog, 8 SLog2, 9 SLog3, 10 ACEScct,
 //        11 V-Log, 12 Apple Log, 13 D-Log M, 14 D-Log, 15 F-Log, 16 F-Log2, 17 N-Log, 18 C-Log2, 19 C-Log3,
-//        20 LogC3 (EI 800), 21 LogC4, 22 Log3G10, 23 BMD Film Gen5, 24 HLG (18% grey at 38%, BT.2408)
+//        20 LogC3 (EI 800), 21 LogC4, 22 Log3G10, 23 BMD Film Gen5, 24 HLG (18% grey at 38%, BT.2408),
+//        25 Cineon (Kodak printing density: black 95, white 685, 0.002 D per code, negative gamma 0.6)
 // Codes 11+ are the other cameras' curves, each from its maker's published formula (sources in
 // docs/CAMERAS.md). Canon's and Apple's are defined on the legal range, the others on full code values.
 
@@ -73,6 +74,14 @@ SM_FN float sm_dlogm_enc(float y) {
     while (SM_DLOGM[i] <= l) i++;
     return ((float)i + (l - SM_DLOGM[i - 1]) / (SM_DLOGM[i] - SM_DLOGM[i - 1])) / 16.0f;
 }
+// Cineon: 300 codes per decade of exposure, linear 1 at code 685, 0 at code 95 (the offset keeps black at 0).
+#define SM_CINEON_OFF 0.010797752f   // 10^((95 - 685) / 300)
+SM_FN float sm_cineon_enc(float y) {
+    return (685.0f + 300.0f * SM_LOG10(SM_MAX(y * (1.0f - SM_CINEON_OFF) + SM_CINEON_OFF, 1e-6f))) / 1023.0f;
+}
+SM_FN float sm_cineon_dec(float x) {
+    return (SM_POW(10.0f, (x * 1023.0f - 685.0f) / 300.0f) - SM_CINEON_OFF) / (1.0f - SM_CINEON_OFF);
+}
 // HLG: BT.2100 inverse OETF scaled so that BT.2408's 38% signal is 18% grey
 #define SM_HLG_A 0.17883277f
 #define SM_HLG_B 0.28466892f
@@ -116,6 +125,7 @@ SM_FN float sm_encode(float y, int g) {
     if (g == 23) return y < 0.005f ? 8.283605932402494f * y + 0.09246575342465753f
                                    : 0.08692876065491224f * SM_LOG(y + 0.005494072432257808f) + 0.5300133392291939f;
     if (g == 24) return sm_hlg_enc(y);
+    if (g == 25) return sm_cineon_enc(y);
     return y;
 }
 SM_FN float sm_decode(float x, int g) {
@@ -147,5 +157,6 @@ SM_FN float sm_decode(float x, int g) {
     if (g == 23) return x < 0.13388378308667f ? (x - 0.09246575342465753f) / 8.283605932402494f
                                                  : SM_EXP((x - 0.5300133392291939f) / 0.08692876065491224f) - 0.005494072432257808f;
     if (g == 24) return sm_hlg_dec(x);
+    if (g == 25) return sm_cineon_dec(x);
     return x;
 }

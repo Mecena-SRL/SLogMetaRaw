@@ -81,7 +81,7 @@ InputOrigin CreativeEffect::resolveInput(int& space, int& gamma) const
 {
     int input = 0;
     m_NodeInput->getValue(input);
-    if (input > 0 && input < kNodeInputCount) {
+    if (input > 0 && input < kCreativeInputCount) {
         space = kNodeInputPairs[input][0];
         gamma = kNodeInputPairs[input][1];
         return InputOrigin::Declared;

@@ -20,7 +20,7 @@ MOSAIC = (5, 6)               # Autochrome, Dufaycolor: colour grains even on gr
 EDGED = (9, 10, 12, 13)       # mirror flip or a border at the edges
 
 
-def ramp(shift=0, tinted=False):
+def ramp(shift=0, tinted=False, gamma=GAMMA):
     """Encoded pixels: twelve 8-px steps from -6 to +6 stops, optionally coloured bars sliding by `shift`."""
     img = []
     for y in range(H):
@@ -29,7 +29,7 @@ def ramp(shift=0, tinted=False):
             tint = (1.0, 1.0, 1.0)
             if tinted:
                 tint = (1.0, 0.7, 0.5) if ((x + shift) // 6) % 2 else (0.5, 0.75, 1.0)
-            img.append([dm.encode1(0.18 * 2 ** ev * c, GAMMA) for c in tint])
+            img.append([dm.encode1(0.18 * 2 ** ev * c, gamma) for c in tint])
     return img
 
 
@@ -38,10 +38,10 @@ class Creative(unittest.TestCase):
     def setUpClass(cls):
         cls.exe = test_bin('creative_test')
 
-    def render(self, controls, frames, frame=7, threads=3, size=(W, H)):
+    def render(self, controls, frames, frame=7, threads=3, size=(W, H), enc=(SPACE, GAMMA)):
         if not self.exe:
             self.skipTest('binari di test non compilabili qui')
-        head = '%d %d %d %d %d %d %d\n' % (size[0], size[1], SPACE, GAMMA, frame, len(frames), threads)
+        head = '%d %d %d %d %d %d %d\n' % (size[0], size[1], enc[0], enc[1], frame, len(frames), threads)
         ctl = ' '.join('%s=%s' % kv for kv in controls.items()) + '\n'
         body = ''.join('%.7f %.7f %.7f\n' % tuple(px) for f in frames for px in f)
         res = subprocess.run([self.exe], input=head + ctl + body, capture_output=True, text=True, timeout=120)
@@ -91,6 +91,19 @@ class Creative(unittest.TestCase):
                 base = self.steps(self.render({'process': proc}, [ramp()]))[6]
                 up = self.steps(self.render({'process': proc, 'exposure': 1}, [ramp()]))[6]
                 self.assertGreater(sum(up), sum(base) + 0.05)
+
+    def test_inputs_after_a_grade_read_the_same_light(self):
+        """Rec.709, DaVinci WG, ACES (cct, cg, 2065-1) and Cineon: the same grey scale, encoded in each, develops
+        into the same print as from S-Log3 (each decodes to the same scene light, grey 18%)."""
+        self.assertAlmostEqual(dm.encode1(0.18, 25), 468.2 / 1023, delta=0.001)   # Cineon grey, Kodak's 470
+        self.assertAlmostEqual(dm.decode1(dm.encode1(0.18, 5), 5), 0.18, places=6)
+        base = self.steps(self.render({'process': NEGATIVE}, [ramp()]))
+        for enc in ((0, 0), (1, 5), (10, 10), (10, 1), (9, 1), (1, 25)):
+            with self.subTest(input=enc):
+                got = self.steps(self.render({'process': NEGATIVE}, [ramp(gamma=enc[1])], enc=enc))
+                for a, b in zip(base[1:-1], got[1:-1]):
+                    for c in range(3):
+                        self.assertAlmostEqual(a[c], b[c], delta=0.01)
 
     def test_black_and_white_is_neutral(self):
         for px in self.render({'process': BW, 'filter': 3}, [ramp(tinted=True)]):

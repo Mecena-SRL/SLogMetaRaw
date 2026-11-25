@@ -37,6 +37,7 @@ LC4_A, LC4_B, LC4_C = (2 ** 18 - 16) / 117.45, (1023 - 95) / 1023, 95 / 1023
 LC4_S = 7 * math.log(2) * 2 ** (7 - 14 * LC4_C / LC4_B) / (LC4_A * LC4_B)
 LC4_T = (2 ** (14 * (-LC4_C / LC4_B) + 6) - 64) / LC4_A
 HLG_A, HLG_B, HLG_C = 0.17883277, 0.28466892, 0.55991073
+CINEON_OFF = 10 ** ((95 - 685) / 300)             # Cineon black (code 95) at linear 0
 HLG_GREY = 0.18 / (0.38 * 0.38 / 3)          # BT.2408: 38% HLG signal = 18% grey
 CINE = {15: (0.555556, 0.009468, 0.344676, 0.790453, 8.735631, 0.092864, 0.00089),     # F-Log
         16: (5.555556, 0.064829, 0.245281, 0.384316, 8.799461, 0.092864, 0.000889),    # F-Log2
@@ -86,6 +87,7 @@ def encode_camera(y, g):
     if g == 24:
         e = max(y, 0.0) / HLG_GREY
         return math.sqrt(3 * e) if e <= 1 / 12 else HLG_A * math.log(12 * e - HLG_B) + HLG_C
+    if g == 25: return (685 + 300 * math.log10(max(y * (1 - CINEON_OFF) + CINEON_OFF, 1e-6))) / 1023
     return y
 
 
@@ -117,6 +119,7 @@ def decode_camera(x, g):
     if g == 24:
         e = x * x / 3 if x <= 0.5 else (math.exp((x - HLG_C) / HLG_A) + HLG_B) / 12
         return e * HLG_GREY
+    if g == 25: return (10 ** ((x * 1023 - 685) / 300) - CINEON_OFF) / (1 - CINEON_OFF)
     return x
 
 

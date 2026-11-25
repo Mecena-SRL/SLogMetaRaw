@@ -52,9 +52,10 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
     for (const CrChoiceDef& c : kCrChoices)
         defineChoice(d, page, c.name, c.label, c.options, c.count, CreativeControls().*(c.field), c.hint,
                      groups[c.group]);
-    defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kNodeInputCount, 0,
-                 "Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Va dopo Log MetaRaw: "
-                 "l'uscita è Rec.709 Gamma 2.4, o la stessa codifica con Uscita Log",
+    defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kCreativeInputCount, 0,
+                 "Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Anche dopo un grade: "
+                 "Rec.709 (grigio 18% a 0,41), DaVinci WG, ACES (cct, cg, 2065-1), Cineon. L'uscita è Rec.709 "
+                 "Gamma 2.4, o la stessa codifica con Uscita Log",
                  proc);
 
     for (const CrSliderDef& s : kCrSliders) {
