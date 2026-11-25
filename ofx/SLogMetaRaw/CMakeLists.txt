@@ -198,7 +198,7 @@ if(SLOGMETARAW_BUILD_TESTS)
   slog_test(creative_test "${REPO_ROOT}/tests/creative_test.cpp" src/creative/CreativeEngine.cpp src/creative/CreativeModel.cpp)
   slog_test(noise_test "${REPO_ROOT}/tests/noise_test.cpp" src/noise/NoiseEngine.cpp src/noise/NoiseProfiles.cpp)
   slog_test(audio_test "${REPO_ROOT}/tests/audio_test.cpp" "${REPO_ROOT}/audio/src/AudioEngine.cpp")   # Log MetaRaw Audio
-  target_include_directories(audio_test PRIVATE "${REPO_ROOT}/audio/src")
+  target_include_directories(audio_test PRIVATE "${REPO_ROOT}/audio/src" "${REPO_ROOT}/audio/vst3")
   if(WIN32)
     set(_child ${_common}/ChildWin.cpp)
   else()

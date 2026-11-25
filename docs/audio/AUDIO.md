@@ -54,6 +54,23 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Banco**: RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604.
 - **Ascolto**: radio a valvole, radiolina a transistor, juke-box Wurlitzer 1015, TV CRT, sala (curva X).
 
+## Cosa va con cosa (`audio/vst3/AuParams.h`)
+
+Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
+incompatibili alla prima scelta valida.
+
+- **Ripresa**: registratore (diviso per famiglia) → microfono → supporto → riduzione rumore. La prima voce di microfono,
+  supporto e riduzione è quella del registratore e dice cos'è («Del registratore · Nastro ¼" · 19 cm/s»); seguono le
+  alternative. Supporti: solo quelli che il registratore accetta (un Nagra non registra su VHS). Microfoni: usciti entro
+  15 anni dal registratore; la tromba acustica solo sul fonografo, che non ne ha altre.
+- **Mix e supporto**: banco → supporto del master → riduzione rumore → riversaggio. Il master deve essere in uso negli
+  anni del banco (fino a 25 dopo); il riversaggio va su supporti ancora in uso quando nasce il master; *Copie* si
+  attiva solo con un riversaggio.
+- **Riduzione rumore**: Dolby A sulle bobine, Dolby B e C sulle cassette, dbx su entrambe, e non prima dell'anno del
+  registratore o del banco (più la loro vita).
+- Gli anni sono campi delle tabelle (`year`, `from`/`to`). Gli id e i valori salvati non cambiano: un progetto con una
+  combinazione oggi esclusa si apre com'era e il menu la mostra in fondo.
+
 **Stato dei valori:** stime parametriche da specifiche pubblicate e descrizioni d'epoca [gen], non misure dei prodotti.
 Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velocità di picco in %.
 
@@ -65,8 +82,9 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Implementato e verificato: plugin VST3 (validatore Steinberg 94/94 su Linux), pannello aperto e fotografato nell'host
   VST3 di prova dell'SDK (editorhost), job CI `audio` su Linux, macOS e Windows, pkg Mac e setup Windows.
 - Incerto: comportamento in Fairlight (mai caricato in Resolve), build Mac e Windows finché la CI non passa.
-- Limiti noti: i menu non si filtrano per dispositivo (VST3 ha liste fisse), il supporto scelto vale anche se il
-  registratore non lo usava; cambiare un menu durante la riproduzione può dare un piccolo scatto.
+- Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
+  coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
+- Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.
 - Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
   (fase 4). Dolby come compander,
   isteresi del nastro, distorsione di tracciamento del vinile, sibilanti della banda ottica.

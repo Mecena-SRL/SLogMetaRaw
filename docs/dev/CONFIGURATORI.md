@@ -257,4 +257,6 @@ e posa letta davvero), velocità su GPU reale.
 Log MetaRaw Audio (25/11/2026, rilasciato nella 4.2.0): simulatore di registrazione e mix d'epoca per Fairlight. Decisioni di
 Ivan: due plugin («Ripresa» per le tracce, «Mix e supporto» per bus e master) sullo stesso motore, preset con nomi
 reali e interruttore per ogni stadio. Fatto: motore e tabelle in `audio/src/`, test; plugin VST3 con pannello (`audio/vst3/`),
-CI e installer. Deciso: niente AU (Fairlight carica il VST3 anche su Mac). Aperto: prova in Fairlight, taratura. Dettagli: `docs/audio/AUDIO.md`.
+CI e installer. Deciso: niente AU (Fairlight carica il VST3 anche su Mac). Menu coerenti (richiesta di Ivan, 25/11/2026):
+registratore → microfono → supporto → riduzione, banco → master → riversaggio, filtrati per compatibilità e anno nel
+pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Aperto: prova in Fairlight, taratura. Dettagli: `docs/audio/AUDIO.md`.

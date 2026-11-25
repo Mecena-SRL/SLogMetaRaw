@@ -2,6 +2,12 @@
 
 ## In sviluppo
 
+- **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra, come nel
+  Creative. In *Ripresa* i registratori sono divisi per famiglia; microfono, supporto e riduzione rumore mostrano per
+  prima la dotazione del registratore («Del registratore · Nastro ¼" · 19 cm/s») e poi solo le alternative compatibili:
+  un Nagra non registra su VHS, il Dolby B va sulle cassette. In *Mix e supporto* il banco decide i supporti del master
+  dell'epoca, il master decide su cosa si può riversare, *Copie* si attiva con un riversaggio. I progetti salvati non
+  cambiano.
 - **Creative, peli, polvere e graffi più veri**: il pelo nel finestrino non è più una riga nera disegnata. Si
   assottiglia verso la punta, ha densità irregolare, ombra sfocata come sulla pellicola (più su Super 8 e sulle copie)
   e una curva morbida; a volte è arricciato o è una fibra di lanugine a due fili. La polvere ha bordi irregolari,

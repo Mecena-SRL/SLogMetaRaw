@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Log MetaRaw Audio engine (audio/src): every preset renders finite and deterministic, switches really bypass, and
-// each stage does what its table says. Run by tests/test_audio.py; prints one line per failure, exit 1 on any.
-#include "AudioEngine.h"
+// each stage does what its table says; the menus offer only what fits together. Run by tests/test_audio.py; prints one line per failure, exit 1 on any.
+#include "AuParams.h"
 
 #include <algorithm>
 #include <cmath>
@@ -226,6 +226,54 @@ int main()
         float* rest[2] = { split[0].data() + 4800, split[1].data() + 4800 };
         e.process(rest, 4800);
         check(split == whole, "prepare keeps the running state");
+    }
+
+    // What goes with what (AuParams.h): every recorder's own parts fit it, the menus never offer a mismatch, and a
+    // changed parent drags its children back into range.
+    {
+        auto has = [](const std::vector<int>& list, int x) { return std::find(list.begin(), list.end(), x) != list.end(); };
+        double v[kPCount];
+        auto reset = [&](bool mix) {
+            for (int i = 0; i < kPCount; ++i) v[i] = auDefault(AuParamId(i), mix);
+        };
+        for (int fam = 0; fam < int(std::size(kAuFamilies)); ++fam)
+            for (int m = 0; m < int(kAuFamilies[fam].count); ++m) {
+                const AuDevice& d = kAuFamilies[fam].devices[m];
+                reset(false);
+                v[kPDevice] = auDeviceIndex(fam, m);
+                check(kAuMics[d.mic].year <= d.year + kAuDeviceLife, "device mic in its era", d.name);
+                check(auNRFits(d.nr, d.medium, d.year + kAuDeviceLife), "device nr fits its medium", d.name);
+                check(auCoerce(v, false).empty(), "device defaults fit", d.name);
+                for (int med : auAllowed(kPMedium, v, false))
+                    check(med == 0 || ((d.media >> med) & 1), "medium menu only the device's", d.name);
+                for (int mic : auAllowed(kPMic, v, false))
+                    check(mic == 0 || (mic != 1 && kAuMics[mic].year <= d.year + kAuDeviceLife), "mic menu in era", d.name);
+            }
+        reset(false);
+        v[kPDevice] = auDeviceIndex(0, 1);   // Nagra III: reels only, never a VHS
+        check(!has(auAllowed(kPMedium, v, false), 13), "no VHS in a Nagra");
+        check(auAllowed(kPMic, v, false).size() > 3, "Nagra offers microphones");
+        v[kPMedium] = 1;
+        check(has(auAllowed(kPNR, v, false), 2) && !has(auAllowed(kPNR, v, false), 3), "reel takes Dolby A, not B");
+        v[kPNR] = 2;   // Dolby A
+        v[kPDevice] = auDeviceIndex(2, 2);   // → Walkman: medium and NR fall back to its own
+        auto moved = auCoerce(v, false);
+        check(v[kPMedium] == 0 && v[kPNR] == 0 && moved.size() == 2, "coerce on recorder change");
+        v[kPDevice] = auDeviceIndex(4, 0);   // Edison: only its horn
+        check(auAllowed(kPMic, v, false) == std::vector<int> { 0 }, "phonograph keeps its horn");
+
+        reset(true);
+        check(auCoerce(v, true).empty(), "mix defaults fit");
+        v[kPDesk] = 1;   // RCA 1950: no VHS, no digital master
+        check(!has(auAllowed(kPMedium, v, true), 13) && !has(auAllowed(kPMedium, v, true), 0), "1950 desk media");
+        v[kPDesk] = 5;   // Mackie 1993: no wire, cylinder or 78
+        for (int m : { 8, 9, 10 }) check(!has(auAllowed(kPMedium, v, true), m), "1993 desk media");
+        v[kPMedium] = 13;   // VHS master: transfers onto what was still in use, no cylinder
+        check(!has(auAllowed(kPTransfer, v, true), 9) && has(auAllowed(kPTransfer, v, true), 5), "transfer era");
+        check(!has(auAllowed(kPNR, v, true), 1), "no Dolby A on VHS");
+        v[kPDesk] = 1;
+        auto fixed = auCoerce(v, true);
+        check(!fixed.empty() && v[kPMedium] != 13, "coerce on desk change");
     }
 
     if (!failures) std::printf("audio_test OK\n");
