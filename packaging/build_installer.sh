@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Builds dist/SLogMetaRaw-<version>.dmg with the installer (.pkg), the illustrated guides (at most ten pages) and the
+# Builds dist/SLogMetaRaw-<version>.dmg with the installer (.pkg), the illustrated guides (at most eleven pages) and the
 # uninstaller.
 #   ./packaging/build_installer.sh
 set -euo pipefail
@@ -59,14 +59,14 @@ fi
     --print-to-pdf="$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "file://$GUIDE/guida.html" 2>/dev/null
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
     --print-to-pdf="$BUILD/dmg/Log MetaRaw Guide (english).pdf" "file://$GUIDE/guide-en.html" 2>/dev/null
-# each guide: page 1 is the summary of every function, ten pages at most
+# each guide: page 1 is the summary of every function, eleven pages at most (the 4.2 Audio page)
 for g in "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf"; do
   python3 - "$g" <<'EOF'
 import sys
 d = open(sys.argv[1], 'rb').read()
 n = d.count(b'/Type /Page') - d.count(b'/Type /Pages')
-if not 1 <= n <= 10:
-    sys.exit('%s: %d pagine invece di 10 al massimo' % (sys.argv[1], n))
+if not 1 <= n <= 11:
+    sys.exit('%s: %d pagine invece di 11 al massimo' % (sys.argv[1], n))
 EOF
 done
 
