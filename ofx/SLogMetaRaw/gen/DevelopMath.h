@@ -1459,7 +1459,6 @@ SM_FN SMf3 sm_develop(SMf3 in, SM_CREF(DevelopParams) p) {
 #ifdef __METAL_VERSION__
 #define CR_PLANE const device float*
 #define CR_OUT device float*
-#define CR_REF(T) thread T&
 #define CR_FLOOR floor
 #define CR_CEIL ceil
 #define CR_SIN precise::sin
@@ -1468,7 +1467,6 @@ typedef uint CrU;
 #else
 #define CR_PLANE const float*
 #define CR_OUT float*
-#define CR_REF(T) T&
 #define CR_FLOOR floorf
 #define CR_CEIL ceilf
 #define CR_SIN sinf
@@ -1677,15 +1675,29 @@ SM_CONST int CR_SENSOR_MOS = 3;
 // One field of a pickup tube's element (Philips 1963, in units of the peak white's charge per field): the light L
 // discharges it, the beam (capacity B) lands at full current down to the cathode, then with an exponential tail
 // (K = C V_T): what it cannot take back is the lag, an overload it cannot reach is the comet tail (kept up to qmax).
-// Returns the signal read; q is the charge carried to the next field.
-SM_FN float cr_tube_field(CR_REF(float) q, float L, float K, float B, SM_CREF(CreativeParams) p) {
+// q: the charge carried in; returns the charge carried out (x) and the signal read (y).
+struct CrTube { float q, s; };
+SM_FN CrTube cr_tube_field(float q, float L, float K, float B, SM_CREF(CreativeParams) p) {
     const float q0 = q + SM_EXP2(p.tubeGamma * SM_LOG2(SM_MAX(L, 0.0f) + p.tubeBias + 1e-8f));
     const float r1 = SM_MIN(SM_MAX(q0, 0.0f), B);
     const float rest = q0 - r1, beam = B - r1;
     float q1 = rest;
     if (rest <= 0.0f) q1 = rest - K * SM_LOG(1.0f + beam / K * SM_EXP(rest / K));
-    q = SM_MIN(q1, p.tubeQmax * B);
-    return q0 - q1;
+    CrTube t;
+    t.q = SM_MIN(q1, p.tubeQmax * B);
+    t.s = q0 - q1;
+    return t;
+}
+// The charges of the three channels after two fields of light L.
+SM_FN SMf3 cr_tube_frame(SMf3 q, SMf3 L, SM_CREF(CreativeParams) p) {
+    float o[3];
+    for (int c = 0; c < 3; ++c) {
+        const float K = SM_MAX(p.tubeK[c], 1e-6f), B = p.tubeB[c];
+        CrTube t = cr_tube_field(cr_at(q, c), cr_at(L, c), K, B, p);
+        t = cr_tube_field(t.q, cr_at(L, c), K, B, p);
+        o[c] = t.q;
+    }
+    return smf3(o[0], o[1], o[2]);
 }
 
 // The records of this pixel through the sensor. h0..h2: the source frames 1, 2, 3 before this one (the first
@@ -1694,30 +1706,25 @@ SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, 
                      SM_CREF(CreativeParams) p) {
     if (p.sensor == CR_SENSOR_TUBE) {
         // the charge before the oldest frame: that frame's light held a few fields, then every frame two fields
-        SMf3 L[4];
-        L[0] = e;
         const int n = p.history;
-        if (n > 0) L[1] = cr_records(h0, h0, h0, x, y, p);
-        if (n > 1) L[2] = cr_records(h1, h1, h1, x, y, p);
-        if (n > 2) L[3] = cr_records(h2, h2, h2, x, y, p);
+        const SMf3 L2 = n > 2 ? cr_records(h2, h2, h2, x, y, p) : e;
+        const SMf3 L1 = n > 1 ? cr_records(h1, h1, h1, x, y, p) : e;
+        const SMf3 L0 = n > 0 ? cr_records(h0, h0, h0, x, y, p) : e;
+        const SMf3 oldest = n > 2 ? L2 : (n > 1 ? L1 : L0);
+        SMf3 q = cr_tube_frame(cr_tube_frame(smf3(0.0f, 0.0f, 0.0f), oldest, p), oldest, p);
+        if (n > 2) q = cr_tube_frame(q, L2, p);
+        if (n > 1) q = cr_tube_frame(q, L1, p);
+        if (n > 0) q = cr_tube_frame(q, L0, p);
         float o[3], over = 0.0f;
+        const float bias = SM_EXP2(p.tubeGamma * SM_LOG2(p.tubeBias + 1e-8f));
         for (int c = 0; c < 3; ++c) {
-            const float K = SM_MAX(p.tubeK[c], 1e-6f), B = p.tubeB[c];
-            float q = 0.0f;
-            const float first = cr_at(L[n], c);
-            for (int i = 0; i < 4; ++i) cr_tube_field(q, first, K, B, p);
-            for (int f = n; f >= 1; --f) {
-                const float l = cr_at(L[f], c);
-                cr_tube_field(q, l, K, B, p);
-                cr_tube_field(q, l, K, B, p);
-            }
-            const float l = cr_at(L[0], c);
-            const float a = cr_tube_field(q, l, K, B, p);
-            const float b = cr_tube_field(q, l, K, B, p);
+            const float K = SM_MAX(p.tubeK[c], 1e-6f), B = p.tubeB[c], l = cr_at(e, c);
+            const CrTube a = cr_tube_field(cr_at(q, c), l, K, B, p);
+            const CrTube b = cr_tube_field(a.q, l, K, B, p);
             // the camera's gamma corrects half of the target's (a vidicon stays softer in the shadows)
-            const float sig = SM_MAX(0.5f * (a + b) - SM_EXP2(p.tubeGamma * SM_LOG2(p.tubeBias + 1e-8f)), 0.0f);
+            const float sig = SM_MAX(0.5f * (a.s + b.s) - bias, 0.0f);
             o[c] = SM_EXP2(SM_LOG2(sig + 1e-8f) / SM_SQRT(p.tubeGamma));
-            over = SM_MAX(over, q / B);   // charge left over: the overload
+            over = SM_MAX(over, b.q / B);   // charge left over: the overload
         }
         // a striped tube the beam cannot discharge turns its highlights green
         const float g = p.tubeGreen * cr_smooth(0.0f, 1.0f, over);
