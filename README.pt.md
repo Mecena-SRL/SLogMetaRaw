@@ -48,7 +48,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-4.3.0.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-4.3.1.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -136,7 +136,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v4.3.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v4.3.1`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -214,6 +214,23 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
 
+**Novidades da 4.3.1.**
+
+- **Áudio, escolhas coerentes**: nos dois plugins de áudio cada menu oferece só o que combina com o escolhido
+  acima: primeiro o equipamento do gravador, depois as alternativas compatíveis (nada de VHS num Nagra); em *Mix e
+  supporto* a mesa decide os suportes do máster e o máster para onde se pode transferir.
+- **Pelo na janela, poeira e riscos reais**: o pelo afina para a ponta, tem densidade irregular e uma sombra
+  desfocada como no filme (mais no Super 8 e nas cópias); às vezes é encaracolado ou uma fibra de dois fios. A poeira
+  tem bordas irregulares e grãos de todo tamanho; os riscos mudam de espessura e intensidade.
+- **Digitalização com as marcas do fabricante**: de borda a borda a margem traz a marca (EASTMAN antes de 1990,
+  depois KODAK; FUJI, AGFA, ORWO…), o código do filme naquele formato, NITRATE FILM, SAFETY FILM ou ESTAR, um número
+  progressivo e desde 1990 o KeyKode com código de barras; filmes de foto numeram os fotogramas. A luz do scanner
+  brilha em volta das perfurações e no corte da base. Novo controle *Overscan*.
+- **Trilha sonora nas cópias**: de borda a borda, uma cópia de 35 mm ou 16 mm mostra a trilha sonora nas posições
+  SMPTE: pista óptica (densidade variável, área variável, Dolby Stereo), desde 1993 Dolby Digital entre as
+  perfurações, DTS e SDDS, desde 2004 a pista ciano; Super 8 e 16 mm podem ter pista magnética. Novo menu *Colonna
+  sonora della copia* (pela época ou à mão).
+
 **Novidades da 4.3.0.**
 
 - **Películas por formato**: com uma câmera escolhida aparecem só as películas feitas no seu formato, de todos os
@@ -288,7 +305,7 @@ não testado no Fairlight.
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.3.0`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.3.1`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.

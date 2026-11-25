@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -288,6 +288,23 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
+
+**Novidades da 4.3.1.**
+
+- **Áudio, escolhas coerentes**: nos dois plugins de áudio cada menu oferece só o que combina com o escolhido
+  acima: primeiro o equipamento do gravador, depois as alternativas compatíveis (nada de VHS num Nagra); em *Mix e
+  supporto* a mesa decide os suportes do máster e o máster para onde se pode transferir.
+- **Pelo na janela, poeira e riscos reais**: o pelo afina para a ponta, tem densidade irregular e uma sombra
+  desfocada como no filme (mais no Super 8 e nas cópias); às vezes é encaracolado ou uma fibra de dois fios. A poeira
+  tem bordas irregulares e grãos de todo tamanho; os riscos mudam de espessura e intensidade.
+- **Digitalização com as marcas do fabricante**: de borda a borda a margem traz a marca (EASTMAN antes de 1990,
+  depois KODAK; FUJI, AGFA, ORWO…), o código do filme naquele formato, NITRATE FILM, SAFETY FILM ou ESTAR, um número
+  progressivo e desde 1990 o KeyKode com código de barras; filmes de foto numeram os fotogramas. A luz do scanner
+  brilha em volta das perfurações e no corte da base. Novo controle *Overscan*.
+- **Trilha sonora nas cópias**: de borda a borda, uma cópia de 35 mm ou 16 mm mostra a trilha sonora nas posições
+  SMPTE: pista óptica (densidade variável, área variável, Dolby Stereo), desde 1993 Dolby Digital entre as
+  perfurações, DTS e SDDS, desde 2004 a pista ciano; Super 8 e 16 mm podem ter pista magnética. Novo menu *Colonna
+  sonora della copia* (pela época ou à mão).
 
 **Novidades da 4.3.0.**
 

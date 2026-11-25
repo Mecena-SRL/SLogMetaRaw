@@ -41,7 +41,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-4.3.0.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-4.3.1.dmg` 并打开。
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -102,7 +102,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v4.3.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v4.3.1`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
@@ -153,6 +153,15 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 - 它在同一位置取代了 Detail 节点：用 Detail 保存的调色会以全新的 Creative 打开。
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
+
+**4.3.1 新功能。**
+
+- **音频选项一致**：两个音频插件的每个菜单只提供与上方选择相符的项：先是录音机自带的介质、话筒和降噪，再是兼容选项（Nagra 不能录 VHS）；在 *Mix e supporto* 中，调音台决定母带介质，母带决定可转录到什么。
+- **片门毛发、灰尘和划痕更真实**：毛发向尖端变细，密度不均，阴影像胶片上一样模糊（Super 8 和拷贝上更明显）；有时卷曲，或是双股纤维。灰尘边缘不规则、大小不一；划痕沿线条改变粗细和强度。
+- **带厂商边缘印字的扫描**：边到边视图的片边印有品牌（1990 年前 EASTMAN，之后 KODAK；FUJI、AGFA、ORWO…）、该规格的片号、NITRATE FILM / SAFETY FILM / ESTAR、流水号，1990 年起还有 KeyKode 条码；照相胶片标出帧号。扫描仪光线在齿孔周围和片基切边处有光晕。新增「扫描过扫」控制。
+- **拷贝上的声带**：边到边扫描时，35 mm 或 16 mm 拷贝按 SMPTE 位置显示声带：光学声带（变密度、变面积、Dolby
+  Stereo），1993 年起片孔之间的 Dolby Digital、DTS 和 SDDS，2004 年起青色声带；Super 8 和 16 mm 可带磁条。新菜单
+  *Colonna sonora della copia*（按年代或手动）。
 
 **4.3.0 新功能。**
 
@@ -206,7 +215,7 @@ Creative 的声音孪生，用于 **Fairlight**（Mac 与 Windows）：一个模
 
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.3.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.3.1`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 

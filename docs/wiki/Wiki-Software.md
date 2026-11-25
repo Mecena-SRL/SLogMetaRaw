@@ -2,7 +2,7 @@
 
 **English** · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home)
 
-> Version **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Version **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
 Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin, tint, EI, lens, aperture, shutter, colour profile) and uses it inside DaVinci Resolve. Resolve does this only for FX6/FX9 MXF files; for MP4 from FX30, FX3, a7 and a6000 series it ignores that data.
@@ -293,6 +293,23 @@ scratches; in multiples of the material's and the **Formato**'s own, 8 mm to IMA
 
 The numbers are estimates from the research in [docs/CREATIVE.md](docs/CREATIVE.md), not product profiles: they need
 tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS CI tests.
+
+**New in 4.3.1.**
+
+- **Audio, consistent choices**: in both audio plugins every menu offers only what fits the choices above it: the
+  recorder's own medium, microphone and noise reduction first, then compatible ones (no VHS in a Nagra); in *Mix e
+  supporto* the desk sets the master's period media and the master what it can be transferred to.
+- **Gate hair, dust and scratches look real**: the hair caught in the gate tapers to its tip, has uneven density and a
+  shadow blurred as on film (more on Super 8 and on prints); now and then it curls or is a two-strand fibre of lint.
+  Dust specks have ragged edges and every size; scratches change width and strength along the line.
+- **Scan with the maker's edge print**: edge to edge, the margin carries the brand (EASTMAN before 1990, then KODAK;
+  FUJI, AGFA, ORWO…), the stock's code in that gauge, NITRATE FILM, SAFETY FILM or ESTAR, a running number and, from
+  1990, KeyKode with its bar code; photo film numbers its frames. The scanner's light glows around the perforations
+  and along the base's cut edge. New *Scan overscan* control.
+- **Soundtrack on prints**: edge to edge, a 35 mm or 16 mm print shows its soundtrack at the SMPTE positions:
+  the optical track (variable density, variable area, Dolby Stereo), from 1993 Dolby Digital between the
+  perforations, DTS and SDDS, the cyan track from 2004; Super 8 and 16 mm can carry a magnetic stripe. New *Print
+  soundtrack* menu (by era or by hand).
 
 **New in 4.3.0.**
 

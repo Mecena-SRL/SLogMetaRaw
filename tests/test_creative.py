@@ -337,7 +337,8 @@ class Creative(unittest.TestCase):
         w, h = 480, 270
         img = self.flat(0.0, w * h)
         ctl = {'process': NEGATIVE, 'print': 1, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0}
-        white = lambda px: min(px) > 0.97  # noqa: E731  (the scanner's light)
+        # the scanner's light, a little less in the corners; the print's clear stock (base density) stays below it
+        white = lambda px: min(px) > 0.915  # noqa: E731
         out = self.render(ctl, [img], size=(w, h))
         # Super 35: 0.081 mm per px; perforations 14.09 mm either side of the centre, every 4.75 mm
         col = [white(out[y * w + 66]) for y in range(h)]
@@ -349,9 +350,51 @@ class Creative(unittest.TestCase):
         # the camera's weave moves the frame on the film, not the perforations
         moved = dict(ctl, weave=1, camWeave=1)
         a, b = (self.render(moved, [img], frame=f, size=(w, h)) for f in (3, 4))
-        self.assertEqual([white(px) for px in a], [white(px) for px in b])
+        perfs = lambda o: [white(o[y * w + 66]) for y in range(h)]  # noqa: E731  (the track and edge print run with the film)
+        self.assertLessEqual(sum(1 for u, v in zip(perfs(a), perfs(b)) if u != v), 2)   # a perforation's edge row
         line = lambda o: min(range(4, 40), key=lambda y: sum(o[y * w + 240]))  # noqa: E731
         self.assertNotEqual((line(a), a), (line(b), b))
+
+    def test_scan_shows_the_makers_edge_print_and_takes_the_overscan(self):
+        """Edge to edge, the margin outside the perforations carries the maker's edge print (dense on the negative,
+        clear on the print's black edge); none on a plate; the overscan widens the view (the perforations shrink)."""
+        w, h = 480, 270
+        img = self.flat(0.0, w * h)
+        base = {'process': NEGATIVE, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0}
+        def margin(out):   # the right margin of Super 35, outside the perforations: 15.5-17.5 mm from the centre
+            return [sum(out[y * w + x]) / 3 for y in range(h) for x in range(w // 2 + 194, w // 2 + 212)]
+        neg = margin(self.render(dict(base, output=2), [img], size=(w, h)))
+        self.assertGreater(max(neg) - min(neg), 0.15)   # dark letters on the orange base
+        prt = margin(self.render(dict(base, print=1), [img], size=(w, h)))
+        self.assertGreater(sum(1 for v in prt if v < 0.4), 30)   # the print stock's own letters, dark on clear
+        self.assertGreater(sum(1 for v in prt if v > 0.6), len(prt) // 2)
+        def film_px(over):   # the film's width on the middle row: past it, the scanner's light
+            out = self.render(dict(base, print=1, scanOverscan=over), [img], size=(w, h))
+            return sum(1 for x in range(w) if min(out[(h // 2) * w + x]) < 0.85)
+        self.assertGreater(film_px(0.0), 1.3 * film_px(0.8))
+
+    def test_a_print_carries_its_soundtrack_beside_the_picture(self):
+        """Super 35 printed edge to edge (480 px over 21.85 mm of height: 0.081 mm a pixel): the optical track 4.90-7.44
+        mm from the guided edge, black on a silent Academy print, clear where it is modulated; Dolby Digital in the perforation
+        column; from 2004 a cyan dye track."""
+        w, h = 480, 270
+        img = self.flat(0.0, w * h)
+        base = {'process': NEGATIVE, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0, 'print': 1}
+        def cols(out, x0, x1):
+            return [out[y * w + x] for y in range(h) for x in range(x0, x1)]
+        track = (90, 110)   # 5.2-7.2 mm from the guided edge
+        silent = cols(self.render(dict(base, printSound=1, format=12), [img], size=(w, h)), *track)   # Academy
+        self.assertLess(max(sum(px) / 3 for px in silent), 0.08)
+        va = cols(self.render(dict(base, printSound=3), [img], size=(w, h)), *track)
+        self.assertGreater(sum(1 for px in va if sum(px) / 3 > 0.5), h // 2)
+        out = self.render(dict(base, printSound=5, device=1, maker=0, stockKodak=0), [img], size=(w, h))   # 2007
+        cyan = cols(out, *track)
+        self.assertGreater(sum(1 for r, g, b in cyan if g > r + 0.2 and b > r + 0.2), h)
+        dd = cols(out, 55, 75)
+        self.assertGreater(sum(1 for r, g, b in dd if g > r + 0.1), 100)   # dye-only bits
+        self.assertGreater(sum(1 for px in dd if sum(px) / 3 > 0.6), 100)   # on the clear stock
+        clear = cols(self.render(dict(base, printSound=1), [img], size=(w, h)), 26, 46)   # outside the perforations
+        self.assertGreater(sum(1 for px in clear if sum(px) / 3 > 0.6), len(clear) * 3 // 4)
 
     def test_the_negative_as_it_is_sits_on_its_orange_base(self):
         w, h = 160, 90

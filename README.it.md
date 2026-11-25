@@ -48,7 +48,7 @@ meglio da quello che c'è. Non può creare quello che non c'è.
 
 ## Installazione
 
-1. Scarica `SLogMetaRaw-4.3.0.dmg` da **Releases** e aprilo.
+1. Scarica `SLogMetaRaw-4.3.1.dmg` da **Releases** e aprilo.
 2. Doppio clic su **Installa Log MetaRaw.pkg**. Non è firmato con un certificato Apple: la prima volta usa tasto
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
@@ -135,7 +135,7 @@ Il nodo è puntuale: ogni pixel dipende solo da sé stesso. Non crea mai aloni e
 
 | Controllo | Cosa fa |
 |---|---|
-| **Versione** (in cima) | `v4.3.0`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
+| **Versione** (in cima) | `v4.3.1`. Una volta al giorno chiede a GitHub l'ultima release. Se ce n'è una diventa **🟢 v3.1.0 → 3.x.y** e il clic apre nel browser il download dell'installer del sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Non installa mai niente da solo |
 | **Camera** · **Rileggi metadata** | la camera letta. *Rileggi* rilegge la clip, riporta ogni controllo ai valori di camera e scrive i metadata della clip nel Media Pool |
 | **Ripresa** · **Decodifica** | *Clip* permette di cambiare i controlli; *Camera metadata* li blocca sui valori di ripresa |
 | **Bilanciamento** · **Temperatura** · **Tint** | As shot o preset. Adattamento cromatico Bradford in luce lineare, dal bianco registrato dalla camera |
@@ -222,6 +222,23 @@ ombre e luci, saturazione, densità colore).
 I numeri sono stime dalle ricerche in [docs/CREATIVE.md](docs/CREATIVE.md), non profili di prodotti: vanno tarati su
 riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI macOS.
 
+**Novità della 4.3.1.**
+
+- **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra: prima la
+  dotazione del registratore (supporto, microfono, riduzione rumore), poi le alternative compatibili (niente VHS in
+  un Nagra); in *Mix e supporto* il banco decide i supporti del master e il master su cosa si può riversare.
+- **Pelo nel finestrino, polvere e graffi veri**: il pelo si assottiglia verso la punta, ha densità irregolare e
+  un'ombra sfocata come sulla pellicola (di più su Super 8 e sulle copie); a volte è arricciato o è una fibra a due
+  fili. La polvere ha bordi irregolari e granelli di ogni misura; i graffi cambiano spessore e intensità lungo la riga.
+- **Scansione con le scritte del produttore**: da bordo a bordo il margine porta la marca (EASTMAN prima del 1990,
+  poi KODAK; FUJI, AGFA, ORWO…), il codice della pellicola nel formato, NITRATE FILM, SAFETY FILM o ESTAR, un numero
+  progressivo e dal 1990 il KeyKode con il codice a barre; le pellicole foto numerano i fotogrammi. La luce dello
+  scanner fa alone intorno alle perforazioni e lungo il taglio della base. Nuovo comando *Overscan della scansione*.
+- **Colonna sonora sulle copie**: da bordo a bordo una copia 35 mm o 16 mm mostra la colonna sonora nelle posizioni
+  SMPTE: pista ottica (densità variabile, area variabile, Dolby Stereo), dal 1993 Dolby Digital tra le perforazioni,
+  DTS e SDDS, dal 2004 la pista ciano; Super 8 e 16 mm possono avere la pista magnetica. Nuovo menu *Colonna sonora
+  della copia* (secondo l'epoca o a mano).
+
 **Novità della 4.3.0.**
 
 - **Pellicole per formato**: con una cinepresa scelta compaiono solo le pellicole fatte nel suo formato, di ogni
@@ -295,7 +312,7 @@ Fairlight.
 ## Aggiornamenti e privacy
 
 - I **nodi** chiedono a GitHub l'ultima release di questo progetto al massimo una volta al giorno, in background. La
-  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.3.0`). Per disattivarlo crea il file vuoto
+  richiesta porta solo la versione del programma (`User-Agent: SLogMetaRaw/4.3.1`). Per disattivarlo crea il file vuoto
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - Lo **script** controlla solo quando clicchi la sua versione.
 - Un clic apre soltanto un link di download delle release GitHub di questo progetto. Niente viene installato senza di te.

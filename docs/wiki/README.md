@@ -8,7 +8,7 @@ link doppi malformati `[[testo](url)](url)`, nessuna traduzione) — confermato 
 **Contenuto, aggiornato al 12 ottobre:**
 - `Home.md` / `Home-it.md` / `Home-es.md` / `Home-pt.md` / `Home-zh.md` — pagina iniziale, con selettore di lingua, una
   sola copia pulita per lingua, URL aggiornati a `Mecena-SRL/SLogMetaRaw`.
-- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **4.3.0** (novità del Creative nella 4.3.0; pannelli Develop e Detail nuovi; sezione 8 riscritta per il nodo Creative, 2026-11-24), con una sezione nuova
+- `Wiki-Software.md` — guida utente in inglese, aggiornata alla **4.3.1** (novità del Creative nella 4.3.0 e 4.3.1; pannelli Develop e Detail nuovi; sezione 8 riscritta per il nodo Creative, 2026-11-24), con una sezione nuova
   (§15, "Linux and Windows (experimental)") che non c'era nella versione precedente di questo file.
 - `Wiki-Software-it.md` / `-es.md` / `-pt.md` / `-zh.md` — la stessa guida nelle altre 4 lingue del progetto, adattata
   dalle rispettive traduzioni di `README.*.md` più il materiale solo-wiki (ricette, casi speciali, FAQ) tradotto a parte.

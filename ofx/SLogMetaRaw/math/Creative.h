@@ -91,6 +91,27 @@ struct CreativeParams {
     // mm across from the film's centre, every perfPitch from perfPhase), the picture's px per mm (sQ)
     int strip, travelH, gate, perfSides;
     float sMM, sCX, sCY, filmA, aOff, apW, apH, pitch, gateR, perfA, perfL, perfR, perfX, perfPitch, perfPhase, sQ;
+    // the edge print exposed on the film by its maker (edgeN glyphs of kCrFont, 0: none; 64 + d stands for digit d,
+    // from the units, of edgeNum + edgeStep per repeat): columns of edgeCW mm along, rows of edgeCH mm across (7,
+    // upright towards edgeSide), centred edgeAcross mm from the film's centre, from edgeStart mm into every repeat of
+    // edgeRepeat mm counted from edgePhase; a bar code of barN modules barW mm wide from barStart; its latent exposure
+    int edgeN, edgeNum, edgeStep, edgeSide, barN;
+    int edgeGlyph[48];
+    float edgeCW, edgeCH, edgeAcross, edgeRepeat, edgePhase, edgeStart, barStart, barW, edgeExp;
+    // the scanner's light: its fall-off towards the corners, the glow its optics spread around every opening (share,
+    // mm), the light the base pipes along its cut edges (share, mm), the punching's tolerance on each perforation (mm)
+    float lampFall, glow, glowR, pipe, pipeW, perfTol;
+    // a print (printClear 1): the printer exposes it only from printLo to printHi mm across the film's centre, beyond
+    // the stock stays clear and shows its own edge print, dark. Its soundtrack, exposed from the sound negative: the analog
+    // record (sndKind 0 none, 1 variable density, 2 variable area, sndN tracks side by side) centred sndAcross mm from
+    // the film's centre, sndW mm wide, its clear part at most sndMod mm; the digital ones (sndDigital bits: 1 Dolby
+    // Digital between the perforations, blocks ddSize mm square centred ddAcross; 2 DTS time code dtsW mm wide at
+    // dtsAcross; 4 SDDS between sddsIn and sddsOut mm from the centre on both sides); sndDye 1: a cyan dye track (only
+    // the print's red-sensitive layer forms it); a magnetic stripe (magW mm at magAcross, its balance stripe balW mm
+    // at balAcross; 0 none); the film's travel sndPhase mm, sndSeed the reel
+    int printClear, sndKind, sndN, sndDigital, sndDye, sndSeed;
+    float printLo, printHi, sndAcross, sndW, sndMod, ddAcross, ddSize, dtsAcross, dtsW, sddsIn, sddsOut;
+    float magAcross, magW, balAcross, balW, sndPhase;
     // the negative as it is: base density (orange mask) per channel, density per stop of the dyes
     float negBase[3], negGamma;
     // the film base's decay (decayKind 1 nitrate: amber fading in blotches from the edges; 2 acetate, vinegar
@@ -269,20 +290,213 @@ SM_FN CrFilm cr_film(float x, float y, SM_CREF(CreativeParams) p) {
 }
 
 // What the scanner sees at (x, y) through the film itself: 1 where it looks past the film or through a perforation
-// (the light, white), 0 on the film; soft over half a pixel.
+// (the light), 0 on the film, soft over half a pixel; near an opening the glow of the scanner's optics, and a thin
+// bright line where the base pipes the light along its cut edge. Each perforation sits a few microns off (punching).
 SM_FN float cr_strip_light(int x, int y, SM_CREF(CreativeParams) p) {
     const CrFilm f = cr_film((float)x, (float)y, p);
     const float h = 0.5f * p.sMM;
-    float light = cr_smooth(-h, h, SM_ABS(f.across) - 0.5f * p.filmA);
+    float d = 0.5f * p.filmA - SM_ABS(f.across);   // mm into the film from its nearest opening
     if (p.perfSides != 0) {
-        const float t = (f.along - p.perfPhase) / p.perfPitch;
-        const float l = (t - CR_FLOOR(t + 0.5f)) * p.perfPitch;   // along, from the nearest perforation
-        const float a1 = f.across + p.perfX, a2 = f.across - p.perfX;
-        float d = cr_rrect(p.perfSides == 3 ? f.across : a1, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR);
-        if (p.perfSides == 2) d = SM_MIN(d, cr_rrect(a2, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR));
-        light = SM_MAX(light, 1.0f - cr_smooth(-h, h, d));
+        const float t = (f.along - p.perfPhase) / p.perfPitch, n = CR_FLOOR(t + 0.5f);
+        const int ni = (int)n;
+        const float l = (t - n) * p.perfPitch + p.perfTol * cr_hash(ni, 0, 991);   // along, from the nearest one
+        const float a1 = f.across + p.perfX + p.perfTol * cr_hash(ni, 1, 991);
+        const float a2 = f.across - p.perfX + p.perfTol * cr_hash(ni, 2, 991);
+        float dp = cr_rrect(p.perfSides == 3 ? f.across : a1, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR);
+        if (p.perfSides == 2) dp = SM_MIN(dp, cr_rrect(a2, l, 0.5f * p.perfA, 0.5f * p.perfL, p.perfR));
+        d = SM_MIN(d, dp);
     }
-    return light;
+    const float open = 1.0f - cr_smooth(-h, h, d);
+    const float on = SM_MAX(d, 0.0f);
+    const float glow = p.glow * SM_EXP(-on / p.glowR) + p.pipe * (1.0f - cr_smooth(0.0f, p.pipeW + h, on));
+    return SM_MAX(open, SM_MIN(glow, 1.0f) * (1.0f - open) + open);
+}
+
+// The edge print: a 5 x 7 font (rows top down, bit 4 the left column) for ' ', A-Z, 0-9, '-', '+', '.', and the
+// date marks dot, triangle and square, '>' and '/'.
+SM_CONST int kCrFont[315] = {
+    0, 0, 0, 0, 0, 0, 0, 14, 17, 17, 31, 17, 17, 17, 30, 17, 17, 30, 17, 17, 30,
+    14, 17, 16, 16, 16, 17, 14, 30, 17, 17, 17, 17, 17, 30, 31, 16, 16, 30, 16, 16, 31,
+    31, 16, 16, 30, 16, 16, 16, 14, 17, 16, 23, 17, 17, 15, 17, 17, 17, 31, 17, 17, 17,
+    14, 4, 4, 4, 4, 4, 14, 7, 2, 2, 2, 2, 18, 12, 17, 18, 20, 24, 20, 18, 17,
+    16, 16, 16, 16, 16, 16, 31, 17, 27, 21, 21, 17, 17, 17, 17, 17, 25, 21, 19, 17, 17,
+    14, 17, 17, 17, 17, 17, 14, 30, 17, 17, 30, 16, 16, 16, 14, 17, 17, 17, 21, 18, 13,
+    30, 17, 17, 30, 20, 18, 17, 15, 16, 16, 14, 1, 1, 30, 31, 4, 4, 4, 4, 4, 4,
+    17, 17, 17, 17, 17, 17, 14, 17, 17, 17, 17, 17, 10, 4, 17, 17, 17, 21, 21, 21, 10,
+    17, 17, 10, 4, 10, 17, 17, 17, 17, 10, 4, 4, 4, 4, 31, 1, 2, 4, 8, 16, 31,
+    14, 17, 19, 21, 25, 17, 14, 4, 12, 4, 4, 4, 4, 14, 14, 17, 1, 2, 4, 8, 31,
+    31, 2, 4, 2, 1, 17, 14, 2, 6, 10, 18, 31, 2, 2, 31, 16, 30, 1, 1, 17, 14,
+    6, 8, 16, 30, 17, 17, 14, 31, 1, 2, 4, 8, 8, 8, 14, 17, 17, 14, 17, 17, 14,
+    14, 17, 17, 15, 1, 2, 12, 0, 0, 0, 31, 0, 0, 0, 0, 4, 4, 31, 4, 4, 0,
+    0, 0, 0, 0, 0, 12, 12, 0, 14, 31, 31, 31, 14, 0, 0, 4, 4, 14, 14, 31, 0,
+    0, 31, 31, 31, 31, 31, 0, 8, 4, 2, 1, 2, 4, 8, 1, 1, 2, 4, 8, 16, 16,
+};
+
+// One dot of the edge print: column ci of a repeat (6 to a character, the 6th blank), row 0 (top) to 6.
+SM_FN int cr_edge_bit(int ci, int row, int num, SM_CREF(CreativeParams) p) {
+    if (ci < 0 || row < 0 || row > 6) return 0;
+    const int chr = ci / 6, col = ci - chr * 6;
+    if (chr >= p.edgeN || col > 4) return 0;
+    int g = p.edgeGlyph[chr];
+    if (g >= 64) {   // a digit of the running number
+        int v = num < 0 ? 0 : num;
+        for (int i = 64; i < g; ++i) v /= 10;
+        g = 27 + v % 10;
+    }
+    return (kCrFont[g * 7 + row] >> (4 - col)) & 1;
+}
+
+// The edge print's cover at pixel (x, y): the letters are dots that merge into strokes (an LED or a lamp behind a
+// mask exposed them), soft by the latent printing; the bar code's bars. It reads along the film, the letters' tops
+// towards the film's edge on a vertical strip and towards its middle on a horizontal one; on the side of a single
+// row of perforations it reads the other way.
+SM_FN float cr_edge_print(float x, float y, SM_CREF(CreativeParams) p) {
+    if (p.edgeN <= 0) return 0.0f;
+    const CrFilm f = cr_film(x, y, p);
+    if (SM_ABS(f.across - p.edgeAcross) > 4.0f * p.edgeCH + p.sMM) return 0.0f;
+    const float rs = (float)(p.travelH != 0 ? -p.edgeSide : p.edgeSide);
+    const float v = 3.5f - (f.across - p.edgeAcross) * rs / p.edgeCH;   // rows from the top
+    const float t = (float)p.edgeSide * f.along - p.edgePhase, k = CR_FLOOR(t / p.edgeRepeat);
+    const float local = t - k * p.edgeRepeat;
+    const int num = p.edgeNum + (int)k * p.edgeStep;
+    const float soft = 0.5f * p.sMM / p.edgeCH + 0.12f;
+    if (p.barN > 0 && local >= p.barStart) {
+        const float m = (local - p.barStart) / p.barW;
+        if (m < (float)p.barN) {
+            const int mi = (int)m;
+            const bool bar = mi < 2 || mi >= p.barN - 2 || cr_hash(num, mi, 993) > 0.0f;
+            const float sa = 0.5f * p.sMM / p.barW + 0.1f, fr = m - (float)mi;
+            const float in = cr_smooth(-sa, sa, fr - 0.1f) * (1.0f - cr_smooth(-sa, sa, fr - 0.9f));
+            return bar ? in * cr_smooth(-soft, soft, v) * (1.0f - cr_smooth(-soft, soft, v - 7.0f)) : 0.0f;
+        }
+    }
+    const float u = (local - p.edgeStart) / p.edgeCW;
+    const int u0 = (int)CR_FLOOR(u), v0 = (int)CR_FLOOR(v);
+    float best = 9.0f;
+    for (int j = -1; j <= 1; ++j)
+        for (int i = -1; i <= 1; ++i)
+            if (cr_edge_bit(u0 + i, v0 + j, num, p) != 0) {
+                const float du = u - ((float)(u0 + i) + 0.5f), dv = v - ((float)(v0 + j) + 0.5f);
+                best = SM_MIN(best, du * du + dv * dv);
+            }
+    return 1.0f - cr_smooth(0.58f - soft, 0.58f + soft, SM_SQRT(best));
+}
+
+// ---- the print's soundtrack (research COLONNA_SONORA.md: SMPTE positions; the sound itself [gen])
+
+// The sound on the film, mm t along it (35 mm runs 456 mm a second at 24 frames, 16 mm 183: a cycle of 0.1 to 5 mm):
+// the envelope of phrases and pauses (0..1) and the carrier of track k (-1..1), mostly shared between the tracks.
+SM_FN float cr_snd_env(float t, SM_CREF(CreativeParams) p) {
+    return cr_smooth(-0.5f, 0.9f, cr_noise(t * 0.011f, 0.5f, p.sndSeed * 7 + 1201));
+}
+SM_FN float cr_snd_carrier(float t, int k, SM_CREF(CreativeParams) p) {
+    const int z = p.sndSeed * 7 + 1202;
+    const float common = 0.55f * cr_noise(t * 2.7f, 1.5f, z) + 0.2f * cr_noise(t * 6.0f, 2.5f, z + 1)
+                         + 0.25f * cr_noise(t * 0.8f, 3.5f, z + 2);
+    const float own = cr_noise(t * 3.1f, 4.5f + (float)k, z + 3);
+    return sm_clamp(0.8f * common + 0.2f * own, -1.0f, 1.0f);
+}
+
+// The soundtrack at (x, y): within the printed width, m where a record lies and c how clear it is there (the sound
+// negative held the printer's light back); beyond it, on the clear stock, op the cover of the digital records.
+struct CrSound { float m, c, op; };
+SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
+    CrSound o;
+    o.m = 0.0f; o.c = 0.0f; o.op = 0.0f;
+    if (p.sndKind == 0 && p.sndDigital == 0) return o;
+    const CrFilm f = cr_film(x, y, p);
+    // the printed record is a little soft (the sound negative's image, printed by contact): 10 microns
+    const float h = 0.5f * p.sMM, t = f.along + p.sndPhase, hs = h + 0.01f;
+    if (p.sndKind != 0) {   // the analog record: variable density or bilateral variable area, one track or two
+        const float a = f.across - p.sndAcross;
+        const float band = 1.0f - cr_smooth(-h, h, SM_ABS(a) - 0.5f * p.sndW);
+        if (band > 0.0f) {
+            // two tracks apart by an opaque septum of 0.25 mm (ST 203: 6.05-6.30 mm from the guided edge)
+            const float sep = p.sndN > 1 ? 0.25f : 0.0f, tw = (p.sndMod - (float)(p.sndN - 1) * sep) / (float)p.sndN;
+            int k = (int)CR_FLOOR((a + 0.5f * p.sndMod) / (tw + sep));
+            k = k < 0 ? 0 : (k >= p.sndN ? p.sndN - 1 : k);
+            const float c = (float)k * (tw + sep) + 0.5f * tw - 0.5f * p.sndMod, d = SM_ABS(a - c);
+            const float env = cr_snd_env(t, p), s = cr_snd_carrier(t, k, p);
+            float clear;
+            if (p.sndKind == 1)   // variable density: across the whole track, its transmission follows the sound
+                clear = (1.0f - cr_smooth(-hs, hs, d - 0.48f * tw)) * (0.45f + 0.4f * env * s);
+            else   // variable area: the clear part's width follows it, a thin line in the pauses (noise reduction)
+                clear = 1.0f - cr_smooth(-hs, hs, d - 0.5f * tw * (0.05f + env * (0.47f + 0.43f * s)));
+            o.m = band;
+            o.c = clear;
+        }
+    }
+    if ((p.sndDigital & 2) != 0) {   // DTS: a time code of dashes, the sound on a disc
+        const float a = SM_ABS(f.across - p.dtsAcross) - 0.5f * p.dtsW;
+        if (a < p.sMM) {
+            // dashes of 0.1 mm every 0.12, each as much as the pixel's footprint (w bits either side) covers
+            const float band = 1.0f - cr_smooth(-h, h, a), u = t / 0.12f, ui = CR_FLOOR(u), fr = u - ui;
+            const float w = SM_MIN(SM_MAX(0.5f * p.sMM / 0.12f, 0.05f), 1.4f);
+            float dash = 0.0f;
+            for (int j = -2; j <= 2; ++j) {
+                const float lo = SM_MAX((float)j + 0.1f, fr - w), hi = SM_MIN((float)j + 0.9f, fr + w);
+                if (hi > lo && cr_hash((int)ui + j, 0, p.sndSeed * 7 + 1211) > -0.1f) dash += (hi - lo) / (2.0f * w);
+            }
+            o.c = o.c * (1.0f - band) + dash * band;
+            o.m = SM_MAX(o.m, band);
+        }
+    }
+    if ((p.sndDigital & 1) != 0 && p.perfSides == 2) {   // Dolby Digital: 76 x 76 bits between the perforations
+        const float lt = (f.along - p.perfPhase) / p.perfPitch, nf = CR_FLOOR(lt), hb = 0.5f * p.ddSize;
+        const float v = (lt - nf - 0.5f) * p.perfPitch, u = f.across - p.ddAcross;
+        if (SM_ABS(u) < hb + p.sMM && SM_ABS(v) < hb + p.sMM) {
+            const int n = (int)nf + (int)CR_FLOOR(p.sndPhase / p.perfPitch + 0.5f);
+            const float bu = (u + hb) * (76.0f / p.ddSize) - 38.0f, bv = (v + hb) * (76.0f / p.ddSize) - 38.0f;
+            float op;
+            if (SM_ABS(bu) < 15.0f && SM_ABS(bv) < 15.0f) {   // the double-D in the middle, dark on a clear field
+                const float lu = SM_ABS(bu) - 1.5f, r = 8.5f;
+                const float dd = lu < 0.0f ? 9.0f : (lu < 4.0f ? SM_ABS(bv) - r
+                                                               : SM_SQRT((lu - 4.0f) * (lu - 4.0f) + bv * bv) - r);
+                op = 1.0f - cr_smooth(-0.6f, 0.6f, dd);
+            } else {
+                op = cr_hash((int)CR_FLOOR(bu) + 40, (int)CR_FLOOR(bv) + 97 * n, p.sndSeed * 7 + 1212) > 0.0f ? 1.0f
+                                                                                                             : 0.0f;
+            }
+            const float in = (1.0f - cr_smooth(-h, h, SM_ABS(u) - hb)) * (1.0f - cr_smooth(-h, h, SM_ABS(v) - hb));
+            o.op = SM_MAX(o.op, op * in);
+        }
+    }
+    if ((p.sndDigital & 4) != 0) {   // SDDS: a band of bits on each edge, outside the perforations
+        const float a = SM_ABS(f.across);
+        if (a > p.sddsIn - p.sMM && a < p.sddsOut + p.sMM) {
+            const float in = cr_smooth(-h, h, a - p.sddsIn) * (1.0f - cr_smooth(-h, h, a - p.sddsOut));
+            const int i = (int)CR_FLOOR((a - p.sddsIn) / 0.045f) + (f.across < 0.0f ? 1000 : 0);
+            const float bit = cr_hash(i, (int)CR_FLOOR(t / 0.045f), p.sndSeed * 7 + 1213) > -0.2f ? 1.0f : 0.0f;
+            o.op = SM_MAX(o.op, bit * in);
+        }
+    }
+    return o;
+}
+
+// A magnetic stripe's cover at (x, y): iron oxide laid on the processed film, opaque, its edges wander a few microns.
+SM_FN float cr_mag(int x, int y, SM_CREF(CreativeParams) p) {
+    if (p.magW <= 0.0f) return 0.0f;
+    const CrFilm f = cr_film((float)x, (float)y, p);
+    const float h = 0.5f * p.sMM + 0.004f, wob = 0.006f * cr_noise((f.along + p.sndPhase) * 0.8f, 0.5f, 1231);
+    float m = 1.0f - cr_smooth(-h, h, SM_ABS(f.across - p.magAcross - wob) - 0.5f * p.magW);
+    if (p.balW > 0.0f) m = SM_MAX(m, 1.0f - cr_smooth(-h, h, SM_ABS(f.across - p.balAcross + wob) - 0.5f * p.balW));
+    return m;
+}
+
+// What the film outside the camera's gate received: on the negative the maker's edge print; on a print the printer's
+// light through the negative's clear surround (black), the soundtrack, and beyond the printed width the clear stock
+// with its own edge print and the digital records. A cyan dye track forms only in the red-sensitive layer.
+SM_FN SMf3 cr_margin(float x, float y, SM_CREF(CreativeParams) p) {
+    const float E = p.edgeExp, L = cr_edge_print(x, y, p);
+    if (p.printClear == 0) return smf3(E * L, E * L, E * L);
+    const CrFilm f = cr_film(x, y, p);
+    const CrSound s = cr_sound(x, y, p);
+    const float h = 0.5f * p.sMM;
+    const float z = 1.0f - cr_smooth(-h, h, f.across - p.printLo) * (1.0f - cr_smooth(-h, h, f.across - p.printHi));
+    // the digital records are dye only: dark cyan to blue-grey (they block the red most)
+    const float cl = E * (1.0f - L), pr = E * s.m * s.c, pg = p.sndDye != 0 ? E * s.m : pr;
+    const float r = pr + (cl * (1.0f - s.op) - pr) * z;
+    return smf3(r, pg + (cl * (1.0f - 0.8f * s.op) - pg) * z, pg + (cl * (1.0f - 0.7f * s.op) - pg) * z);
 }
 
 // Where (x, y) falls in the picture of the frame it lies in (u, v px) and how much of the gate's light reached it
@@ -316,7 +530,9 @@ SM_FN SMf3 cr_source(CR_PLANE src, int k, int x, int y, SM_CREF(CreativeParams) 
     float gateW = 1.0f, u0 = (float)x, v0 = (float)y;
     if (p.strip != 0) {   // the frame on the scanned strip: its picture, or the film's own edge and frame lines
         const CrStrip st = cr_strip((float)x, (float)y, p.weaveX, p.weaveY, p);
-        if (st.w <= 0.0f) return smf3(0.0f, 0.0f, 0.0f);
+        if (st.w <= 0.0f) {   // outside the gate: the edge print, on a print the soundtrack
+            return cr_margin((float)x, (float)y, p);
+        }
         gateW = st.w;
         u0 = st.u - p.weaveX;   // the weave is in the frame's place on the film already
         v0 = st.v - p.weaveY;
@@ -868,11 +1084,16 @@ SM_FN SMf3 cr_process_film(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
 }
 
 SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
-    const SMf3 o = cr_process_film(e, x, y, p);
+    SMf3 o = cr_process_film(e, x, y, p);
     if (p.strip == 0) return o;
+    const float mag = cr_mag(x, y, p);   // a magnetic stripe: dark brown, opaque to the scanner's light
+    if (mag > 0.0f) o = smf3(o.x + (0.035f - o.x) * mag, o.y + (0.026f - o.y) * mag, o.z + (0.02f - o.z) * mag);
     const float L = cr_strip_light(x, y, p);
     if (L <= 0.0f) return o;
-    const SMf3 w = p.output == CR_OUT_LOG ? cr_encode_input(smf3(2.47f, 2.47f, 2.47f), p) : smf3(1.0f, 1.0f, 1.0f);
+    const float cx = ((float)x + 0.5f) / (float)p.W - 0.5f, cy = ((float)y + 0.5f) / (float)p.H - 0.5f;
+    const float lamp = 1.0f - p.lampFall * 4.0f * (cx * cx + cy * cy);   // the light falls off to the corners
+    const SMf3 w = p.output == CR_OUT_LOG ? cr_encode_input(smf3(2.47f * lamp, 2.47f * lamp, 2.47f * lamp), p)
+                                         : smf3(lamp, lamp, lamp);
     return smf3(o.x + (w.x - o.x) * L, o.y + (w.y - o.y) * L, o.z + (w.z - o.z) * L);
 }
 

@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · **简体中文** · [Home](Home-zh)
 
-> 版本 **4.3.0** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
+> 版本 **4.3.1** · macOS 12+ · DaVinci Resolve 20 / 21 · 索尼 XAVC `.MP4` / `.MXF`
 > 仅在 macOS 上的 DaVinci Resolve Studio 21.1 中测试过。
 
 Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文、色调、EI、镜头、光圈、快门、色彩配置），并在 DaVinci Resolve 中加以利用。Resolve 只为 FX6/FX9 的 MXF 文件这样做；对于 FX30、FX3、a7 和 a6000 系列的 MP4 文件，它会忽略这些数据。
@@ -281,6 +281,15 @@ Log MetaRaw  →  Log MetaRaw Creative  →  其余调色  →  输出 CST / LUT
 - 它在同一位置取代了 Detail 节点：用 Detail 保存的调色会以全新的 Creative 打开。
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
+
+**4.3.1 新功能。**
+
+- **音频选项一致**：两个音频插件的每个菜单只提供与上方选择相符的项：先是录音机自带的介质、话筒和降噪，再是兼容选项（Nagra 不能录 VHS）；在 *Mix e supporto* 中，调音台决定母带介质，母带决定可转录到什么。
+- **片门毛发、灰尘和划痕更真实**：毛发向尖端变细，密度不均，阴影像胶片上一样模糊（Super 8 和拷贝上更明显）；有时卷曲，或是双股纤维。灰尘边缘不规则、大小不一；划痕沿线条改变粗细和强度。
+- **带厂商边缘印字的扫描**：边到边视图的片边印有品牌（1990 年前 EASTMAN，之后 KODAK；FUJI、AGFA、ORWO…）、该规格的片号、NITRATE FILM / SAFETY FILM / ESTAR、流水号，1990 年起还有 KeyKode 条码；照相胶片标出帧号。扫描仪光线在齿孔周围和片基切边处有光晕。新增「扫描过扫」控制。
+- **拷贝上的声带**：边到边扫描时，35 mm 或 16 mm 拷贝按 SMPTE 位置显示声带：光学声带（变密度、变面积、Dolby
+  Stereo），1993 年起片孔之间的 Dolby Digital、DTS 和 SDDS，2004 年起青色声带；Super 8 和 16 mm 可带磁条。新菜单
+  *Colonna sonora della copia*（按年代或手动）。
 
 **4.3.0 新功能。**
 

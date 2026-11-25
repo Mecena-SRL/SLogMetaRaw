@@ -77,6 +77,11 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Console 32 bit: Saturn (1994) su tubo, RGB" };
 const char* const kCrScanViewNames[3] = { "Il quadro", "Il quadro con i bordi del mascherino",
                                           "Da bordo a bordo, con le perforazioni" };
+const char* const kCrSoundNames[7] = { "Secondo epoca e formato", "Nessuna (copia muta)",
+                                       "Ottica a densità variabile (anni '30-'40)", "Ottica ad area variabile, mono",
+                                       "Ottica stereo (Dolby Stereo, dal 1976)",
+                                       "Stereo + Dolby Digital, DTS, SDDS (dal 1993)",
+                                       "Pista magnetica (Super 8, 16 mm)" };
 const char* const kCrBaseNames[5] = { "Secondo epoca e formato", "Nitrato di cellulosa (35 mm, fino al 1951)",
                                      "Diacetato (pellicola di sicurezza, 16, 9,5 e 8 mm dal 1909)",
                                      "Triacetato (dal 1948, negativo di ripresa)", "Poliestere (Estar, dal 1955)" };
@@ -330,10 +335,10 @@ const FilmStrip kStrips[kCrFormatCount] = {
     { 0, 16.0f, 12.52f, 7.41f, 1.0f, 7.62f, 1, 1.829f, 1.27f, 0.25f, 6.2f, 7.62f, 3.81f },     // Super 16
     { 0, 8.0f, 4.88f, 3.68f, 1.13f, 3.81f, 1, 1.829f, 1.27f, 0.25f, 2.23f, 3.81f, 1.905f },    // 8 mm
     { 0, 9.5f, 8.5f, 6.5f, 0, 7.54f, 3, 2.0f, 1.0f, 0.2f, 0, 7.54f, 3.77f },                    // 9.5 mm [gen perf]
-    { 0, 35.0f, 21.95f, 18.59f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // anamorphic
-    { 0, 35.0f, 22.0f, 9.47f, 1.3f, 9.5f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Techniscope 2 perf
+    { 0, 35.0f, 21.95f, 18.59f, 1.26f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // anamorphic
+    { 0, 35.0f, 22.0f, 9.47f, 1.26f, 9.5f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Techniscope 2 perf
     { 1, 35.0f, 25.17f, 37.72f, 0, 38.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // VistaVision 8 perf
-    { 0, 35.0f, 22.0f, 16.03f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },  // Academy [gen offset]
+    { 0, 35.0f, 22.0f, 16.03f, 1.26f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // Academy
     { 1, 35.0f, 24.0f, 36.0f, 0, 38.0f, 2, 2.794f, 1.981f, 0.5f, 14.09f, 4.75f, 2.375f },      // 135, 8 perf
     { 1, 61.5f, 56.0f, 56.0f, 0, 62.0f, 0, 0, 0, 0, 0, 1, 0 } };                                // 120 6x6
 
@@ -1014,6 +1019,216 @@ static void creativeHair(CreativeParams& p, double amount, int W, int H, int fra
     p.hairBox[3] = box[3] + m;
 }
 
+// The maker's edge print on the scanned strip [gen layout, sizes and spacing]: the brand as it reads on the film, the
+// product code of the gauge (or the stock's name), the base (NITRATE FILM, SAFETY FILM, ESTAR) and a running number.
+// From 1990 Kodak and Fuji motion picture negative carries KeyKode (maker and emulsion letters, roll, footage, a bar
+// code); before, a key number and the date marks (dot, triangle, square). Photo film numbers its frames instead.
+// Letters about 0.9 mm high in the margin outside the perforations, repeated along the whole strip (on real film the
+// product line and the key number come every half foot or foot: here closer, so a single frame shows them).
+static int edgeGlyph(char ch)
+{
+    static const char* const order = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+.o^#>/";
+    const char* at = std::strchr(order, ch);
+    return ch && at ? int(at - order) : 0;
+}
+
+static void creativeEdgePrint(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame, bool print)
+{
+    p.edgeN = p.barN = 0;
+    const CrStock* st = creativeStock(c);
+    const unsigned gauge = gaugeOf(c.format);
+    if (!gauge) return;   // a glass plate
+    static const char* const brands[] = { "EASTMAN", "FUJI", "AGFA", "ORWO", "SVEMA", "ILFORD", "FERRANIA",
+                                          "GEVAERT", "ANSCO", "DU PONT", "KODAK", "LOMOGRAPHY", "KONICA" };
+    const int maker = c.device == kCrDevFilm ? pick(c.maker, kCrMakerCount) : 0;
+    std::string name = st ? st->name : (c.process == kCrBlackWhite ? "Double-X 5222 (1959)" : "5247 (1974)");
+    int year = 0;
+    for (size_t k = name.find('('); k != std::string::npos && !year; k = name.find('(', k + 1))
+        if (k + 4 < name.size() && std::isdigit((unsigned char)name[k + 1])) year = std::atoi(name.c_str() + k + 1);
+    if (!year) year = 1975;
+    std::string code;   // the product code as the gauge has it, else the stock's first word
+    for (size_t k = 0; k + 4 <= name.size() && code.empty(); ++k)
+        if (std::isdigit((unsigned char)name[k]) && std::isdigit((unsigned char)name[k + 3])
+            && (k == 0 || !std::isalnum((unsigned char)name[k - 1])) && std::isdigit((unsigned char)name[k + 1])
+            && std::isdigit((unsigned char)name[k + 2]) && (k + 4 == name.size() || !std::isdigit((unsigned char)name[k + 4])))
+            code = name.substr(k, 4);
+    if (!code.empty() && (gauge & (kG8 | kGS8 | kG16))) {
+        if (maker == 0 && code[0] == '5') code[0] = '7';
+        if (maker == 1 && code[0] == '8' && code[1] == '5') code[1] = '6';
+    }
+    if (code.empty()) code = name.substr(0, name.find_first_of(" ("));
+    for (char& ch : code) ch = (char)std::toupper((unsigned char)ch);
+    for (char& ch : code) if (!std::isalnum((unsigned char)ch)) ch = '-';
+    std::string brand = brands[maker];
+    if (maker == 0 && year >= 1990) brand = "KODAK";
+    if (maker == 10) brand = "KODAK";   // CineStill is Kodak stock
+    const int base = creativeBase(c);
+    const bool photo = (gauge & (kG135 | kG120)) != 0;
+    const bool keykode = !print && !photo && year >= 1990 && (maker == 0 || maker == 1) && (gauge & (kG16 | kG35 | kG65));
+    const char* const support = base == 1 ? "NITRATE FILM" : base == 4 ? "ESTAR" : "SAFETY FILM";
+    std::string text;
+    int digits = 0, step = 1;
+    if (print) {   // a print shows its own stock's code, dark on the clear edge (Eastman, then Kodak) [gen codes]
+        const bool fuji = maker == 1 && year >= 1999;
+        const char* pc = c.process == kCrBlackWhite ? (year < 1990 ? "5302" : "2302")
+                         : fuji ? "3510" : year < 1974 ? "5385" : year < 1983 ? "5381" : year < 1998 ? "5384" : "2383";
+        const char* pb = fuji ? "FUJI" : year < 1990 ? "EASTMAN" : "KODAK";
+        const char* ps = year < 1951 ? "NITRATE FILM" : year < 1998 ? "SAFETY FILM" : "";
+        text = std::string(pc) + " " + pb + "  " + ps + (*ps ? "  " : "")
+               + (char)('A' + (unsigned)(cr_hash01(frame / 96, 6, 995) * 26)) + std::to_string(year % 10) + " ";
+    } else if (photo) {
+        text = brand + " " + code + "  ";
+        digits = 2;   // the frame's number
+    } else if (keykode) {
+        static const char* const em = "ABCDEFGHJKLMNPRSTUVWXYZ";
+        const int shot = frame / 96;
+        text = brand + " " + code + "  " + support + "  " + (maker == 0 ? "K" : "F") + em[(unsigned)year % 23]
+               + std::to_string(10 + (unsigned)(cr_hash01(shot, 1, 995) * 89)) + " "
+               + std::to_string(100000 + (unsigned)(cr_hash01(shot, 2, 995) * 899999)) + " ";
+        digits = 4;   // footage
+    } else {
+        static const char* const marks[] = { "o", "^", "#", "o^", "o#", "^#", "o^#" };
+        text = brand + " " + code + "  " + support + "  " + (year < 1990 && maker == 0 ? marks[year % 7] : "")
+               + (year < 1990 && maker == 0 ? " " : "")
+               + (char)('A' + (unsigned)(cr_hash01(frame / 96, 3, 995) * 26)) + std::to_string(year % 10) + " ";
+        digits = 6;
+    }
+    for (size_t i = 0; i < text.size() && p.edgeN < 48; ++i)
+        p.edgeGlyph[p.edgeN++] = edgeGlyph(text[i]);
+    for (int d = digits - 1; d >= 0 && p.edgeN < 48; --d) p.edgeGlyph[p.edgeN++] = 64 + d;
+    if (photo && p.edgeN + 5 <= 48) {   // "12  >12A"
+        p.edgeGlyph[p.edgeN++] = 0;
+        p.edgeGlyph[p.edgeN++] = edgeGlyph('>');
+        p.edgeGlyph[p.edgeN++] = 65;
+        p.edgeGlyph[p.edgeN++] = 64;
+        p.edgeGlyph[p.edgeN++] = edgeGlyph('A');
+    }
+    // the margin: outside the perforations, else beyond the picture
+    const float half = 0.5f * fs.filmA;
+    float inner = fs.sides == 1 || fs.sides == 2 ? fs.perfX + 0.5f * fs.perfA : 0.5f * fs.apA + std::fabs(fs.apOff);
+    int side = 1;
+    if (fs.sides == 1) side = -1;   // one row of perforations, on the side away from the picture's offset
+    const float margin = half - inner;
+    if (margin < 0.25f) { p.edgeN = 0; return; }
+    p.edgeCH = std::min(0.1f, 0.6f * margin / 7.0f);
+    p.edgeCW = 0.85f * p.edgeCH;
+    p.edgeSide = side;
+    p.edgeAcross = side * (inner + 0.5f * margin);   // cr_film's across is from the film's centre
+    p.edgeStart = 0;
+    p.barN = keykode ? 52 : 0;
+    p.barW = 0.6f * p.edgeCW;
+    p.barStart = p.edgeN * 6 * p.edgeCW + 4 * p.edgeCW;
+    const double len = p.barStart + p.barN * p.barW + 30 * p.edgeCW;
+    // repeats a whole number of frames apart for photo film (one number to a frame), else a whole number of
+    // perforations; the strip moves one pitch per frame, so the print runs past the gate with the film
+    const double unit = photo ? fs.pitch : (fs.perfPitch > 0 ? fs.perfPitch : fs.pitch);
+    p.edgeRepeat = float(photo ? fs.pitch : unit * std::ceil(len / unit));
+    const double at = double(frame) * fs.pitch;
+    const double k = std::floor(at / p.edgeRepeat);
+    p.edgePhase = -float(side) * (float(at - k * p.edgeRepeat) + 0.3f * fs.pitch);
+    p.edgeStep = step;
+    const int roll = int(cr_hash01(frame / 96, 4, 995) * 800000) + 100000;   // a roll's own numbers
+    p.edgeNum = photo ? 1 + int(std::fmod(k, 36.0)) : keykode ? int(std::fmod(k + 1200, 1e4)) : int(std::fmod(roll + k, 1e6));
+    p.edgeExp = 1.5f;   // a strong latent exposure: dense on the negative, clear on a reversal or a print
+}
+
+// The gauge a format's prints carry their sound on: 35 (the 35 mm frames printed 4-perf), 16 (16 mm), 8 (Super 8 and
+// 8 mm, a magnetic stripe), 0 none (Super 16 has no room for a track, the wide and still formats are left out).
+int creativeSoundGauge(int format)
+{
+    switch (format) {
+    case 2: case 9: case 10: case 12: return 35;
+    case 1: return 16;
+    case 0: case 7: return 8;
+    default: return 0;
+    }
+}
+
+// The stock's year, from its name ("... (1974)").
+static int creativeYear(const CreativeControls& c)
+{
+    const CrStock* st = creativeStock(c);
+    const std::string name = st ? st->name : (c.process == kCrBlackWhite ? "Double-X 5222 (1959)" : "5247 (1974)");
+    for (size_t k = name.find('('); k != std::string::npos; k = name.find('(', k + 1))
+        if (k + 4 < name.size() && std::isdigit((unsigned char)name[k + 1])) return std::atoi(name.c_str() + k + 1);
+    return 1975;
+}
+
+// The soundtrack the scanned strip shows (kCrSoundNames index, resolved: 1 none ... 6 magnetic), from the control and,
+// by era and gauge, from the stock's year: variable density until the mid-1950s, then variable area (from 1928 the
+// two coexisted), Dolby Stereo from 1976, the digital ones from 1993 (SDDS made until 2004). Optical only on a print.
+static int creativeSoundOf(const CreativeControls& c, bool print, int year)
+{
+    const int g = creativeSoundGauge(c.format);
+    int k = pick(c.printSound, 7);
+    if (k == 0) {
+        if (!print || g == 8 || g == 0) return 1;
+        if (g == 16) return year >= 1933 ? 3 : 1;
+        k = year < 1928 ? 1 : year < 1955 ? 2 : year < 1976 ? 3 : year < 1993 ? 4 : 5;
+    }
+    if (k == 6) return g == 8 || g == 16 ? 6 : 1;
+    if (k == 1 || !print || g != 35 && g != 16) return 1;
+    return g == 16 ? std::min(k, 3) : k;   // 16 mm: one optical track, no digital
+}
+
+// The print and its soundtrack on the strip (research COLONNA_SONORA.md, SMPTE 40, 41, 139, 164, 176, ST 203, RP 115,
+// ISO 17266; mm from the guided edge, here from the film's centre): 35 mm track 4.90-7.44 mm, modulated 5.21-7.14,
+// DTS 7.42-7.67, Dolby Digital blocks 2.41 mm in the perforation column, SDDS 0.295-1.831 mm from both edges; 16 mm
+// track 13.46-15.49 mm from the perforated edge, magnetic 14.55 (SMPTE 112); Super 8 stripe 7.24-7.92 mm, balance
+// 0.08-0.38. The printer leaves the perforations and the edges unexposed (Pritchard): the clear stock, its own edge
+// print dark. Cyan dye tracks from 2004.
+static void creativeSoundtrack(CreativeParams& p, const CreativeControls& c, const FilmStrip& fs, int frame, int sound,
+                               bool print, int year)
+{
+    p.printClear = 0;
+    p.sndKind = p.sndN = p.sndDigital = p.sndDye = 0;
+    p.magW = p.balW = 0;
+    const int g = creativeSoundGauge(c.format);
+    const float half = 0.5f * fs.filmA;
+    // the film's travel within a run of 16 frames, each run its own sound: small distances keep the CPU and the GPU
+    // on the same microns
+    p.sndPhase = float((frame % 16 + 16) % 16) * fs.pitch;
+    p.sndSeed = int(cr_hash01((frame >= 0 ? frame : frame - 15) / 16, 5, 995) * 1000);
+    if (sound == 6) {   // the magnetic stripe, on the edge away from the perforations, its balance stripe beside them
+        if (g == 8 && c.format == 0) {
+            p.magAcross = half - 0.4f; p.magW = 0.69f; p.balAcross = -(half - 0.23f); p.balW = 0.30f;
+        } else if (g == 8) {   // 8 mm [gen]: a narrower stripe beside the picture
+            p.magAcross = half - 0.25f; p.magW = 0.4f; p.balAcross = -(half - 0.23f); p.balW = 0.30f;
+        } else {   // 16 mm: over the optical track's place [gen balance]
+            p.magAcross = 14.55f - half; p.magW = 2.41f; p.balAcross = -(half - 0.4f); p.balW = 0.6f;
+        }
+    }
+    if (!print) return;
+    p.printClear = 1;
+    // the printer's light: over the camera's full aperture (black where the negative is clear) and the track's area
+    const bool s35 = g == 35, track = sound >= 2 && sound <= 5;
+    p.printLo = s35 ? (track ? 4.88f - half : -12.45f) : -5.13f;
+    p.printHi = s35 ? 12.45f : (track ? 15.49f - half : 5.13f);
+    if (sound <= 1 || sound == 6) return;
+    p.sndKind = sound == 2 ? 1 : 2;
+    p.sndN = sound >= 4 ? 2 : 1;
+    if (g == 35) {   // the guided edge, the track's side, at -half
+        p.sndAcross = 6.17f - half;
+        p.sndW = 2.54f;
+        p.sndMod = 1.93f;
+        if (sound == 5) {
+            p.sndDigital = 1 | 2 | (year < 2008 ? 4 : 0);   // SDDS left the prints after its decoders stopped [gen]
+            p.ddAcross = -fs.perfX;
+            p.ddSize = 2.41f;
+            p.dtsAcross = 7.54f - half;
+            p.dtsW = 0.25f;
+            p.sddsIn = half - 1.831f;
+            p.sddsOut = half - 0.295f;
+            if (p.sndDigital & 4) p.edgeN = p.barN = 0;   // SDDS takes the edges
+        }
+    } else {   // 16 mm: the second row of perforations' place, the perforated edge at -half
+        p.sndAcross = 14.475f - half;
+        p.sndW = 2.03f;
+        p.sndMod = 1.80f;
+    }
+    p.sndDye = c.process == kCrColourNegative && year >= 2004 ? 1 : 0;
+}
+
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
                      int history)
 {
@@ -1575,7 +1790,22 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
                || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;
     const bool strip = c.scanView > 0 && (proc == kCrColourNegative || proc == kCrReversal || proc == kCrBlackWhite);
     if (strip) {   // the scanned strip: the frame on the film, its gate, the perforations and the frames beside it
-        const FilmStrip& fs = kStrips[pick(c.format, kCrFormatCount)];
+        FilmStrip fs = kStrips[pick(c.format, kCrFormatCount)];
+        // a print (35 mm and 16 mm, Rec.709 through a positive): positive stock, its perforations, its soundtrack
+        const int year = creativeYear(c), sg = creativeSoundGauge(c.format);
+        const bool print = printed && p.output == CR_OUT_REC709 && (sg == 35 || sg == 16);
+        const int sound = creativeSoundOf(c, print, year);
+        if (print && sg == 35) {
+            fs.perfL = 1.981f;   // Kodak Standard (KS-1870) perforations
+            fs.perfR = 0.5f;
+            if (sound >= 2 && sound <= 5 && (c.format == 2 || c.format == 10)) {   // printed beside the track
+                fs.apA = c.format == 10 ? 21.95f : 22.0f;   // Super 35 reduced to Academy, Techniscope to 4-perf scope
+                fs.apL = c.format == 10 ? 18.59f : 16.03f;
+                fs.apOff = 1.26f;   // 18.75 mm from the guided edge (SMPTE 195)
+                fs.pitch = 19.0f;
+            }
+        }
+        if ((print && sg == 16 && sound >= 2) || (sg == 16 && sound == 6)) fs.sides = 1;   // single perforation
         p.strip = 1;
         p.travelH = fs.travelH;
         p.gate = pick(c.gateMask, 3);
@@ -1593,16 +1823,29 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         p.perfPitch = fs.perfPitch;
         p.perfPhase = fs.perfPhase;
         p.sQ = std::max((float)W / p.apW, (float)H / p.apH);
-        float vw = 1.12f * p.apW, vh = 1.12f * p.apH;   // the frame with its edges
+        // the overscan: how much beyond the frame (or the film's width, edge to edge) the scan takes in
+        const float over = (float)clampd(c.scanOverscan, 0, 2);
+        float vw = (1.0f + over) * p.apW, vh = (1.0f + over) * p.apH;   // the frame with its edges
         if (c.scanView >= 2) {   // edge to edge: the film's width and a bit of the frames beside
-            const float across = 1.08f * fs.filmA, along = 1.15f * fs.pitch;
-            vw = fs.travelH ? std::min(along, 1.6f * p.apW) : across;
-            vh = fs.travelH ? across : std::min(along, 1.6f * p.apH);
+            const float across = (1.0f + 0.7f * over) * fs.filmA, along = (1.05f + over) * fs.pitch;
+            vw = fs.travelH ? std::min(along, (1.5f + over) * p.apW) : across;
+            vh = fs.travelH ? across : std::min(along, (1.5f + over) * p.apH);
             if (fs.travelH) p.sCY = p.aOff;
             else p.sCX = p.aOff;
         }
         p.sMM = std::max(vw / (float)W, vh / (float)H);
         p.moved = 1;
+        creativeEdgePrint(p, c, fs, frame, print);
+        creativeSoundtrack(p, c, fs, frame, sound, print, year);
+        // the scanner's light [gen]: a little fall-off, its optics' glow around the openings, the base piping the
+        // light along its cut edges (polyester most, it is clearer), the perforations' punching tolerance
+        const int b = creativeBase(c);
+        p.lampFall = 0.05f;
+        p.glow = 0.10f;
+        p.glowR = std::max(0.04f, 5.0f * p.sMM);
+        p.pipe = b == 4 ? 0.45f : b == 1 ? 0.2f : 0.28f;
+        p.pipeW = std::max(0.015f, 1.0f * p.sMM);
+        p.perfTol = 0.004f;
     }
     double when[3];
     creativeRecordTimes(c, when);
