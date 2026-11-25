@@ -4,6 +4,8 @@
 #pragma once
 #include "AudioEngine.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -111,6 +113,102 @@ inline const AuParamDef& auParam(AuParamId id)
 inline double auDefault(AuParamId id, bool mix)
 {
     return id == kPMedium && mix ? 1 : auParam(id).def;
+}
+
+// ---- What goes with what: each menu offers only what its parents allow (recorder → microphone → medium → noise
+// reduction; desk → master medium → noise reduction → transfer). A device stays in service kAuDeviceLife years, a desk
+// kAuDeskLife: later microphones and reducers fit within that span, a master medium must be in use while the desk is.
+constexpr int kAuDeviceLife = 15, kAuDeskLife = 25;
+
+inline const AuDevice& auDevice(const double* v)
+{
+    int f, m;
+    auDeviceSplit(int(v[kPDevice]), f, m);
+    return kAuFamilies[f].devices[m];
+}
+inline int auPlain(const double* v, AuParamId id) { return int(std::lround(v[id])); }
+
+// Noise reduction nr on medium: Dolby A on reels, B and C on cassettes, dbx on both; none fits everything.
+inline bool auNRFits(int nr, int medium, int maxYear)
+{
+    if (nr == 0) return true;
+    if (kAuNR[nr].year > maxYear) return false;
+    const bool reel = (kAuReel >> medium) & 1, cassette = (kAuCassette >> medium) & 1;
+    return nr == 4 ? reel || cassette : nr == 1 ? reel : cassette;
+}
+
+// The master medium in Mix e supporto, the medium actually recorded on in Ripresa.
+inline int auMediumOf(const double* v, bool mix)
+{
+    return mix || auPlain(v, kPMedium) > 0 ? auPlain(v, kPMedium) : auDevice(v).medium;
+}
+
+// The plain values a list parameter may take given the others, in menu order. In Ripresa the first entry is always
+// the recorder's own (plain 0) and the alternatives follow; other lists are filtered tables.
+inline std::vector<int> auAllowed(AuParamId id, const double* v, bool mix)
+{
+    std::vector<int> out;
+    const int n = int(auListNames(id, mix).size());
+    const AuDevice& dev = auDevice(v);
+    const AuConsole& desk = kAuConsoles[mix ? auPlain(v, kPDesk) : 0];
+    const int medium = auMediumOf(v, mix);
+    const int maxYear = mix ? (desk.year ? desk.year + kAuDeskLife : 9999) : dev.year + kAuDeviceLife;
+    auto keep = [&](bool ok, int plain) { if (ok) out.push_back(plain); };
+    switch (id) {
+    case kPMic:   // the horn only on the phonograph, the phonograph only with its horn
+        out.push_back(0);
+        for (int m = 2; m < n && dev.mic != 1; ++m) keep(m != dev.mic && kAuMics[m].year <= maxYear, m);
+        break;
+    case kPMedium:
+        if (!mix) {
+            out.push_back(0);
+            for (int m = 1; m < n; ++m) keep(m != dev.medium && ((dev.media >> m) & 1), m);
+        } else
+            for (int m = 0; m < n; ++m)
+                keep(!desk.year || (kAuMedia[m].to >= desk.year && kAuMedia[m].from <= desk.year + kAuDeskLife), m);
+        break;
+    case kPNR:
+        if (!mix) out.push_back(0);
+        for (int k = 0; k < int(std::size(kAuNR)); ++k)
+            keep((mix || k != dev.nr) && auNRFits(k, medium, maxYear), k + (mix ? 0 : 1));
+        break;
+    case kPTransfer:   // a copy onto anything still in use when the master was made
+        out.push_back(0);
+        for (int m = 1; m < n; ++m) keep(kAuMedia[m].to >= kAuMedia[medium].from, m);
+        break;
+    default:
+        for (int i = 0; i < n; ++i) out.push_back(i);
+    }
+    return out;
+}
+
+// After a parent changed: moves every child whose value no longer fits to its first allowed entry, parents first.
+// Returns the ids it changed.
+inline std::vector<AuParamId> auCoerce(double* v, bool mix)
+{
+    std::vector<AuParamId> changed;
+    const std::vector<AuParamId> order = mix ? std::vector { kPMedium, kPNR, kPTransfer }
+                                             : std::vector { kPMic, kPMedium, kPNR };
+    for (AuParamId id : order) {
+        auto ok = auAllowed(id, v, mix);
+        if (std::find(ok.begin(), ok.end(), auPlain(v, id)) == ok.end()) {
+            v[id] = ok.front();
+            changed.push_back(id);
+        }
+    }
+    return changed;
+}
+
+// The name a menu shows for one entry: in Ripresa the recorder's own says what it is.
+inline std::string auEntryName(AuParamId id, int plain, const double* v, bool mix)
+{
+    if (!mix && plain == 0) {
+        const AuDevice& dev = auDevice(v);
+        if (id == kPMic) return std::string("Di serie · ") + kAuMics[dev.mic].name;
+        if (id == kPMedium) return std::string("Del registratore · ") + kAuMedia[dev.medium].name;
+        if (id == kPNR) return std::string("Del registratore · ") + kAuNR[dev.nr].name;
+    }
+    return auListNames(id, mix)[size_t(plain)];
 }
 
 // A panel row: an optional stage switch on the left, then an optional control.
