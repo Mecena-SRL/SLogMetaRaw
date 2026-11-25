@@ -22,6 +22,7 @@ struct CreativeScratch
     std::vector<float> hal, bl[3], tmp, M;   // M: the finished picture, display-linear, for the viewing medium
     std::vector<float> prev;                 // the previous frame's picture, for an LCD's slow response
     std::vector<float> S;                    // a CCD's smear per column (3 x W)
+    std::vector<float> D;                    // a digital camera's planes at its sensor's size
 };
 
 // The previous frame, for an LCD's slow response (CreativeParams::mGhost): its own parameters and source frames.

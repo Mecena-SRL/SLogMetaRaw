@@ -52,6 +52,15 @@
   - MOS: un disegno fisso di righe.
   - Comandi *Sensore*, *Scia del tubo*, *Code di cometa*, *Smear del CCD*; tre modelli nuovi (Panasonic WV-3110,
     PK-958, Ikegami HL-79E). Con *Processo a mano* il sensore parte da *Nessuno*: i grade di prima non cambiano.
+- **Creative, digitali e telefoni emulati per modello**: ogni camera digitale scelta per modello rifà la sua catena.
+  - L'immagine passa alla dimensione del sensore (176x144 del RAZR, 480 righe del 3GS e del MiniDV), con aliasing
+    dove la camera saltava righe (5D Mark II, Pocket senza filtro ottico), poi torna alla dimensione del quadro.
+  - Nitidezza dell'elaborazione interna prima del codec, poi blocchi 8x8 con le tabelle JPEG e colore sottocampionato
+    (4:2:0, 4:2:2, 4:1:1 del DV): blocchi, aloni e colore impastato dei primi telefoni.
+  - *Compressione* e *Nitidezza elettronica* guidano qualità del codec e nitidezza; la riga *Come si vede* dice
+    sensore, codec e colore del modello.
+  - Modelli nuovi: RED One, Canon C300, Blackmagic Pocket, Lumix GH2, Motorola RAZR V3, Sony Ericsson K800i, Nokia
+    N95, Flip UltraHD, Kodak Zi8. Il digitale *a mano* resta quello di prima.
 
 ## Log MetaRaw 4.1.0
 

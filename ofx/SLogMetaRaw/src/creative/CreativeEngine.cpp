@@ -211,6 +211,51 @@ void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeS
                  [&](int x, int y) { return cr_tape_out(T0, T2, T3, x, y, q); });
         return;
     }
+    if (q.dig != 0) {   // a digital camera: the sensor's size, the ISP's sharpening, the codec, scaled back up
+        const size_t nY = (size_t)q.dW * q.dH, nC = (size_t)q.cW * q.cH;
+        ensure(s.D, 2 * nY + 4 * nC);
+        float* Y0 = s.D.data();
+        float* Y1 = Y0 + nY;
+        float* C[4] = { Y1 + nY, Y1 + nY + nC, Y1 + nY + 2 * nC, Y1 + nY + 3 * nC };   // Cb, Cr, then coded
+        par(q.dH, [&](int b, int e) {
+            for (int j = b; j < e; ++j)
+                for (int i = 0; i < q.dW; ++i) Y0[(size_t)j * q.dW + i] = cr_dig_down(s.V[0].data(), i, j, q.dW, q.dH, q);
+        });
+        par(q.cH, [&](int b, int e) {
+            for (int j = b; j < e; ++j)
+                for (int i = 0; i < q.cW; ++i) {
+                    C[0][(size_t)j * q.cW + i] = cr_dig_down(s.V[1].data(), i, j, q.cW, q.cH, q);
+                    C[1][(size_t)j * q.cW + i] = cr_dig_down(s.V[2].data(), i, j, q.cW, q.cH, q);
+                }
+        });
+        par(q.dH, [&](int b, int e) {
+            for (int j = b; j < e; ++j)
+                for (int i = 0; i < q.dW; ++i) Y1[(size_t)j * q.dW + i] = cr_dig_sharp(Y0, i, j, q);
+        });
+        const float* Yf = Y1;
+        const float* Cb = C[0];
+        const float* Cr = C[1];
+        if (q.dQ > 0.0f) {
+            const int bw = (q.dW + 7) / 8, bh = (q.dH + 7) / 8, cbw = (q.cW + 7) / 8, cbh = (q.cH + 7) / 8;
+            par(bh, [&](int b, int e) {
+                for (int j = b; j < e; ++j)
+                    for (int i = 0; i < bw; ++i) cr_dig_dct(Y1, Y0, q.dW, q.dH, i, j, 0, q);
+            });
+            par(cbh, [&](int b, int e) {
+                for (int j = b; j < e; ++j)
+                    for (int i = 0; i < cbw; ++i) {
+                        cr_dig_dct(C[0], C[2], q.cW, q.cH, i, j, 1, q);
+                        cr_dig_dct(C[1], C[3], q.cW, q.cH, i, j, 1, q);
+                    }
+            });
+            Yf = Y0;
+            Cb = C[2];
+            Cr = C[3];
+        }
+        writeOut(par, q, alpha, srcRowFloats, dst, dstRowFloats,
+                 [&](int x, int y) { return cr_dig_out(Yf, Cb, Cr, x, y, q); });
+        return;
+    }
     // luma: its bandwidth (along the line; both axes for a digital camera's optics), then the peaking's blur
     float* Y = s.T[0].data();
     float* Yb = s.T[1].data();

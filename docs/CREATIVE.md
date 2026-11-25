@@ -48,7 +48,14 @@ non profili misurati.
   della cinepresa, dove è esistita la pellicola e i casi fuori formato (resi lo stesso).
 - Formati nuovi: 35 mm Academy, 135 e 120 (grana e dimensione ∝ M^0,32 e M^0,65, M = √(area S35/area)).
 - Videocamere (13): nastro (con usura, testine, instabilità) e sensore (tubi a 3 o a 1 tubo a strisce, CCD a 1 o 3
-  chip). Cinema digitale e telefoni: per ora una riga delle camere esistenti; i digitali sono il passo successivo.
+  chip).
+- Cinema digitale (9) e telefoni e tascabili (10): la riga delle camere per curva, colore e rumore, più la catena del
+  modello (ricerca DIGITALI_OTTICHE.md A.0 e A.7, stime): righe del sensore (0 = quelle del quadro), aliasing (salto di
+  righe, niente filtro ottico: un campione per pixel), nitidezza dell'ISP (maschera di contrasto 3x3), qualità del
+  codec come JPEG (scala delle tabelle: Q < 50 → 50/Q, sopra 2 − Q/50, per *Compressione*), sottocampionamento del
+  colore. Motore: `cr_dig_down`, `cr_dig_sharp`, `cr_dig_dct` (un thread per blocco 8x8, quantizzazione arrotondata con
+  un gradino continuo per la parità CPU/GPU), `cr_dig_out` (bilineare). Non ancora: rolling shutter, esposizione e
+  bilanciamento automatici, GOP e macroblocchi in movimento (servono più quadri).
 - Interruttori (solo pellicole): *Curva e contrasto* spento = curva retta e uscita nella codifica d'ingresso (niente
   stampa né supporto); *Colore* spento = record uguali ai canali del video, strati uguali, niente dominanti (una B/N tiene
   il colore del video); *Grana e texture* spento = niente grana, alone, diffusione, ottica, instabilità, polvere, graffi.

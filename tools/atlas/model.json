@@ -1066,7 +1066,7 @@
      "id": "cr.signal",
      "kind": "function",
      "label": "Catena del segnale",
-     "text": "Sensore della videocamera sui record (cr_sensor): tubo con stato ricostruito dai 3 quadri prima (scia nelle ombre, code di cometa, alte luci verdi del vidicon a strisce), smear del CCD per colonna (cr_smear_col), disegno fisso del MOS. Y Cb Cr con clip e knee della camera. Digitale: banda del luma e del colore, peaking, blocchi di colore, rumore, banding. Nastro analogico emulato riga per riga (cr_tape_row, cr_tape_out): pre-enfasi, clip FM, rumore FM derivato, de-enfasi esatta, passa-basso causale a biquad e crispener (sbavature e ringing a destra, bordi grandi più morbidi dei piccoli); colore su tre poli, rumore AM e di fase, tinta mossa dallo stesso errore di timebase, comb con la riga precedente del campo; timebase residua dopo l'aggancio del TV (onda, scrape, gradino del cambio testina recuperato in poche righe, flagging in alto); dropout sul nastro che durano più campi e salgono, sostituiti dalla riga sopra e senza colore; rumore per riga di campo; falso colore dei tubi a strisce e dei mosaici sommato al colore prima del colour-under. Il rumore FM è tarato in creativePrepare sul rapporto S/R del formato.",
+     "text": "Sensore della videocamera sui record (cr_sensor): tubo con stato ricostruito dai 3 quadri prima (scia nelle ombre, code di cometa, alte luci verdi del vidicon a strisce), smear del CCD per colonna (cr_smear_col), disegno fisso del MOS. Y Cb Cr con clip e knee della camera. Digitale a mano: banda del luma e del colore, peaking, blocchi di colore, rumore, banding. Digitale per modello (cinema, telefoni): immagine alla dimensione del sensore (media o un campione per pixel con aliasing), nitidezza dell'ISP, DCT 8x8 con le tabelle JPEG e colore sottocampionato (cr_dig_dct, quantizzazione arrotondata in modo continuo), poi riportata alla dimensione del quadro. Nastro analogico emulato riga per riga (cr_tape_row, cr_tape_out): pre-enfasi, clip FM, rumore FM derivato, de-enfasi esatta, passa-basso causale a biquad e crispener (sbavature e ringing a destra, bordi grandi più morbidi dei piccoli); colore su tre poli, rumore AM e di fase, tinta mossa dallo stesso errore di timebase, comb con la riga precedente del campo; timebase residua dopo l'aggancio del TV (onda, scrape, gradino del cambio testina recuperato in poche righe, flagging in alto); dropout sul nastro che durano più campi e salgono, sostituiti dalla riga sopra e senza colore; rumore per riga di campo; falso colore dei tubi a strisce e dei mosaici sommato al colore prima del colour-under. Il rumore FM è tarato in creativePrepare sul rapporto S/R del formato.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1074,6 +1074,12 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_dig_dct"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_dig_out"
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_signal"
@@ -1107,6 +1113,12 @@
       },
       {
        "test": "tests/test_creative.py::Creative.test_a_striped_tube_turns_fine_detail_into_colour"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_codec_leaves_its_8x8_blocks"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_tiny_phone_sensor_loses_the_fine_detail"
       }
      ]
     },
@@ -1367,6 +1379,8 @@
   },
   "beh:creative.process": {
    "ofx/SLogMetaRaw/math/Creative.h::cr_device": "22b74e8107a7",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_dig_dct": "4e0d974d52b2",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_dig_out": "a52a7b1dca49",
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
    "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "a4e0c5767b25",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
@@ -1387,7 +1401,7 @@
    "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "bde95fb609e7",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "0faaefc77ea8",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "e6a3da51f9f3",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "e73831168f7b",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "eadac621a263"
   }
  }

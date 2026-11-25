@@ -249,14 +249,32 @@ inline constexpr CrVideoCamera kCrVideoCameras[] = {
     { "Ikegami HL-79E con U-matic BVU (Plumbicon, 1984)", 7, 0.15f, 0.25f, 0.25f, 2 } };
 const int kCrVideoCameraCount = (int)std::size(kCrVideoCameras);
 
-// Digital cameras by family: the engine's camera row (kCrDigitalNames index).
-struct CrDigitalCamera { const char* name; int row; };
+// Digital cameras by family: the engine's camera row (kCrDigitalNames index: curve, colour, noise) and the device's
+// own pipeline (research DIGITALI_OTTICHE.md A.7, estimates): the sensor's lines (0: the picture's own), the codec's
+// JPEG-like quality (0: no visible codec), chroma subsampling (0 4:4:4, 1 4:2:2, 2 4:2:0, 3 4:1:1), the ISP's
+// sharpening, a noise multiple, aliasing (line skipping, no optical low-pass). Append only.
+struct CrDigitalCamera { const char* name; int row, lines, quality, sub; float sharp, noise; int alias; };
 inline constexpr CrDigitalCamera kCrCinemaCameras[] = {
-    { "ARRI Alexa (2010)", 0 }, { "Sony HDW-F900 CineAlta (2000)", 2 }, { "Canon EOS 5D Mark II (2008)", 1 },
-    { "Panasonic AG-DVX100 (MiniDV 24p, 2002)", 4 }, { "Sony DCR-VX1000 (MiniDV 3CCD, 1995)", 3 } };
+    { "ARRI Alexa (2010)", 0, 0, 0, 0, 0, 1, 0 },
+    { "Sony HDW-F900 CineAlta (2000)", 2, 1080, 75, 3, 0.3f, 1, 0 },
+    { "Canon EOS 5D Mark II (2008)", 1, 720, 80, 2, 0.3f, 1, 1 },
+    { "Panasonic AG-DVX100 (MiniDV 24p, 2002)", 4, 480, 70, 3, 0.4f, 1, 0 },
+    { "Sony DCR-VX1000 (MiniDV 3CCD, 1995)", 3, 480, 70, 3, 0.7f, 1, 0 },
+    { "RED One (2007)", 0, 2160, 85, 0, 0.15f, 1.6f, 0 },
+    { "Canon EOS C300 (2012)", 0, 1080, 80, 1, 0, 0.8f, 0 },
+    { "Blackmagic Pocket Cinema Camera (2013)", 0, 1080, 0, 1, 0, 1.3f, 1 },
+    { "Panasonic Lumix GH2 (2010)", 1, 1080, 72, 2, 0.5f, 1.1f, 0 } };
 inline constexpr CrDigitalCamera kCrPhoneCameras[] = {
-    { "Apple iPhone 3GS (2009)", 6 }, { "Canon PowerShot A95 (2004)", 5 }, { "Logitech QuickCam (webcam, anni 2000)", 7 },
-    { "GoPro HD Hero (2010)", 8 }, { "Apple iPhone 15 Pro (HDR)", 9 } };
+    { "Apple iPhone 3GS (2009)", 6, 480, 55, 2, 0.6f, 1, 0 },
+    { "Canon PowerShot A95 (2004)", 5, 480, 60, 1, 0.5f, 1, 0 },
+    { "Logitech QuickCam (webcam, anni 2000)", 7, 240, 35, 2, 0.3f, 1, 0 },
+    { "GoPro HD Hero (2010)", 8, 1080, 60, 2, 0.7f, 1, 0 },
+    { "Apple iPhone 15 Pro (HDR)", 9, 2160, 90, 2, 0.4f, 1, 0 },
+    { "Motorola RAZR V3 (2004)", 7, 144, 20, 2, 0.3f, 1.3f, 0 },
+    { "Sony Ericsson K800i (2006)", 7, 144, 28, 2, 0.4f, 1.1f, 0 },
+    { "Nokia N95 (2007)", 6, 480, 45, 2, 0.5f, 1, 0 },
+    { "Flip UltraHD (2009)", 8, 720, 55, 2, 0.5f, 1, 0 },
+    { "Kodak Zi8 (2009)", 8, 1080, 50, 2, 0.5f, 1.3f, 0 } };
 const int kCrCinemaCameraCount = (int)std::size(kCrCinemaCameras), kCrPhoneCameraCount = (int)std::size(kCrPhoneCameras);
 
 // The names of a table's rows, for its choice parameter.

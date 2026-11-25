@@ -1542,6 +1542,10 @@ struct CreativeParams {
     int sensor, history;
     float tubeK[3], tubeB[3], tubeGamma, tubeBias, tubeQmax, tubeGreen;
     float smear, smearWell, smearMono, fpn, falseColour, fcPeriod;
+    // digital cameras, emulated (dig != 0): sensor size dW x dH (dAlias: one sample per pixel), colour planes
+    // cW x cH, the ISP's unsharp mask, the codec's quantiser scale (0: no DCT)
+    int dig, dW, dH, cW, cH, dAlias;
+    float dSharp, dQ;
     // duplicates and print: grain of the intermediates (stops), of the print (density)
     float genGrain, genSize, printGrain, printGrainSize, genSoft;   // genSoft: the duplicates' blur (px)
     // viewing medium, on the finished picture (display-linear Rec.709)
@@ -2120,6 +2124,124 @@ SM_FN SMf3 cr_signal_at(CR_PLANE Y, CR_PLANE Yb, CR_PLANE Cb, CR_PLANE Cr, int x
         }
     const int k = y * p.W + x;
     return cr_signal_out(Y[k], Yb[k], cb / (float)n, cr / (float)n, x, y, p);
+}
+
+// ---- digital cameras, emulated (research DIGITALI_OTTICHE.md A.0): the picture at the sensor's own size (box average,
+// or one sample per pixel for line-skipping and sensors without an optical low-pass: aliasing), the ISP's unsharp
+// mask, the codec's 8x8 DCT with the JPEG tables (chroma subsampled first), then scaled back up as a player does.
+// Quantisation rounds softly (a steep continuous step) so the CPU and the GPU agree.
+
+SM_CONST float CR_DCT[64] = {
+    0.353553391f, 0.353553391f, 0.353553391f, 0.353553391f, 0.353553391f, 0.353553391f, 0.353553391f, 0.353553391f,
+    0.490392640f, 0.415734806f, 0.277785117f, 0.097545161f, -0.097545161f, -0.277785117f, -0.415734806f, -0.490392640f,
+    0.461939766f, 0.191341716f, -0.191341716f, -0.461939766f, -0.461939766f, -0.191341716f, 0.191341716f, 0.461939766f,
+    0.415734806f, -0.097545161f, -0.490392640f, -0.277785117f, 0.277785117f, 0.490392640f, 0.097545161f, -0.415734806f,
+    0.353553391f, -0.353553391f, -0.353553391f, 0.353553391f, 0.353553391f, -0.353553391f, -0.353553391f, 0.353553391f,
+    0.277785117f, -0.490392640f, 0.097545161f, 0.415734806f, -0.415734806f, -0.097545161f, 0.490392640f, -0.277785117f,
+    0.191341716f, -0.461939766f, 0.461939766f, -0.191341716f, -0.191341716f, 0.461939766f, -0.461939766f, 0.191341716f,
+    0.097545161f, -0.277785117f, 0.415734806f, -0.490392640f, 0.490392640f, -0.415734806f, 0.277785117f, -0.097545161f };
+SM_CONST float CR_JPEG_Y[64] = {
+    16.0f, 11.0f, 10.0f, 16.0f, 24.0f, 40.0f, 51.0f, 61.0f,
+    12.0f, 12.0f, 14.0f, 19.0f, 26.0f, 58.0f, 60.0f, 55.0f,
+    14.0f, 13.0f, 16.0f, 24.0f, 40.0f, 57.0f, 69.0f, 56.0f,
+    14.0f, 17.0f, 22.0f, 29.0f, 51.0f, 87.0f, 80.0f, 62.0f,
+    18.0f, 22.0f, 37.0f, 56.0f, 68.0f, 109.0f, 103.0f, 77.0f,
+    24.0f, 35.0f, 55.0f, 64.0f, 81.0f, 104.0f, 113.0f, 92.0f,
+    49.0f, 64.0f, 78.0f, 87.0f, 103.0f, 121.0f, 120.0f, 101.0f,
+    72.0f, 92.0f, 95.0f, 98.0f, 112.0f, 100.0f, 103.0f, 99.0f };
+SM_CONST float CR_JPEG_C[64] = {
+    17.0f, 18.0f, 24.0f, 47.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    18.0f, 21.0f, 26.0f, 66.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    24.0f, 26.0f, 56.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    47.0f, 66.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,
+    99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f };
+
+// Plane P (W x H, the picture's) averaged over the footprint of pixel (i, j) of a w x h plane.
+SM_FN float cr_dig_down(CR_PLANE P, int i, int j, int w, int h, SM_CREF(CreativeParams) p) {
+    const float sx = (float)p.W / (float)w, sy = (float)p.H / (float)h;
+    if (p.dAlias != 0)
+        return P[cr_clamp_i((int)(((float)j + 0.5f) * sy), p.H) * p.W + cr_clamp_i((int)(((float)i + 0.5f) * sx), p.W)];
+    const int x0 = (int)CR_FLOOR((float)i * sx), y0 = (int)CR_FLOOR((float)j * sy);
+    const int x1 = SM_MAX(x0 + 1, (int)CR_FLOOR((float)(i + 1) * sx)), y1 = SM_MAX(y0 + 1, (int)CR_FLOOR((float)(j + 1) * sy));
+    float s = 0.0f;
+    int n = 0;
+    for (int y = y0; y < y1 && y < p.H; ++y)
+        for (int x = x0; x < x1 && x < p.W; ++x) {
+            s += P[y * p.W + x];
+            ++n;
+        }
+    return n > 0 ? s / (float)n : P[cr_clamp_i(y0, p.H) * p.W + cr_clamp_i(x0, p.W)];
+}
+
+// The ISP's unsharp mask on the sensor-size luma (3x3 mean as the blur).
+SM_FN float cr_dig_sharp(CR_PLANE Y, int i, int j, SM_CREF(CreativeParams) p) {
+    float s = 0.0f;
+    for (int b = -1; b <= 1; ++b)
+        for (int a = -1; a <= 1; ++a) s += Y[cr_clamp_i(j + b, p.dH) * p.dW + cr_clamp_i(i + a, p.dW)];
+    const float v = Y[j * p.dW + i];
+    return v + p.dSharp * (v - s * (1.0f / 9.0f));
+}
+
+// Block (bx, by) of a w x h plane through the codec: DCT, quantisation by the JPEG table (chroma: its own) times the
+// quality's scale, inverse DCT. Values in code units (x255, as JPEG); edge blocks read the edge again.
+SM_FN void cr_dig_dct(CR_PLANE in, CR_OUT out, int w, int h, int bx, int by, int chroma, SM_CREF(CreativeParams) p) {
+    float f[64], t[64];
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x)
+            f[y * 8 + x] = 255.0f * in[cr_clamp_i(by * 8 + y, h) * w + cr_clamp_i(bx * 8 + x, w)];
+    for (int y = 0; y < 8; ++y)   // rows
+        for (int u = 0; u < 8; ++u) {
+            float s = 0.0f;
+            for (int x = 0; x < 8; ++x) s += CR_DCT[u * 8 + x] * f[y * 8 + x];
+            t[y * 8 + u] = s;
+        }
+    for (int v = 0; v < 8; ++v)   // columns, then the quantiser
+        for (int u = 0; u < 8; ++u) {
+            float s = 0.0f;
+            for (int y = 0; y < 8; ++y) s += CR_DCT[v * 8 + y] * t[y * 8 + u];
+            const float q = SM_MAX((chroma != 0 ? CR_JPEG_C[v * 8 + u] : CR_JPEG_Y[v * 8 + u]) * p.dQ, 1.0f);
+            const float a = s / q, n = CR_FLOOR(a);
+            f[v * 8 + u] = (n + cr_smooth(0.35f, 0.65f, a - n)) * q;
+        }
+    for (int v = 0; v < 8; ++v)   // inverse: columns
+        for (int u = 0; u < 8; ++u) {
+            float s = 0.0f;
+            for (int k = 0; k < 8; ++k) s += CR_DCT[k * 8 + v] * f[k * 8 + u];
+            t[v * 8 + u] = s;
+        }
+    for (int y = 0; y < 8; ++y)   // rows
+        for (int x = 0; x < 8; ++x) {
+            const int gx = bx * 8 + x, gy = by * 8 + y;
+            if (gx >= w || gy >= h) continue;
+            float s = 0.0f;
+            for (int u = 0; u < 8; ++u) s += CR_DCT[u * 8 + x] * t[y * 8 + u];
+            out[gy * w + gx] = s * (1.0f / 255.0f);
+        }
+}
+
+// Plane P (w x h) read bilinearly at its own coordinates (u, v), edges clamped.
+SM_FN float cr_dig_sample(CR_PLANE P, int w, int h, float u, float v) {
+    u = sm_clamp(u, 0.0f, (float)(w - 1));
+    v = sm_clamp(v, 0.0f, (float)(h - 1));
+    const int i = SM_MIN((int)CR_FLOOR(u), w - 1), j = SM_MIN((int)CR_FLOOR(v), h - 1);
+    const int i1 = SM_MIN(i + 1, w - 1), j1 = SM_MIN(j + 1, h - 1);
+    const float a = u - (float)i, b = v - (float)j;
+    const float top = P[j * w + i] + (P[j * w + i1] - P[j * w + i]) * a;
+    const float bot = P[j1 * w + i] + (P[j1 * w + i1] - P[j1 * w + i]) * a;
+    return top + (bot - top) * b;
+}
+
+// Output pixel (x, y): the sensor-size luma and the subsampled colour scaled up, then code values.
+SM_FN SMf3 cr_dig_out(CR_PLANE Y, CR_PLANE Cb, CR_PLANE Cr, int x, int y, SM_CREF(CreativeParams) p) {
+    const float u = ((float)x + 0.5f) * (float)p.dW / (float)p.W - 0.5f;
+    const float v = ((float)y + 0.5f) * (float)p.dH / (float)p.H - 0.5f;
+    const float uc = ((float)x + 0.5f) * (float)p.cW / (float)p.W - 0.5f;
+    const float vc = ((float)y + 0.5f) * (float)p.cH / (float)p.H - 0.5f;
+    const float Yv = cr_dig_sample(Y, p.dW, p.dH, u, v);
+    return cr_signal_out(Yv, Yv, cr_dig_sample(Cb, p.cW, p.cH, uc, vc), cr_dig_sample(Cr, p.cW, p.cH, uc, vc), x, y, p);
 }
 
 // ---- analog tape, emulated: a signal along each line, causal filters, one cause for many symptoms
