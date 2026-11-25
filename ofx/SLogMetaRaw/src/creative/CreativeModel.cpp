@@ -64,7 +64,13 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Stampa fotografica su carta",
                                                      "Proiettore Super 8 (alogena, 18 fps)",
                                                      "Televisore Trinitron (anni '90)", "Televisore al plasma (anni 2000)",
-                                                     "Primo schermo LCD (anni 2000)" };
+                                                     "Primo schermo LCD (anni 2000)",
+                                                     "Console 8 bit: NES (1985) su tubo, composito",
+                                                     "Console 8 bit: Master System (1986) su tubo, RGB",
+                                                     "Console 16 bit: Mega Drive (1988) su tubo, RGB",
+                                                     "Console 16 bit: Super Nintendo (1990) su tubo, RGB",
+                                                     "Console 32 bit: PlayStation (1994) su tubo, RGB",
+                                                     "Console 32 bit: Saturn (1994) su tubo, RGB" };
 const char* const kCrSensorNames[kCrSensorCount] = { "Nessuno (il segnale com'è)", "3 tubi Plumbicon (anni '70)",
                                                      "3 tubi Plumbicon con bias light e ACT (anni '80)",
                                                      "3 tubi Saticon", "1 tubo Saticon a strisce (consumer)",
@@ -89,7 +95,25 @@ const char* const kCrMediumInfo[kCrMediumCount] = {
     "righe sottili, fosfori a strisce",
     "LCD riflettente 160x144 a quattro toni di verde, retinatura ordinata, griglia fra i pixel, cornice, scia",
     "Carta: bianco della carta, nero massimo (Dmax 2,1), gamut più piccolo che comprime i colori saturi, fibre, luce "
-    "della lampada che cala ai bordi" };
+    "della lampada che cala ai bordi",
+    "Proiettore Super 8 di casa: alogena a 3100 K, macchia calda al centro, sfarfallio a 18 fotogrammi con otturatore "
+    "a tre pale, la griffa che fa saltare il quadro, obiettivo economico morbido, angoli del finestrino arrotondati",
+    "Trinitron: griglia ad apertura (strisce continue), più luce, vetro più scuro, i due fili di smorzamento a un "
+    "terzo e a due terzi dell'altezza",
+    "Plasma: nero profondo, gamma circa 2,3, dithering a impulsi nelle ombre che cambia a ogni fotogramma",
+    "Primo LCD: nero grigio-bluastro, pixel lenti che lasciano la scia, bianco freddo, 6 bit con bande morbide",
+    "NES: 256x240 pixel, la tavolozza fissa di 54 colori che il chip genera come onda NTSC (ogni colore scelto fra "
+    "quelli), uscita composita morbida; 240 righe progressive con le righe nere fra l'una e l'altra, televisore di casa",
+    "Master System: 256x192 pixel, 64 colori (2 bit per canale), bordo nero sopra e sotto nelle 240 righe; RGB, tubo "
+    "di casa",
+    "Mega Drive: 320x224 pixel, 512 colori (3 bit per canale, con i livelli non lineari del suo DAC); RGB, 240 righe "
+    "con le righe nere, tubo di casa",
+    "Super Nintendo: 256x224 pixel, 32768 colori (5 bit per canale), pixel più larghi del Mega Drive; RGB, 240 righe "
+    "con le righe nere, tubo di casa",
+    "PlayStation: 320x240 pixel, 5 bit per canale con la retinatura ordinata 4x4 della sua GPU, che si vede nelle "
+    "sfumature; RGB, 240 righe con le righe nere, tubo di casa",
+    "Saturn: 320x224 pixel, 5 bit per canale senza retinatura (le sfumature fanno bande); RGB, 240 righe con le righe "
+    "nere, tubo di casa" };
 const char* const kCrFormatNames[kCrFormatCount] = { "Super 8", "16 mm", "Super 35", "65 mm (Todd-AO, Panavision 70)",
                                                      "IMAX 15/70", "Lastra 9x12", "Super 16", "8 mm",
                                                      "9,5 mm Pathé-Baby", "35 mm anamorfico", "Techniscope",
@@ -190,7 +214,8 @@ const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00
 struct Medium { int kind, lines; float curve, beamMin, beamMax, mask; int maskType; float triads, falloff, flicker,
                 white[3], unsteady, soft, corner, edge, glow, glowRadius, ghost;
                 float gamma, contrast, ambient, nits, kelvin, colour, overscan; int room; float chroma;
-                float damper, plasma, levels, blackTint[3]; };   // blackTint 0: neutral
+                float damper, plasma, levels, blackTint[3];   // blackTint 0: neutral
+                int console; };                               // kConsoles, 0: none
 const Medium kMedia[kCrMediumCount] = {
     { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0,
       2.4f, 2000, 0, 100, 6500, 100, 0, 1, 0 },
@@ -220,7 +245,62 @@ const Medium kMedia[kCrMediumCount] = {
       2.3f, 3000, 0.004f, 150, 6500, 102, 2, 2, 0, 0, 1 },
     // an early LCD (C.6): grey-blue black, slow pixels, cold white, 6 bits
     { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.06f, 0, { 1, 1, 1 }, 0, 0, 0, 0.002f, 0, 0, 0.35f,
-      2.2f, 500, 0.012f, 200, 8000, 95, 0, 2, 0, 0, 0, 64, { 0.85f, 0.95f, 1.25f } } };
+      2.2f, 500, 0.012f, 200, 8000, 95, 0, 2, 0, 0, 0, 64, { 0.85f, 0.95f, 1.25f } },
+    // home consoles on the PAL set of the house (its response), in their 240 progressive lines: one line per row of
+    // the console, so the dark gaps between lines show. The NES only had composite (softer along the line); the
+    // others went out in RGB over SCART in Europe. kConsoles holds the frame and the colours.
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 1.4f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 1 },
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.5f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 2 },
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.5f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 3 },
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.5f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 4 },
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.5f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 5 },
+    { CR_MEDIUM_SCREEN, 240, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.5f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0, 0, 0, 0, { 0, 0, 0 }, 6 } };
+
+// Home consoles (emulator and hardware references, [gen] where noted): frame, lines, colours (CreativeParams.cKind)
+// and the PlayStation's dither. Mega Drive DAC levels as measured on the hardware (normal mode, in 8-bit code values,
+// as emulators use them); Master System 2 bits, SNES, PlayStation and Saturn 5 bits per channel, even steps.
+struct Console { int cols, rows, kind, n, dither; float levels[8]; };
+const Console kConsoles[] = { { 0, 0, 0, 0, 0, { 0 } },
+                              { 256, 240, 1, 64, 0, { 0 } },   // NES: the palette, built by nesPalette
+                              { 256, 192, 2, 4, 0, { 0 } },
+                              { 320, 224, 3, 8, 0, { 0, 52, 87, 116, 144, 172, 206, 255 } },
+                              { 256, 224, 2, 32, 0, { 0 } },
+                              { 320, 240, 2, 32, 1, { 0 } },
+                              { 320, 224, 2, 32, 0, { 0 } } };
+
+// The NES palette as the 2C02 makes it: no colour table, a square wave between two voltages (per brightness level)
+// whose phase is the hue, decoded by the television. Levels of the 2C02 as measured (volts, black 0.518, white
+// 1.962); hue 0 grey at the high level, 13 grey at the low, 14 and 15 black; 12 samples per colour cycle, the burst
+// at hue 8 (phase offset 4 samples puts 0x16 on red, 0x28 on yellow, 0x21 on light blue, as on the hardware), FCC
+// YIQ to RGB. The result is a code value, as the set shows it.
+static void nesPalette(float out[192])
+{
+    const double lo[4] = { 0.350, 0.518, 0.962, 1.550 }, hi[4] = { 1.094, 1.506, 1.962, 1.962 };
+    const double black = 0.518, white = 1.962;
+    for (int c = 0; c < 64; ++c) {
+        const int h = c & 15, l = (c >> 4) & 3;
+        double y = 0, i = 0, q = 0;
+        if (h < 14) {
+            const double vh = h == 13 ? lo[l] : hi[l], vl = h == 0 ? hi[l] : lo[l];
+            for (int s = 0; s < 12; ++s) {
+                const double v = ((h + s) % 12 < 6 ? vh : vl) - black, a = 3.14159265358979 / 6.0 * (s + 4);
+                const double n = v / (white - black);
+                y += n / 12.0;
+                i += n * std::cos(a) / 6.0;
+                q += n * std::sin(a) / 6.0;
+            }
+        }
+        const double rgb[3] = { y + 0.946882 * i + 0.623557 * q, y - 0.274788 * i - 0.635691 * q,
+                                y - 1.108545 * i + 1.709007 * q };
+        for (int k = 0; k < 3; ++k) out[c * 3 + k] = (float)std::min(std::max(rgb[k], 0.0), 1.0);
+    }
+}
 
 // A white of Kelvin k on a D65 screen, as Rec.709 gains (largest 1), with the eye adapted most of the way: a 3200 K
 // lamp reads warm, not orange (adaptation share [gen]). Planckian locus: Krystek 1985 (as in math/HostOnly.h).
@@ -484,7 +564,7 @@ CrMediumRows creativeMediumRows(int m)
 {
     const Medium& md = kMedia[m >= 0 && m < kCrMediumCount ? m : 0];
     const bool on = md.kind != CR_MEDIUM_NONE && md.kind != CR_MEDIUM_LCD;   // the console's greens are its own
-    return { on, on, on && md.lines > 0 };
+    return { on, on, on && md.lines > 0, md.unsteady > 0 };
 }
 
 namespace {
@@ -531,6 +611,7 @@ void creativeLoadDevice(CreativeControls& c)
         c.vignette = m.vignette;
         c.aberration = m.aberration;
         c.bloom = m.bloom;
+        c.hair = m.hair;
     } else if (c.device == kCrDevVideo) {
         const CrVideoCamera& m = kCrVideoCameras[pick(c.videoCamera, kCrVideoCameraCount)];
         c.analog = m.tape;
@@ -708,6 +789,115 @@ void creativeRecordTimes(const CreativeControls& c0, double out[3])
     }
 }
 
+// Film unsteadiness, frame by frame, without a rhythm (research: CREATIVE.md, "Oscillazione"). Value noise with
+// knots every `period` frames, Catmull-Rom between them: a drift that wanders, not a sine; RMS about 0.6.
+static double weaveDrift(double frame, double period, int seed)
+{
+    const double t = frame / period, f = t - std::floor(t);
+    const int i = (int)std::floor(t);
+    const double p0 = cr_hash(i - 1, seed, 911), p1 = cr_hash(i, seed, 911), p2 = cr_hash(i + 1, seed, 911),
+                 p3 = cr_hash(i + 2, seed, 911);
+    return 0.5 * ((2 * p1) + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f
+                  + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+}
+static double weaveKick(int frame, int seed) { return cr_hash(frame, seed, 913); }   // one frame's own error
+
+void creativeWeave(const CreativeControls& c0, int W, int H, int frame, double out[6])
+{
+    const CreativeControls c = creativeResolve(c0);
+    for (int k = 0; k < 6; ++k) out[k] = 0;
+    const bool toggles = creativeToggles(c.process);
+    const bool texture = !toggles || c.useTexture;
+    const unsigned bit = 1u << (c.process >= 0 && c.process < kCrProcessCount ? c.process : 0);
+    const unsigned moving = (1u << kCrColourNegative) | (1u << kCrReversal) | (1u << kCrBlackWhite) | (1u << kCrTechni3)
+                            | (1u << kCrTechni2) | (1u << kCrAutochrome) | (1u << kCrDufay) | (1u << kCrThreePlates)
+                            | (1u << kCrKinemacolor);
+    const Format& fmt = kFormats[c.format >= 0 && c.format < kCrFormatCount ? c.format : 2];
+    if (texture && (bit & moving) && c.camWeave) {
+        // the camera: the claw leaves the film a little off at every frame (mostly vertical, uncorrelated), the side
+        // rail lets it wander sideways over about half a second. The table's value is the peak; RMS = peak / 2.5.
+        const double s = clampd(c.weave, 0, 1) * fmt.weave * W / 2.5;
+        out[0] = s * (0.85 * weaveDrift(frame, 14, 1) + 0.35 * weaveKick(frame, 2));
+        out[1] = s * (0.75 * weaveKick(frame, 3) + 0.40 * weaveDrift(frame, 8, 4));
+    }
+    const bool printed = (bit & ((1u << kCrColourNegative) | (1u << kCrBlackWhite)))
+                         && !(c.process == kCrColourNegative && (c.print == 0 || creativeLogOut(c)));
+    if (texture && printed && c.printWeave > 0) {
+        // each printing step (contact printer: the two films slip a little on the sprocket) adds a slow drift
+        static const int steps[kCrGenerationCount] = { 1, 3, 3, 5 };
+        const int g = c.generation >= 0 && c.generation < kCrGenerationCount ? c.generation : 0;
+        const double s = clampd(c.printWeave, 0, 3) * 0.00015 * W * std::sqrt((double)steps[g])
+                         * std::max(fmt.weave / 0.0012, 1.0);
+        out[2] = s * weaveDrift(frame, 20, 5);
+        out[3] = s * weaveDrift(frame, 11, 6);
+    }
+    if (c.medium > 0 && c.medium < kCrMediumCount && c.projWeave && !creativeLogOut(c)) {
+        // the projector: a 35 mm intermittent sprocket turns a quarter per frame, so a worn tooth repeats its jump
+        // every 4 frames; the claw of a 16 mm or Super 8 projector errs at every frame. Sideways the film wanders
+        // between the guide rails over a couple of seconds.
+        const Medium& md = kMedia[c.medium];
+        const double s = md.unsteady * clampd(c.projectorWeave, 0, 3) * H / 1.5;   // the table: peak
+        if (s > 0) {
+            if (c.medium == 1) {
+                out[4] = s * (0.6 * weaveDrift(frame, 40, 7) + 0.2 * weaveKick(frame, 8));
+                out[5] = s * (0.55 * cr_hash(((frame % 4) + 4) % 4, 9, 915) + 0.35 * weaveKick(frame, 10));
+            } else {
+                out[4] = s * (0.7 * weaveDrift(frame, 30, 7) + 0.3 * weaveKick(frame, 8));
+                out[5] = s * (0.8 * weaveKick(frame, 10) + 0.3 * weaveDrift(frame, 6, 11));
+            }
+        }
+    }
+}
+
+// Something caught in the camera's gate, for the shot this frame belongs to (shots of 96 frames, [gen]): in a share
+// `amount` of them a hair (thin, long, curling in from an edge of the aperture) or a crumb of emulsion scraped off
+// the film (short, thick); it trembles a little with the film's passage and stays for the whole shot.
+// The camera aperture's height in mm per format (kCrFormatNames order; SMPTE and makers' figures, plates and stills
+// their picture height): a hair is the same 60-90 um everywhere, huge on Super 8, a thread on 65 mm.
+static const double kGateMM[kCrFormatCount] = { 4.01, 7.49, 18.66, 23.01, 52.63, 90.0, 7.41, 3.68,
+                                                6.5, 18.59, 9.47, 25.17, 16.03, 24.0, 56.0 };
+
+static void creativeHair(CreativeParams& p, double amount, int W, int H, int frame, int format)
+{
+    const double mm = H / kGateMM[format >= 0 && format < kCrFormatCount ? format : 2];   // pixels per mm
+    p.hair = 0;
+    if (amount <= 0) return;
+    const int shot = (int)std::floor(frame / 96.0);
+    if (cr_hash01(shot, 1, 920) >= amount) return;
+    const bool crumb = cr_hash01(shot, 2, 920) < 0.35f;
+    const int side = (int)(cr_hash01(shot, 3, 920) * 4.0f) & 3;   // left, top, right, bottom
+    const double along = 0.1 + 0.8 * cr_hash01(shot, 4, 920);
+    // a hair: 60-90 um thick, 0.6-2.5 mm into the aperture; a crumb: 0.1-0.25 mm thick, 0.15-0.5 mm long
+    const double len = mm * (crumb ? 0.15 + 0.35 * cr_hash01(shot, 5, 920) : 0.6 + 1.9 * cr_hash01(shot, 5, 920));
+    p.hairW = (float)(0.5 * mm * (crumb ? 0.10 + 0.15 * cr_hash01(shot, 6, 920) : 0.06 + 0.03 * cr_hash01(shot, 6, 920)));
+    p.hair = crumb ? 0.92f : 0.97f;
+    // from just outside the edge, inward, each step turning a little more (a curl)
+    double x = side == 0 ? -0.1 * mm : side == 2 ? W + 0.1 * mm : along * W;
+    double y = side == 1 ? -0.1 * mm : side == 3 ? H + 0.1 * mm : along * H;
+    double a = (side == 0 ? 0.0 : side == 1 ? 0.5 : side == 2 ? 1.0 : 1.5) * 3.14159265358979 + 0.6 * cr_hash(shot, 7, 920);
+    const double turn = (crumb ? 0.5 : 0.9) * cr_hash(shot, 8, 920);
+    float box[4] = { 1e9f, 1e9f, -1e9f, -1e9f };
+    for (int i = 0; i < 5; ++i) {
+        // the free end trembles more than the root, a little at every frame
+        const double shake = 0.012 * mm * i / 4.0;   // up to 12 um at the free end
+        const float px = (float)(x + shake * cr_hash(frame, 10 + i, 921)), py = (float)(y + shake * cr_hash(frame, 20 + i, 921));
+        p.hairPt[2 * i] = px;
+        p.hairPt[2 * i + 1] = py;
+        box[0] = std::min(box[0], px);
+        box[1] = std::min(box[1], py);
+        box[2] = std::max(box[2], px);
+        box[3] = std::max(box[3], py);
+        x += std::cos(a) * len / 4.0;
+        y += std::sin(a) * len / 4.0;
+        a += turn;
+    }
+    const float m = p.hairW + 2.0f;
+    p.hairBox[0] = box[0] - m;
+    p.hairBox[1] = box[1] - m;
+    p.hairBox[2] = box[2] + m;
+    p.hairBox[3] = box[3] + m;
+}
+
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
                      int history)
 {
@@ -716,7 +906,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     const bool useTone = !toggles || c.useTone, useColour = !toggles || c.useColour, useTexture = !toggles || c.useTexture;
     if (!useTexture) {   // the film's grain, glows, lens and gate: none
         c.grain = c.printGrain = c.halation = c.bloom = c.aberration = c.vignette = 0;
-        c.weave = c.breath = c.dust = c.scratches = 0;
+        c.weave = c.hair = c.breath = c.dust = c.scratches = 0;
         c.distortion = c.edgeSoft = c.swirl = c.glare = c.streak = 0;
         c.lens = 0;
     }
@@ -1195,9 +1385,10 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     }
 
     // where the records are read: gate weave, breath, aberration, registration of separate records
-    const double wv = film ? clampd(c.weave, 0, 1) * fmt.weave * W : 0.0;
-    p.weaveX = (float)(wv * (0.7 * sin(frame * 0.9 + 1.3) + 0.3 * cr_hash(frame, 1, 71)));
-    p.weaveY = (float)(0.6 * wv * (0.7 * sin(frame * 0.63 + 0.2) + 0.3 * cr_hash(frame, 2, 72)));
+    double wv[6];
+    creativeWeave(c0, W, H, frame, wv);
+    p.weaveX = film ? (float)(wv[0] + wv[2]) : 0.0f;   // camera and printer: the picture moves on the film
+    p.weaveY = film ? (float)(wv[1] + wv[3]) : 0.0f;
     const double br = clampd(c.breath, 0, 1);
     if (br > 0) {
         p.exposure *= (float)exp2(0.06 * br * cr_hash(frame, 3, 73));
@@ -1242,6 +1433,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     p.lStreak *= (float)(1.0 - std::exp(-1.0 / std::max((double)p.lStreakLen, 1.0)));
 
     p.dust = (float)clampd(c.dust, 0, 1);
+    if (film) creativeHair(p, clampd(c.hair, 0, 1), W, H, frame, c.format);
     p.scratches = film ? (float)clampd(c.scratches, 0, 1) : 0.0f;
     p.moved = (p.weaveX != 0 || p.weaveY != 0 || p.jitter > 0 || p.headShift > 0 || p.flipX || ca > 0 || reg > 0
                || p.lDistX != 0 || p.lDistY != 0) ? 1 : 0;
@@ -1318,8 +1510,8 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     kelvinWhite(r.mediumKelvin, white);
     for (int k = 0; k < 3; ++k) p.mWhite[k] = 1.0f + (md.white[k] * white[k] - 1.0f) * ma;
     p.mFalloff = md.falloff * ma;
-    p.mShiftX = (float)(md.unsteady * ma * H * (0.6 * sin(frame * 1.7 + 0.4) + 0.4 * cr_hash(frame, 6, 82)));
-    p.mShiftY = (float)(md.unsteady * ma * H * 0.8 * (0.6 * sin(frame * 1.3 + 2.1) + 0.4 * cr_hash(frame, 7, 83)));
+    p.mShiftX = (float)(wv[4] * ma);   // the projector: the whole film moves on the screen
+    p.mShiftY = (float)(wv[5] * ma);
     p.mSoft = md.soft * ma * k1080;
     p.mCorner = std::min(md.corner * ma * H, 0.25f * std::min(W, H));
     p.mEdge = std::max(0.5f, md.edge * ma * H);
@@ -1347,6 +1539,18 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     for (int k = 0; k < 3; ++k)
         p.mBlackTint[k] = md.blackTint[0] + md.blackTint[1] + md.blackTint[2] > 0.0f
                               ? 1.0f + (md.blackTint[k] - 1.0f) * ma : 1.0f;
+    if (md.console > 0) {   // a console's frame: full at any amount, as the LCD console (it is the device)
+        const Console& k = kConsoles[md.console];
+        p.cKind = k.kind;
+        p.cCols = k.cols;
+        p.cRows = k.rows;
+        p.cLines = md.lines;
+        p.cN = k.n;
+        p.cDither = k.dither;
+        for (int l = 0; l < 8; ++l) p.cLevels[l] = k.levels[l] / 255.0f;
+        if (k.kind == 1) nesPalette(p.cPal);
+        p.mLines = md.lines;   // the console's lines even where the tube's would be too fine to show
+    }
     if (md.kind == CR_MEDIUM_LCD) {   // 160 x 144, four shades of green (emulator values, [gen])
         p.mCols = 160;
         p.mRows = 144;

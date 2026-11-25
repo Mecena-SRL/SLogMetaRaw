@@ -198,35 +198,38 @@ const int kCrMakerCount = (int)std::size(kCrMakers);
 // loads into the texture rows: gate weave and flicker (0..1, multiples of the format's own), the lens's vignetting
 // (stops), chromatic aberration and diffusion. Weave classes from the research: double pin 0.1-0.15, single pin
 // 0.25-0.35, claw 0.4-0.6, amateur claw 0.7, cartridge 0.85-0.9, hand crank 1.
-struct CrCamera { const char* name; int format; unsigned formats; float weave, breath, vignette, aberration, bloom; };
+// hair: the share of shots with something caught in the gate ([gen]: open gates and amateur cartridges more often,
+// studio cameras cleaned at every reload).
+struct CrCamera { const char* name; int format; unsigned formats; float weave, breath, vignette, aberration, bloom;
+                  float hair = 0.1f; };
 #define CR_F(i) (1u << (i))
 inline constexpr CrCamera kCrCameras[] = {
-    { "Pathé-Baby (9,5 mm, 1922, a manovella)", 8, CR_F(8), 1.0f, 0.6f, 1.0f, 0.4f, 0.15f },
-    { "Kodak Brownie Movie Camera (8 mm, 1951)", 7, CR_F(7), 0.8f, 0.3f, 0.8f, 0.3f, 0.1f },
-    { "Bolex H16 Reflex (16 mm, 1956)", 1, CR_F(1), 0.6f, 0.15f, 0.4f, 0.15f, 0 },
-    { "Canon 1014 XL-S (Super 8, 1979)", 0, CR_F(0), 0.9f, 0.2f, 0.6f, 0.25f, 0.05f },
-    { "Nizo S800 (Super 8, 1972)", 0, CR_F(0), 0.85f, 0.2f, 0.5f, 0.2f, 0 },
-    { "Beaulieu 4008 ZM (Super 8, 1971)", 0, CR_F(0), 0.8f, 0.15f, 0.4f, 0.15f, 0 },
-    { "Krasnogorsk-3 (16 mm, URSS 1971)", 1, CR_F(1) | CR_F(6), 0.65f, 0.2f, 0.7f, 0.35f, 0.1f },
-    { "Arriflex 16ST (16 mm, 1952)", 1, CR_F(1), 0.5f, 0.1f, 0.4f, 0.15f, 0 },
-    { "Éclair NPR (16 mm, 1960)", 1, CR_F(1), 0.4f, 0.1f, 0.35f, 0.1f, 0 },
-    { "Arriflex 16SR (16 e Super 16, 1975)", 6, CR_F(1) | CR_F(6), 0.3f, 0.05f, 0.3f, 0.1f, 0 },
-    { "Aaton XTR (Super 16, 1990)", 6, CR_F(1) | CR_F(6), 0.35f, 0.05f, 0.3f, 0.1f, 0 },
-    { "Arriflex 416 (Super 16, 2006)", 6, CR_F(6), 0.15f, 0.03f, 0.2f, 0.05f, 0 },
-    { "Mitchell BNC (35 mm Academy, 1934)", 12, CR_F(12) | CR_F(2), 0.15f, 0.05f, 0.5f, 0.2f, 0.1f },
-    { "Arriflex 35 IIC (35 mm, 1963)", 12, CR_F(12) | CR_F(2) | CR_F(10), 0.45f, 0.05f, 0.4f, 0.15f, 0 },
-    { "Konvas-1M (35 mm, URSS)", 12, CR_F(12) | CR_F(2), 0.5f, 0.1f, 0.6f, 0.3f, 0.15f },
-    { "Arriflex 35BL (35 mm, 1972)", 2, CR_F(2) | CR_F(12) | CR_F(10), 0.25f, 0.03f, 0.3f, 0.1f, 0 },
+    { "Pathé-Baby (9,5 mm, 1922, a manovella)", 8, CR_F(8), 1.0f, 0.6f, 1.0f, 0.4f, 0.15f, 0.4f },
+    { "Kodak Brownie Movie Camera (8 mm, 1951)", 7, CR_F(7), 0.8f, 0.3f, 0.8f, 0.3f, 0.1f, 0.3f },
+    { "Bolex H16 Reflex (16 mm, 1956)", 1, CR_F(1), 0.6f, 0.15f, 0.4f, 0.15f, 0, 0.2f },
+    { "Canon 1014 XL-S (Super 8, 1979)", 0, CR_F(0), 0.9f, 0.2f, 0.6f, 0.25f, 0.05f, 0.25f },
+    { "Nizo S800 (Super 8, 1972)", 0, CR_F(0), 0.85f, 0.2f, 0.5f, 0.2f, 0, 0.25f },
+    { "Beaulieu 4008 ZM (Super 8, 1971)", 0, CR_F(0), 0.8f, 0.15f, 0.4f, 0.15f, 0, 0.25f },
+    { "Krasnogorsk-3 (16 mm, URSS 1971)", 1, CR_F(1) | CR_F(6), 0.65f, 0.2f, 0.7f, 0.35f, 0.1f, 0.35f },
+    { "Arriflex 16ST (16 mm, 1952)", 1, CR_F(1), 0.5f, 0.1f, 0.4f, 0.15f, 0, 0.15f },
+    { "Éclair NPR (16 mm, 1960)", 1, CR_F(1), 0.4f, 0.1f, 0.35f, 0.1f, 0, 0.12f },
+    { "Arriflex 16SR (16 e Super 16, 1975)", 6, CR_F(1) | CR_F(6), 0.3f, 0.05f, 0.3f, 0.1f, 0, 0.1f },
+    { "Aaton XTR (Super 16, 1990)", 6, CR_F(1) | CR_F(6), 0.35f, 0.05f, 0.3f, 0.1f, 0, 0.1f },
+    { "Arriflex 416 (Super 16, 2006)", 6, CR_F(6), 0.15f, 0.03f, 0.2f, 0.05f, 0, 0.05f },
+    { "Mitchell BNC (35 mm Academy, 1934)", 12, CR_F(12) | CR_F(2), 0.15f, 0.05f, 0.5f, 0.2f, 0.1f, 0.08f },
+    { "Arriflex 35 IIC (35 mm, 1963)", 12, CR_F(12) | CR_F(2) | CR_F(10), 0.45f, 0.05f, 0.4f, 0.15f, 0, 0.1f },
+    { "Konvas-1M (35 mm, URSS)", 12, CR_F(12) | CR_F(2), 0.5f, 0.1f, 0.6f, 0.3f, 0.15f, 0.2f },
+    { "Arriflex 35BL (35 mm, 1972)", 2, CR_F(2) | CR_F(12) | CR_F(10), 0.25f, 0.03f, 0.3f, 0.1f, 0, 0.06f },
     { "Panavision Panaflex (35 mm anamorfico, 1972)", 9, CR_F(9) | CR_F(2) | CR_F(12), 0.15f, 0.03f, 0.6f, 0.3f,
-      0.1f },
-    { "Arriflex 435 (Super 35, 1995)", 2, CR_F(2) | CR_F(12) | CR_F(10), 0.1f, 0.02f, 0.2f, 0.05f, 0 },
-    { "Mitchell VistaVision (1954)", 11, CR_F(11), 0.15f, 0.03f, 0.3f, 0.1f, 0 },
-    { "Todd-AO (65 mm, 1955)", 3, CR_F(3), 0.15f, 0.03f, 0.5f, 0.2f, 0.05f },
-    { "Panavision System 65 (65 mm, 1991)", 3, CR_F(3), 0.1f, 0.02f, 0.3f, 0.1f, 0 },
-    { "IMAX MSM 9802 (IMAX 15/70, 1990)", 4, CR_F(4), 0.1f, 0.02f, 0.3f, 0.1f, 0 },
-    { "Leica M6 (135, 1984)", 13, CR_F(13), 0, 0.3f, 0.5f, 0.1f, 0 },
-    { "Canon AE-1 (135, 1976)", 13, CR_F(13), 0, 0.3f, 0.4f, 0.15f, 0 },
-    { "Hasselblad 500C/M (120 6x6, 1970)", 14, CR_F(14), 0, 0.3f, 0.4f, 0.05f, 0 } };
+      0.1f, 0.04f },
+    { "Arriflex 435 (Super 35, 1995)", 2, CR_F(2) | CR_F(12) | CR_F(10), 0.1f, 0.02f, 0.2f, 0.05f, 0, 0.04f },
+    { "Mitchell VistaVision (1954)", 11, CR_F(11), 0.15f, 0.03f, 0.3f, 0.1f, 0, 0.06f },
+    { "Todd-AO (65 mm, 1955)", 3, CR_F(3), 0.15f, 0.03f, 0.5f, 0.2f, 0.05f, 0.05f },
+    { "Panavision System 65 (65 mm, 1991)", 3, CR_F(3), 0.1f, 0.02f, 0.3f, 0.1f, 0, 0.04f },
+    { "IMAX MSM 9802 (IMAX 15/70, 1990)", 4, CR_F(4), 0.1f, 0.02f, 0.3f, 0.1f, 0, 0.03f },
+    { "Leica M6 (135, 1984)", 13, CR_F(13), 0, 0.3f, 0.5f, 0.1f, 0, 0 },
+    { "Canon AE-1 (135, 1976)", 13, CR_F(13), 0, 0.3f, 0.4f, 0.15f, 0, 0 },
+    { "Hasselblad 500C/M (120 6x6, 1970)", 14, CR_F(14), 0, 0.3f, 0.4f, 0.05f, 0, 0 } };
 #undef CR_F
 const int kCrCameraCount = (int)std::size(kCrCameras);
 

@@ -21,7 +21,7 @@ extern const char* const kCrProcessInfo[kCrProcessCount];
 // The variants of each process (one choice parameter each, shown with its process). Append only.
 const int kCrNegativeCount = 20, kCrReversalCount = 6, kCrBWStockCount = 6, kCrSensitivityCount = 4, kCrFilterCount = 5,
           kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 15,
-          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 12,
+          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 18,
           kCrSensorCount = 10, kCrTransferCount = 6;
 extern const char* const kCrNegativeNames[kCrNegativeCount];
 extern const char* const kCrReversalNames[kCrReversalCount];
@@ -77,6 +77,12 @@ struct CreativeControls
     // texture and optics (amounts are multiples of the process's own, 1 = as it was)
     double grain = 1, grainSize = 1, halation = 1, bloom = 0, bloomRadius = 2, aberration = 0, vignette = 0,
            weave = 0, breath = 0, dust = 0, scratches = 0;
+    // unsteadiness, each from its own machine (0 off): the camera's (weave, above), each printing step's, the
+    // projector's (multiple of its own, 1 = typical)
+    int camWeave = 1, projWeave = 1;
+    // a hair or a crumb of emulsion caught in the camera's gate: the share of shots that have one (0 none)
+    double hair = 0;
+    double printWeave = 1, projectorWeave = 1;
     // separations, screens, plates
     double registration = 0, interval = 0, keyImage = -1, dyeDensity = 1;   // keyImage -1: the era's own
     double mosaicScale = 1, clump = 0.5, viewLight = 0.85;
@@ -102,8 +108,9 @@ extern const char* const kCrRoomNames[3];
 // The preset of medium m written into c's response fields (gamma, contrast, ambient light, peak, white, colour,
 // overscan, room), and c.mediumLoaded = m.
 void creativeLoadMedium(CreativeControls& c, int m);
-// Which response rows mean something for medium m: tone (gamma, contrast, light, peak, room), white, overscan.
-struct CrMediumRows { bool tone, white, overscan; };
+// Which response rows mean something for medium m: tone (gamma, contrast, light, peak, room), white, overscan, and
+// whether it moves the film (a projector).
+struct CrMediumRows { bool tone, white, overscan, weave; };
 CrMediumRows creativeMediumRows(int m);
 
 // The device's model as one number (0 for manual), and its preset written into c's rows: format, weave, flicker and
@@ -113,6 +120,9 @@ void creativeLoadDevice(CreativeControls& c);
 // The controls as the engine reads them: the device's process and variant (stock, camera row), the model's preset
 // when the rows do not hold it. Manual: c as it is.
 CreativeControls creativeResolve(const CreativeControls& c);
+// Film unsteadiness in pixels at frame: out[0..1] the camera's (x, y), [2..3] the printer's (the picture moves on the
+// film), [4..5] the projector's (the whole film moves on the screen, at full medium intensity).
+void creativeWeave(const CreativeControls& c, int W, int H, int frame, double out[6]);
 // The chosen stock (nullptr unless a film device) and whether it was made in the chosen format.
 const CrStock* creativeStock(const CreativeControls& c);
 bool creativeStockFits(const CreativeControls& c);

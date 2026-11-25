@@ -1,5 +1,25 @@
 # Changelog
 
+## In sviluppo
+
+- **Creative, corretto un crash**: scegliere come supporto di visione il proiettore Super 8, il Trinitron, il plasma o
+  il primo LCD chiudeva Resolve (mancava il testo «Come si vede» di quei supporti). Un test ora controlla ogni voce.
+- **Creative, oscillazione della pellicola rifatta**: non più una sinusoide regolare ma tre cause separate, ognuna con
+  il suo carattere.
+  - *Ripresa* (spunta e ampiezza): la griffa sbaglia a ogni fotogramma in verticale, il pattino fa derivare di lato.
+  - *Stampa*: ogni passaggio in stampatrice aggiunge una deriva lenta (una copia di distribuzione ne ha tre).
+  - *Proiezione* (spunta e ampiezza, su sala e proiettori): in sala il rocchetto ripete il salto ogni 4 fotogrammi; i
+    proiettori 16 mm e Super 8 a griffa sbagliano a ogni fotogramma e muovono tutta la pellicola.
+- **Creative, pelo nel finestrino**: in ripresa un pelo o un ricciolo d'emulsione entra da un bordo del finestrino e
+  resta per tutta l'inquadratura, tremando appena. Quanto spesso dipende dalla cinepresa (Pathé e Krasnogorsk spesso,
+  Arri 435 e IMAX quasi mai); la misura è reale (pelo 60-90 µm, ricciolo 0,1-0,25 mm), quindi pesa di più nei formati
+  piccoli. È luce tolta prima della curva: resta scuro anche dopo stampa e scansione.
+- **Creative, console come dispositivo di riproduzione**: NES e Master System (8 bit), Mega Drive e Super Nintendo
+  (16 bit), PlayStation e Saturn (32 bit), ognuna sul televisore a tubo di casa. L'immagine diventa il quadro della
+  console (risoluzione, 4:3, bordo) con i suoi colori: la tavolozza del NES ricavata dal suo segnale, 2 bit del Master
+  System, i livelli del DAC del Mega Drive, 5 bit di SNES e Saturn, la retinatura della PlayStation; 240 righe con le
+  righe nere fra l'una e l'altra.
+
 ## Log MetaRaw 4.2.0
 
 - **Log MetaRaw Audio** (nuovo, VST3 per Fairlight su Mac e Windows): due plugin per il suono d'epoca.

@@ -1515,6 +1515,9 @@ struct CreativeParams {
     float slope[3], offset[3], shoulder, toe, interlayer;
     float grainAmount, grainSize, grainColor, grainLayer[3];
     float dust, scratches, dustSign;
+    // something caught in the camera's gate (a hair or a crumb of emulsion): opacity, half width (px), a polyline
+    // of five points (x, y) and its bounding box with the width in it (x0, y0, x1, y1)
+    float hair, hairW, hairPt[10], hairBox[4];
     float printOffset[3], printContrast[3], dmax;
     // colour (stops)
     float splitShadow[3], splitHigh[3], splitBalance, saturation, density;
@@ -1565,6 +1568,11 @@ struct CreativeParams {
     // a Trinitron's two damper wires, a plasma's dithering in the shadows, a panel's few bits (levels, 0: none),
     // the colour of the screen's black
     float mDamper, mPlasma, mLevels, mBlackTint[3];
+    // a home console in front of the tube (cKind != 0): its frame cCols x cRows in the middle of cLines lines, its
+    // colours the nearest of a palette (1, cN entries of cPal), cN even steps per channel (2) or the nearest of cN DAC
+    // levels per channel (3, cLevels); cDither: the PlayStation's 4x4 ordered dither. Code values (Gamma 2.4).
+    int cKind, cCols, cRows, cLines, cN, cDither;
+    float cLevels[8], cPal[192];
 };
 
 SM_FN SMf3 cr_mul(SM_CPTR m, SMf3 c) {
@@ -1933,6 +1941,24 @@ SM_FN SMf3 cr_print_grain(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
+// What a hair or a crumb of emulsion caught in the gate hides from the film: 0 (open) to its opacity. It sits on the
+// film plane, so it is sharp but for the emulsion's depth (half a pixel at 1080).
+SM_FN float cr_hair(int x, int y, SM_CREF(CreativeParams) p) {
+    if (p.hair <= 0.0f) return 0.0f;
+    const float fx = (float)x + 0.5f, fy = (float)y + 0.5f;
+    if (fx < p.hairBox[0] || fx > p.hairBox[2] || fy < p.hairBox[1] || fy > p.hairBox[3]) return 0.0f;
+    float d = 1e9f;
+    for (int i = 0; i < 4; ++i) {
+        const float ax = p.hairPt[2 * i], ay = p.hairPt[2 * i + 1];
+        const float bx = p.hairPt[2 * i + 2] - ax, by = p.hairPt[2 * i + 3] - ay;
+        const float t = SM_MIN(SM_MAX(((fx - ax) * bx + (fy - ay) * by) / SM_MAX(bx * bx + by * by, 1e-6f), 0.0f), 1.0f);
+        const float dx = fx - ax - t * bx, dy = fy - ay - t * by;
+        d = SM_MIN(d, SM_SQRT(dx * dx + dy * dy));
+    }
+    const float soft = SM_MAX(0.5f, (float)p.H / 2160.0f);
+    return p.hair * (1.0f - cr_smooth(p.hairW - soft, p.hairW + soft, d));
+}
+
 // Dust (specks, per record when the records were separate plates) and vertical scratches, in stops.
 SM_FN SMf3 cr_damage(SMf3 s, int x, int y, SM_CREF(CreativeParams) p) {
     if (p.dust <= 0.0f && p.scratches <= 0.0f) return s;
@@ -2088,6 +2114,8 @@ SM_FN SMf3 cr_image(SMf3 t, int x, int y, SM_CREF(CreativeParams) p) {
 
 // The process chain from the records' exposures (glows added) to the output code values.
 SM_FN SMf3 cr_process(SMf3 e, int x, int y, SM_CREF(CreativeParams) p) {
+    const float shade = 1.0f - cr_hair(x, y, p);   // light the gate's hair kept from the film
+    e = smf3(e.x * shade, e.y * shade, e.z * shade);
     SMf3 s = smf3(cr_hd(cr_stops(e.x), 0, p), cr_hd(cr_stops(e.y), 1, p), cr_hd(cr_stops(e.z), 2, p));
     if (p.records == 1) s = smf3(s.x, s.x, s.x);
     const float m = (s.x + s.y + s.z) * (1.0f / 3.0f);
@@ -2502,6 +2530,66 @@ SM_FN SMf3 cr_pic(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, float u, float v, SM_CR
                 M2[a] * w00 + M2[b] * w10 + M2[c] * w01 + M2[d] * w11);
 }
 
+// A console's frame at the fractional pixel (u, v): the 4:3 centre of the picture, cropped to the frame, read once
+// per console pixel (mean of four taps), then brought to the console's colours; black around the frame (the border
+// in the lines it leaves). Display-linear, like cr_pic.
+SM_FN SMf3 cr_console(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, float u, float v, SM_CREF(CreativeParams) p) {
+    const float W = (float)p.W, H = (float)p.H, cols = (float)p.cCols, rows = (float)p.cRows;
+    const float cw = SM_MIN(W, H * 4.0f / 3.0f), ah = H * rows / (float)p.cLines;
+    const float x0 = 0.5f * (W - cw), y0 = 0.5f * (H - ah);
+    const float lx = (u + 0.5f - x0) / cw * cols, ly = (v + 0.5f - y0) / ah * rows;
+    if (lx < 0.0f || ly < 0.0f || lx >= cols || ly >= rows) return smf3(0.0f, 0.0f, 0.0f);
+    const int i = (int)lx, j = (int)ly;
+    const float sx = x0 + ((float)i + 0.5f) / cols * cw - 0.5f, sy = y0 + ((float)j + 0.5f) / rows * ah - 0.5f;
+    const float qx = 0.25f * cw / cols, qy = 0.25f * ah / rows;
+    const SMf3 a = cr_pic(M0, M1, M2, sx - qx, sy - qy, p), b = cr_pic(M0, M1, M2, sx + qx, sy - qy, p);
+    const SMf3 c = cr_pic(M0, M1, M2, sx - qx, sy + qy, p), d = cr_pic(M0, M1, M2, sx + qx, sy + qy, p);
+    float o[3] = { sm_encode(sm_clamp(0.25f * (a.x + b.x + c.x + d.x), 0.0f, 1.0f), CR_GAMMA24),
+                   sm_encode(sm_clamp(0.25f * (a.y + b.y + c.y + d.y), 0.0f, 1.0f), CR_GAMMA24),
+                   sm_encode(sm_clamp(0.25f * (a.z + b.z + c.z + d.z), 0.0f, 1.0f), CR_GAMMA24) };
+    if (p.cKind == 1) {   // the nearest palette entry, distance weighted as the eye weighs the channels
+        int best = 0;
+        float bd = 1e9f;
+        for (int k = 0; k < p.cN; ++k) {
+            const float dr = o[0] - p.cPal[k * 3], dg = o[1] - p.cPal[k * 3 + 1], db = o[2] - p.cPal[k * 3 + 2];
+            const float dd = 2.0f * dr * dr + 4.0f * dg * dg + 3.0f * db * db;
+            if (dd < bd) {
+                bd = dd;
+                best = k;
+            }
+        }
+        for (int k = 0; k < 3; ++k) o[k] = p.cPal[best * 3 + k];
+    } else {
+        float th = 0.0f;
+        if (p.cDither != 0) {   // the GPU's matrix, in 8-bit units, before the 5-bit truncation
+            const int bx = i & 3, by = j & 3;
+            const int row = by == 0 ? (bx == 0 ? -4 : (bx == 1 ? 0 : (bx == 2 ? -3 : 1)))
+                          : (by == 1 ? (bx == 0 ? 2 : (bx == 1 ? -2 : (bx == 2 ? 3 : -1)))
+                          : (by == 2 ? (bx == 0 ? -3 : (bx == 1 ? 1 : (bx == 2 ? -4 : 0)))
+                                     : (bx == 0 ? 3 : (bx == 1 ? -1 : (bx == 2 ? 2 : -2)))));
+            th = (float)row / 255.0f;
+        }
+        for (int k = 0; k < 3; ++k) {
+            const float x = sm_clamp(o[k] + th, 0.0f, 1.0f);
+            if (p.cKind == 2) {
+                const float n = (float)(p.cN - 1);
+                o[k] = CR_FLOOR(x * n + 0.5f) / n;
+            } else {
+                float best = p.cLevels[0];
+                for (int l = 1; l < p.cN; ++l)
+                    if (SM_ABS(x - p.cLevels[l]) < SM_ABS(x - best)) best = p.cLevels[l];
+                o[k] = best;
+            }
+        }
+    }
+    return smf3(sm_decode(o[0], CR_GAMMA24), sm_decode(o[1], CR_GAMMA24), sm_decode(o[2], CR_GAMMA24));
+}
+
+// What the tube receives: the picture, or a console's frame of it.
+SM_FN SMf3 cr_src(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, float u, float v, SM_CREF(CreativeParams) p) {
+    return p.cKind != 0 ? cr_console(M0, M1, M2, u, v, p) : cr_pic(M0, M1, M2, u, v, p);
+}
+
 // A tube's raster: the picture as mLines scan lines (each read as the signal carries it, a little soft along the line),
 // each a Gaussian beam whose width grows with its brightness, so bright lines fill the gaps and dark lines thin out;
 // a flat field keeps its mean.
@@ -2509,8 +2597,8 @@ SM_FN SMf3 cr_scan(CR_PLANE M0, CR_PLANE M1, CR_PLANE M2, float sx, float sy, SM
     const float H = (float)p.H, L = (float)p.mLines;
     const float ly = (sy + 0.5f) / H * L - 0.5f, l0 = CR_FLOOR(ly), f = ly - l0;
     const float y0 = (l0 + 0.5f) / L * H - 0.5f, y1 = (l0 + 1.5f) / L * H - 0.5f, q = 0.25f * H / L, h = p.mSoft;
-    const SMf3 a0 = cr_pic(M0, M1, M2, sx - h, y0 - q, p), a1 = cr_pic(M0, M1, M2, sx + h, y0 + q, p);
-    const SMf3 b0 = cr_pic(M0, M1, M2, sx - h, y1 - q, p), b1 = cr_pic(M0, M1, M2, sx + h, y1 + q, p);
+    const SMf3 a0 = cr_src(M0, M1, M2, sx - h, y0 - q, p), a1 = cr_src(M0, M1, M2, sx + h, y0 + q, p);
+    const SMf3 b0 = cr_src(M0, M1, M2, sx - h, y1 - q, p), b1 = cr_src(M0, M1, M2, sx + h, y1 + q, p);
     float o[3];
     for (int k = 0; k < 3; ++k) {
         const float ca = 0.5f * (cr_at(a0, k) + cr_at(a1, k)), cb = 0.5f * (cr_at(b0, k) + cr_at(b1, k));

@@ -156,7 +156,7 @@ class Creative(unittest.TestCase):
 
     def test_every_medium_renders_and_changes_the_picture(self):
         plain = self.render({'process': NEGATIVE, 'grain': 0}, [ramp(tinted=True)])
-        for medium in range(1, 12):
+        for medium in range(1, 18):
             with self.subTest(medium=medium):
                 out = self.render({'process': NEGATIVE, 'grain': 0, 'medium': medium}, [ramp(tinted=True)])
                 vals = [c for px in out for c in px]
@@ -164,7 +164,7 @@ class Creative(unittest.TestCase):
                 self.assertNotEqual(out, plain)
                 none = self.render({'process': NEGATIVE, 'grain': 0, 'medium': medium, 'mediumAmount': 0},
                                    [ramp(tinted=True)])
-                if medium != 6:   # the console is a screen of its own even at 0: crop, four shades, bezel
+                if medium != 6 and medium < 12:   # consoles are devices of their own even at 0: frame, colours
                     self.assertLess(max(abs(a - b) for p, q in zip(none, plain) for a, b in zip(p, q)), 0.02)
 
     def test_log_output_ignores_the_medium(self):
@@ -192,6 +192,63 @@ class Creative(unittest.TestCase):
         centre = {tuple(round(c * 255) for c in out[y * w + x]) for y in range(130, 158) for x in range(140, 180)}
         self.assertTrue(centre <= greens, centre - greens)
         self.assertGreater(len(centre), 1)   # grey is dithered between two shades
+
+    def console(self, medium, img, w, h):
+        """A console's frame with the tube at 0: lines one per row, no glass or response, so colours read clean."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': medium, 'mediumAmount': 0}
+        out = self.render(ctl, [img], size=(w, h))
+        return [[tuple(round(c * 255) for c in out[y * w + x]) for x in range(w)] for y in range(h)]
+
+    @staticmethod
+    def hues(w, h):   # a colour wheel across, darker downwards in bands of 60 rows (a beam mixes its neighbours)
+        img = []
+        for y in range(h):
+            for x in range(w):
+                t, v = x / w * 6.0, 0.9 - 0.7 * (y // 60) / 8
+                rgb = [max(0.0, min(1.0, abs(((t + o) % 6.0) - 3.0) - 1.0)) for o in (0.0, 4.0, 2.0)]
+                img.append([dm.encode1(0.18 * 4 * v * (0.15 + 0.85 * c), GAMMA) for c in rgb])
+        return img
+
+    def test_nes_shows_only_its_palette_inside_a_four_by_three_frame(self):
+        w, h = 854, 480
+        lo, hi = [0.350, 0.518, 0.962, 1.550], [1.094, 1.506, 1.962, 1.962]
+        pal = set()
+        for c in range(64):   # the 2C02's square wave, decoded as YIQ (same as nesPalette)
+            hh, lv = c & 15, (c >> 4) & 3
+            y = i = q = 0.0
+            if hh < 14:
+                vh, vl = (lo[lv] if hh == 13 else hi[lv]), (hi[lv] if hh == 0 else lo[lv])
+                for s in range(12):
+                    n = ((vh if (hh + s) % 12 < 6 else vl) - 0.518) / 1.444
+                    a = math.pi / 6 * (s + 4)
+                    y, i, q = y + n / 12, i + n * math.cos(a) / 6, q + n * math.sin(a) / 6
+            rgb = (y + 0.946882 * i + 0.623557 * q, y - 0.274788 * i - 0.635691 * q, y - 1.108545 * i + 1.709007 * q)
+            pal.add(tuple(round(255 * max(0.0, min(1.0, v))) for v in rgb))
+        self.assertIn((208, 39, 17), pal)   # 0x16, the hardware's red
+        out = self.console(12, self.hues(w, h), w, h)
+        seen = {out[y][x] for y in range(h) if 8 <= y % 60 < 52 for x in range(120, w - 120)}
+        far = [c for c in seen if min(sum(abs(a - b) for a, b in zip(c, e)) for e in pal) > 3]
+        self.assertFalse(far, far[:5])
+        self.assertGreater(len(seen), 12)
+        self.assertEqual({out[y][x] for y in range(h) for x in list(range(100)) + list(range(w - 100, w))}, {(0, 0, 0)})
+
+    def test_consoles_keep_their_bits_and_the_playstation_dithers(self):
+        w, h = 640, 480
+        on_grid = lambda v, n: abs(v / 255 * (n - 1) - round(v / 255 * (n - 1))) < 0.07  # noqa: E731
+        sms = self.console(13, self.hues(w, h), w, h)
+        self.assertTrue(all(on_grid(c, 4) for y in range(60, h - 60) if 8 <= y % 60 < 52 for px in sms[y] for c in px))
+        self.assertEqual({px for y in range(40) for px in sms[y]}, {(0, 0, 0)})   # 192 of 240 lines: the border
+        md = self.console(14, self.hues(w, h), w, h)
+        levels = (0, 52, 87, 116, 144, 172, 206, 255)
+        self.assertTrue(all(min(abs(c - l) for l in levels) <= 1 for y in range(24, h - 24) if 8 <= y % 60 < 52 for px in md[y] for c in px))
+        for medium in (15, 17):   # the PlayStation dithers from line to line, which the beam mixes
+            out = self.console(medium, self.hues(w, h), w, h)
+            self.assertTrue(all(on_grid(c, 32) for y in range(24, h - 24) if 8 <= y % 60 < 52 for px in out[y] for c in px), medium)
+        grey = [[dm.encode1(0.18 * 0.93, GAMMA)] * 3 for _ in range(w * h)]   # between two 5-bit steps
+        ps1 = {px for y in range(200, 280) for px in self.console(16, grey, w, h)[y][300:340]}
+        saturn = {px for y in range(200, 280) for px in self.console(17, grey, w, h)[y][300:340]}
+        self.assertGreater(len(ps1), 1)
+        self.assertEqual(len(saturn), 1)
 
     def test_duplicates_lose_sharpness(self):
         w, h = 32, 1080   # the blur is in px at 1080
@@ -275,6 +332,101 @@ class Creative(unittest.TestCase):
         bc = edge(self.render({'process': ANALOG, 'analog': 0, 'noise': 0, 'instability': 0, 'wear': 0, 'heads': 0}, [img]))
         self.assertLess(vhs, bc)
 
+
+    def test_every_menu_entry_and_text_exists(self):
+        """A missing entry is a null pointer: Resolve crashed choosing the 4.2.0 viewing media without their text."""
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        res = subprocess.run([self.exe], input='names\n', capture_output=True, text=True, timeout=60)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+
+    # ---- unsteadiness: camera, printer, projector
+
+    def weave(self, controls, n=240, size=(1920, 1080)):
+        """creativeWeave's offsets for frames 0..n-1: rows of (camera x, y, printer x, y, projector x, y)."""
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        ctl = ' '.join('%s=%s' % kv for kv in controls.items()) + '\n'
+        res = subprocess.run([self.exe], input='weave %d %d %d\n' % (size[0], size[1], n) + ctl,
+                             capture_output=True, text=True, timeout=60)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        return [tuple(map(float, line.split())) for line in res.stdout.splitlines()]
+
+    @staticmethod
+    def rms(v):
+        return math.sqrt(sum(x * x for x in v) / len(v))
+
+    @staticmethod
+    def corr(v, lag):
+        a, b = v[:-lag], v[lag:]
+        ma, mb = sum(a) / len(a), sum(b) / len(b)
+        num = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+        den = math.sqrt(sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b))
+        return num / den
+
+    def test_camera_weave_drifts_sideways_and_jumps_vertically(self):
+        """The claw errs at every frame (vertical, little memory); the side rail drifts (lateral, smooth); no
+        rhythm (the old sine repeated every 7 frames)."""
+        w = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0})   # Canon 1014 XL-S, Super 8
+        x, y = [r[0] for r in w], [r[1] for r in w]
+        self.assertGreater(self.corr(x, 1), 0.75)
+        self.assertLess(self.corr(y, 1), 0.5)
+        self.assertLess(abs(self.corr(x, 7)), 0.6)
+        # RMS about a third of the peak (0.9 * 0.8 % of the width, research: Super 8 cartridge), a few pixels in HD
+        self.assertGreater(self.rms(x), 2)
+        self.assertLess(self.rms(x), 8)
+
+    def test_camera_weave_follows_the_mechanism_and_switches_off(self):
+        s8 = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0})
+        arri = self.weave({'device': 1, 'filmCamera': 17, 'maker': 0})   # Arriflex 435, pin registered, Super 35
+        self.assertGreater(self.rms([r[0] for r in s8]), 20 * self.rms([r[0] for r in arri]))
+        off = self.weave({'device': 1, 'filmCamera': 3, 'maker': 0, 'camWeave': 0})
+        self.assertTrue(all(r[0] == 0 and r[1] == 0 for r in off))
+
+    def test_projector_weave_repeats_the_sprocket_every_four_frames(self):
+        """35 mm: the intermittent sprocket turns a quarter per frame, a worn tooth jumps again 4 frames later; a
+        Super 8 projector's claw has no such period and moves more."""
+        sala = self.weave({'process': NEGATIVE, 'medium': 1})
+        y = [r[5] for r in sala]
+        self.assertGreater(self.corr(y, 4), self.corr(y, 1) + 0.3)
+        s8 = self.weave({'process': NEGATIVE, 'medium': 8})
+        self.assertGreater(self.rms([r[5] for r in s8]), 3 * self.rms(y))
+        self.assertLess(abs(self.corr([r[5] for r in s8], 4)), 0.4)
+        off = self.weave({'process': NEGATIVE, 'medium': 8, 'projWeave': 0})
+        self.assertTrue(all(r[4] == 0 and r[5] == 0 for r in off))
+        none = self.weave({'process': NEGATIVE, 'medium': 0})
+        self.assertTrue(all(r[4] == 0 and r[5] == 0 for r in none))
+
+    def test_each_printing_step_adds_its_drift(self):
+        one = self.weave({'process': NEGATIVE, 'generation': 0})
+        three = self.weave({'process': NEGATIVE, 'generation': 1})
+        scan = self.weave({'process': NEGATIVE, 'print': 0})
+        r1, r3 = self.rms([r[2] for r in one]), self.rms([r[2] for r in three])
+        self.assertGreater(r1, 0)
+        self.assertGreater(r3, 1.5 * r1)
+        self.assertTrue(all(r[2] == 0 and r[3] == 0 for r in scan))   # a scanned negative was never printed
+
+    def test_gate_hair_comes_in_from_an_edge_and_stays_for_the_shot(self):
+        """A hair caught in the gate: a dark, sharp shape touching an edge of the frame, in the same place for the
+        whole shot, bigger on Super 8 than on Super 35 (it is 60-90 um everywhere); none at 0."""
+        w, h = 320, 180
+        flat = [[dm.encode1(0.18, GAMMA)] * 3 for _ in range(w * h)]
+        render = lambda ctl, frame: self.render(ctl, [flat], frame=frame, size=(w, h))
+        def dark(out):
+            m = sorted(sum(px) / 3 for px in out)[len(out) // 2]
+            return [(i % w, i // w) for i, px in enumerate(out) if sum(px) / 3 < 0.5 * m]
+        for fmt in (0, 2):
+            with self.subTest(format=fmt):
+                a = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': fmt}, 5))
+                b = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': fmt}, 40))
+                self.assertTrue(a)
+                xs, ys = [x for x, _ in a], [y for _, y in a]
+                self.assertTrue(min(xs) <= 4 or min(ys) <= 4 or max(xs) >= w - 5 or max(ys) >= h - 5)
+                self.assertGreater(len(set(a) & set(b)), len(a) // 2)   # same shot: it barely moves
+        s8 = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 0}, 5))
+        s35 = dark(render({'process': NEGATIVE, 'hair': 1, 'grain': 0, 'format': 2}, 5))
+        self.assertGreater(len(s8), 2 * len(s35))
+        self.assertFalse(dark(render({'process': NEGATIVE, 'hair': 0, 'grain': 0}, 5)))
 
     # ---- presets: device, model, format, manufacturer, stock; what the film applies
 

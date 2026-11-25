@@ -57,6 +57,7 @@ private:
     OFX::IntParam* m_LensLoaded = nullptr;
     OFX::ChoiceParam* m_Stocks[kCrMakerCount] = {};
     OFX::BooleanParam* m_Toggles[kCrToggleCount] = {};
+    OFX::BooleanParam* m_Checks[kCrCheckCount] = {};
     OFX::ChoiceParam* m_Choices[kCrChoiceCount] = {};
     OFX::DoubleParam* m_Sliders[kCrSliderCount] = {};
 };

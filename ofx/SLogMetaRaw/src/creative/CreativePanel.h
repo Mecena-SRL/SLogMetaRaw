@@ -154,6 +154,9 @@ static const CrSliderDef kCrSliders[] = {
       "Più blu = stampa più gialla" },
     { "printContrast", "Contrasto", &CreativeControls::printContrast, 0.5, 2, 0.01, kGrPrint, kCrAll,
       "Il contrasto del positivo (o del segnale), moltiplicato su quello del processo" },
+    { "printWeave", "Oscillazione della stampa", &CreativeControls::printWeave, 0, 3, 0.01, kGrPrint, kCrPrinted,
+      "Ogni passaggio in stampatrice a contatto aggiunge una deriva lenta, le due pellicole scivolano un poco sul "
+      "rocchetto: una copia campione ne ha uno, una copia di distribuzione tre. 1 = tipica" },
     { "printGrain", "Grana della stampa", &CreativeControls::printGrain, 0, 3, 0.01, kGrPrint, kCrPrinted,
       "La grana propria del positivo, nelle sue densità, più fine di quella del negativo: 1 = com'era" },
     // texture and optics
@@ -182,8 +185,15 @@ static const CrSliderDef kCrSliders[] = {
       "La luce diffusa nell'obiettivo che solleva i neri vicino alle zone chiare, nel colore del suo trattamento" },
     { "streak", "Striscia anamorfica", &CreativeControls::streak, 0, 3, 0.01, kGrTexture, kCrAll,
       "Le luci forti si allungano in orizzontale, nel colore della serie (blu Panavision, viola LOMO, ambra Kowa)" },
-    { "weave", "Instabilità del quadro", &CreativeControls::weave, 0, 1, 0.01, kGrTexture, kCrFilm,
-      "Il fotogramma oscilla nel passo della macchina, in proporzione al formato" },
+    { "weave", "Ampiezza in ripresa", &CreativeControls::weave, 0, 1, 0.01, kGrTexture, kCrFilm,
+      "La griffa della cinepresa lascia la pellicola un poco fuori posto a ogni fotogramma (soprattutto in verticale) "
+      "e il pattino laterale la fa derivare di lato, lentamente: l'immagine si muove sulla pellicola. La cinepresa "
+      "carica la sua: 0,1 a perni di registro, 0,5 a sola griffa, 0,85 il caricatore Super 8, 1 a manovella" },
+    { "hair", "Pelo nel finestrino", &CreativeControls::hair, 0, 1, 0.01, kGrTexture, kCrFilm,
+      "Un pelo o un grumo di emulsione raschiato dalla pellicola che resta nel finestrino della cinepresa: scuro, "
+      "nitido, entra da un bordo, trema un poco e dura tutta l'inquadratura. Quota delle inquadrature che ne hanno "
+      "uno: la cinepresa carica la sua (caricatori Super 8 e cineprese amatoriali più spesso, cineprese da studio "
+      "pulite a ogni caricatore quasi mai)" },
     { "breath", "Sfarfallio", &CreativeControls::breath, 0, 1, 0.01, kGrTexture, kCrPhoto,
       "Densità e colore che cambiano un poco da un fotogramma all'altro" },
     { "dust", "Polvere", &CreativeControls::dust, 0, 1, 0.01, kGrTexture, kCrPhoto,
@@ -277,6 +287,10 @@ static const CrSliderDef kCrSliders[] = {
       "giapponese 9300, monitor 6500" },
     { "mediumColour", "Colore (%)", &CreativeControls::mediumColour, 50, 150, 1, kGrView, kCrAll,
       "La manopola del colore del televisore: i televisori di casa erano spesso un po' alti" },
+    { "projectorWeave", "Ampiezza in proiezione", &CreativeControls::projectorWeave, 0, 3, 0.01, kGrView, kCrAll,
+      "Il proiettore muove tutta la pellicola sullo schermo, bordi compresi. In sala il rocchetto a croce di Malta "
+      "gira di un quarto a fotogramma: un dente consumato ripete il suo salto ogni 4 fotogrammi. I proiettori 16 mm "
+      "e Super 8 a griffa sbagliano a ogni fotogramma. Di lato la pellicola ondeggia fra i pattini. 1 = tipica" },
     { "mediumOverscan", "Overscan (%)", &CreativeControls::mediumOverscan, 0, 10, 0.5, kGrView, kCrAll,
       "Il tubo di casa ingrandisce l'immagine e ne nasconde i bordi; il monitor da regia la mostra intera" } };
 const int kCrSliderCount = sizeof(kCrSliders) / sizeof(kCrSliders[0]);
@@ -293,6 +307,16 @@ static const CrToggleDef kCrToggles[] = {
       "Grana, alone, diffusione, obiettivo, instabilità, polvere e graffi. Solo questo acceso: la grana di quella "
       "pellicola su quel formato sul tuo video, nient'altro" } };
 const int kCrToggleCount = sizeof(kCrToggles) / sizeof(kCrToggles[0]);
+
+// Switches that belong to a group, shown with their processes like the sliders (default on).
+struct CrCheckDef { const char* name; const char* label; int CreativeControls::*field; int group; unsigned shows;
+                    const char* hint; };
+static const CrCheckDef kCrChecks[] = {
+    { "camWeave", "Oscillazione in ripresa", &CreativeControls::camWeave, kGrTexture, kCrFilm,
+      "Spento: il fotogramma resta fermo sulla pellicola, come con una cinepresa perfetta" },
+    { "projWeave", "Oscillazione in proiezione", &CreativeControls::projWeave, kGrView, kCrAll,
+      "Spento: la pellicola resta ferma sullo schermo, come in un proiettore perfetto" } };
+const int kCrCheckCount = sizeof(kCrChecks) / sizeof(kCrChecks[0]);
 
 inline bool crIs(const char* name, std::initializer_list<const char*> names)
 {
@@ -325,19 +349,23 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     if (!colour && !std::strcmp(name, "filter")) return true;   // the records are the picture's own channels
     if (!texture && crIs(name, { "lens", "distortion", "edgeSoft", "swirl", "glare", "streak" })) return true;
     if (!texture && crIs(name, { "grain", "grainSize", "halation", "bloom", "bloomRadius", "aberration", "vignette",
-                                 "weave", "breath", "dust", "scratches", "printGrain" }))
+                                 "weave", "hair", "breath", "dust", "scratches", "printGrain" }))
         return true;
+    if (!texture && crIs(name, { "camWeave", "printWeave" })) return true;
+    if (!std::strcmp(name, "weave") && !c.camWeave) return true;
     if (crIs(name, { "lag", "comet" })) return !creativeSensorTube(c.sensor);
     if (!std::strcmp(name, "smear")) return !creativeSensorCCD(c.sensor);
     const bool log = creativeLogOut(c);
     const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
-    if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;
+    if (crIs(name, { "generation", "printGrain", "printWeave" })) return scan;
     if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log;
     const bool none = log || c.medium <= 0 || c.medium >= kCrMediumCount;
     if (!std::strcmp(name, "mediumAmount") || !std::strcmp(name, "mediumInfo")) return none;
     const CrMediumRows rows = creativeMediumRows(c.medium);
     if (!std::strcmp(name, "mediumKelvin")) return none || !rows.white;
     if (!std::strcmp(name, "mediumOverscan")) return none || !rows.overscan;
+    if (!std::strcmp(name, "projWeave")) return none || !rows.weave;
+    if (!std::strcmp(name, "projectorWeave")) return none || !rows.weave || !c.projWeave;
     if (!std::strncmp(name, "medium", 6) && std::strcmp(name, "medium") != 0) return none || !rows.tone;
     return false;
 }

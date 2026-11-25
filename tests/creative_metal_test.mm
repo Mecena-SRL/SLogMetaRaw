@@ -65,7 +65,7 @@ int main()
         c.generation = k % kCrGenerationCount;
         c.printGrain = 2;
         c.medium = k % kCrMediumCount;   // the console's four shades are thresholds: a rounding apart flips one
-        if (c.medium == 6) c.medium = 3;
+        if (c.medium == 6 || c.medium >= 12) c.medium = 3;   // the home consoles too: palettes and bit depths
         if (k == kCrProcessCount) { c.process = kCrColourNegative; c.output = 1; c.print = 0; }
         if (k == kCrProcessCount + 1) { c.process = kCrAnalog; c.analog = 2; c.wear = 1; c.heads = 1; }
         if (k == kCrProcessCount + 2) { c.process = kCrAnalog; c.analog = 1; c.sensor = 5; c.comet = 2; }   // tube

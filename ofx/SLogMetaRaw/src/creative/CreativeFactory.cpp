@@ -75,6 +75,10 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
                  proc);
 
     for (const CrSliderDef& s : kCrSliders) {
+        for (const CrCheckDef& k : kCrChecks)   // each switch just above the amount it turns on and off
+            if ((!std::strcmp(k.name, "camWeave") && !std::strcmp(s.name, "weave"))
+                || (!std::strcmp(k.name, "projWeave") && !std::strcmp(s.name, "projectorWeave")))
+                defineCheck(d, page, k.name, k.label, CreativeControls().*(k.field) != 0, k.hint, groups[k.group]);
         const double def = CreativeControls().*(s.field);
         if (DoubleParamDescriptor* p = defineSlider(d, page, s.name, s.label, def, s.lo, s.hi, s.lo, s.hi, s.inc,
                                                     s.hint, groups[s.group]))
