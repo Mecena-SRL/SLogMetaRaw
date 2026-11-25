@@ -346,7 +346,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
              || p_ParamName == "output" || p_ParamName == "format" || p_ParamName == "maker"
              || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3)
              || p_ParamName == "camWeave" || p_ParamName == "projWeave" || p_ParamName == "generation"
-             || p_ParamName == "allStocks")
+             || p_ParamName == "allStocks" || p_ParamName == "scanView")
         updateProcess();   // rows and info that depend on these choices
     m_Badge.refresh(false);
 }

@@ -37,6 +37,9 @@ extern const char* const kCrAnalogNames[kCrAnalogCount];
 extern const char* const kCrDigitalNames[kCrDigitalCount];
 extern const char* const kCrGenerationNames[kCrGenerationCount];
 extern const char* const kCrMediumNames[kCrMediumCount];
+extern const char* const kCrScanViewNames[3];
+extern const char* const kCrGateNames[3];
+extern const char* const kCrBaseNames[5];
 extern const char* const kCrMediumInfo[kCrMediumCount];
 // The video camera's sensor (analog video): pickup tubes, CCD, MOS. Append only.
 extern const char* const kCrSensorNames[kCrSensorCount];
@@ -80,8 +83,11 @@ struct CreativeControls
     // unsteadiness, each from its own machine (0 off): the camera's (weave, above), each printing step's, the
     // projector's (multiple of its own, 1 = typical)
     int camWeave = 1, projWeave = 1;
+    int scanView = 0, gateMask = 0;   // the scan: frame only, with the gate's edges, edge to edge; the gate's shape
     // a hair or a crumb of emulsion caught in the camera's gate: the share of shots that have one (0 none)
     double hair = 0;
+    int base = 0;            // the film's support: 0 by era and gauge, 1 nitrate, 2 diacetate, 3 triacetate, 4 polyester
+    double baseDecay = 0;    // its decay: nitrate's amber blotches, acetate's vinegar syndrome
     double printWeave = 1, projectorWeave = 1;
     // separations, screens, plates
     double registration = 0, interval = 0, keyImage = -1, dyeDensity = 1;   // keyImage -1: the era's own
@@ -126,6 +132,8 @@ void creativeWeave(const CreativeControls& c, int W, int H, int frame, double ou
 // The chosen stock (nullptr unless a film device) and whether it was made in the chosen format.
 const CrStock* creativeStock(const CreativeControls& c);
 bool creativeStockFits(const CreativeControls& c);
+// The support the film is on (1 nitrate .. 4 polyester): the chosen one, or by the stock's year and gauge.
+int creativeBase(const CreativeControls& resolved);
 // The gauge list (kCrGaugeLists) of c's format, -1 for a format no stock list belongs to (a plate); the place of
 // (maker, stock) in list l, -1 if it was not made in that gauge; and the label of list l's entry i: manufacturer,
 // stock, with the code the gauge sold it under (Kodak 5xxx is 7xxx in 16 mm and 8 mm, Fuji 85xx is 86xx in 16 mm).

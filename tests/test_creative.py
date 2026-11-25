@@ -333,6 +333,52 @@ class Creative(unittest.TestCase):
         self.assertLess(vhs, bc)
 
 
+    def test_scan_edge_to_edge_shows_perforations_frame_lines_and_the_weave_on_the_film(self):
+        w, h = 480, 270
+        img = self.flat(0.0, w * h)
+        ctl = {'process': NEGATIVE, 'print': 1, 'format': 2, 'scanView': 2, 'grain': 0, 'dust': 0, 'scratches': 0}
+        white = lambda px: min(px) > 0.97  # noqa: E731  (the scanner's light)
+        out = self.render(ctl, [img], size=(w, h))
+        # Super 35: 0.081 mm per px; perforations 14.09 mm either side of the centre, every 4.75 mm
+        col = [white(out[y * w + 66]) for y in range(h)]
+        runs = sum(1 for y in range(1, h) if col[y] and not col[y - 1])
+        self.assertGreaterEqual(runs, 4)
+        self.assertFalse(any(white(out[y * w + 240]) for y in range(h)))
+        centre = [sum(out[y * w + 240]) for y in range(h)]
+        self.assertLess(min(centre[8:30]), 0.1 * centre[135])   # the frame line: unexposed, black on the print
+        # the camera's weave moves the frame on the film, not the perforations
+        moved = dict(ctl, weave=1, camWeave=1)
+        a, b = (self.render(moved, [img], frame=f, size=(w, h)) for f in (3, 4))
+        self.assertEqual([white(px) for px in a], [white(px) for px in b])
+        line = lambda o: min(range(4, 40), key=lambda y: sum(o[y * w + 240]))  # noqa: E731
+        self.assertNotEqual((line(a), a), (line(b), b))
+
+    def test_the_negative_as_it_is_sits_on_its_orange_base(self):
+        w, h = 160, 90
+        out = self.render({'process': NEGATIVE, 'output': 2, 'format': 6, 'scanView': 2, 'grain': 0},
+                          [self.flat(0.0, w * h)], size=(w, h))
+        r, g, b = max((out[y * w + w // 2] for y in range(20)), key=sum)   # the frame line: the bare base
+        self.assertGreater(r, g)
+        self.assertGreater(g, b)
+        self.assertLess(b, 0.6 * r)
+        mid = out[(h // 2) * w + w // 2]   # a grey: denser than the base, still orange
+        self.assertLess(sum(mid), sum((r, g, b)))
+        self.assertGreater(mid[0], mid[2])
+
+    def test_the_film_base_decays_by_its_material(self):
+        w, h = 160, 90
+        img = self.flat(0.0, w * h)
+        ctl = {'process': 1, 'format': 2, 'grain': 0, 'dust': 0, 'scratches': 0}   # reversal: seen through the base
+        fresh = self.render(dict(ctl, base=3), [img], size=(w, h))
+        nitrate = self.render(dict(ctl, base=1, baseDecay=0.9), [img], size=(w, h))
+        vinegar = self.render(dict(ctl, base=3, baseDecay=0.9), [img], size=(w, h))
+        polyester = self.render(dict(ctl, base=4, baseDecay=0.9), [img], size=(w, h))
+        mean = lambda o, k: sum(px[k] for px in o) / len(o)  # noqa: E731
+        self.assertLess(mean(nitrate, 2) / mean(nitrate, 0), 0.97 * mean(fresh, 2) / mean(fresh, 0))   # amber
+        dark = lambda o: sum(1 for px in o if sum(px) < 0.5 * sum(fresh[len(fresh) // 2]))  # noqa: E731
+        self.assertGreater(dark(vinegar), dark(fresh))   # crystals
+        self.assertEqual(polyester, self.render(dict(ctl, base=4), [img], size=(w, h)))   # polyester keeps
+
     def test_the_camera_gauge_lists_its_own_stocks_with_their_codes(self):
         if not self.exe:
             self.skipTest('binari di test non compilabili qui')

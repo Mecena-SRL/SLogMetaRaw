@@ -33,7 +33,8 @@ static const CrGroupDef kCrGroups[kGrCount] = {
     { "plateGroup", "Lastra e carta", true },   { "signalGroup", "Segnale", true },
     { "colourGroup", "Colore", false },        { "viewGroup", "Proiezione e visione", true } };
 
-static const char* const kCrOutputNames[2] = { "Rec.709 Gamma 2.4 (stampa)", "Log d'ingresso (scansione del negativo)" };
+static const char* const kCrOutputNames[3] = { "Rec.709 Gamma 2.4 (stampa)", "Log d'ingresso (scansione del negativo)",
+                                               "Il negativo com'è (maschera arancione)" };
 
 struct CrChoiceDef
 {
@@ -73,9 +74,10 @@ static const CrChoiceDef kCrChoices[] = {
     { "print", "Positivo", &CreativeControls::print, kCrPrintNames, kCrPrintCount, CR_BIT(kCrColourNegative),
       "La pellicola positiva su cui si stampa il negativo: contrasto, dominante, nero. Nessuna = il negativo "
       "scansionato, piatto", kGrPrint },
-    { "output", "Uscita", &CreativeControls::output, kCrOutputNames, 2, CR_BIT(kCrColourNegative),
+    { "output", "Uscita", &CreativeControls::output, kCrOutputNames, 3, CR_BIT(kCrColourNegative),
       "Rec.709: la stampa vista in proiezione. Log: la scansione del negativo, riscritta nella codifica d'ingresso, "
-      "per gradare dopo come un DI" },
+      "per gradare dopo come un DI. Il negativo com'è: la pellicola sviluppata vista in luce, a colori complementari "
+      "sulla maschera arancione, con la sua grana" },
     { "reversal", "Pellicola", &CreativeControls::reversal, kCrReversalNames, kCrReversalCount, CR_BIT(kCrReversal),
       "L'invertibile: un solo passaggio, il positivo è la pellicola stessa" },
     { "bwStock", "Pellicola", &CreativeControls::bwStock, kCrBWStockNames, kCrBWStockCount, CR_BIT(kCrBlackWhite),
@@ -116,6 +118,21 @@ static const CrChoiceDef kCrChoices[] = {
       "monitor da regia, plasma, primo LCD, console portatile, carta. Carica nei comandi qui sotto gamma, contrasto, "
       "luce, bianco e colore di quel "
       "supporto: poi si possono cambiare. Nessuno = il monitor Rec.709. Non vale con Uscita Log", kGrView },
+    { "scanView", "Inquadratura della scansione", &CreativeControls::scanView, kCrScanViewNames, 3,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "Quanto della pellicola si vede nella scansione. Il quadro: solo l'immagine. Con i bordi: il bordo del "
+      "mascherino e le interlinee. Da bordo a bordo: tutta la larghezza della pellicola con le perforazioni (luce "
+      "bianca dello scanner) e i quadri vicini, con le misure vere del formato", kGrView },
+    { "base", "Supporto della pellicola", &CreativeControls::base, kCrBaseNames, 5,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "Il materiale della pellicola. Nitrato: solo 35 mm fino al 1951, ingiallisce e si decompone a macchie ambrate. "
+      "Acetato (di sicurezza): con la sindrome dell'aceto si ritira, perde stabilità e fa cristalli. Poliestere: "
+      "stabile, usato per le copie. Secondo epoca e formato lo sceglie dall'anno della pellicola", kGrShot },
+    { "gateMask", "Mascherino della cinepresa", &CreativeControls::gateMask, kCrGateNames, 3,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "La forma del finestrino che delimita il quadro sulla pellicola, visibile nella scansione con i bordi: "
+      "squadrato, ad angoli arrotondati, o limato e aperto fino alle perforazioni (il quadro le circonda)",
+      kGrShot },
     { "mediumRoom", "Stanza", &CreativeControls::mediumRoom, kCrRoomNames, 3, kCrAll,
       "Dove lo si guarda: al buio il contrasto sembra minore (sala), con la luce accesa maggiore", kGrView } };
 const int kCrChoiceCount = sizeof(kCrChoices) / sizeof(kCrChoices[0]);
@@ -139,6 +156,10 @@ static const CrSliderDef kCrSliders[] = {
     { "tint", "Tinta", &CreativeControls::tint, -1, 1, 0.01, kGrShot, kCrAll, "Verde (negativo) o magenta" },
     { "push", "Sviluppo (stop)", &CreativeControls::push, -2, 3, 0.1, kGrShot, kCrDeveloped,
       "Spinto (positivo): più contrasto, più grana, ombre più dense. Tirato: più morbido" },
+    { "baseDecay", "Degrado del supporto", &CreativeControls::baseDecay, 0, 1, 0.01, kGrShot,
+      CR_BIT(kCrColourNegative) | CR_BIT(kCrReversal) | CR_BIT(kCrBlackWhite),
+      "Quanto il supporto si è decomposto. Nitrato: l'immagine sbiadisce verso l'ambra a macchie che crescono dai "
+      "bordi. Acetato: cristalli, e la pellicola ritirata oscilla di più in stampa e in proiezione" },
     { "silver", "Argento trattenuto", &CreativeControls::silver, 0, 1, 0.01, kGrShot, kCrDeveloped,
       "Salto della sbianca (bleach bypass): l'argento resta con i coloranti, neri densi e colori spenti" },
     { "flash", "Preflash", &CreativeControls::flash, 0, 0.3, 0.005, kGrShot, kCrPhoto,
@@ -361,10 +382,14 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     if (crIs(name, { "lag", "comet" })) return !creativeSensorTube(c.sensor);
     if (!std::strcmp(name, "smear")) return !creativeSensorCCD(c.sensor);
     const bool log = creativeLogOut(c);
-    const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
+    const bool scan = c.process == kCrColourNegative && (c.print == 0 || log || c.output == 2);
     if (crIs(name, { "generation", "printGrain", "printWeave" })) return scan;
-    if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log;
-    const bool none = log || c.medium <= 0 || c.medium >= kCrMediumCount;
+    const bool negView = c.process == kCrColourNegative && c.output == 2;   // the negative as it is: no print
+    if (!std::strcmp(name, "medium") || !std::strcmp(name, "transfer")) return log || negView;
+    if (!std::strcmp(name, "gateMask")) return c.scanView == 0;
+    if (!std::strcmp(name, "baseDecay")) return creativeBase(c) == 4;   // polyester does not decay
+    if (negView && crIs(name, { "print", "printR", "printG", "printB", "printContrast" })) return true;
+    const bool none = log || negView || c.medium <= 0 || c.medium >= kCrMediumCount;
     if (!std::strcmp(name, "mediumAmount") || !std::strcmp(name, "mediumInfo")) return none;
     const CrMediumRows rows = creativeMediumRows(c.medium);
     if (!std::strcmp(name, "mediumKelvin")) return none || !rows.white;
