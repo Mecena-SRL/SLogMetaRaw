@@ -61,7 +61,7 @@ non profili misurati.
   della cinepresa e della stampa sposta il quadro sulla pellicola, le perforazioni restano ferme. *Mascherino della
   cinepresa*: squadrato, arrotondato (raggio 8 % del lato corto [gen]) o limato aperto fino alle perforazioni (bordo
   irregolare di qualche centesimo di mm, l'immagine circonda le perforazioni). Fasi delle perforazioni del Super 8 e
-  misure della perforazione del 9,5 mm e dello scostamento Academy: [gen]. Limiti: i quadri vicini ripetono il
+  misure della perforazione del 9,5 mm: [gen]. Limiti: i quadri vicini ripetono il
   fotogramma corrente; vignettatura e pelo restano riferiti all'inquadratura, non al quadro.
   Dalla 4.3.1: *Overscan della scansione* (`scanOverscan`, 0-2, predefinito 0,1): margine oltre il quadro (con i bordi)
   o oltre la larghezza della pellicola (da bordo a bordo, ×0,7). Scritte sul bordo (`creativeEdgePrint` host,
@@ -82,9 +82,9 @@ non profili misurati.
   SMPTE 40, 41, 112, 139, 164, 176, 195, ST 203, RP 115, ISO 17266, Pritchard; mm dal bordo guida): la stampatrice
   espone solo il quadro intero della cinepresa e la zona della pista (35 mm 4,88-7,82), il resto della copia resta
   chiaro con le scritte scure della pellicola da stampa; perforazioni KS 2,794×1,981. Pista ottica 4,90-7,44 mm,
-  modulata 5,21-7,14 (due piste stereo affiancate); DTS 7,42-7,67; Dolby Digital 2,41 mm quadrato (76×76 bit, logo
+  modulata 5,21-7,14 (due piste stereo separate da un setto opaco a 6,05-6,30); DTS 7,42-7,67; Dolby Digital 2,41 mm quadrato (76×76 bit, logo
   DD al centro) in ogni intervallo tra le perforazioni lato pista; SDDS 0,295-1,831 mm da entrambi i bordi (al posto
-  delle scritte). Con la pista Super 35 e Techniscope si stampano Academy (22×16,03, centro +1,3 mm) o 4 perf scope.
+  delle scritte). Con la pista Super 35 e Techniscope si stampano Academy (22×16,03, centro a 18,75 mm dal bordo guida, +1,26 mm; SMPTE 195) o 4 perf scope.
   16 mm: perforazione singola, pista 13,46-15,49 mm dal bordo perforato; magnetica 14,55 mm, larga 2,41. Super 8:
   pista magnetica 7,24-7,92 mm, bilanciamento 0,08-0,38. Epoca (`printSound` = 0, anno della pellicola): muta prima
   del 1928, densità variabile fino al 1954, area variabile mono, Dolby Stereo dal 1976, digitali dal 1993 (SDDS fino al

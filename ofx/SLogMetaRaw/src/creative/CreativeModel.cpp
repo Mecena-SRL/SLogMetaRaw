@@ -335,10 +335,10 @@ const FilmStrip kStrips[kCrFormatCount] = {
     { 0, 16.0f, 12.52f, 7.41f, 1.0f, 7.62f, 1, 1.829f, 1.27f, 0.25f, 6.2f, 7.62f, 3.81f },     // Super 16
     { 0, 8.0f, 4.88f, 3.68f, 1.13f, 3.81f, 1, 1.829f, 1.27f, 0.25f, 2.23f, 3.81f, 1.905f },    // 8 mm
     { 0, 9.5f, 8.5f, 6.5f, 0, 7.54f, 3, 2.0f, 1.0f, 0.2f, 0, 7.54f, 3.77f },                    // 9.5 mm [gen perf]
-    { 0, 35.0f, 21.95f, 18.59f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // anamorphic
-    { 0, 35.0f, 22.0f, 9.47f, 1.3f, 9.5f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Techniscope 2 perf
+    { 0, 35.0f, 21.95f, 18.59f, 1.26f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // anamorphic
+    { 0, 35.0f, 22.0f, 9.47f, 1.26f, 9.5f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // Techniscope 2 perf
     { 1, 35.0f, 25.17f, 37.72f, 0, 38.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },    // VistaVision 8 perf
-    { 0, 35.0f, 22.0f, 16.03f, 1.3f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f },  // Academy [gen offset]
+    { 0, 35.0f, 22.0f, 16.03f, 1.26f, 19.0f, 2, 2.794f, 1.854f, 0.9f, 14.09f, 4.75f, 2.375f }, // Academy
     { 1, 35.0f, 24.0f, 36.0f, 0, 38.0f, 2, 2.794f, 1.981f, 0.5f, 14.09f, 4.75f, 2.375f },      // 135, 8 perf
     { 1, 61.5f, 56.0f, 56.0f, 0, 62.0f, 0, 0, 0, 0, 0, 1, 0 } };                                // 120 6x6
 
@@ -1800,7 +1800,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
             if (sound >= 2 && sound <= 5 && (c.format == 2 || c.format == 10)) {   // printed beside the track
                 fs.apA = c.format == 10 ? 21.95f : 22.0f;   // Super 35 reduced to Academy, Techniscope to 4-perf scope
                 fs.apL = c.format == 10 ? 18.59f : 16.03f;
-                fs.apOff = 1.3f;
+                fs.apOff = 1.26f;   // 18.75 mm from the guided edge (SMPTE 195)
                 fs.pitch = 19.0f;
             }
         }

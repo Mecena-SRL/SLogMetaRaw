@@ -1848,10 +1848,11 @@ SM_FN CrSound cr_sound(float x, float y, SM_CREF(CreativeParams) p) {
         const float a = f.across - p.sndAcross;
         const float band = 1.0f - cr_smooth(-h, h, SM_ABS(a) - 0.5f * p.sndW);
         if (band > 0.0f) {
-            const float tw = p.sndMod / (float)p.sndN;
-            int k = (int)CR_FLOOR((a + 0.5f * p.sndMod) / tw);
+            // two tracks apart by an opaque septum of 0.25 mm (ST 203: 6.05-6.30 mm from the guided edge)
+            const float sep = p.sndN > 1 ? 0.25f : 0.0f, tw = (p.sndMod - (float)(p.sndN - 1) * sep) / (float)p.sndN;
+            int k = (int)CR_FLOOR((a + 0.5f * p.sndMod) / (tw + sep));
             k = k < 0 ? 0 : (k >= p.sndN ? p.sndN - 1 : k);
-            const float c = ((float)k + 0.5f) * tw - 0.5f * p.sndMod, d = SM_ABS(a - c);
+            const float c = (float)k * (tw + sep) + 0.5f * tw - 0.5f * p.sndMod, d = SM_ABS(a - c);
             const float env = cr_snd_env(t, p), s = cr_snd_carrier(t, k, p);
             float clear;
             if (p.sndKind == 1)   // variable density: across the whole track, its transmission follows the sound
