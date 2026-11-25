@@ -58,7 +58,7 @@ void signalChain(const CreativeParallel& par, const CreativeParams& q, CreativeS
 
 // Steps 1-3: the finished picture into dst.
 void renderPicture(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
-                   size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s)
+                   size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s, const CreativeHistory* hist)
 {
     const int W = p.W, H = p.H;
     const size_t N = (size_t)W * H;
@@ -79,6 +79,27 @@ void renderPicture(const CreativeParams& p, const float* const src[3], size_t sr
             }
     });
     const float* E[3] = { s.E[0].data(), s.E[1].data(), s.E[2].data() };
+    if (q.sensor != 0) {   // the video camera's sensor: a CCD's smear by column, then every pixel
+        if (!hist) q.history = 0;
+        ensure(s.S, 3 * (size_t)W);
+        float* S = s.S.data();
+        if (q.sensor == CR_SENSOR_CCD)
+            par(W, [&](int b, int e) {
+                for (int x = b; x < e; ++x) cr_smear_col(E[0], E[1], E[2], S, x, q);
+            });
+        const float* h[3];
+        for (int k = 0; k < 3; ++k) h[k] = q.history > k ? hist->src[k] : src[0];
+        par(H, [&](int b, int e) {
+            for (int y = b; y < e; ++y)
+                for (int x = 0; x < W; ++x) {
+                    const size_t i = (size_t)y * W + x;
+                    const SMf3 v = cr_sensor(smf3(s.E[0][i], s.E[1][i], s.E[2][i]), h[0], h[1], h[2], S, x, y, q);
+                    s.E[0][i] = v.x;
+                    s.E[1][i] = v.y;
+                    s.E[2][i] = v.z;
+                }
+        });
+    }
     if (q.genSoft > 0.0f) {   // the duplicates' loss of sharpness
         ensure(s.tmp, N);
         for (int k = 0; k < 3; ++k) {
@@ -109,7 +130,8 @@ void renderPicture(const CreativeParams& p, const float* const src[3], size_t sr
 }  // namespace
 
 void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_t srcRowFloats, float* dst,
-                       size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s, const CreativePrevious* prev)
+                       size_t dstRowFloats, const CreativeParallel& par, CreativeScratch& s, const CreativePrevious* prev,
+                       const CreativeHistory* history)
 {
     const int W = p.W, H = p.H;
     const size_t N = (size_t)W * H;
@@ -123,9 +145,9 @@ void creativeRenderCPU(const CreativeParams& p, const float* const src[3], size_
         ensure(s.prev, dstRowFloats * (size_t)H);
         CreativeParams pp = prev->p;
         pp.medium = CR_MEDIUM_NONE;
-        renderPicture(pp, prev->src, srcRowFloats, s.prev.data(), dstRowFloats, par, s);
+        renderPicture(pp, prev->src, srcRowFloats, s.prev.data(), dstRowFloats, par, s, nullptr);
     }
-    renderPicture(q, src, srcRowFloats, dst, dstRowFloats, par, s);
+    renderPicture(q, src, srcRowFloats, dst, dstRowFloats, par, s, history);
 
     // 4. viewing medium: the finished picture, decoded into M, shown through the screen or on paper
     if (q.medium == CR_MEDIUM_NONE) return;

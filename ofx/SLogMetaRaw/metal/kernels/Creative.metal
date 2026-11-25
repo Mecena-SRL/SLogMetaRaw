@@ -19,6 +19,31 @@ kernel void cr_record_k(const device float* s0 [[buffer(0)]], const device float
     E[2 * N + k] = e.z;
 }
 
+// The video camera's sensor, in place on E: a CCD's smear per column first (one thread per column), then every pixel
+// (a tube reads the frames before, h0..h2).
+kernel void cr_smear_k(const device float* E [[buffer(0)]], device float* S [[buffer(1)]],
+                       constant CreativeParams& p [[buffer(2)]], uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x;
+    if (x >= p.W) return;
+    const int N = p.W * p.H;
+    cr_smear_col(E, E + N, E + 2 * N, S, x, p);
+}
+
+kernel void cr_sensor_k(device float* E [[buffer(0)]], const device float* h0 [[buffer(1)]],
+                        const device float* h1 [[buffer(2)]], const device float* h2 [[buffer(3)]],
+                        const device float* S [[buffer(4)]], constant CreativeParams& p [[buffer(5)]],
+                        uint2 id [[thread_position_in_grid]])
+{
+    const int x = (int)id.x, y = (int)id.y;
+    if (x >= p.W || y >= p.H) return;
+    const int N = p.W * p.H, k = y * p.W + x;
+    const SMf3 v = cr_sensor(smf3(E[k], E[N + k], E[2 * N + k]), h0, h1, h2, S, x, y, p);
+    E[k] = v.x;
+    E[N + k] = v.y;
+    E[2 * N + k] = v.z;
+}
+
 kernel void cr_down_k(const device float* E [[buffer(0)]], device float* out [[buffer(1)]],
                       constant CrGrid& g [[buffer(2)]], constant CreativeParams& p [[buffer(3)]],
                       uint2 id [[thread_position_in_grid]])

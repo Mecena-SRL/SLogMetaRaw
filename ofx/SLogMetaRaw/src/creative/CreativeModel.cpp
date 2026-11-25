@@ -62,6 +62,11 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Televisore a tubo PAL (576 righe)", "Televisore a tubo NTSC (480 righe)",
                                                      "Monitor broadcast a tubo", "Console portatile LCD verde (160x144)",
                                                      "Stampa fotografica su carta" };
+const char* const kCrSensorNames[kCrSensorCount] = { "Nessuno (il segnale com'è)", "3 tubi Plumbicon (anni '70)",
+                                                     "3 tubi Plumbicon con bias light e ACT (anni '80)",
+                                                     "3 tubi Saticon", "1 tubo Saticon a strisce (consumer)",
+                                                     "1 tubo vidicon a strisce (consumer)", "1 tubo Newvicon a strisce",
+                                                     "1 CCD a mosaico (consumer)", "3 CCD", "1 MOS a mosaico" };
 const char* const kCrMediumInfo[kCrMediumCount] = {
     "",
     "Sala: 48 nit al buio, che appiattisce il contrasto percepito (2,4/2,6); xenon, luce che cade del 20% agli angoli, "
@@ -415,6 +420,26 @@ void tapeEmulation(CreativeParams& p, const TapeEmu& te, int W, int H, double bl
     p.chromaAM = (float)((0.02 + 0.1 * wear) / std::max(gain, 1e-3) * noise);
 }
 
+
+// The sensors (kCrSensorNames). Tubes: lag K and beam capacity B per channel (units of the peak white's charge per
+// field), target gamma, bias light, the overload kept (multiple of B; an ACT gun clamps it), green highlights of a
+// striped tube; CCD: smear (share of the light above the full well spread down the column), one chip or three; MOS:
+// fixed pattern; false colour of stripes or mosaic and its carrier (MHz). Research VIDEO_EMULAZIONE.md 1.1-1.2:
+// lag and capacities from the data books [doc], the rest estimates to calibrate. The smear is far above a real
+// chip's (-80 dB and less): the picture's highlights arrive clipped, so it stands for the sun and the headlights.
+struct SensorDef { int type; float K[3], B[3], gamma, bias, qmax, green, smear, mono, fpn, fc, fcMHz; };
+const SensorDef kSensors[kCrSensorCount] = {
+    { 0, { 0, 0, 0 }, { 1, 1, 1 }, 1, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { CR_SENSOR_TUBE, { 0.023f, 0.02f, 0.028f }, { 1.6f, 2, 2 }, 0.95f, 0, 12, 0, 0, 0, 0, 0, 1 },
+    { CR_SENSOR_TUBE, { 0.018f, 0.016f, 0.022f }, { 2, 2, 2 }, 0.95f, 0.012f, 1, 0, 0, 0, 0, 0, 1 },
+    { CR_SENSOR_TUBE, { 0.018f, 0.017f, 0.018f }, { 3.5f, 3.5f, 3.5f }, 1, 0, 8, 0, 0, 0, 0, 0, 1 },
+    { CR_SENSOR_TUBE, { 0.045f, 0.04f, 0.045f }, { 3, 3, 3 }, 1, 0, 8, 0.15f, 0, 0, 0, 0.8f, 3.58f },
+    { CR_SENSOR_TUBE, { 0.08f, 0.07f, 0.08f }, { 1.5f, 1.5f, 1.5f }, 0.65f, 0, 12, 0.6f, 0, 0, 0, 1.0f, 3.58f },
+    { CR_SENSOR_TUBE, { 0.035f, 0.03f, 0.035f }, { 2, 2, 2 }, 1, 0, 10, 0.2f, 0, 0, 0, 0.6f, 5.0f },
+    { CR_SENSOR_CCD, { 0, 0, 0 }, { 1, 1, 1 }, 1, 0, 0, 0, 0.12f, 1, 0, 0.5f, 4.8f },
+    { CR_SENSOR_CCD, { 0, 0, 0 }, { 1, 1, 1 }, 1, 0, 0, 0, 0.04f, 0, 0, 0, 1 },
+    { CR_SENSOR_MOS, { 0, 0, 0 }, { 1, 1, 1 }, 1, 0, 0, 0, 0, 0, 0.02f, 0.5f, 4.8f } };
+
 }  // namespace
 
 const char* const kCrRoomNames[3] = { "Buia", "Penombra", "Illuminata" };
@@ -490,6 +515,7 @@ void creativeLoadDevice(CreativeControls& c)
         c.wear = m.wear;
         c.heads = m.heads;
         c.instability = m.instability;
+        c.sensor = m.sensor;
     }
     c.deviceLoaded = creativeDeviceKey(c);
 }
@@ -537,7 +563,9 @@ CreativeControls creativeResolve(const CreativeControls& c)
 std::string creativeDeviceInfo(const CreativeControls& c0)
 {
     const CreativeControls c = creativeResolve(c0);
-    if (c.device == kCrDevVideo) return std::string("Nastro: ") + kCrAnalogNames[pick(c.analog, kCrAnalogCount)];
+    if (c.device == kCrDevVideo)
+        return std::string("Nastro: ") + kCrAnalogNames[pick(c.analog, kCrAnalogCount)] + ". Sensore: "
+               + kCrSensorNames[pick(c.sensor, kCrSensorCount)];
     if (c.device == kCrDevCinema || c.device == kCrDevPhone)
         return std::string("Resa come: ") + kCrDigitalNames[pick(c.digital, kCrDigitalCount)];
     const CrStock* st = creativeStock(c);
@@ -572,6 +600,15 @@ bool creativeNeedsPrevious(const CreativeControls& c0)
            && !creativeLogOut(c);
 }
 
+bool creativeSensorTube(int s) { return kSensors[pick(s, kCrSensorCount)].type == CR_SENSOR_TUBE; }
+bool creativeSensorCCD(int s) { return kSensors[pick(s, kCrSensorCount)].type == CR_SENSOR_CCD; }
+
+int creativeHistory(const CreativeControls& c0)
+{
+    const CreativeControls c = creativeResolve(c0);
+    return c.process == kCrAnalog && creativeSensorTube(c.sensor) && (c.lag > 0 || c.comet > 0) ? 3 : 0;
+}
+
 void creativeRecordTimes(const CreativeControls& c0, double out[3])
 {
     const CreativeControls c = creativeResolve(c0);
@@ -586,7 +623,8 @@ void creativeRecordTimes(const CreativeControls& c0, double out[3])
     }
 }
 
-void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma)
+void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
+                     int history)
 {
     CreativeControls c = creativeResolve(c0);
     const bool toggles = creativeToggles(c.process);
@@ -901,6 +939,28 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         p.contrast = 1.15f;
         p.clip = 3.0f;
         p.knee = 0.3f;
+        // the camera's sensor, before its curve
+        const SensorDef& sn = kSensors[pick(c.sensor, kCrSensorCount)];
+        p.sensor = sn.type;
+        if (sn.type == CR_SENSOR_TUBE) {
+            const double lag = clampd(c.lag, 0, 3);
+            for (int k = 0; k < 3; ++k) {
+                p.tubeK[k] = (float)(sn.K[k] * lag);
+                p.tubeB[k] = sn.B[k];
+            }
+            p.tubeGamma = sn.gamma;
+            p.tubeBias = sn.bias;
+            p.tubeQmax = (float)(sn.qmax * clampd(c.comet, 0, 3));
+            p.tubeGreen = sn.green;
+            p.history = std::max(0, std::min(history, creativeHistory(c)));
+        }
+        p.smear = (float)(sn.smear * clampd(c.smear, 0, 3));
+        p.smearWell = 1.0f;
+        p.smearMono = sn.mono;
+        if (sn.type == CR_SENSOR_CCD && p.smear <= 0.0f) p.sensor = 0;
+        p.fpn = sn.fpn;
+        p.falseColour = sn.fc;
+        p.fcPeriod = (float)(W / 52.0 / sn.fcMHz);
         film = false;
         pushes = false;
         break;

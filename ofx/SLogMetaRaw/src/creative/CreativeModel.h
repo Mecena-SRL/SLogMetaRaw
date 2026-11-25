@@ -21,7 +21,8 @@ extern const char* const kCrProcessInfo[kCrProcessCount];
 // The variants of each process (one choice parameter each, shown with its process). Append only.
 const int kCrNegativeCount = 20, kCrReversalCount = 6, kCrBWStockCount = 6, kCrSensitivityCount = 4, kCrFilterCount = 5,
           kCrTechniEraCount = 3, kCrCollodionCount = 2, kCrPaperCount = 2, kCrPrintCount = 9, kCrFormatCount = 15,
-          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 8;
+          kCrAnalogCount = 11, kCrDigitalCount = 10, kCrGenerationCount = 4, kCrMediumCount = 8,
+          kCrSensorCount = 10;
 extern const char* const kCrNegativeNames[kCrNegativeCount];
 extern const char* const kCrReversalNames[kCrReversalCount];
 extern const char* const kCrBWStockNames[kCrBWStockCount];
@@ -37,6 +38,8 @@ extern const char* const kCrDigitalNames[kCrDigitalCount];
 extern const char* const kCrGenerationNames[kCrGenerationCount];
 extern const char* const kCrMediumNames[kCrMediumCount];
 extern const char* const kCrMediumInfo[kCrMediumCount];
+// The video camera's sensor (analog video): pickup tubes, CCD, MOS. Append only.
+extern const char* const kCrSensorNames[kCrSensorCount];
 
 // "Dispositivo": what took the picture. Manual = the process chosen by hand (every process); the others choose a
 // model, and film a manufacturer and stock, which set the process and its variant. Append only.
@@ -78,6 +81,10 @@ struct CreativeControls
     // analog video and digital cameras (multiples of the format's own, 1 = typical)
     double wear = 0.15, heads = 0.3, instability = 0.25, noise = 1, colourBleed = 1, sharpness = 0;
     double range = 0, highlights = 0.5, compression = 1;
+    // the video camera's sensor (0 none: the signal as it is), its tube's lag and comet tails, its CCD's smear
+    // (multiples of the sensor's own, 1 = typical)
+    int sensor = 0;
+    double lag = 1, comet = 1, smear = 1;
     // colour
     double shadowHue = 200, shadowAmount = 0, highHue = 40, highAmount = 0, balance = 0, saturation = 1, density = 0;
 };
@@ -109,10 +116,17 @@ bool creativeToggles(int process);
 
 // Whether the picture of the previous frame is needed too (an LCD's slow response).
 bool creativeNeedsPrevious(const CreativeControls& c);
+// How many frames before this one the sensor reads (a pickup tube's charge carries over): 0 to 3.
+int creativeHistory(const CreativeControls& c);
+// Whether sensor s is a pickup tube, a CCD.
+bool creativeSensorTube(int s);
+bool creativeSensorCCD(int s);
 
 // Time offsets (frames) of the three records' exposures: sequential plates and two-colour cameras read other frames.
 void creativeRecordTimes(const CreativeControls& c, double out[3]);
 
 // The engine's parameters for a W x H frame (the whole frame: no tiles), frame number `frame`, input encoding
 // (space, gamma) and source pixel aspect.
-void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma);
+// history: how many of the frames before this one the host passes (creativeHistory or fewer, at the clip's start).
+void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma,
+                     int history = 0);

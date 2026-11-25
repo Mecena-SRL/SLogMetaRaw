@@ -3,8 +3,10 @@
 // stdin:  W H space gamma frame frames threads
 //         name=value ... (panel controls by their OFX names, one line)
 //         frames * W*H lines "r g b" (encoded input; frame 0 is the current one, then the following ones; when the
-//         medium shows the previous picture and frames > 1, the last frame is the previous one)
+//         medium shows the previous picture and frames > 1, the last frame is the previous one; when a pickup tube
+//         remembers the frames before, frames 1, 2, 3 are 1, 2, 3 frames before this one)
 // stdout: W*H lines "r g b"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -65,8 +67,11 @@ int main()
         const int f = (int)std::lround(t[k]);
         inputs[k] = src[f >= 0 && f < ahead ? f : 0].data();   // past the clip's end: this frame, as the plugin
     }
+    const int history = std::min(creativeHistory(c), frames - 1);
+    CreativeHistory hist = {};
+    for (int k = 0; k < history; ++k) hist.src[k] = src[1 + k].data();
     CreativeParams p;
-    creativePrepare(p, c, W, H, frame, space, gamma);
+    creativePrepare(p, c, W, H, frame, space, gamma, history);
     CreativePrevious prev;
     if (previous) {
         creativePrepare(prev.p, c, W, H, frame - 1, space, gamma);
@@ -80,7 +85,7 @@ int main()
     };
     CreativeScratch s;
     std::vector<float> dst(N * 4);
-    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s, previous ? &prev : nullptr);
+    creativeRenderCPU(p, inputs, (size_t)W * 4, dst.data(), (size_t)W * 4, par, s, previous ? &prev : nullptr, &hist);
     for (size_t i = 0; i < N; ++i) printf("%.7g %.7g %.7g\n", dst[i * 4], dst[i * 4 + 1], dst[i * 4 + 2]);
     return 0;
 }

@@ -43,6 +43,15 @@
   - Un solo errore di timebase muove le righe, la banda del cambio testina in basso e la piega in alto.
   - Dropout che restano per più campi e salgono nel quadro, coperti dalla riga sopra e senza colore.
   - Usura, Cambio testine, Instabilità, Rumore, Sbavatura colore e Nitidezza guidano le stesse grandezze fisiche.
+- **Creative, sensore della videocamera** (gruppo *Segnale*, caricato dal modello di videocamera): tubi, CCD e MOS.
+  - Tubi (Plumbicon, Saticon, vidicon, Newvicon): l'immagine ricorda i 3 quadri prima. La scia si vede nelle ombre e
+    nei mezzitoni, le luci forti in movimento lasciano code di cometa sature; nel Plumbicon degli anni '70 la scia è
+    più rossa, con bias light e ACT quasi sparisce. I tubi a strisce delle camere di casa trasformano i dettagli fini in
+    chiazze di colore e il vidicon fa le alte luci verdi.
+  - CCD: la striscia verticale sopra e sotto le luci fortissime (sole, fari), rosata nelle camere a un chip.
+  - MOS: un disegno fisso di righe.
+  - Comandi *Sensore*, *Scia del tubo*, *Code di cometa*, *Smear del CCD*; tre modelli nuovi (Panasonic WV-3110,
+    PK-958, Ikegami HL-79E). Con *Processo a mano* il sensore parte da *Nessuno*: i grade di prima non cambiano.
 
 ## Log MetaRaw 4.1.0
 
