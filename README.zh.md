@@ -24,7 +24,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 | **1 · Log MetaRaw Noise** 节点 | Color › OpenFX | 在 log 画面上降噪，依据摄影机、ISO 与格式的预期噪声；时域与空域，Metal GPU |
 | **2 · Stabilize**、**3 · Motion Blur** | Color › OpenFX › Log MetaRaw | 陀螺仪稳定（内置 Gyroflow）与基于光流重建的运动模糊；仅限 Apple 芯片 Mac |
 | **4 · Log MetaRaw** 节点 | Color › OpenFX | 以拍摄时的数值为起点显影单个片段：白平衡、曝光、色彩空间、分区影调、伪色 |
-| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；观看介质（影院、家用放映机、CRT 电视、掌机 LCD、相纸） |
+| **5 · Log MetaRaw Creative** 节点 | Color › OpenFX | 创意冲印：16 种摄影工艺（负片与拷贝、反转片、黑白、Technicolor、Autochrome、三版分色、达盖尔银版、火棉胶、早期印相），以及模拟录像和老式数码相机；拷贝与翻印代数；按设备与型号的预设（电影摄影机、摄像管与 CCD 摄像机、数码相机与手机）、14 支老镜头、转录（胶转磁、显像管录片、胶片输出）与观看介质（影院、放映机、CRT 与 Trinitron 电视、等离子、早期 LCD、掌机、相纸） |
 | **Log MetaRaw Ripresa** 与 **Mix e supporto** 插件（VST3） | Fairlight › 效果 › VST3 | 年代声音：音轨上的真实录音机与麦克风，总线和母带上的调音台、载体（磁带、卡带、黑胶、VHS、光学声带、广播、电话）、转录与回放；每个环节可单独关闭；Mac 与 Windows |
 
 不转码任何文件，也从不写入任何原始文件。
@@ -41,7 +41,7 @@ Log MetaRaw 读取并使用这些数据，由一个脚本和五个节点组成�
 
 ## 安装
 
-1. 从 **Releases** 下载 `SLogMetaRaw-4.1.0.dmg` 并打开。
+1. 从 **Releases** 下载 `SLogMetaRaw-4.2.0.dmg` 并打开。
 2. 双击 **Installa Log MetaRaw.pkg**。安装包未使用 Apple 证书签名：第一次请右键点击并选择**打开**。因为插件要放入系统文件夹，安装时会要求输入 Mac 密码。
 3. 重启 DaVinci Resolve。
 
@@ -102,7 +102,7 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 
 | 控件 | 作用 |
 |---|---|
-| **版本**（顶部） | `v4.1.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
+| **版本**（顶部） | `v4.2.0`。每天最多向 GitHub 查询一次最新版本。若有新版本，显示 **🟢 v3.1.0 → 3.x.y**，点击会在浏览器中打开适合本系统的安装程序下载（`.dmg`、`.exe`、`.deb`/`.rpm`/`.run`）。它自己从不安装任何东西 |
 | **Camera** · **Rileggi metadata** | 读取到的摄影机。*Rileggi*（重新读取）会重新读取片段，把所有控件恢复为摄影机数值，并把该片段的元数据写入媒体池 |
 | **Ripresa**（拍摄）· **Decodifica** | *Clip* 可以修改控件；*Camera metadata* 把控件锁定为拍摄时的数值 |
 | **Bilanciamento**（平衡）· **Temperatura** · **Tint** | As shot 或预设。在线性光中做 Bradford 色适应，基于相机记录的白点 |
@@ -154,6 +154,15 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 
 数值是 [docs/CREATIVE.md](docs/CREATIVE.md) 中研究得出的估计，不是任何产品的配置，需要用真实素材校准。尚未在 Resolve 中测试；Metal 由 macOS CI 测试验证。
 
+**4.2.0 新功能。**
+
+- **设备 › 型号**：从机器出发（电影摄影机、摄像机、数字电影机、手机），自动载入画幅、磁带、传感器与缺陷；再选厂商与胶片，均为真实名称。*色调*、*色彩*、*纹理* 开关可以只在自己的视频上使用颗粒等单项。
+- **模拟视频**：VHS 与 Betacam 磁带逐行重建（FM 噪声、色度延迟、磁头切换、信号脱落），以及摄像机传感器：摄像管拖影与彗尾、CCD 拖尾、条纹管的伪色。
+- **按型号的数码相机**：传感器尺寸与混叠、机内锐化、编码器的 8x8 块与色度抽样（从 Motorola RAZR 到 ARRI Alexa）。
+- **转录到**：转录到 VHS、Betacam、第三代 VHS、16 mm 显像管录片或 35 mm 胶片输出，颗粒叠加。
+- **镜头**：14 支镜头（Cooke、Zeiss Super Speed、Canon K35、Panavision、LOMO、Helios、Petzval…），含畸变、边缘柔化、旋涡、眩光与变形宽银幕拉丝。
+- **新的观看介质**：Super 8 放映机、Trinitron、等离子、早期 LCD。
+
 ---
 
 ## Noise、Stabilize 与 Motion Blur 节点（4.0.0）
@@ -174,9 +183,20 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 
 这三个节点都尚未在 Resolve 中用真实片段测试。
 
+## Log MetaRaw Audio（VST3，4.2.0）
+
+Creative 的声音孪生，用于 **Fairlight**（Mac 与 Windows）：一个模块 `Log MetaRaw Audio.vst3` 含两个插件。
+
+- **Ripresa**（录音），用于音轨：录音机（Geloso G.257、Nagra、Uher、Studer、Revox、Walkman、Auricon、爱迪生留声机、钢丝录音机…）、话筒（原配或 RCA 44、U 47、C12、SM58、MKH 416…）、介质与降噪。
+- **Mix e supporto**（混音与介质），用于总线与母带：调音台（RCA、EMI REDD.51、Neve、SSL、Mackie）、介质（磁带、卡带、78/45/33 转、VHS、光学声迹、收音机、电话）、转录与收听（电子管收音机、点唱机、电视、影院）。
+- 每一级都有开关；饱和、噪声、抖晃、干/湿与输出调整结果。
+- 在安装程序中为独立组件，默认勾选。Linux：Resolve 不加载原生 VST3。
+
+数值为根据当年规格与描述得出的估计（[docs/audio/AUDIO.md](docs/audio/AUDIO.md)）；尚未在 Fairlight 中测试。
+
 ## 更新与隐私
 
-- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.1.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
+- **节点**每天最多在后台向 GitHub 查询一次本项目的最新版本。请求中只包含程序版本（`User-Agent: SLogMetaRaw/4.2.0`）。如需关闭，请创建空文件 `~/Library/Application Support/SLogMetaRaw/no_update_check`。
 - **脚本**只在你点击其版本号时检查。
 - 点击只会打开本项目 GitHub 发布页中的下载链接。未经你的操作，不会安装任何东西。
 
@@ -268,4 +288,4 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 
 Stabilize 基于 AdrianEddy 及贡献者的 [Gyroflow](https://github.com/gyroflow/gyroflow)（GPL-3.0）及其镜头库。Noise 节点的空域滤波参考 NeighShrink（Chen、Bui、Krzyżak，2004）。
 
-[GNU GPL v3.0 或更高版本](LICENSE)。OpenFX SDK 版权归 The Open Effects Association 所有（BSD-3）。Sony、XAVC 和 Catalyst 是 Sony Group Corporation 的商标；DaVinci Resolve 是 Blackmagic Design 的商标。本项目为独立项目，与上述两家公司无隶属关系，也未获其认可。
+[GNU GPL v3.0 或更高版本](LICENSE)。OpenFX SDK 版权归 The Open Effects Association 所有（BSD-3）。VST3 SDK 版权归 Steinberg Media Technologies 所有（MIT）；VST 是 Steinberg 的商标。Sony、XAVC 和 Catalyst 是 Sony Group Corporation 的商标；DaVinci Resolve 是 Blackmagic Design 的商标。本项目为独立项目，与上述两家公司无隶属关系，也未获其认可。

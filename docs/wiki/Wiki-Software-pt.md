@@ -2,7 +2,7 @@
 
 [English](Wiki-Software) · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · **Português** · [简体中文](Wiki-Software-zh) · [Home](Home-pt)
 
-> Versão **3.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Versão **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Testado apenas no DaVinci Resolve Studio 21.1 no macOS.
 
 O Log MetaRaw lê os dados de gravação que as câmeras Sony escrevem em cada arquivo (Kelvin, tint, EI, objetiva, abertura, obturador, perfil de cor) e os usa dentro do DaVinci Resolve. O Resolve faz isso só com os MXF da FX6/FX9; nos MP4 da FX30, FX3, série a7 e a6000 ele ignora esses dados.
@@ -36,7 +36,7 @@ Três ferramentas, uma única instalação:
 |---|---|---|
 | **Script** | Workspace › Scripts › Log MetaRaw | Lê os metadados de cada clipe e grava-os no Media Pool. Corrige o Data Level de cada clipe. |
 | Nó **Log MetaRaw** | Color › OpenFX — **primeiro nó** | Revela um clipe a partir dos valores de gravação: balanço de branco, exposição, espaço de cor, tons por zonas, falsa cor. |
-| Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; um suporte de visualização (sala, projetor doméstico, TV CRT, console LCD, papel) |
+| Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; presets por dispositivo e modelo (câmeras de cinema, videocâmeras de tubo e CCD, câmeras digitais e telefones), 14 lentes de época, cópias (telecine, cinescópio, film-out) e um suporte de visualização (sala, projetores, TVs CRT e Trinitron, plasma, primeiros LCD, console, papel) |
 
 Os arquivos originais **nunca são modificados**: sem transcodificação, sem rewrap.
 
@@ -289,6 +289,21 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
 
+**Novidades da 4.2.0.**
+
+- **Dispositivo › modelo**: parte-se da máquina (câmera de cinema, videocâmera, cinema digital, telefone), que carrega
+  formato, fita, sensor e defeitos; depois fabricante e filme, com nomes reais. Os interruptores *Tom*, *Cor* e
+  *Textura* permitem usar, por exemplo, só o grão no seu próprio vídeo.
+- **Vídeo emulado**: fita VHS e Betacam refeita linha a linha (ruído FM, cor atrasada, cabeças, dropouts) e sensor da
+  câmera: tubos com rastro e caudas de cometa, smear do CCD, falsa cor dos tubos de listras.
+- **Digitais por modelo**: tamanho do sensor e aliasing, nitidez interna, blocos 8x8 do codec e cor subamostrada (do
+  Motorola RAZR à ARRI Alexa).
+- **Copiado para**: a cópia em VHS, Betacam, VHS de terceira geração, cinescópio 16 mm ou film-out 35 mm, grão sobre
+  grão.
+- **Lente**: 14 objetivas (Cooke, Zeiss Super Speed, Canon K35, Panavision, LOMO, Helios, Petzval…) com distorção,
+  bordas suaves, redemoinho, véu e faixa anamórfica.
+- **Novos meios de exibição**: projetor Super 8, Trinitron, plasma, primeiro LCD.
+
 ---
 
 ## Os nós Noise, Stabilize e Motion Blur (4.0.0)
@@ -314,6 +329,21 @@ Trabalham sobre a imagem da câmera, antes do **Log MetaRaw**.
   MecenaClipDB, para o Stabilize.
 
 Nenhum dos três nós foi ainda testado no Resolve com clipes reais.
+
+## Log MetaRaw Audio (VST3, 4.2.0)
+
+O gêmeo sonoro do Creative, para o **Fairlight** (Mac e Windows): dois plugins num só módulo, `Log MetaRaw Audio.vst3`.
+
+- **Ripresa** (gravação), nas faixas: gravador (Geloso G.257, Nagra, Uher, Studer, Revox, Walkman, Auricon, fonógrafo
+  Edison, gravador de fio…), microfone (o de série ou RCA 44, U 47, C12, SM58, MKH 416…), suporte e redução de ruído.
+- **Mix e supporto** (mixagem e suporte), em buses e master: console (RCA, EMI REDD.51, Neve, SSL, Mackie), suporte
+  (fita, cassete, 78/45/33 rpm, VHS, trilha ótica, rádio, telefone), cópias e escuta (rádio valvulado, jukebox, TV,
+  cinema).
+- Cada estágio tem um interruptor; Saturação, Ruído, Wow e flutter, Dry/wet e Saída ajustam o resultado.
+- Nos instaladores é um componente à parte, marcado por padrão. Linux: o Resolve não carrega VST3 nativos.
+
+Os valores são estimativas de especificações e descrições de época ([docs/audio/AUDIO.md](docs/audio/AUDIO.md)); ainda
+não testado no Fairlight.
 
 ## 9. Pipelines: onde cada nó vai
 

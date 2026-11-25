@@ -2,7 +2,7 @@
 
 **English** · [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh) · [Home](Home)
 
-> Version **3.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
+> Version **4.2.0** · macOS 12+ · DaVinci Resolve 20 / 21 · Sony XAVC `.MP4` / `.MXF`
 > Tested only on DaVinci Resolve Studio 21.1 on macOS.
 
 Log MetaRaw reads the shooting data Sony cameras write into every file (Kelvin, tint, EI, lens, aperture, shutter, colour profile) and uses it inside DaVinci Resolve. Resolve does this only for FX6/FX9 MXF files; for MP4 from FX30, FX3, a7 and a6000 series it ignores that data.
@@ -36,7 +36,7 @@ Three tools, one install:
 |---|---|---|
 | **Script** | Workspace › Scripts › Log MetaRaw | Reads the metadata of every clip and writes it into the Media Pool. Fixes each clip's Data Level. |
 | **Log MetaRaw** node | Color › OpenFX — **first node** | Develops a clip from its as-shot values: white balance, exposure, colour space, tones by zones, false colour. |
-| **5 · Log MetaRaw Creative** node | Color › OpenFX | creative development: 16 photographic processes (film negatives and prints, reversal, black and white, Technicolor, Autochrome, three plates, daguerreotype, collodion, early prints), analog video and vintage digital cameras; prints and print generations; a viewing medium (cinema, home projector, CRT TV, handheld LCD, paper) |
+| **5 · Log MetaRaw Creative** node | Color › OpenFX | creative development: 16 photographic processes (film negatives and prints, reversal, black and white, Technicolor, Autochrome, three plates, daguerreotype, collodion, early prints), analog video and vintage digital cameras; prints and print generations; presets by device and model (film cameras, tube and CCD video cameras, digital cameras and phones), 14 vintage lenses, transfers (telecine, kinescope, film-out) and a viewing medium (cinema, projectors, CRT and Trinitron TVs, plasma, early LCD, handheld, paper) |
 
 Original files are **never modified**: no transcoding, no rewrapping.
 
@@ -294,6 +294,20 @@ scratches; in multiples of the material's and the **Formato**'s own, 8 mm to IMA
 The numbers are estimates from the research in [docs/CREATIVE.md](docs/CREATIVE.md), not product profiles: they need
 tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS CI tests.
 
+**New in 4.2.0.**
+
+- **Device › model**: start from the machine (film camera, video camera, digital cinema, phone); it loads format, tape,
+  sensor and faults; then maker and stock, with real names. The *Tone*, *Colour* and *Texture* switches let you use, for
+  instance, only the grain on your own footage.
+- **Emulated video**: VHS and Betacam tape rebuilt line by line (FM noise, late colour, head switching, dropouts) and
+  the camera's sensor: tubes with lag and comet tails, CCD smear, the false colour of striped tubes.
+- **Digital cameras by model**: sensor size and aliasing, in-camera sharpening, the codec's 8x8 blocks and subsampled
+  colour (from the Motorola RAZR to the ARRI Alexa).
+- **Transferred to**: the copy on VHS, Betacam, third-generation VHS, 16 mm kinescope or 35 mm film-out, grain on grain.
+- **Lens**: 14 lenses (Cooke, Zeiss Super Speed, Canon K35, Panavision, LOMO, Helios, Petzval…) with distortion, soft
+  edges, swirl, veiling glare and anamorphic streak.
+- **New viewing media**: Super 8 projector, Trinitron, plasma, early LCD.
+
 ---
 
 ## The Noise, Stabilize and Motion Blur nodes (4.0.0)
@@ -320,6 +334,22 @@ They work on the camera image, before **Log MetaRaw**.
   for Stabilize.
 
 None of the three nodes has been tried in Resolve on real clips yet.
+
+## Log MetaRaw Audio (VST3, 4.2.0)
+
+The Creative's twin for sound, in **Fairlight** (Mac and Windows): two plugins in one module, `Log MetaRaw Audio.vst3`.
+
+- **Ripresa** (recording), on tracks: recorder (Geloso G.257, Nagra, Uher, Studer, Revox, Walkman, Auricon, Edison
+  phonograph, wire recorder…), microphone (the recorder's own or RCA 44, U 47, C12, SM58, MKH 416…), medium and noise
+  reduction.
+- **Mix e supporto** (mix and medium), on buses and master: console (RCA, EMI REDD.51, Neve, SSL, Mackie), medium (tape,
+  cassette, 78/45/33 rpm, VHS, optical track, radio, telephone), transfers and listening (valve radio, jukebox, TV,
+  cinema).
+- Every stage has a switch; Saturation, Noise, Wow and flutter, Dry/wet and Output set the result.
+- In the installers it is a separate component, ticked by default. Linux: Resolve does not load native VST3.
+
+The values are estimates from period specifications and descriptions ([docs/audio/AUDIO.md](docs/audio/AUDIO.md)); not
+yet tried in Fairlight.
 
 ## 9. Pipelines: where each node goes
 

@@ -24,7 +24,7 @@ O Log MetaRaw lê esses dados e usa-os. É um script e cinco nós, numerados nos
 | Nó **1 · Log MetaRaw Noise** | Color › OpenFX | redução de ruído na imagem log, com o ruído esperado por câmera, ISO e formato; temporal e espacial, GPU Metal |
 | **2 · Stabilize**, **3 · Motion Blur** | Color › OpenFX › Log MetaRaw | estabilização por giroscópio (Gyroflow integrado) e desfoque de movimento a partir do fluxo óptico; só Mac Apple silicon |
 | Nó **4 · Log MetaRaw** | Color › OpenFX | revela um clipe a partir dos valores de gravação: balanço, exposição, espaço de cor, tons por zonas, falsa cor |
-| Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; um suporte de visualização (sala, projetor doméstico, TV CRT, console LCD, papel) |
+| Nó **5 · Log MetaRaw Creative** | Color › OpenFX | revelação criativa: 16 processos fotográficos (negativos e cópias, reversíveis, preto e branco, Technicolor, Autochrome, três chapas, daguerreótipo, colódio, cópias antigas), vídeo analógico e câmeras digitais de época; cópias e gerações de cópia; presets por dispositivo e modelo (câmeras de cinema, videocâmeras de tubo e CCD, câmeras digitais e telefones), 14 lentes de época, cópias (telecine, cinescópio, film-out) e um suporte de visualização (sala, projetores, TVs CRT e Trinitron, plasma, primeiros LCD, console, papel) |
 | Plugins **Log MetaRaw Ripresa** e **Mix e supporto** (VST3) | Fairlight › Efeitos › VST3 | som de época: gravadores e microfones reais nas faixas, mesa, suporte (fita, cassete, vinil, VHS, banda ótica, rádio, telefone), cópias e escuta em buses e master; cada etapa pode ser desligada; Mac e Windows |
 
 Nenhum arquivo é transcodificado e nenhum original é alterado.
@@ -48,7 +48,7 @@ que existe. Não pode criar o que não existe.
 
 ## Instalação
 
-1. Baixe `SLogMetaRaw-4.1.0.dmg` em **Releases** e abra-o.
+1. Baixe `SLogMetaRaw-4.2.0.dmg` em **Releases** e abra-o.
 2. Dê um duplo clique em **Installa Log MetaRaw.pkg**. Não está assinado com um certificado da Apple: na primeira vez,
    clique com o botão direito › **Abrir**. Pede a senha do Mac porque o plugin vai para uma pasta do sistema.
 3. Reinicie o DaVinci Resolve.
@@ -136,7 +136,7 @@ O nó é pontual: cada pixel depende só de si mesmo. Nunca cria halos e o **Gen
 
 | Controle | O que faz |
 |---|---|
-| **Versão** (no topo) | `v4.1.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
+| **Versão** (no topo) | `v4.2.0`. Uma vez por dia pergunta ao GitHub pela última release. Se houver, mostra **🟢 v3.1.0 → 3.x.y** e o clique abre no navegador o download do instalador do seu sistema (`.dmg`, `.exe`, `.deb`/`.rpm`/`.run`). Nunca instala nada sozinho |
 | **Camera** · **Rileggi metadata** | a câmera lida. *Rileggi* (reler) lê o clipe de novo, devolve cada controle aos valores da câmera e grava os metadados do clipe no Media Pool |
 | **Ripresa** (gravação) · **Decodifica** | *Clip* permite mudar os controles; *Camera metadata* trava-os nos valores de gravação |
 | **Bilanciamento** (balanço) · **Temperatura** · **Tint** | As shot ou um preset. Adaptação cromática Bradford em luz linear, a partir do branco registrado pela câmera |
@@ -214,6 +214,21 @@ sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só o
 Os números são estimativas da pesquisa em [docs/CREATIVE.md](docs/CREATIVE.md), não perfis de produtos: precisam ser
 ajustados com material real. Ainda não testado no Resolve; Metal verificado pelos testes da CI do macOS.
 
+**Novidades da 4.2.0.**
+
+- **Dispositivo › modelo**: parte-se da máquina (câmera de cinema, videocâmera, cinema digital, telefone), que carrega
+  formato, fita, sensor e defeitos; depois fabricante e filme, com nomes reais. Os interruptores *Tom*, *Cor* e
+  *Textura* permitem usar, por exemplo, só o grão no seu próprio vídeo.
+- **Vídeo emulado**: fita VHS e Betacam refeita linha a linha (ruído FM, cor atrasada, cabeças, dropouts) e sensor da
+  câmera: tubos com rastro e caudas de cometa, smear do CCD, falsa cor dos tubos de listras.
+- **Digitais por modelo**: tamanho do sensor e aliasing, nitidez interna, blocos 8x8 do codec e cor subamostrada (do
+  Motorola RAZR à ARRI Alexa).
+- **Copiado para**: a cópia em VHS, Betacam, VHS de terceira geração, cinescópio 16 mm ou film-out 35 mm, grão sobre
+  grão.
+- **Lente**: 14 objetivas (Cooke, Zeiss Super Speed, Canon K35, Panavision, LOMO, Helios, Petzval…) com distorção,
+  bordas suaves, redemoinho, véu e faixa anamórfica.
+- **Novos meios de exibição**: projetor Super 8, Trinitron, plasma, primeiro LCD.
+
 ---
 
 ## Os nós Noise, Stabilize e Motion Blur (4.0.0)
@@ -240,10 +255,25 @@ Trabalham sobre a imagem da câmera, antes do **Log MetaRaw**.
 
 Nenhum dos três nós foi ainda testado no Resolve com clipes reais.
 
+## Log MetaRaw Audio (VST3, 4.2.0)
+
+O gêmeo sonoro do Creative, para o **Fairlight** (Mac e Windows): dois plugins num só módulo, `Log MetaRaw Audio.vst3`.
+
+- **Ripresa** (gravação), nas faixas: gravador (Geloso G.257, Nagra, Uher, Studer, Revox, Walkman, Auricon, fonógrafo
+  Edison, gravador de fio…), microfone (o de série ou RCA 44, U 47, C12, SM58, MKH 416…), suporte e redução de ruído.
+- **Mix e supporto** (mixagem e suporte), em buses e master: console (RCA, EMI REDD.51, Neve, SSL, Mackie), suporte
+  (fita, cassete, 78/45/33 rpm, VHS, trilha ótica, rádio, telefone), cópias e escuta (rádio valvulado, jukebox, TV,
+  cinema).
+- Cada estágio tem um interruptor; Saturação, Ruído, Wow e flutter, Dry/wet e Saída ajustam o resultado.
+- Nos instaladores é um componente à parte, marcado por padrão. Linux: o Resolve não carrega VST3 nativos.
+
+Os valores são estimativas de especificações e descrições de época ([docs/audio/AUDIO.md](docs/audio/AUDIO.md)); ainda
+não testado no Fairlight.
+
 ## Atualizações e privacidade
 
 - Os **nós** perguntam ao GitHub pela última release deste projeto no máximo uma vez por dia, em segundo plano. A
-  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.1.0`). Para desativar, crie o arquivo vazio
+  requisição leva só a versão do programa (`User-Agent: SLogMetaRaw/4.2.0`). Para desativar, crie o arquivo vazio
   `~/Library/Application Support/SLogMetaRaw/no_update_check`.
 - O **script** só consulta quando você clica na sua versão.
 - Um clique apenas abre um link de download das releases do GitHub deste projeto. Nada é instalado sem você.
@@ -356,6 +386,6 @@ não distribuída; até a 3.1.x a curva era o ajuste de Thatcher Freeman.
 O Stabilize baseia-se no [Gyroflow](https://github.com/gyroflow/gyroflow) de AdrianEddy e colaboradores (GPL-3.0) e no seu
 catálogo de objetivas. O filtro espacial do nó Noise segue o NeighShrink (Chen, Bui e Krzyżak, 2004).
 
-[GNU GPL v3.0 ou posterior](LICENSE). O SDK OpenFX é © The Open Effects Association (BSD-3). Sony, XAVC e Catalyst são
+[GNU GPL v3.0 ou posterior](LICENSE). O SDK OpenFX é © The Open Effects Association (BSD-3). O SDK VST3 é © Steinberg Media Technologies (MIT); VST é uma marca da Steinberg. Sony, XAVC e Catalyst são
 marcas da Sony Group Corporation; DaVinci Resolve é uma marca da Blackmagic Design. Projeto independente, não afiliado nem
 endossado por nenhuma das duas empresas.

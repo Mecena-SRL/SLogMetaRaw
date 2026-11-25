@@ -120,18 +120,21 @@
     <tr><td class="k">Zone</td><td>Black, Shadow, Light, Specular: Exp, Sat, Range, Falloff; Pivot; False color: zone</td><td class="pg">6</td></tr>
     <tr><td class="k">Dati di ripresa</td><td>Obiettivo, focale, diaframma, fuoco, shutter, ISO/EI, WB, fps, ND, LUT camera</td><td class="pg">4</td></tr>
     <tr class="grp"><td colspan="3">Nodo Log MetaRaw Creative <span>· subito dopo · spaziale, escluso da Generate LUT</span> <span class="new">4.1</span></td></tr>
-    <tr><td class="k">Processo</td><td>16 procedimenti: negativo, invertibile, B/N, Technicolor, Autochrome, Dufay, tre lastre, Kinemacolor, dagherrotipo, collodio, stampe, video analogico, digitale</td><td class="pg">8</td></tr>
-    <tr><td class="k">Varianti</td><td>Pellicola, Positivo, Generazione, Uscita, Supporto di visione, Sensibilità, Filtro di presa, Epoca, Supporto, Carta, Formato, Formato video, Camera</td><td class="pg">8</td></tr>
+    <tr><td class="k">Dispositivo › Modello</td><td>Cinepresa, videocamera (tubi, CCD), cinema digitale, telefono <span class="new">4.2</span></td><td class="pg">8</td></tr>
+    <tr><td class="k">Processo</td><td>16 procedimenti, dal dagherrotipo al Technicolor, al video analogico e al digitale</td><td class="pg">8</td></tr>
+    <tr><td class="k">Varianti</td><td>Pellicola, Positivo, Generazione, Uscita, Sensibilità, Filtro, Epoca, Carta, Formato, Camera</td><td class="pg">8</td></tr>
     <tr><td class="k">Ripresa e sviluppo · Stampa</td><td>Esposizione, Temperatura, Tinta, Sviluppo, Argento, Preflash, Età; luci di stampa R G B, Contrasto, grana della stampa</td><td class="pg">8</td></tr>
-    <tr><td class="k">Grana e ottica</td><td>Grana, Alone, Diffusione, Aberrazione, Vignettatura, Instabilità, Sfarfallio, Polvere, Graffi</td><td class="pg">8</td></tr>
-    <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registro, Intervallo, Chiave K; mosaico; specchio, UV, ossidazione, bordo, viraggio; nastro, testine, rumore, clip</td><td class="pg">8</td></tr>
-    <tr><td class="k">Colore</td><td>Ombre e luci (tinta, quantità), Bilanciamento, Saturazione, Densità colore, Azzera comandi</td><td class="pg">8</td></tr>
+    <tr><td class="k">Grana e ottica</td><td>Grana, Alone, Diffusione, Vignettatura, Polvere, Graffi; <b>Ottica</b>: 14 obiettivi <span class="new">4.2</span></td><td class="pg">8</td></tr>
+    <tr><td class="k">Separazioni · Mosaico · Lastra · Segnale</td><td>Registro, Chiave K; mosaico; specchio, ossidazione, viraggio; nastro, testine, rumore</td><td class="pg">8</td></tr>
+    <tr><td class="k">Riversato su · Visto su</td><td>VHS, Betacam, kinescopio, film-out; sala, tubo, plasma, LCD <span class="new">4.2</span></td><td class="pg">8</td></tr>
+    <tr class="grp"><td colspan="3">Log MetaRaw Audio <span>· Fairlight › VST3 · Mac e Windows</span> <span class="new">4.2</span></td></tr>
+    <tr><td class="k">Ripresa · Mix e supporto</td><td>Registratore e microfono d'epoca sulle tracce; banco, supporto, riversaggi e ascolto su bus e master</td><td class="pg">10</td></tr>
   </table>
   <div class="premise"><b>Non è raw.</b> Un MP4 log è già compresso, a 8 o 10 bit, con la riduzione rumore della camera:
   in luce lineare si comporta in un modo che ricorda un RAW, ma ciò che la camera non ha registrato non torna. Esporre bene
   resta la cosa più importante. I file originali non vengono mai modificati.</div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 10 · Sintesi di tutte le funzioni</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · Ivan Mazzone + Claude · GNU GPL v3</span><span>1 / 11 · Sintesi di tutte le funzioni</span></footer>
 </section>
 
 <!-- ======================= 2 · INSTALLAZIONE ======================= -->
@@ -204,7 +207,7 @@
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · installazione</span><span>2 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · installazione</span><span>2 / 11</span></footer>
 </section>
 
 <!-- ======================= 3 · SCRIPT ======================= -->
@@ -269,7 +272,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · lo script</span><span>3 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · lo script</span><span>3 / 11</span></footer>
 </section>
 
 <!-- ======================= 4 · DEVELOP: DECODIFICA, EI, BILANCIAMENTO ======================= -->
@@ -319,7 +322,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (1)</span><span>4 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (1)</span><span>4 / 11</span></footer>
 </section>
 
 <!-- ======================= 5 · DEVELOP: FALSE COLOR, SPAZIO COLORE ======================= -->
@@ -383,7 +386,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (2)</span><span>5 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (2)</span><span>5 / 11</span></footer>
 </section>
 
 <!-- ======================= 6 · DEVELOP: TONI E ZONE ======================= -->
@@ -451,7 +454,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (3)</span><span>6 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (3)</span><span>6 / 11</span></footer>
 </section>
 
 <!-- ======================= 7 · DEVELOP: TONE MAPPING E GAMUT ======================= -->
@@ -514,7 +517,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Develop (4)</span><span>7 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Develop (4)</span><span>7 / 11</span></footer>
 </section>
 
 <!-- ======================= 8 · CREATIVE ======================= -->
@@ -548,6 +551,10 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <tr><td class="k">Digitale d'epoca</td><td>10 camere: clip e knee, nitidezza elettronica, rumore, sottocampionamento e
           banding.</td></tr>
       </table>
+      <div class="sci"><b>Il motore.</b> Per record: <code>s = log2(E/0,18)</code>, curva H&amp;D con piede e spalla morbidi,
+      grana per strato, poi la curva del positivo (Naka-Rushton). Sottrattivo: densità dei coloranti per una matrice di
+      assorbimenti; additivo: filtri per mosaico; monocromo: carta · 10<sup>−D·K</sup>. Rumore deterministico: stessi bit su CPU
+      e Metal, a ogni render. I raggi seguono l'altezza: stesso aspetto in proxy.</div>
     </div>
     <div>
       <h2>I comandi</h2>
@@ -557,11 +564,11 @@ full → video:  x' = x · 1023/876 − 64/876</div>
           <b>Argento trattenuto</b> (bleach bypass), Preflash, Età (coloranti che sbiadiscono, base che ingiallisce).</td></tr>
         <tr><td class="k">Stampa e copie</td><td>Positivo (9), <b>Generazione</b> (copia campione, di distribuzione, riduzione 16 mm,
           controtipo), grana della stampa, punti della stampatrice (1 punto = 0,025 log E), contrasto.</td></tr>
-        <tr><td class="k">Supporto di visione</td><td>Dopo l'uscita: sala, proiettore di casa, tubo PAL e NTSC, monitor da regia,
-          console LCD verde, carta. Carica nei comandi gamma, contrasto, luce, bianco e colore del supporto. <b>Intensità</b>
-          0 = monitor.</td></tr>
+        <tr><td class="k">Dispositivo</td><td><span class="new">4.2</span> Cinepresa, videocamera, cinema digitale, telefono: il modello carica formato, nastro, <b>Sensore</b> (scia dei tubi, smear del CCD), nitidezza, codec. <b>Tono, Colore, Texture</b>: per usarne solo una parte.</td></tr>
+        <tr><td class="k">Riversato su</td><td><span class="new">4.2</span> Telecinema su VHS o Betacam, VHS di terza generazione, kinescopio, film-out.</td></tr>
+        <tr><td class="k">Supporto di visione</td><td>Sala, proiettori, tubo PAL e NTSC, Trinitron, monitor, plasma, primo LCD, console, carta: gamma, luce, bianco e colore. <b>Intensità</b> 0 = monitor.</td></tr>
         <tr><td class="k">Grana e ottica</td><td>In multipli di quella del materiale e del <b>Formato</b> (da 8 mm a IMAX 15/70):
-          1 = com'era. Alone, diffusione, aberrazione, vignettatura, instabilità del quadro, polvere e graffi.</td></tr>
+          1 = com'era. Alone, diffusione, vignettatura, polvere, graffi. <b>Ottica</b> <span class="new">4.2</span>: 14 obiettivi (Cooke, Panavision, LOMO, Helios, Petzval…).</td></tr>
         <tr><td class="k">Separazioni</td><td>Registro di strisce e lastre, Intervallo fra le pose, Chiave K, densità dei coloranti.</td></tr>
         <tr><td class="k">Lastra e carta</td><td>Angolo di visione dello specchio, UV, ossidazione, bordo, viraggio.</td></tr>
         <tr><td class="k">Segnale</td><td>Usura, testine, instabilità, sbavatura del colore, rumore, nitidezza; per il digitale
@@ -569,17 +576,13 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <tr><td class="k">Colore</td><td>Ombre e luci con tinta e quantità, saturazione, densità colore. <b>Azzera comandi</b>
           torna ai valori del processo.</td></tr>
       </table>
-      <div class="sci"><b>Il motore.</b> Per record: <code>s = log2(E/0,18)</code>, curva H&amp;D con piede e spalla morbidi,
-      grana per strato, poi la curva del positivo (Naka-Rushton). Sottrattivo: densità dei coloranti per una matrice di
-      assorbimenti; additivo: filtri per mosaico; monocromo: carta · 10<sup>−D·K</sup>. Rumore deterministico: stessi bit su CPU
-      e Metal, a ogni render. I raggi seguono l'altezza: stesso aspetto in proxy.</div>
       <div class="warn">I numeri delle tabelle sono <b>stime</b> dalle ricerche (<code>docs/CREATIVE.md</code>), non profili di
       prodotti: vanno tarati su riprese vere. Spaziale: Generate LUT lo esclude. <b>Non provato in Resolve; Metal verificato solo
       dai test della CI macOS.</b></div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodo Creative</span><span>8 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodo Creative</span><span>8 / 11</span></footer>
 </section>
 
 <!-- ======================= 9 · NOISE, STABILIZE, MOTION BLUR ======================= -->
@@ -632,7 +635,49 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · nodi Noise, Stabilize, Motion Blur</span><span>9 / 10</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · nodi Noise, Stabilize, Motion Blur</span><span>9 / 11</span></footer>
+</section>
+
+<!-- ======================= 10 · AUDIO ======================= -->
+<section class="page"><div class="content">
+  <div class="part"><h1>Log MetaRaw Audio</h1><span class="where">Fairlight › Effetti › VST3 · Mac e Windows</span></div>
+  <p>Il gemello sonoro del Creative: come si dice «girato in Super 8 su Kodachrome», si dice «registrato col Geloso G.257 a
+  4,75 cm/s, mixato su EMI REDD.51, stampato su 78 giri, ascoltato da una radio a valvole». Resolve non passa l'audio ai
+  plugin OFX: per questo è un modulo <b>VST3</b> per Fairlight, <code>Log MetaRaw Audio.vst3</code>, con due plugin.</p>
+  <div class="cols">
+    <div>
+      <h2>Ripresa · sulle tracce</h2>
+      <table>
+        <tr><td class="k">Dispositivo › Modello</td><td>Bobine portatili (Geloso G.257, Nagra III e 4.2, Uher 4000), da studio (Ampex 350,
+          Studer J37 e A80, Revox A77), cassetta (Philips EL 3300, Portastudio 144, Walkman Pro, TC-D5M), cinepresa e
+          videocamera (Auricon, Ektasound, Canon 514XL-S, Handycam), prima del nastro (fonografo Edison, filo). Ogni modello
+          porta il suo microfono, i supporti, il preamplificatore, il ronzio e la riduzione rumore.</td></tr>
+        <tr><td class="k">Microfono</td><td>Di serie, tromba, carbone, piezo, RCA 44 e 77, Shure 55, U 47, C12, EV 635A, MD 421,
+          SM58, MKH 416, electret.</td></tr>
+        <tr><td class="k">Supporto</td><td>Nastro ¼" da 38 a 4,75 cm/s, cassetta Tipo I/II/IV, filo, cilindro, dischi, VHS, Video8,
+          U-matic, banda ottica 35/16 mm, pista Super 8, radio, telefono; Dolby A/B/C, dbx.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Mix e supporto · bus e master</h2>
+      <table>
+        <tr><td class="k">Banco</td><td>RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604.</td></tr>
+        <tr><td class="k">Supporto · Riversaggi</td><td>Il supporto finale e quante copie lo separano dall'originale: ogni copia
+          toglie acuti e aggiunge soffio.</td></tr>
+        <tr><td class="k">Ascolto</td><td>Radio a valvole, radiolina, juke-box Wurlitzer, TV a tubo, sala (curva X).</td></tr>
+        <tr><td class="k">Regolazioni</td><td>Ogni stadio ha un interruttore; Saturazione, Rumore, Wow e flutter, Dry/wet,
+          Uscita.</td></tr>
+      </table>
+      <div class="sci"><b>Il motore.</b> Indipendente dall'host: uno stadio spento lascia passare i campioni identici (verificato
+      bit per bit); rumore deterministico con un seme per istanza; wow e flutter come errore di velocità. Validatore
+      Steinberg superato.</div>
+      <div class="warn">Valori <b>stimati</b> da specifiche e descrizioni d'epoca (<code>docs/audio/AUDIO.md</code>), non misure. Negli
+      installer è un componente spuntato di serie (<i>Personalizza</i> sul Mac, <i>Scegli i componenti</i> su Windows). Linux:
+      Resolve non carica VST3. <b>Non ancora provato in Fairlight.</b></div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw @VERSION@ · Log MetaRaw Audio</span><span>10 / 11</span></footer>
 </section>
 
 <!-- ======================= 10 · CAMERE, LIMITI, CREDITI ======================= -->
@@ -689,7 +734,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
         <li>S-Log2 segue il documento Sony; la curva S-Log2 di Resolve differisce di circa 0,15 stop.</li>
         <li>Da verificare su più file: XAVC HS (HEVC), HLG, S-Cinetone, zoom motorizzati; Input Color Space per le camere
             non Sony.</li>
-        <li><b>Non provati in Resolve</b>: i nodi Noise, Stabilize e Motion Blur della 4.0, il nodo Creative (aspetto da tarare su riprese reali),
+        <li><b>Non provati in Resolve</b>: i nodi Noise, Stabilize e Motion Blur della 4.0, il nodo Creative (aspetto da tarare su riprese reali), i plugin Audio in Fairlight,
             tone mapping della 3.1; <b>Metal non eseguito</b> per queste parti (parità CPU/modello verificata dai test). Resolve 20, Linux
             e Windows non provati.</li>
         <li>Progetto hobbistico e indipendente, distribuito così com'è, <b>senza garanzie</b> né responsabilità per l'uso
@@ -702,7 +747,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <b>GNU GPL v3.0 o successiva</b>. Storia completa in <code>RELEASE_NOTES.md</code>.</p>
       <ul>
         <li>Tag Sony: SMPTE RDD 18, ExifTool, e telemetry-parser di AdrianEddy (MIT), da cui viene parte della tabella dei tag.</li>
-        <li>OpenFX SDK © The Open Effects Association (BSD-3).</li>
+        <li>OpenFX SDK © The Open Effects Association (BSD-3). VST3 SDK © Steinberg Media Technologies (MIT); VST è un marchio di Steinberg.</li>
         <li>Stabilize: Gyroflow di AdrianEddy e contributori (GPL-3), con il suo catalogo degli obiettivi.</li>
         <li>OpenDRT v1.1.0 di Jed Smith (GPL-3), portato dal DCTL.</li>
         <li>Valori ACES 1.3 e 2.0 confrontati con OpenColorIO; curve e gamut dai documenti dei produttori.</li>
@@ -714,7 +759,7 @@ full → video:  x' = x · 1023/876 − 64/876</div>
     </div>
   </div>
 </div>
-<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>10 / 10 · Licenza GNU GPL v3</span></footer>
+<footer><span>Log MetaRaw @VERSION@ · github.com/Mecena-SRL/SLogMetaRaw</span><span>11 / 11 · Licenza GNU GPL v3</span></footer>
 </section>
 
 </body>

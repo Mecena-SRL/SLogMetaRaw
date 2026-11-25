@@ -1,7 +1,7 @@
 # Graphify — mappa strutturale (dev, non pubblicata)
 
 Grafo di navigazione del repository: moduli, dipendenze fra loro, punto di ingresso. Rispecchia
-`main` alla 4.1.0 (4.1.0: il nodo `creative/` sostituisce `detail/`; 4.0.0: aggiunti il nodo `noise/`, `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Motion Blur, Rust + C++, build separata in `motion/release/build-mac.sh`); rimosso `develop/NoiseMask`; 4.0.1: `noise/NoiseEffect` usa il lettore di `develop/ClipMeta`). Va rigenerato quando cambia la struttura dei moduli, non a
+`main` alla 4.2.0 (4.2.0: aggiunto `audio/` (Log MetaRaw Audio, VST3) e le tabelle del Creative per dispositivo, riversamento, ottica e supporti; 4.1.0: il nodo `creative/` sostituisce `detail/`; 4.0.0: aggiunti il nodo `noise/`, `clipdb.py` (acquisizione profonda) e `motion/` (Mecena Motion: Stabilize e Motion Blur, Rust + C++, build separata in `motion/release/build-mac.sh`); rimosso `develop/NoiseMask`; 4.0.1: `noise/NoiseEffect` usa il lettore di `develop/ClipMeta`). Va rigenerato quando cambia la struttura dei moduli, non a
 ogni commit.
 
 ## Python — `slogmetaraw/` (lettura metadata, CLI, script Resolve)
@@ -98,7 +98,7 @@ common/  (condiviso dai nodi)
 - `common/Child.h` dichiara l'API, `Child.cpp`/`ChildWin.cpp` la implementano per piattaforma
   (spawn, redirect, timeout del processo Python).
 
-## C++ — `audio/src/` (Log MetaRaw Audio, plugin per Fairlight, in sviluppo)
+## C++ — `audio/src/` (Log MetaRaw Audio, plugin per Fairlight, dalla 4.2.0)
 
 ```
 AudioPresets.h  (tabelle: dispositivi, microfoni, supporti, NR, banchi, ascolto)

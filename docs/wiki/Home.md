@@ -7,7 +7,7 @@ Camera log metadata (Sony, Panasonic, Apple, DJI and more) and scene-referred de
 - **[User Guide](Wiki-Software)** — install, script, nodes, false colour, tones, Creative, pipelines, recipes, FAQ
 - [Download the latest release](https://github.com/Mecena-SRL/SLogMetaRaw/releases)
 - [Release notes](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/RELEASE_NOTES.md)
-- Technical deep dives (Italian): [Tone mapping](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md) · [Creative](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CREATIVE.md) · [Noise](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DENOISE.md) · [False colour](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md) · [Data levels](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md) · [Cameras](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md)
+- Technical deep dives (Italian): [Tone mapping](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/TONE_MAPPING.md) · [Creative](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CREATIVE.md) · [Audio](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/audio/AUDIO.md) · [Noise](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DENOISE.md) · [False colour](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/FALSE_COLOR.md) · [Data levels](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/DATA_LEVELS.md) · [Cameras](https://github.com/Mecena-SRL/SLogMetaRaw/blob/main/docs/CAMERAS.md)
 - [Report a problem](https://github.com/Mecena-SRL/SLogMetaRaw/issues)
 
 **User Guide in your language:** [Italiano](Wiki-Software-it) · [Español](Wiki-Software-es) · [Português](Wiki-Software-pt) · [简体中文](Wiki-Software-zh)
