@@ -220,6 +220,9 @@ tuning on real footage. Not tried in Resolve yet; Metal is checked by the macOS 
 
 **New in 4.3.1.**
 
+- **Audio, consistent choices**: in both audio plugins every menu offers only what fits the choices above it: the
+  recorder's own medium, microphone and noise reduction first, then compatible ones (no VHS in a Nagra); in *Mix e
+  supporto* the desk sets the master's period media and the master what it can be transferred to.
 - **Gate hair, dust and scratches look real**: the hair caught in the gate tapers to its tip, has uneven density and a
   shadow blurred as on film (more on Super 8 and on prints); now and then it curls or is a two-strand fibre of lint.
   Dust specks have ragged edges and every size; scratches change width and strength along the line.

@@ -291,6 +291,9 @@ ajustados com material real. Ainda não testado no Resolve; Metal verificado pel
 
 **Novidades da 4.3.1.**
 
+- **Áudio, escolhas coerentes**: nos dois plugins de áudio cada menu oferece só o que combina com o escolhido
+  acima: primeiro o equipamento do gravador, depois as alternativas compatíveis (nada de VHS num Nagra); em *Mix e
+  supporto* a mesa decide os suportes do máster e o máster para onde se pode transferir.
 - **Pelo na janela, poeira e riscos reais**: o pelo afina para a ponta, tem densidade irregular e uma sombra
   desfocada como no filme (mais no Super 8 e nas cópias); às vezes é encaracolado ou uma fibra de dois fios. A poeira
   tem bordas irregulares e grãos de todo tamanho; os riscos mudam de espessura e intensidade.

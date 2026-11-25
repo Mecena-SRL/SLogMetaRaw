@@ -220,6 +220,9 @@ que ajustarlos con material real. Aún no probado en Resolve; Metal verificado p
 
 **Novedades de la 4.3.1.**
 
+- **Audio, opciones coherentes**: en los dos plugins de audio cada menú ofrece solo lo que encaja con lo elegido
+  arriba: primero el equipo del grabador, luego las alternativas compatibles (nada de VHS en un Nagra); en *Mix e
+  supporto* la mesa decide los soportes del máster y el máster a qué se puede transferir.
 - **Pelo en la ventanilla, polvo y rayas reales**: el pelo se afina hacia la punta, tiene densidad irregular y una
   sombra desenfocada como en la película (más en Super 8 y en las copias); a veces es rizado o una fibra de dos hilos.
   El polvo tiene bordes irregulares y granos de todo tamaño; las rayas cambian de grosor e intensidad.

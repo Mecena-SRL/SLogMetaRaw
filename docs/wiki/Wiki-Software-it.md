@@ -296,6 +296,9 @@ riprese vere. Non ancora provato in Resolve; Metal verificato dai test della CI 
 
 **Novità della 4.3.1.**
 
+- **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra: prima la
+  dotazione del registratore (supporto, microfono, riduzione rumore), poi le alternative compatibili (niente VHS in
+  un Nagra); in *Mix e supporto* il banco decide i supporti del master e il master su cosa si può riversare.
 - **Pelo nel finestrino, polvere e graffi veri**: il pelo si assottiglia verso la punta, ha densità irregolare e
   un'ombra sfocata come sulla pellicola (di più su Super 8 e sulle copie); a volte è arricciato o è una fibra a due
   fili. La polvere ha bordi irregolari e granelli di ogni misura; i graffi cambiano spessore e intensità lungo la riga.
