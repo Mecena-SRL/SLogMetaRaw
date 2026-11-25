@@ -14,6 +14,11 @@
   resta per tutta l'inquadratura, tremando appena. Quanto spesso dipende dalla cinepresa (Pathé e Krasnogorsk spesso,
   Arri 435 e IMAX quasi mai); la misura è reale (pelo 60-90 µm, ricciolo 0,1-0,25 mm), quindi pesa di più nei formati
   piccoli. È luce tolta prima della curva: resta scuro anche dopo stampa e scansione.
+- **Creative, console come dispositivo di riproduzione**: NES e Master System (8 bit), Mega Drive e Super Nintendo
+  (16 bit), PlayStation e Saturn (32 bit), ognuna sul televisore a tubo di casa. L'immagine diventa il quadro della
+  console (risoluzione, 4:3, bordo) con i suoi colori: la tavolozza del NES ricavata dal suo segnale, 2 bit del Master
+  System, i livelli del DAC del Mega Drive, 5 bit di SNES e Saturn, la retinatura della PlayStation; 240 righe con le
+  righe nere fra l'una e l'altra.
 
 ## Log MetaRaw 4.2.0
 

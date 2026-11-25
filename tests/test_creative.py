@@ -156,7 +156,7 @@ class Creative(unittest.TestCase):
 
     def test_every_medium_renders_and_changes_the_picture(self):
         plain = self.render({'process': NEGATIVE, 'grain': 0}, [ramp(tinted=True)])
-        for medium in range(1, 12):
+        for medium in range(1, 18):
             with self.subTest(medium=medium):
                 out = self.render({'process': NEGATIVE, 'grain': 0, 'medium': medium}, [ramp(tinted=True)])
                 vals = [c for px in out for c in px]
@@ -164,7 +164,7 @@ class Creative(unittest.TestCase):
                 self.assertNotEqual(out, plain)
                 none = self.render({'process': NEGATIVE, 'grain': 0, 'medium': medium, 'mediumAmount': 0},
                                    [ramp(tinted=True)])
-                if medium != 6:   # the console is a screen of its own even at 0: crop, four shades, bezel
+                if medium != 6 and medium < 12:   # consoles are devices of their own even at 0: frame, colours
                     self.assertLess(max(abs(a - b) for p, q in zip(none, plain) for a, b in zip(p, q)), 0.02)
 
     def test_log_output_ignores_the_medium(self):
@@ -192,6 +192,63 @@ class Creative(unittest.TestCase):
         centre = {tuple(round(c * 255) for c in out[y * w + x]) for y in range(130, 158) for x in range(140, 180)}
         self.assertTrue(centre <= greens, centre - greens)
         self.assertGreater(len(centre), 1)   # grey is dithered between two shades
+
+    def console(self, medium, img, w, h):
+        """A console's frame with the tube at 0: lines one per row, no glass or response, so colours read clean."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': medium, 'mediumAmount': 0}
+        out = self.render(ctl, [img], size=(w, h))
+        return [[tuple(round(c * 255) for c in out[y * w + x]) for x in range(w)] for y in range(h)]
+
+    @staticmethod
+    def hues(w, h):   # a colour wheel across, darker downwards in bands of 60 rows (a beam mixes its neighbours)
+        img = []
+        for y in range(h):
+            for x in range(w):
+                t, v = x / w * 6.0, 0.9 - 0.7 * (y // 60) / 8
+                rgb = [max(0.0, min(1.0, abs(((t + o) % 6.0) - 3.0) - 1.0)) for o in (0.0, 4.0, 2.0)]
+                img.append([dm.encode1(0.18 * 4 * v * (0.15 + 0.85 * c), GAMMA) for c in rgb])
+        return img
+
+    def test_nes_shows_only_its_palette_inside_a_four_by_three_frame(self):
+        w, h = 854, 480
+        lo, hi = [0.350, 0.518, 0.962, 1.550], [1.094, 1.506, 1.962, 1.962]
+        pal = set()
+        for c in range(64):   # the 2C02's square wave, decoded as YIQ (same as nesPalette)
+            hh, lv = c & 15, (c >> 4) & 3
+            y = i = q = 0.0
+            if hh < 14:
+                vh, vl = (lo[lv] if hh == 13 else hi[lv]), (hi[lv] if hh == 0 else lo[lv])
+                for s in range(12):
+                    n = ((vh if (hh + s) % 12 < 6 else vl) - 0.518) / 1.444
+                    a = math.pi / 6 * (s + 4)
+                    y, i, q = y + n / 12, i + n * math.cos(a) / 6, q + n * math.sin(a) / 6
+            rgb = (y + 0.946882 * i + 0.623557 * q, y - 0.274788 * i - 0.635691 * q, y - 1.108545 * i + 1.709007 * q)
+            pal.add(tuple(round(255 * max(0.0, min(1.0, v))) for v in rgb))
+        self.assertIn((208, 39, 17), pal)   # 0x16, the hardware's red
+        out = self.console(12, self.hues(w, h), w, h)
+        seen = {out[y][x] for y in range(h) if 8 <= y % 60 < 52 for x in range(120, w - 120)}
+        far = [c for c in seen if min(sum(abs(a - b) for a, b in zip(c, e)) for e in pal) > 3]
+        self.assertFalse(far, far[:5])
+        self.assertGreater(len(seen), 12)
+        self.assertEqual({out[y][x] for y in range(h) for x in list(range(100)) + list(range(w - 100, w))}, {(0, 0, 0)})
+
+    def test_consoles_keep_their_bits_and_the_playstation_dithers(self):
+        w, h = 640, 480
+        on_grid = lambda v, n: abs(v / 255 * (n - 1) - round(v / 255 * (n - 1))) < 0.07  # noqa: E731
+        sms = self.console(13, self.hues(w, h), w, h)
+        self.assertTrue(all(on_grid(c, 4) for y in range(60, h - 60) if 8 <= y % 60 < 52 for px in sms[y] for c in px))
+        self.assertEqual({px for y in range(40) for px in sms[y]}, {(0, 0, 0)})   # 192 of 240 lines: the border
+        md = self.console(14, self.hues(w, h), w, h)
+        levels = (0, 52, 87, 116, 144, 172, 206, 255)
+        self.assertTrue(all(min(abs(c - l) for l in levels) <= 1 for y in range(24, h - 24) if 8 <= y % 60 < 52 for px in md[y] for c in px))
+        for medium in (15, 17):   # the PlayStation dithers from line to line, which the beam mixes
+            out = self.console(medium, self.hues(w, h), w, h)
+            self.assertTrue(all(on_grid(c, 32) for y in range(24, h - 24) if 8 <= y % 60 < 52 for px in out[y] for c in px), medium)
+        grey = [[dm.encode1(0.18 * 0.93, GAMMA)] * 3 for _ in range(w * h)]   # between two 5-bit steps
+        ps1 = {px for y in range(200, 280) for px in self.console(16, grey, w, h)[y][300:340]}
+        saturn = {px for y in range(200, 280) for px in self.console(17, grey, w, h)[y][300:340]}
+        self.assertGreater(len(ps1), 1)
+        self.assertEqual(len(saturn), 1)
 
     def test_duplicates_lose_sharpness(self):
         w, h = 32, 1080   # the blur is in px at 1080
