@@ -1791,6 +1791,13 @@ SM_FN SMf3 cr_tube_frame(SMf3 q, SMf3 L, SM_CREF(CreativeParams) p) {
     return smf3(o[0], o[1], o[2]);
 }
 
+// A frame before, as the tube saw it: the three records from one reading of it (the place of the first record; a
+// lighter read than cr_records, which a kernel inlines three times here).
+SM_FN SMf3 cr_history_records(CR_PLANE h, int x, int y, SM_CREF(CreativeParams) p) {
+    const SMf3 c = cr_glass(cr_source(h, 0, x, y, p), p);
+    return smf3(cr_expose(c, 0, x, y, p), cr_expose(c, 1, x, y, p), cr_expose(c, 2, x, y, p));
+}
+
 // The records of this pixel through the sensor. h0..h2: the source frames 1, 2, 3 before this one (the first
 // `history` of them exist); S: the CCD's smear per column (3 planes of W).
 SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, int x, int y,
@@ -1798,9 +1805,9 @@ SM_FN SMf3 cr_sensor(SMf3 e, CR_PLANE h0, CR_PLANE h1, CR_PLANE h2, CR_PLANE S, 
     if (p.sensor == CR_SENSOR_TUBE) {
         // the charge before the oldest frame: that frame's light held a few fields, then every frame two fields
         const int n = p.history;
-        const SMf3 L2 = n > 2 ? cr_records(h2, h2, h2, x, y, p) : e;
-        const SMf3 L1 = n > 1 ? cr_records(h1, h1, h1, x, y, p) : e;
-        const SMf3 L0 = n > 0 ? cr_records(h0, h0, h0, x, y, p) : e;
+        const SMf3 L2 = n > 2 ? cr_history_records(h2, x, y, p) : e;
+        const SMf3 L1 = n > 1 ? cr_history_records(h1, x, y, p) : e;
+        const SMf3 L0 = n > 0 ? cr_history_records(h0, x, y, p) : e;
         const SMf3 oldest = n > 2 ? L2 : (n > 1 ? L1 : L0);
         SMf3 q = cr_tube_frame(cr_tube_frame(smf3(0.0f, 0.0f, 0.0f), oldest, p), oldest, p);
         if (n > 2) q = cr_tube_frame(q, L2, p);
