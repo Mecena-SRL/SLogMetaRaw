@@ -5,14 +5,17 @@ const char* const kSpaceNames[kSpaceCount] = { "DaVinci WG", "Rec.709", "Rec.202
                                                "S-Gamut", "S-Gamut3", "S-Gamut3.Cine", "ACES AP0", "ACES AP1",
                                                "V-Gamut", "Apple Wide Gamut", "D-Gamut", "Cinema Gamut", "ARRI WG3",
                                                "ARRI WG4", "RED WG", "BMD WG Gen5", "DJI D-Log M Gamut" };
-const char* const kGammaNames[kGammaCount] = { "DaVinci Intermediate", "Linear", "Gamma 2.2", "Gamma 2.4",
+const char* const kGammaNames[kGammaNameCount] = { "DaVinci Intermediate", "Linear", "Gamma 2.2", "Gamma 2.4",
                                                "Gamma 2.6", "Rec.709", "sRGB", "SLog", "SLog2", "SLog3", "ACEScct",
                                                "V-Log", "Apple Log", "D-Log M", "D-Log", "F-Log", "F-Log2", "N-Log",
-                                               "C-Log2", "C-Log3", "LogC3", "LogC4", "Log3G10", "BMD Film Gen5", "HLG" };
+                                               "C-Log2", "C-Log3", "LogC3", "LogC4", "Log3G10", "BMD Film Gen5", "HLG",
+                                               "Cineon" };
 const char* const kLevelNames[2] = { "Video (64-940)", "Full (0-1023)" };
-const int kNodeInputPairs[kNodeInputCount][2] = { { 0, 0 }, { 0, 0 }, { 8, 9 }, { 7, 9 }, { 6, 8 }, { 10, 10 } };
-const char* const kNodeInputNames[kNodeInputCount] = { "Automatico", "DaVinci WG/Intermediate", "S-Gamut3.Cine/S-Log3",
-                                                       "S-Gamut3/S-Log3", "S-Gamut/S-Log2", "ACES AP1/ACEScct" };
+const int kNodeInputPairs[kCreativeInputCount][2] = { { 0, 0 }, { 0, 0 }, { 8, 9 }, { 7, 9 }, { 6, 8 }, { 10, 10 },
+                                                       { 1, 5 }, { 10, 1 }, { 9, 1 }, { 1, kGammaCineon } };
+const char* const kNodeInputNames[kCreativeInputCount] = {
+    "Automatico", "DaVinci WG/Intermediate", "S-Gamut3.Cine/S-Log3", "S-Gamut3/S-Log3", "S-Gamut/S-Log2",
+    "ACES AP1/ACEScct", "Rec.709", "ACES AP1/ACEScg (lineare)", "ACES AP0/ACES2065-1 (lineare)", "Rec.709/Cineon" };
 
 bool mapColourspace(const std::string& cs, int& space, int& gamma)
 {

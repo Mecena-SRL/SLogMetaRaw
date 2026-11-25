@@ -20,7 +20,7 @@ MOSAIC = (5, 6)               # Autochrome, Dufaycolor: colour grains even on gr
 EDGED = (9, 10, 12, 13)       # mirror flip or a border at the edges
 
 
-def ramp(shift=0, tinted=False):
+def ramp(shift=0, tinted=False, gamma=GAMMA):
     """Encoded pixels: twelve 8-px steps from -6 to +6 stops, optionally coloured bars sliding by `shift`."""
     img = []
     for y in range(H):
@@ -29,8 +29,13 @@ def ramp(shift=0, tinted=False):
             tint = (1.0, 1.0, 1.0)
             if tinted:
                 tint = (1.0, 0.7, 0.5) if ((x + shift) // 6) % 2 else (0.5, 0.75, 1.0)
-            img.append([dm.encode1(0.18 * 2 ** ev * c, GAMMA) for c in tint])
+            img.append([dm.encode1(0.18 * 2 ** ev * c, gamma) for c in tint])
     return img
+
+
+# The response rows set to the reference monitor's (the panel holds them: mediumLoaded = the medium shown).
+FLAT_RESPONSE = {'mediumGamma': 2.4, 'mediumContrast': 100000, 'mediumAmbient': 0, 'mediumNits': 100,
+                 'mediumKelvin': 6504, 'mediumColour': 100, 'mediumOverscan': 0, 'mediumRoom': 1}
 
 
 class Creative(unittest.TestCase):
@@ -38,10 +43,10 @@ class Creative(unittest.TestCase):
     def setUpClass(cls):
         cls.exe = test_bin('creative_test')
 
-    def render(self, controls, frames, frame=7, threads=3, size=(W, H)):
+    def render(self, controls, frames, frame=7, threads=3, size=(W, H), enc=(SPACE, GAMMA)):
         if not self.exe:
             self.skipTest('binari di test non compilabili qui')
-        head = '%d %d %d %d %d %d %d\n' % (size[0], size[1], SPACE, GAMMA, frame, len(frames), threads)
+        head = '%d %d %d %d %d %d %d\n' % (size[0], size[1], enc[0], enc[1], frame, len(frames), threads)
         ctl = ' '.join('%s=%s' % kv for kv in controls.items()) + '\n'
         body = ''.join('%.7f %.7f %.7f\n' % tuple(px) for f in frames for px in f)
         res = subprocess.run([self.exe], input=head + ctl + body, capture_output=True, text=True, timeout=120)
@@ -91,6 +96,19 @@ class Creative(unittest.TestCase):
                 base = self.steps(self.render({'process': proc}, [ramp()]))[6]
                 up = self.steps(self.render({'process': proc, 'exposure': 1}, [ramp()]))[6]
                 self.assertGreater(sum(up), sum(base) + 0.05)
+
+    def test_inputs_after_a_grade_read_the_same_light(self):
+        """Rec.709, DaVinci WG, ACES (cct, cg, 2065-1) and Cineon: the same grey scale, encoded in each, develops
+        into the same print as from S-Log3 (each decodes to the same scene light, grey 18%)."""
+        self.assertAlmostEqual(dm.encode1(0.18, 25), 468.2 / 1023, delta=0.001)   # Cineon grey, Kodak's 470
+        self.assertAlmostEqual(dm.decode1(dm.encode1(0.18, 5), 5), 0.18, places=6)
+        base = self.steps(self.render({'process': NEGATIVE}, [ramp()]))
+        for enc in ((0, 0), (1, 5), (10, 10), (10, 1), (9, 1), (1, 25)):
+            with self.subTest(input=enc):
+                got = self.steps(self.render({'process': NEGATIVE}, [ramp(gamma=enc[1])], enc=enc))
+                for a, b in zip(base[1:-1], got[1:-1]):
+                    for c in range(3):
+                        self.assertAlmostEqual(a[c], b[c], delta=0.01)
 
     def test_black_and_white_is_neutral(self):
         for px in self.render({'process': BW, 'filter': 3}, [ramp(tinted=True)]):
@@ -158,11 +176,12 @@ class Creative(unittest.TestCase):
         img = self.flat(-1.0, w * h)
         ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0}
         plain = self.render(ctl, [img], size=(w, h))
-        tube = self.render(dict(ctl, medium=3), [img], size=(w, h))
+        tube = self.render(dict(ctl, medium=3, mediumLoaded=3, **FLAT_RESPONSE), [img], size=(w, h))   # lines alone
         lin = lambda v: max(v, 0.0) ** 2.4  # noqa: E731  (Gamma 2.4)
         rows = [lin(tube[y * w + 4][1]) for y in range(h // 2 - 8, h // 2 + 8)]
         self.assertGreater(max(rows), 1.5 * min(rows))   # bright line centres, dark gaps
-        mean = sum(lin(tube[y * w + x][1]) for y in range(h // 2 - 40, h // 2 + 40) for x in range(w)) / (80 * w)
+        centre = [(x, y) for y in range(h // 2 - 40, h // 2 + 40) for x in range(18, 30)]   # clear of the edge
+        mean = sum(lin(tube[y * w + x][1]) for x, y in centre) / len(centre)
         ref = lin(plain[(h // 2) * w + 4][1])
         self.assertAlmostEqual(mean / ref, 1.0, delta=0.12)   # masks and lines move light, they do not remove it
 
@@ -204,6 +223,26 @@ class Creative(unittest.TestCase):
         trail = self.render(ctl, [white, black], size=(w, h))   # the last frame is the previous one
         centre = lambda out: sum(out[y * w + x][1] for y in range(130, 158) for x in range(140, 180))  # noqa: E731
         self.assertLess(centre(trail), centre(still))
+
+    def test_each_medium_answers_with_its_own_tone_white_and_colour(self):
+        """The preset's response: a home tube lifts the black (300:1) and closes the mids (gamma 2.5), the Japanese
+        NTSC set is bluer than the PAL one, the cinema in the dark shows less contrast than the studio monitor."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'sharpness': 0}
+        steps = lambda m, **kw: self.steps(self.render(dict(ctl, medium=m, **kw), [ramp()]))  # noqa: E731
+        studio, pal, ntsc, cinema = steps(5), steps(3), steps(4), steps(1)
+        self.assertGreater(pal[1][1], studio[1][1] + 0.02)      # deep shadow lifted by the tube's own black
+        self.assertGreater(ntsc[8][2] / ntsc[8][0], pal[8][2] / pal[8][0] + 0.03)   # 9300 K against 7500 K
+        span = lambda s: s[9][1] - s[2][1]  # noqa: E731
+        self.assertLess(span(cinema), span(studio))
+
+    def test_panel_values_drive_the_medium_once_loaded(self):
+        """With the panel holding the medium's values (mediumLoaded), its rows count; without, the preset does."""
+        ctl = {'process': DIGITAL, 'digital': 0, 'noise': 0, 'compression': 0, 'medium': 5}
+        preset = self.steps(self.render(ctl, [ramp()]))
+        ignored = self.steps(self.render(dict(ctl, mediumGamma=2.8), [ramp()]))
+        used = self.steps(self.render(dict(ctl, mediumGamma=2.8, mediumLoaded=5), [ramp()]))
+        self.assertEqual(preset, ignored)
+        self.assertLess(used[6][1], preset[6][1] - 0.02)        # a higher gamma darkens the middle
 
     def test_paper_has_its_white_and_its_black(self):
         out = self.render({'process': NEGATIVE, 'medium': 7, 'mediumAmount': 1}, [ramp()])

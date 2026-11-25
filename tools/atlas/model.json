@@ -964,7 +964,7 @@
      "id": "cr.panel",
      "kind": "event",
      "label": "Processo e varianti",
-     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h); alcune righe si nascondono anche quando un'altra scelta le rende inutili (crRowIdle: senza stampa niente generazioni, con uscita Log niente supporto).",
+     "text": "Il Processo sceglie la tabella di numeri e i comandi visibili: ogni riga del pannello dice per quali processi compare (CreativePanel.h); alcune righe si nascondono anche quando un'altra scelta le rende inutili (crRowIdle: senza stampa niente generazioni, con uscita Log niente supporto, e del supporto solo le righe che ha).",
      "basis": "dedotto",
      "refs": [
       {
@@ -1063,11 +1063,17 @@
      "id": "cr.medium",
      "kind": "function",
      "label": "Supporto di visione",
-     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log: proiezione in sala o di casa (caduta di luce, sfarfallio, instabilità, flare, lampada, bagliore dell'obiettivo), televisore o monitor a tubo (vetro curvo e il suo bagliore, righe di scansione, fosfori), console LCD a quattro verdi che tiene parte del fotogramma precedente (renderizzato anche lui), carta (bianco, Dmax, fibre).",
+     "text": "Facoltativo, sull'immagine finita e mai sull'uscita Log. Ogni supporto ha geometria (curvatura, righe, fosfori, caduta di luce, sfarfallio, bagliore) e risposta (cr_device): gamma del dispositivo, nero proprio in stile BT.1886, luce della stanza, luminanza (meno colore e contrasto sotto i 100 nit), bianco in K adattato in parte, colore, overscan, stanza (il buio appiattisce il contrasto), limite di gamut per la carta. Scegliere il supporto carica questi valori nei comandi (creativeLoadMedium, mediumLoaded); un grade senza valori caricati usa quelli del supporto. Console LCD a quattro verdi con la scia del fotogramma precedente.",
      "basis": "dedotto",
      "refs": [
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_device"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium"
       },
       {
        "param": "param:creative.medium"
@@ -1076,7 +1082,16 @@
        "param": "param:creative.mediumAmount"
       },
       {
+       "param": "param:creative.mediumGamma"
+      },
+      {
        "test": "tests/test_creative.py::Creative.test_every_medium_renders_and_changes_the_picture"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_each_medium_answers_with_its_own_tone_white_and_colour"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_panel_values_drive_the_medium_once_loaded"
       }
      ]
     },
@@ -1300,21 +1315,23 @@
    "slogmetaraw/ui.py::main.show_details": "44eb62d2468c"
   },
   "beh:creative.process": {
+   "ofx/SLogMetaRaw/math/Creative.h::cr_device": "22b74e8107a7",
    "ofx/SLogMetaRaw/math/Creative.h::cr_glow_at": "857d8e089444",
-   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "c1c85e84d59b",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "a4e0c5767b25",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "011932dfbfab",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "61b1b606f37a",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::getFramesNeeded": "a65a2f6e2376",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "fd64b9e99431",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::readControls": "011aaa631dff",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::refreshInfo": "f885c244ff83",
    "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::render": "2d366cf560f9",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "1152803485a5",
-   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "ae97c6204464",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::resolveInput": "e6bf9a573f56",
+   "ofx/SLogMetaRaw/src/creative/CreativeEffect.cpp::CreativeEffect::updateProcess": "a848ce94e161",
    "ofx/SLogMetaRaw/src/creative/CreativeEngine.cpp::creativeRenderCPU": "49437756d86d",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "a6c65cfe45c6"
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "2c34c6917c51"
   }
  }
 }

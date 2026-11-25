@@ -63,13 +63,19 @@ const char* const kCrMediumNames[kCrMediumCount] = { "Nessuno (monitor Rec.709)"
                                                      "Stampa fotografica su carta" };
 const char* const kCrMediumInfo[kCrMediumCount] = {
     "",
-    "Sala: luce che cade del 20% agli angoli, nero sollevato dalla luce diffusa, leggero sfarfallio e instabilità",
-    "Proiettore di casa: lampada calda, angoli scuri, sfarfallio a 18 fotogrammi, fuoco morbido ai bordi",
-    "Tubo PAL: vetro curvo, 576 righe di scansione che si allargano nelle luci, maschera di fosfori a fessure",
-    "Tubo NTSC: come il PAL ma 480 righe, più spesse",
-    "Monitor da regia: vetro quasi piatto, righe sottili, griglia di fosfori a strisce",
-    "LCD riflettente 160x144 a quattro toni di verde, retinatura ordinata, griglia fra i pixel, cornice",
-    "Carta: bianco della carta e nero massimo (Dmax 2,1), fibre, luce della lampada che cala ai bordi" };
+    "Sala: 48 nit al buio, che appiattisce il contrasto percepito (2,4/2,6); xenon, luce che cade del 20% agli angoli, "
+    "nero sollevato dalla luce diffusa, leggero sfarfallio e instabilità",
+    "Proiettore di casa: lampada a 3200 K, circa 15 nit (meno colore percepito), nero della stanza, angoli scuri, "
+    "sfarfallio a 18 fotogrammi, fuoco morbido ai bordi",
+    "Tubo PAL di casa: gamma 2,5, nero del tubo e riflessi della stanza, bianco più freddo (7500 K), colore un po' "
+    "alto, overscan del 6%; vetro curvo, 576 righe che si allargano nelle luci, maschera a fessure",
+    "Tubo NTSC di casa: come il PAL, ma bianco a 9300 K (televisori giapponesi), colore spinto, overscan del 7%, 480 "
+    "righe più spesse",
+    "Monitor da regia: gamma 2,4 (BT.1886), D65, nero profondo, colore esatto, immagine intera; vetro quasi piatto, "
+    "righe sottili, fosfori a strisce",
+    "LCD riflettente 160x144 a quattro toni di verde, retinatura ordinata, griglia fra i pixel, cornice, scia",
+    "Carta: bianco della carta, nero massimo (Dmax 2,1), gamut più piccolo che comprime i colori saturi, fibre, luce "
+    "della lampada che cala ai bordi" };
 const char* const kCrFormatNames[kCrFormatCount] = { "Super 8", "16 mm", "Super 35", "65 mm (Todd-AO, Panavision 70)",
                                                      "IMAX 15/70", "Lastra 9x12", "Super 16", "8 mm",
                                                      "9,5 mm Pathé-Baby", "35 mm anamorfico", "Techniscope",
@@ -157,22 +163,59 @@ const Generation kGenerations[kCrGenerationCount] = { { 0.00f, 1.0f, 1.00f, 1.00
 // height), lens softness (px at 1080), corner radius and edge softness (share of the height), glow of the glass or
 // the lens around bright areas (share of the light, radius as share of the height), and an LCD's slow response
 // (share of the previous frame still on the screen).
+// Then the response, in the panel's units (creativeLoadMedium): device gamma, contrast of the device alone (x:1),
+// ambient light on the screen or paper (share of white), peak luminance (nit), white (K), colour (%, the set's
+// knob), overscan (%), room (0 dark, 1 dim, 2 lit) and a chroma limit (0 none: paper's gamut). Estimates [gen] from
+// docs/CREATIVE.md: CRTs 2.35-2.55 gamma and 100-200 nit, consumer sets cooler (PAL ~7500 K, Japanese NTSC 9300 K)
+// with colour turned up and 5-8% overscan; cinema 48 nit (14 fL) in the dark, xenon ~6000 K; home projection ~15 nit
+// under a 3200 K lamp; photo paper Dmax ~2.1 under ~130 nit of room light.
 struct Medium { int kind, lines; float curve, beamMin, beamMax, mask; int maskType; float triads, falloff, flicker,
-                black, white[3], unsteady, soft, corner, edge, glow, glowRadius, ghost; };
+                white[3], unsteady, soft, corner, edge, glow, glowRadius, ghost;
+                float gamma, contrast, ambient, nits, kelvin, colour, overscan; int room; float chroma; };
 const Medium kMedia[kCrMediumCount] = {
-    { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0 },
-    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.20f, 0.012f, 0.004f, { 1, 1, 1 }, 0.0012f, 0, 0.010f, 0.003f,
-      0.015f, 0.02f, 0 },
-    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.50f, 0.050f, 0.015f, { 1.0f, 0.92f, 0.78f }, 0.004f, 1.2f, 0.03f, 0.006f,
-      0.030f, 0.03f, 0 },
-    { CR_MEDIUM_SCREEN, 576, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.8f, 0.05f, 0.004f,
-      0.060f, 0.015f, 0 },
-    { CR_MEDIUM_SCREEN, 480, 0.06f, 0.22f, 0.45f, 0.35f, 1, 560, 0.12f, 0, 0.020f, { 1, 1, 1 }, 0, 0.9f, 0.05f, 0.004f,
-      0.060f, 0.015f, 0 },
-    { CR_MEDIUM_SCREEN, 576, 0.02f, 0.18f, 0.38f, 0.25f, 0, 900, 0.06f, 0, 0.010f, { 1, 1, 1 }, 0, 0.4f, 0.02f, 0.002f,
-      0.030f, 0.010f, 0 },
-    { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0.45f },
-    { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, 0.008f, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0, 0, 0, 0 } };
+    { CR_MEDIUM_NONE, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0,
+      2.4f, 2000, 0, 100, 6500, 100, 0, 1, 0 },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.20f, 0.012f, { 1, 1, 1 }, 0.0012f, 0, 0.010f, 0.003f, 0.015f, 0.02f, 0,
+      2.4f, 2000, 0.004f, 48, 6000, 100, 0, 0, 0 },
+    { CR_MEDIUM_SCREEN, 0, 0, 0, 0, 0, 0, 0, 0.50f, 0.050f, { 1, 1, 1 }, 0.004f, 1.2f, 0.03f, 0.006f, 0.030f, 0.03f, 0,
+      2.4f, 300, 0.012f, 15, 3200, 100, 0, 0, 0 },
+    { CR_MEDIUM_SCREEN, 576, 0.06f, 0.22f, 0.45f, 0.35f, 1, 640, 0.12f, 0, { 1, 1, 1 }, 0, 0.8f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 120, 7500, 105, 6, 2, 0 },
+    { CR_MEDIUM_SCREEN, 480, 0.06f, 0.22f, 0.45f, 0.35f, 1, 560, 0.12f, 0, { 1, 1, 1 }, 0, 0.9f, 0.05f, 0.004f, 0.060f,
+      0.015f, 0, 2.5f, 300, 0.020f, 150, 9300, 112, 7, 2, 0 },
+    { CR_MEDIUM_SCREEN, 576, 0.02f, 0.18f, 0.38f, 0.25f, 0, 900, 0.06f, 0, { 1, 1, 1 }, 0, 0.4f, 0.02f, 0.002f, 0.030f,
+      0.010f, 0, 2.4f, 2000, 0.004f, 100, 6500, 100, 0, 1, 0 },
+    { CR_MEDIUM_LCD, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 1, 1, 1 }, 0, 0, 0, 0, 0, 0, 0.45f,
+      2.4f, 2000, 0, 100, 6500, 100, 0, 2, 0 },
+    { CR_MEDIUM_PAPER, 0, 0, 0, 0, 0, 0, 0, 0.08f, 0, { 0.90f, 0.89f, 0.86f }, 0, 0, 0, 0, 0, 0, 0,
+      2.4f, 125, 0, 130, 6500, 92, 0, 2, 0.55f } };
+
+// A white of Kelvin k on a D65 screen, as Rec.709 gains (largest 1), with the eye adapted most of the way: a 3200 K
+// lamp reads warm, not orange (adaptation share [gen]). Planckian locus: Krystek 1985 (as in math/HostOnly.h).
+static void kelvinWhite(double k, float out[3])
+{
+    auto rgb = [](double t, double o[3]) {
+        t = std::min(std::max(t, 1500.0), 15000.0);
+        const double u = (0.860117757 + 1.54118254e-4 * t + 1.28641212e-7 * t * t)
+                         / (1.0 + 8.42420235e-4 * t + 7.08145163e-7 * t * t);
+        const double v = (0.317398726 + 4.22806245e-5 * t + 4.20481691e-8 * t * t)
+                         / (1.0 - 2.89741816e-5 * t + 1.61456053e-7 * t * t);
+        const double d = 2.0 * u - 8.0 * v + 4.0, x = 3.0 * u / d, y = 2.0 * v / d;
+        const double X = x / y, Z = (1.0 - x - y) / y;
+        o[0] = 3.2404542 * X - 1.5371385 - 0.4985314 * Z;
+        o[1] = -0.9692660 * X + 1.8760108 + 0.0415560 * Z;
+        o[2] = 0.0556434 * X - 0.2040259 + 1.0572252 * Z;
+    };
+    double w[3], d65[3];
+    rgb(k, w);
+    rgb(6504, d65);
+    double g[3], top = 0;
+    for (int i = 0; i < 3; ++i) {
+        g[i] = std::pow(std::max(w[i] / d65[i], 1e-3), 0.4);   // 40% of the cast left after adaptation
+        top = std::max(top, g[i]);
+    }
+    for (int i = 0; i < 3; ++i) out[i] = (float)(g[i] / top);
+}
 
 
 // Film formats: grain size and amount, halation radius, gate weave (share of the width), relative to Super 35.
@@ -267,6 +310,29 @@ void glowGrid(int W, int H, float sigma, int& s, int& w, int& h, float& onGrid)
 }
 
 }  // namespace
+
+const char* const kCrRoomNames[3] = { "Buia", "Penombra", "Illuminata" };
+
+void creativeLoadMedium(CreativeControls& c, int m)
+{
+    const Medium& md = kMedia[m >= 0 && m < kCrMediumCount ? m : 0];
+    c.mediumGamma = md.gamma;
+    c.mediumContrast = md.contrast;
+    c.mediumAmbient = md.ambient * 100.0;
+    c.mediumNits = md.nits;
+    c.mediumKelvin = md.kelvin;
+    c.mediumColour = md.colour;
+    c.mediumOverscan = md.overscan;
+    c.mediumRoom = md.room;
+    c.mediumLoaded = m;
+}
+
+CrMediumRows creativeMediumRows(int m)
+{
+    const Medium& md = kMedia[m >= 0 && m < kCrMediumCount ? m : 0];
+    const bool on = md.kind != CR_MEDIUM_NONE && md.kind != CR_MEDIUM_LCD;   // the console's greens are its own
+    return { on, on, on && md.lines > 0 };
+}
 
 bool creativeNeedsPrevious(const CreativeControls& c)
 {
@@ -761,8 +827,24 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H,
     if (md.kind == CR_MEDIUM_NONE || p.output == CR_OUT_LOG) return;
     p.medium = md.kind;
     p.mGain = 1.0f + md.flicker * ma * cr_hash(frame, 5, 81);
-    p.mBlack = md.black * ma;
-    for (int k = 0; k < 3; ++k) p.mWhite[k] = 1.0f + (md.white[k] - 1.0f) * ma;
+    CreativeControls r = c;   // the response: the panel's when it holds this medium's values, else the preset's
+    if (c.mediumLoaded != c.medium) creativeLoadMedium(r, c.medium);
+    const double nits = clampd(r.mediumNits, 1, 1000);
+    // perception: a dark room flattens contrast (Bartleson-Breneman, 2.4 / 2.6 in the dark, [gen] 1.06 lit); a dim
+    // screen shows less contrast (Stevens) and less colour (Hunt) than the 100 nit reference
+    const double room[3] = { 0.92, 1.0, 1.06 };
+    const int lit = r.mediumRoom >= 0 && r.mediumRoom < 3 ? r.mediumRoom : 1;
+    const double tone = clampd(r.mediumGamma, 1.5, 3.5) / 2.4 * room[lit] * std::pow(nits / 100.0, 0.04);
+    const double sat = clampd(r.mediumColour, 0, 200) / 100.0 * clampd(std::pow(nits / 100.0, 0.1), 0.7, 1.2);
+    p.mTone = (float)(1.0 + (tone - 1.0) * ma);
+    p.mCutoff = (float)(ma / clampd(r.mediumContrast, 10, 100000));
+    p.mSat = (float)(1.0 + (sat - 1.0) * ma);
+    p.mChroma = md.chroma > 0.0f && ma > 0.0f ? md.chroma / ma : 0.0f;   // half the effect = twice the gamut
+    p.mZoom = (float)(1.0 + clampd(r.mediumOverscan, 0, 20) / 100.0 * ma);
+    p.mBlack = (float)(clampd(r.mediumAmbient, 0, 20) / 100.0 * ma);
+    float white[3];
+    kelvinWhite(r.mediumKelvin, white);
+    for (int k = 0; k < 3; ++k) p.mWhite[k] = 1.0f + (md.white[k] * white[k] - 1.0f) * ma;
     p.mFalloff = md.falloff * ma;
     p.mShiftX = (float)(md.unsteady * ma * H * (0.6 * sin(frame * 1.7 + 0.4) + 0.4 * cr_hash(frame, 6, 82)));
     p.mShiftY = (float)(md.unsteady * ma * H * 0.8 * (0.6 * sin(frame * 1.3 + 2.1) + 0.4 * cr_hash(frame, 7, 83)));

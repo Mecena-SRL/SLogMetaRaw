@@ -1,5 +1,24 @@
 # Changelog
 
+## In sviluppo
+
+- **Creative, Ingresso (IDT)**: oltre a DaVinci WG/Intermediate, S-Log3, S-Log2 e ACEScct ora anche Rec.709, ACEScg,
+  ACES2065-1 e Cineon, per usarlo anche dopo un grade. Rec.709 si legge con la curva BT.709, quindi il grigio di un
+  grade (0,41) diventa il 18% della pellicola. Cineon: nero a 95, bianco a 685, grigio a 468. Gli ingressi di Noise e
+  Log MetaRaw non cambiano.
+- **Creative, Supporto di visione**: ogni supporto ha la sua risposta, oltre alla geometria.
+  - Gamma del dispositivo e nero proprio in stile BT.1886, che alza le ombre ma non i bianchi.
+  - Luce della stanza e luminanza: sotto i 100 nit si percepiscono meno colore e meno contrasto.
+  - Bianco in K, con l'occhio adattato in gran parte.
+  - Colore, overscan e stanza: al buio il contrasto si percepisce minore.
+  - La carta ha un gamut più piccolo che comprime i colori saturi.
+  - Tubo PAL a 7500 K, NTSC giapponese a 9300 K con colore spinto, sala a 48 nit al buio, proiettore di casa a 15 nit e
+    3200 K.
+- **Pannello del supporto**: scegliere *Visto su* carica i valori del supporto nei comandi qui sotto (Gamma, Contrasto,
+  Luce della stanza, Luminanza, Stanza, Bianco, Colore, Overscan), che poi si possono cambiare. Si vedono solo le righe
+  utili per quel supporto, e la riga «Come si vede» lo descrive. *Azzera comandi* riporta i valori del supporto. Un grade
+  salvato con la 4.1.0 usa i valori del suo supporto. I numeri sono stime da tarare.
+
 ## Log MetaRaw 4.1.0
 
 - **Log MetaRaw Creative** al posto del Detail (stesso posto nel bundle, icona numero 5): sviluppo creativo con un

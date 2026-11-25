@@ -202,6 +202,11 @@ stampa, Supporto di visione (sala, proiettore, tubo, monitor, console LCD, carta
 motore più veloce. Verificato come sopra; aperto: parità Metal del supporto (CI), aspetto su un 4K vero.
 Terzo giro: nitidezza dei duplicati, bagliore di vetro e obiettivo, scia dell'LCD (rende anche il fotogramma prima),
 righe del pannello nascoste quando non servono (crRowIdle).
+Dopo la 4.1.0 (25/11/2026, richiesta di Ivan): ingressi Rec.709 (curva BT.709), ACEScg, ACES2065-1 e Cineon (codice gamma 25,
+solo per il Creative: `kCreativeInputCount`, menu di Develop e Noise invariati); supporti con risposta del dispositivo
+(`cr_device`) e comandi caricati dal supporto scelto (`creativeLoadMedium`, `mediumLoaded`). Verificato: test CPU e host,
+sintassi Metal simulata. Aperto: numeri da tarare, prova in Resolve, se Ivan vuole lo stesso caricamento dei valori anche
+per pellicole e processi (oggi i comandi del processo sono multipli: 1 = com'era).
 Motion Blur, qualità (24/11/2026): su FX6 reale (C005C072, 50p 1/200 letto dall'RTMD con `shutter-time.patch`) il
 motore CPU produce una scia coerente con la posa (passo 1 e 2 uguali, Metal = CPU in CI). Aggiunta la grana: il
 residuo fine del centro, livello stimato nelle zone piatte (`blur::grainLevel`, correlazione tra pixel adiacenti per
