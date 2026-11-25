@@ -60,17 +60,26 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 
 ## Frontale e meter (`audio/vst3/AuPlugin.cpp`)
 
-Il pannello si apre su un frontale disegnato (nessuna immagine, nessun marchio dei produttori): un materiale per ogni
-famiglia di registratore (alluminio spazzolato, smalto grigio da studio, nero e argento delle cassette, antracite e
-arancio delle cineprese, noce e ottone prima del nastro) e per ogni banco. Sul frontale: targhetta con il modello,
-quattro manopole (*Saturazione*, *Dry/wet*, *Uscita*, *Taratura*) e due meter a lancetta.
+Il pannello si apre sul frontale del modello scelto (in *Mix e supporto*, del banco), disegnato e non fotografato,
+senza marchi: colori e materiali della macchina, targhetta con il nome, quattro manopole (*Saturazione*, *Dry/wet*,
+*Uscita*, *Taratura*) e l'indicatore di livello che quella macchina aveva, con la sua scala e la sua balistica. I dati
+stanno in `audio/vst3/AuLooks.h`, una riga per ogni registratore e banco, nello stesso ordine delle tabelle [gen]:
 
-- **VU** (media, assestamento in circa 300 ms, scala lineare in tensione, 0 VU al 71 %) su tutti, tranne
-  **PPM** (sale subito, scende 24 dB in 2,8 s, sette tacche a 4 dB, la 4 al riferimento) sui registratori a bobine
-  portatili e sul banco EMI.
-- *Taratura* è il livello digitale che legge 0 VU (o la tacca 4), da −24 a −6 dBFS, di serie −18 dBFS; la lampada rossa
-  si accende sopra +3 VU (o la tacca 6).
-- Il livello lo misura il processore all'uscita, a ogni blocco (media quadratica per il VU, picco per il PPM), e lo
+| Indicatore | Scala e movimento | Dove |
+|---|---|---|
+| VU | −20…+3, lineare in tensione (0 VU al 71 %), media, circa 300 ms | Ampex 350 (uno), Studer J37 e A80, Revox A77, Portastudio 144, TC-D5M, Auricon (uno), RCA BC-2B (uno), Neve, SSL |
+| PPM | tacche 1–7 a 4 dB, la 4 al riferimento; sale in 10 ms, scende 24 dB in 2,8 s; quadrante nero | EMI REDD.51 |
+| Modulometro | −30…+5 dB, picco, discesa più lenta | Nagra III, Nagra 4.2 |
+| Indicatore REC | ago senza numeri, arco nero e rosso | Uher 4000, Philips EL 3300, Canon 514XL-S |
+| Occhio magico | ventaglio verde che si chiude col livello | Geloso G.257, Webster-Chicago 180 |
+| LED | scala −40…+6 dB, verde, giallo, rosso; picco tenuto | Walkman Pro WM-D6C, Mackie CR-1604 |
+| Livello automatico | nessun meter, una spia che si accende col suono | Ektasound 130, JVC GR-C1, CCD-V8 |
+| Nessuno | — | fonografo Edison |
+
+- *Taratura* è il livello digitale che legge 0 VU (la tacca 4 del PPM, lo 0 del modulometro), da −24 a −6 dBFS, di
+  serie −18 dBFS; la lampada rossa si accende oltre il fondo scala.
+- Il livello lo misura il processore all'uscita, a ogni blocco (media quadratica per VU e aghi semplici, picco per gli
+  altri), e lo
   manda al pannello con due parametri in sola lettura (`Meter sinistro`/`destro`, non salvati, non automatizzabili).
 
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
@@ -103,7 +112,7 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Incerto: comportamento in Fairlight (mai caricato in Resolve) e in Logic Pro (verificato solo da `auval`), build Mac e Windows finché la CI non passa.
 - Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
   coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
-- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali per famiglia e banco, manopole, meter.
+- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali e indicatori per ogni registratore e banco, manopole.
   Il movimento delle lancette è stato visto con un segnale finto nel pannello: l'host di prova dell'SDK non fa passare
   audio, quindi il meter con audio vero va visto in Fairlight.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.

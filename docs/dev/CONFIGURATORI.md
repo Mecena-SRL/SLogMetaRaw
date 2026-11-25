@@ -263,7 +263,8 @@ e posa letta davvero), velocità su GPU reale.
 Log MetaRaw Audio (25/11/2026, rilasciato nella 4.2.0): simulatore di registrazione e mix d'epoca per Fairlight. Decisioni di
 Ivan: due plugin («Ripresa» per le tracce, «Mix e supporto» per bus e master) sullo stesso motore, preset con nomi
 reali e interruttore per ogni stadio. Fatto: motore e tabelle in `audio/src/`, test; plugin VST3 con pannello (`audio/vst3/`),
-CI e installer. Deciso: niente AU (Fairlight carica il VST3 anche su Mac). Menu coerenti (richiesta di Ivan, 25/11/2026):
+CI e installer. Audio Unit per Logic Pro (richiesta di Ivan, 25/11/2026, prima esclusa): wrapper dell'SDK, target `LogMetaRawAU`. Menu coerenti (richiesta di Ivan, 25/11/2026):
 registratore → microfono → supporto → riduzione, banco → master → riversaggio, filtrati per compatibilità e anno nel
-pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Frontali disegnati con meter VU/PPM e manopole (richiesta di Ivan, 25/11/2026): `Plate`, `Meter`, `Knob` in
+pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Frontale e indicatore di livello propri di ogni registratore e banco (richiesta di Ivan, 25/11/2026): dati in
+`audio/vst3/AuLooks.h`, disegno in `Plate`, `Meters`, `Knob` di
 `audio/vst3/AuPlugin.cpp`, livelli dal processore con parametri in sola lettura. Aperto: prova in Fairlight, taratura. Dettagli: `docs/audio/AUDIO.md`.

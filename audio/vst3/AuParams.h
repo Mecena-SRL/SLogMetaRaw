@@ -3,6 +3,7 @@
 // and in which rows of the panel. Parameter ids are permanent (hosts save automation by id): append only.
 #pragma once
 #include "AudioEngine.h"
+#include "AuLooks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -266,15 +267,15 @@ inline std::vector<AuParamId> auParams(bool mix)
     return out;
 }
 
-// How the meters read: a peak programme meter (fast rise, slow fall) on the portable reels, whose modulometers are
-// one, and on the EMI desk; a VU (average, about 300 ms) everywhere else.
-inline bool auMeterPeak(const double* v, bool mix)
+// The front the panel shows: the chosen recorder's in Ripresa, the desk's in Mix e supporto (AuLooks.h).
+inline const AuLook& auLook(const double* v, bool mix)
 {
-    if (mix) return auPlain(v, kPDesk) == 2;
+    if (mix) return kAuDeskLooks[std::clamp(auPlain(v, kPDesk), 0, int(std::size(kAuDeskLooks)) - 1)];
     int family, model;
     auDeviceSplit(auPlain(v, kPDevice), family, model);
-    return family == 0;
+    return auDeviceLook(family, model);
 }
+inline bool auMeterPeak(const double* v, bool mix) { return auMeterReadsPeak(auLook(v, mix).meter); }
 
 // Plain parameter values (index for lists, 0/1 for switches) → the engine's settings.
 inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)

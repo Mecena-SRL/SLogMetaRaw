@@ -229,30 +229,20 @@ private:
 
 using namespace VSTGUI;
 
-// The look of a front plate: body (top and bottom of its gradient), name plate and its lettering, meter face, knob
-// caps. Drawn, not photographed: every family of recorder and every desk gets an original plate in the materials of
-// its era, with no maker's marks.
+// The look of a front plate, from its row in AuLooks.h: body (top and bottom of its gradient), name plate and its
+// lettering, meter face, knob caps.
+CColor rgb(uint32_t c, uint8_t alpha = 255) { return CColor(uint8_t(c >> 16), uint8_t(c >> 8), uint8_t(c), alpha); }
 struct Skin
 {
     CColor body, body2, plate, ink, face, cap;
-    bool brushed;   // the fine grain of brushed metal
+    bool brushed;
+    explicit Skin(const AuLook& l)
+        : body(rgb(l.body)), body2(rgb(l.body2)), plate(rgb(l.plate)), ink(rgb(l.ink)), face(rgb(l.face)),
+          cap(rgb(l.cap)), brushed(l.brushed)
+    {
+    }
 };
-
-const Skin kFamilySkins[] = {   // Ripresa, by family of recorder (kAuFamilies)
-    { { 186, 188, 190 }, { 128, 130, 133 }, { 26, 26, 28 }, { 228, 224, 212 }, { 238, 230, 208 }, { 44, 44, 46 }, true },
-    { { 198, 192, 178 }, { 156, 150, 136 }, { 70, 66, 60 }, { 240, 232, 214 }, { 240, 232, 210 }, { 62, 58, 54 }, false },
-    { { 52, 52, 56 }, { 22, 22, 24 }, { 176, 178, 182 }, { 22, 22, 24 }, { 226, 232, 236 }, { 168, 170, 174 }, true },
-    { { 68, 64, 62 }, { 38, 36, 35 }, { 206, 124, 50 }, { 26, 20, 14 }, { 232, 224, 200 }, { 30, 30, 30 }, false },
-    { { 124, 78, 42 }, { 76, 42, 20 }, { 198, 162, 94 }, { 50, 32, 12 }, { 238, 226, 192 }, { 172, 138, 74 }, false },
-};
-const Skin kDeskSkins[] = {   // Mix e supporto, by desk (kAuConsoles)
-    { { 74, 76, 80 }, { 44, 46, 50 }, { 30, 30, 32 }, { 214, 210, 200 }, { 232, 226, 206 }, { 52, 52, 54 }, false },
-    { { 116, 130, 142 }, { 78, 92, 104 }, { 30, 34, 38 }, { 220, 224, 226 }, { 238, 230, 206 }, { 40, 44, 48 }, false },
-    { { 122, 130, 118 }, { 84, 92, 82 }, { 226, 222, 206 }, { 30, 32, 28 }, { 236, 228, 204 }, { 56, 60, 54 }, false },
-    { { 100, 112, 130 }, { 64, 76, 92 }, { 202, 198, 186 }, { 28, 30, 34 }, { 236, 230, 212 }, { 120, 44, 40 }, false },
-    { { 62, 64, 68 }, { 34, 35, 38 }, { 214, 214, 214 }, { 24, 24, 26 }, { 230, 232, 232 }, { 92, 96, 100 }, false },
-    { { 56, 56, 58 }, { 30, 30, 32 }, { 222, 222, 222 }, { 20, 20, 22 }, { 224, 228, 230 }, { 40, 40, 42 }, true },
-};
+bool isLight(CColor c) { return c.red + c.green + c.blue > 3 * 120; }
 
 CColor shade(CColor c, double k, uint8_t alpha = 255)   // k < 1 darker, > 1 lighter
 {
@@ -270,6 +260,12 @@ void fillEllipse(CDrawContext* c, const CRect& r, CColor top, CColor bottom)
     path->addEllipse(r);
     fillGradient(c, path, r, top, bottom);
 }
+void fillRound(CDrawContext* c, const CRect& r, CCoord radius, CColor top, CColor bottom)
+{
+    auto path = VSTGUI::owned(c->createRoundRectGraphicsPath(r, radius));
+    fillGradient(c, path, r, top, bottom);
+}
+constexpr double kPi = 3.14159265358979;
 
 // The plate behind the meters and knobs: the body, its screws and the engraved name plate.
 class Plate : public CView
@@ -317,46 +313,104 @@ public:
     }
 
 private:
-    Skin skin_ = kDeskSkins[0];
+    Skin skin_ { kAuDeskLooks[0] };
     std::string brand_, name_, kind_;
 };
 
-// A moving-needle meter. A VU reads the average level and settles in about 300 ms, its scale linear in voltage with
-// 0 VU at 71 %; a PPM rises at once and falls 24 dB in 2.8 s, its seven marks 4 dB apart with 4 at the reference.
-class Meter : public CView
+// The level meters of the chosen machine, drawn and moving like the ones it had (AuMeter in AuLooks.h): one for both
+// channels or one each. Levels arrive in dB against the calibration (0 = the reference, 0 VU).
+class Meters : public CView
 {
 public:
-    Meter(const CRect& r, const char* channel) : CView(r), channel_(channel) {}
-    void setLook(const Skin& skin, bool peak)
+    explicit Meters(const CRect& r) : CView(r) {}
+    void setLook(const AuLook& look)
     {
-        face_ = skin.face, peak_ = peak;
+        look_ = look;
+        pos_[0] = pos_[1] = hold_[0] = hold_[1] = 0;
         invalid();
     }
-    void feed(double db, double dt)   // db: the level against the calibration (0 = reference)
+    void feed(const double db[2], double dt)
     {
-        const double target = position(db);
-        if (!peak_) pos_ += (target - pos_) * (1 - std::exp(-dt / 0.09));
-        else if (target > pos_) pos_ += (target - pos_) * (1 - std::exp(-dt / 0.004));
-        else pos_ = std::max(target, pos_ - dt * (24 / 2.8) / 24);
-        lamp_ = db > (peak_ ? 8 : 3) ? 0.6 : std::max(0.0, lamp_ - dt);   // overload lamp, held a moment
+        for (int c = 0; c < look_.meters; ++c) {
+            const double level = look_.meters == 1 ? std::max(db[0], db[1]) : db[c];
+            const double target = position(level);
+            double& p = pos_[c];
+            auto approach = [&](double tau) { p += (target - p) * (1 - std::exp(-dt / tau)); };
+            auto fall = [&](double dbPerSecond, double range) { p = std::max(target, p - dt * dbPerSecond / range); };
+            switch (look_.meter) {
+            case AuMeter::VU:
+            case AuMeter::Indicator: approach(0.09); break;
+            case AuMeter::PPM: target > p ? approach(0.004) : fall(24 / 2.8, 24); break;
+            case AuMeter::Modulometer: target > p ? approach(0.005) : fall(12, 35); break;
+            case AuMeter::Eye: approach(target > p ? 0.01 : 0.15); break;
+            case AuMeter::Led: target > p ? void(p = target) : fall(20, 46); break;
+            default: approach(0.15);
+            }
+            hold_[c] = p >= hold_[c] ? (heldFor_[c] = 0.8, p) : (heldFor_[c] -= dt) > 0 ? hold_[c] : p;
+            lamp_[c] = level > overload() ? 0.6 : std::max(0.0, lamp_[c] - dt);
+        }
         invalid();
     }
     void draw(CDrawContext* c) override
     {
         const CRect r = getViewSize();
-        auto bezel = VSTGUI::owned(c->createRoundRectGraphicsPath(r, 6));
-        fillGradient(c, bezel, r, CColor(54, 52, 50), CColor(16, 16, 16));
+        const CColor ink = isLight(rgb(look_.face)) ? CColor(34, 30, 26) : CColor(236, 232, 222);
+        switch (look_.meter) {
+        case AuMeter::Eye: drawEye(c, r); break;
+        case AuMeter::Led: drawLeds(c, r); break;
+        case AuMeter::Automatic:
+        case AuMeter::None: drawNote(c, r); break;
+        default:
+            if (look_.meters == 1) {
+                const CCoord w = 232;
+                drawNeedle(c, CRect(r.getCenter().x - w / 2, r.top, r.getCenter().x + w / 2, r.bottom), 0, nullptr, ink);
+            } else {
+                const CCoord w = (r.getWidth() - 8) / 2;
+                drawNeedle(c, CRect(r.left, r.top, r.left + w, r.bottom), 0, "L", ink);
+                drawNeedle(c, CRect(r.right - w, r.top, r.right, r.bottom), 1, "R", ink);
+            }
+        }
+        setDirty(false);
+    }
+
+private:
+    // Where a level sits on the scale, 0..1.
+    double position(double db) const
+    {
+        switch (look_.meter) {
+        case AuMeter::VU:
+        case AuMeter::Indicator: return std::pow(10.0, (db - 3) / 20);   // linear in voltage
+        case AuMeter::PPM: return (db + 12) / 24;                         // marks 1..7, 4 dB apart, 4 at 0 dB
+        case AuMeter::Modulometer: return (db + 30) / 35;                 // -30..+5 dB
+        case AuMeter::Eye: return std::clamp((db + 30) / 33, 0.0, 1.0);
+        case AuMeter::Led: return (db + 40) / 46;                         // -40..+6 dB
+        default: return std::clamp((db + 40) / 40, 0.0, 1.0);
+        }
+    }
+    double overload() const
+    {
+        switch (look_.meter) {
+        case AuMeter::PPM: return 8;   // past mark 6
+        case AuMeter::Modulometer: return 0;
+        default: return 3;
+        }
+    }
+
+    // A needle meter: VU, PPM, modulometer or the small level needle of consumer machines.
+    void drawNeedle(CDrawContext* c, const CRect& r, int ch, const char* channel, CColor ink)
+    {
+        fillRound(c, r, 6, CColor(54, 52, 50), CColor(16, 16, 16));
         CRect face = r;
         face.inset(7, 7);
-        auto facePath = VSTGUI::owned(c->createRoundRectGraphicsPath(face, 3));
-        fillGradient(c, facePath, face, shade(face_, 1.04), shade(face_, 0.86));
+        const CColor faceColour = rgb(look_.face);
+        fillRound(c, face, 3, shade(faceColour, 1.04), shade(faceColour, 0.86));
         const CPoint pivot(face.getCenter().x, face.bottom - 8);   // hidden under the bridge
         const double radius = face.getHeight() - 38;
         auto at = [&](double t, double rad) {
-            const double a = (-43 + 86 * t) * 3.14159265358979 / 180;
+            const double a = (-43 + 86 * t) * kPi / 180;
             return CPoint(pivot.x + std::sin(a) * rad, pivot.y - std::cos(a) * rad);
         };
-        const CColor ink(34, 30, 26), red(186, 40, 30);
+        const CColor red = isLight(faceColour) ? CColor(186, 40, 30) : CColor(240, 80, 60);
         auto arc = [&](double from, double to, CColor colour, double width) {
             auto path = VSTGUI::owned(c->createGraphicsPath());
             path->beginSubpath(at(from, radius));
@@ -365,9 +419,6 @@ public:
             c->setLineWidth(width);
             c->drawGraphicsPath(path, CDrawContext::kPathStroked);
         };
-        const double zero = position(0);
-        arc(0, zero, ink, 1.2);
-        arc(zero, 1, red, 3);
         c->setFont(kNormalFontSmaller);
         auto mark = [&](double t, const char* label, bool over) {
             c->setFrameColor(over ? red : ink);
@@ -378,52 +429,149 @@ public:
             c->setFontColor(over ? red : ink);
             c->drawString(label, CRect(p.x - 12, p.y - 6, p.x + 12, p.y + 6), kCenterText);
         };
-        if (peak_)
+        const char* caption = "VU";
+        const double zero = position(0);
+        switch (look_.meter) {
+        case AuMeter::PPM:   // the broadcast meter: white marks on black, no red zone
+            arc(0, 1, ink, 1.2);
             for (int m = 1; m <= 7; ++m) {
                 const char label[2] = { char('0' + m), 0 };
-                mark((m - 1) / 6.0, label, m > 4);
+                mark((m - 1) / 6.0, label, false);
             }
-        else {
+            caption = "PPM";
+            break;
+        case AuMeter::Modulometer: {
+            arc(0, zero, ink, 1.2);
+            arc(zero, 1, red, 3);
+            const struct { int db; const char* label; } marks[] = {
+                { -30, "30" }, { -25, nullptr }, { -20, "20" }, { -15, nullptr }, { -10, "10" }, { -8, nullptr },
+                { -6, nullptr }, { -4, nullptr }, { -2, nullptr }, { 0, "0" }, { 2, nullptr }, { 4, nullptr }, { 5, "+5" },
+            };
+            for (auto m : marks) mark(position(m.db), m.label, m.db > 0);
+            caption = "dB";
+            break;
+        }
+        case AuMeter::Indicator:   // no numbers: a black arc and a red one, as on the small portables
+            arc(0, zero, ink, 4);
+            arc(zero, 1, red, 4);
+            caption = "REC";
+            break;
+        default: {
+            arc(0, zero, ink, 1.2);
+            arc(zero, 1, red, 3);
             const struct { int db; const char* label; } marks[] = {
                 { -20, "20" }, { -10, "10" }, { -7, nullptr }, { -5, "5" }, { -3, "3" }, { -2, nullptr },
                 { -1, nullptr }, { 0, "0" }, { 1, nullptr }, { 2, nullptr }, { 3, "+3" },
             };
             for (auto m : marks) mark(position(m.db), m.label, m.db > 0);
         }
+        }
         c->setFontColor(ink);
         c->setFont(kNormalFont);
-        c->drawString(peak_ ? "PPM" : "VU", CRect(face.left, face.top + face.getHeight() * 0.5, face.right,
-                                                  face.top + face.getHeight() * 0.5 + 16), kCenterText);
-        c->setFont(kNormalFontSmaller);
-        c->drawString(channel_, CRect(face.left + 6, face.bottom - 30, face.left + 20, face.bottom - 18), kLeftText);
+        c->drawString(caption, CRect(face.left, face.top + face.getHeight() * 0.5, face.right,
+                                     face.top + face.getHeight() * 0.5 + 16), kCenterText);
+        if (channel) {
+            c->setFont(kNormalFontSmaller);
+            c->drawString(channel, CRect(face.left + 6, face.bottom - 30, face.left + 20, face.bottom - 18), kLeftText);
+        }
         CRect clip;   // the needle stays behind the glass
         c->getClipRect(clip);
         c->setClipRect(face);
-        c->setFrameColor(CColor(20, 18, 16));
+        c->setFrameColor(isLight(faceColour) ? CColor(20, 18, 16) : CColor(250, 250, 246));
         c->setLineWidth(1.6);
-        c->drawLine(pivot, at(std::clamp(pos_, -0.03, 1.06), radius + 10));
+        c->drawLine(pivot, at(std::clamp(pos_[ch], -0.03, 1.06), radius + 10));
         c->setClipRect(clip);
-        CRect bridge(face.left, face.bottom - 16, face.right, face.bottom);
-        auto bridgePath = VSTGUI::owned(c->createRoundRectGraphicsPath(bridge, 2));
-        fillGradient(c, bridgePath, bridge, CColor(44, 42, 40), CColor(20, 20, 20));
-        CRect lampRect(face.right - 16, face.bottom - 12, face.right - 8, face.bottom - 4);
-        fillEllipse(c, lampRect, lamp_ > 0 ? CColor(255, 90, 60) : CColor(90, 24, 18),
-                    lamp_ > 0 ? CColor(220, 30, 20) : CColor(50, 14, 10));
-        CRect glass(face.left, face.top, face.right, face.top + face.getHeight() * 0.45);
-        auto glassPath = VSTGUI::owned(c->createRoundRectGraphicsPath(glass, 3));
-        fillGradient(c, glassPath, glass, CColor(255, 255, 255, 46), CColor(255, 255, 255, 0));
-        setDirty(false);
+        fillRound(c, CRect(face.left, face.bottom - 16, face.right, face.bottom), 2, CColor(44, 42, 40),
+                  CColor(20, 20, 20));
+        lamp(c, CRect(face.right - 16, face.bottom - 12, face.right - 8, face.bottom - 4), lamp_[ch] > 0);
+        fillRound(c, CRect(face.left, face.top, face.right, face.top + face.getHeight() * 0.45), 3,
+                  CColor(255, 255, 255, 46), CColor(255, 255, 255, 0));
     }
 
-private:
-    double position(double db) const
+    // The magic eye: a green fan around a black cap; the dark wedge narrows as the level rises.
+    void drawEye(CDrawContext* c, const CRect& r)
     {
-        return peak_ ? (db + 12) / 24 : std::pow(10.0, (db - 3) / 20);
+        const CPoint m = r.getCenter();
+        const CCoord d = r.getHeight() - 8;
+        CRect bezel(m.x - d / 2, m.y - d / 2, m.x + d / 2, m.y + d / 2);
+        fillEllipse(c, bezel, CColor(80, 76, 70), CColor(20, 20, 18));
+        CRect glass = bezel;
+        glass.inset(10, 10);
+        fillEllipse(c, glass, CColor(10, 22, 14), CColor(4, 10, 6));
+        CRect glow = glass;
+        glow.inset(6, 6);
+        fillEllipse(c, glow, CColor(110, 255, 160), CColor(40, 190, 100));
+        const double half = 4 + (1 - pos_[0]) * 80;   // degrees either side of the top
+        auto wedge = VSTGUI::owned(c->createGraphicsPath());
+        wedge->beginSubpath(glow.getCenter());
+        wedge->addArc(glow, 270 - half, 270 + half, true);
+        wedge->closeSubpath();
+        c->setFillColor(CColor(8, 26, 14));
+        c->drawGraphicsPath(wedge, CDrawContext::kPathFilled);
+        CRect cap(m.x - d * 0.16, m.y - d * 0.16, m.x + d * 0.16, m.y + d * 0.16);
+        fillEllipse(c, cap, CColor(40, 40, 40), CColor(6, 6, 6));
+        fillEllipse(c, CRect(glass.left, glass.top, glass.right, m.y), CColor(255, 255, 255, 40),
+                    CColor(255, 255, 255, 0));
     }
-    const char* channel_;
-    CColor face_ = kDeskSkins[0].face;
-    bool peak_ = false;
-    double pos_ = 0, lamp_ = 0;
+
+    // A ladder of lamps per channel, green, then yellow, then red, with the peak held a moment.
+    void drawLeds(CDrawContext* c, const CRect& r)
+    {
+        fillRound(c, r, 6, CColor(40, 40, 42), CColor(12, 12, 12));
+        static const int kSteps[] = { -40, -30, -20, -15, -10, -7, -5, -3, -1, 0, 3, 6 };
+        const int n = int(std::size(kSteps));
+        const CCoord left = r.left + 26, width = (r.getWidth() - 40) / n;
+        c->setFont(kNormalFontSmaller);
+        for (int ch = 0; ch < 2; ++ch) {
+            const CCoord top = r.top + 28 + ch * 58;
+            c->setFontColor(CColor(200, 200, 196));
+            c->drawString(ch ? "R" : "L", CRect(r.left + 8, top, left - 4, top + 22), kLeftText);
+            for (int i = 0; i < n; ++i) {
+                const double t = position(kSteps[i]);
+                const bool on = pos_[ch] >= t || std::fabs(hold_[ch] - t) < 0.5 / n;
+                const CColor hue = kSteps[i] > 0 ? CColor(255, 60, 40) : kSteps[i] >= -1 ? CColor(255, 200, 40)
+                                                                                           : CColor(60, 230, 90);
+                CRect seg(left + i * width + 2, top, left + (i + 1) * width - 2, top + 22);
+                fillRound(c, seg, 2, on ? shade(hue, 1.1) : shade(hue, 0.22), on ? shade(hue, 0.8) : shade(hue, 0.14));
+            }
+        }
+        c->setFontColor(CColor(170, 170, 166));
+        for (int i = 0; i < n; i += i < 4 ? 2 : 1) {
+            char label[8];
+            std::snprintf(label, sizeof label, kSteps[i] > 0 ? "+%d" : "%d", kSteps[i]);
+            const CCoord x = left + (i + 0.5) * width;
+            c->drawString(label, CRect(x - 14, r.top + 52, x + 14, r.top + 82), kCenterText);
+        }
+        c->drawString("dB", CRect(r.left, r.bottom - 26, r.right - 12, r.bottom - 8), kRightText);
+    }
+
+    // No meter: automatic level control (a lamp that lights with the sound), or nothing at all.
+    void drawNote(CDrawContext* c, const CRect& r)
+    {
+        fillRound(c, r, 6, CColor(40, 38, 36), CColor(16, 16, 16));
+        const bool automatic = look_.meter == AuMeter::Automatic;
+        c->setFontColor(CColor(210, 206, 196));
+        c->setFont(kNormalFont);
+        c->drawString(automatic ? "Livello automatico" : "Nessun indicatore",
+                      CRect(r.left, r.top + 30, r.right, r.top + 50), kCenterText);
+        c->setFont(kNormalFontSmaller);
+        c->drawString(automatic ? "la macchina regola da sola il livello di registrazione"
+                                : "la tromba incide il suono direttamente sulla cera",
+                      CRect(r.left + 10, r.top + 54, r.right - 10, r.top + 70), kCenterText);
+        if (!automatic) return;
+        const CPoint m(r.getCenter().x, r.top + 108);
+        const double k = std::clamp(pos_[0], 0.0, 1.0);
+        fillEllipse(c, CRect(m.x - 9, m.y - 9, m.x + 9, m.y + 9), CColor(uint8_t(60 + 190 * k), uint8_t(40 + 150 * k), 20),
+                    CColor(uint8_t(30 + 140 * k), uint8_t(20 + 90 * k), 10));
+    }
+
+    void lamp(CDrawContext* c, const CRect& r, bool on)
+    {
+        fillEllipse(c, r, on ? CColor(255, 90, 60) : CColor(90, 24, 18), on ? CColor(220, 30, 20) : CColor(50, 14, 10));
+    }
+
+    AuLook look_ = kAuDeskLooks[0];
+    double pos_[2] = {}, hold_[2] = {}, heldFor_[2] = {}, lamp_[2] = {};
 };
 
 // A knob cap on its scale of eleven dots; turned by dragging, double click (or ctrl-click) for the default.
@@ -468,7 +616,7 @@ public:
     }
 
 private:
-    CColor cap_ = kDeskSkins[0].cap, ink_ = kDeskSkins[0].ink, scale_ = CColor(20, 20, 20);
+    CColor cap_ = CColor(40, 40, 40), ink_ = CColor(236, 232, 222), scale_ = CColor(20, 20, 20);
 };
 
 class Panel : public VSTGUIEditor, public IControlListener
@@ -505,9 +653,8 @@ public:
             values_.push_back({ value, id });
             x += 58;
         }
-        meters_[0] = new Meter(CRect(282, 22, 458, 170), "L");
-        meters_[1] = new Meter(CRect(466, 22, 642, 170), "R");
-        for (Meter* m : meters_) frame->addView(m);
+        meters_ = new Meters(CRect(282, 22, 642, 170));
+        frame->addView(meters_);
         CCoord y = kTop;
         for (const AuRow& row : auRows(mix_)) {
             auto* label = new CTextLabel(CRect(12, y, 172, y + kRow - 4), row.label);
@@ -538,7 +685,7 @@ public:
         knobs_.clear();
         captions_.clear();
         plate_ = nullptr;
-        meters_[0] = meters_[1] = nullptr;
+        meters_ = nullptr;
         look_ = -1;
         values_.clear();
         if (frame) {
@@ -693,20 +840,18 @@ private:
     {
         int family = 0, model = 0;
         auDeviceSplit(auPlain(v, kPDevice), family, model);
-        const int look = mix_ ? auPlain(v, kPDesk) : family * 100 + model;
-        const bool peak = auMeterPeak(v, mix_);
+        const int desk = auPlain(v, kPDesk);
+        const int look = mix_ ? desk : family * 100 + model;
         if (look == look_) return;
         look_ = look;
-        const Skin& skin = mix_ ? kDeskSkins[std::clamp(look, 0, int(std::size(kDeskSkins)) - 1)]
-                                : kFamilySkins[std::clamp(family, 0, int(std::size(kFamilySkins)) - 1)];
-        const int desk = auPlain(v, kPDesk);
+        const AuLook& data = auLook(v, mix_);
+        const Skin skin(data);
         plate_->set(skin, mix_ ? "LOG METARAW · MIX E SUPPORTO" : "LOG METARAW · RIPRESA",
                     mix_ ? (desk ? kAuConsoles[desk].name : "Senza banco") : kAuFamilies[family].devices[model].name,
                     mix_ ? "Banco di missaggio" : kAuFamilies[family].name);
-        for (Meter* m : meters_) m->setLook(skin, peak);
+        meters_->setLook(data);
         for (Knob* k : knobs_) k->setLook(skin);
-        const bool light = skin.body.red + skin.body.green + skin.body.blue > 3 * 120;
-        const CColor ink = light ? CColor(28, 26, 24) : CColor(236, 232, 222);   // captions engraved on the plate
+        const CColor ink = isLight(skin.body) ? CColor(28, 26, 24) : CColor(236, 232, 222);   // engraved captions
         for (CTextLabel* l : captions_) {
             l->setFontColor(ink);
             l->invalid();
@@ -719,10 +864,12 @@ private:
         for (Menu& m : menus_)
             if (all || !m.menu->isEditing()) fill(m, v);
         dress(v);
-        for (int c = 0; c < 2; ++c) {   // the levels the processor reported, against the calibration
+        double db[2];   // the levels the processor reported, against the calibration
+        for (int c = 0; c < 2; ++c) {
             const double amp = 2 * getController()->getParamNormalized(ParamID(kPMeterL + c));
-            meters_[c]->feed(20 * std::log10(std::max(amp, 1e-5)) - v[kPMeterRef], kTick / 1000.0);
+            db[c] = 20 * std::log10(std::max(amp, 1e-5)) - v[kPMeterRef];
         }
+        meters_->feed(db, kTick / 1000.0);
         const bool copies = v[kPTransfer] > 0;   // copies only count when there is a transfer
         for (auto& [control, id] : controls_) {
             if (control->isEditing()) continue;
@@ -743,7 +890,7 @@ private:
 
     bool mix_;
     Plate* plate_ = nullptr;
-    Meter* meters_[2] = {};
+    Meters* meters_ = nullptr;
     std::vector<Knob*> knobs_;
     std::vector<CTextLabel*> captions_;
     int look_ = -1;
