@@ -46,7 +46,7 @@ int main()
     id<MTLBuffer> out = [device newBufferWithLength:img[0].size() * 4 options:MTLResourceStorageModeShared];
     CreativeParallel serial = [](int n, const std::function<void(int, int)>& fn) { fn(0, n); };
     double worst = 0.0;
-    for (int k = 0; k < kCrProcessCount + 2; ++k) {
+    for (int k = 0; k < kCrProcessCount + 4; ++k) {
         CreativeControls c;
         c.process = k % kCrProcessCount;
         c.interval = 1;
@@ -68,6 +68,8 @@ int main()
         if (c.medium == 6) c.medium = 3;
         if (k == kCrProcessCount) { c.process = kCrColourNegative; c.output = 1; c.print = 0; }
         if (k == kCrProcessCount + 1) { c.process = kCrAnalog; c.analog = 2; c.wear = 1; c.heads = 1; }
+        if (k == kCrProcessCount + 2) { c.process = kCrAnalog; c.analog = 1; c.sensor = 5; c.comet = 2; }   // tube
+        if (k == kCrProcessCount + 3) { c.process = kCrAnalog; c.analog = 9; c.sensor = 7; c.smear = 3; }   // CCD
         double t[3];
         creativeRecordTimes(c, t);
         const float* cpuIn[3];
@@ -77,13 +79,18 @@ int main()
             cpuIn[r] = img[f].data();
             gpuIn[r] = (const float*)(__bridge void*)in[f];
         }
+        // a pickup tube's frames before: the other two pictures
+        CreativeHistory hist = { { img[1].data(), img[2].data(), img[1].data() } };
+        const float* gpuHist[3] = { (const float*)(__bridge void*)in[1], (const float*)(__bridge void*)in[2],
+                                    (const float*)(__bridge void*)in[1] };
         CreativeParams p;
-        creativePrepare(p, c, W, H, 11, 8, 9);
+        creativePrepare(p, c, W, H, 11, 8, 9, 3);
         std::vector<float> cpu(img[0].size());
         CreativeScratch scratch;
-        creativeRenderCPU(p, cpuIn, (size_t)W * 4, cpu.data(), (size_t)W * 4, serial, scratch);
+        creativeRenderCPU(p, cpuIn, (size_t)W * 4, cpu.data(), (size_t)W * 4, serial, scratch, nullptr, &hist);
         p.rowPixels = p.dstRowPixels = W;
-        if (!RunCreativeKernels((__bridge void*)queue, p, gpuIn, (float*)(__bridge void*)out)) {
+        if (!RunCreativeKernels((__bridge void*)queue, p, gpuIn, (float*)(__bridge void*)out, nullptr, nullptr,
+                                gpuHist)) {
             printf("KERNEL_FAILED %d\n", k);
             return 1;
         }

@@ -231,18 +231,22 @@ inline constexpr CrCamera kCrCameras[] = {
 const int kCrCameraCount = (int)std::size(kCrCameras);
 
 // Analog video cameras and recorders: the tape (kCrAnalogNames index) and its wear, head switching and timebase.
-struct CrVideoCamera { const char* name; int tape; float wear, heads, instability; };
+// sensor: kCrSensorNames (CreativeModel.h); broadcast ENG cameras of the 1970s paired with their recorder.
+struct CrVideoCamera { const char* name; int tape; float wear, heads, instability; int sensor; };
 inline constexpr CrVideoCamera kCrVideoCameras[] = {
-    { "Camera da studio a tubi Plumbicon (broadcast, anni '70)", 0, 0, 0, 0 },
-    { "Sony U-matic BVU-110 (ENG, 1976)", 7, 0.2f, 0.3f, 0.3f },
-    { "Ampex VPR-2 (1 pollice tipo C, 1977)", 10, 0.1f, 0, 0.1f },
-    { "Sony Betacam SP BVW-400 (1986)", 9, 0.05f, 0, 0.05f },
-    { "Sony Betamovie BMC-100 (Betamax, 1983)", 4, 0.2f, 0.3f, 0.25f },
-    { "Panasonic NV-M7 (VHS, 1987)", 1, 0.2f, 0.35f, 0.3f },
-    { "JVC GR-C1 (VHS-C, 1984)", 1, 0.25f, 0.4f, 0.35f },
-    { "JVC GR-S707 (S-VHS, 1989)", 3, 0.15f, 0.3f, 0.25f },
-    { "Sony Handycam CCD-V8 (Video8, 1985)", 5, 0.2f, 0.3f, 0.25f },
-    { "Sony Handycam CCD-TR (Hi8, 1989)", 6, 0.15f, 0.25f, 0.2f } };
+    { "Camera da studio a tubi Plumbicon (broadcast, anni '70)", 0, 0, 0, 0, 1 },
+    { "Sony U-matic BVU-110 (ENG, 1976)", 7, 0.2f, 0.3f, 0.3f, 1 },
+    { "Ampex VPR-2 (1 pollice tipo C, 1977)", 10, 0.1f, 0, 0.1f, 1 },
+    { "Sony Betacam SP BVW-400 (1986)", 9, 0.05f, 0, 0.05f, 3 },
+    { "Sony Betamovie BMC-100 (Betamax, 1983)", 4, 0.2f, 0.3f, 0.25f, 4 },
+    { "Panasonic NV-M7 (VHS, 1987)", 1, 0.2f, 0.35f, 0.3f, 7 },
+    { "JVC GR-C1 (VHS-C, 1984)", 1, 0.25f, 0.4f, 0.35f, 4 },
+    { "JVC GR-S707 (S-VHS, 1989)", 3, 0.15f, 0.3f, 0.25f, 7 },
+    { "Sony Handycam CCD-V8 (Video8, 1985)", 5, 0.2f, 0.3f, 0.25f, 7 },
+    { "Sony Handycam CCD-TR (Hi8, 1989)", 6, 0.15f, 0.25f, 0.2f, 7 },
+    { "Panasonic WV-3110 con VHS portatile (vidicon, 1979)", 1, 0.25f, 0.4f, 0.35f, 5 },
+    { "Panasonic PK-958 con VHS portatile (Newvicon, 1982)", 1, 0.2f, 0.35f, 0.3f, 6 },
+    { "Ikegami HL-79E con U-matic BVU (Plumbicon, 1984)", 7, 0.15f, 0.25f, 0.25f, 2 } };
 const int kCrVideoCameraCount = (int)std::size(kCrVideoCameras);
 
 // Digital cameras by family: the engine's camera row (kCrDigitalNames index).

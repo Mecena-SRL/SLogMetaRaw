@@ -57,7 +57,8 @@ static const CrChoiceDef kCrChoices[] = {
       "La macchina: carica formato, instabilità del quadro, sfarfallio e carattere dell'obiettivo (vignettatura, "
       "aberrazione, diffusione)" },
     { "videoCamera", "Videocamera", &CreativeControls::videoCamera, kCrVideoCameraNames.data(), kCrVideoCameraCount,
-      kCrAll, "La camera e il suo registratore: carica il nastro, l'usura, il cambio testine e l'instabilità" },
+      kCrAll, "La camera e il suo registratore: carica il sensore (tubo, CCD), il nastro, l'usura, il cambio testine e "
+      "l'instabilità" },
     { "cinemaCamera", "Camera", &CreativeControls::cinemaCamera, kCrCinemaCameraNames.data(), kCrCinemaCameraCount,
       kCrAll, "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento di quella camera" },
     { "phoneCamera", "Modello", &CreativeControls::phoneCamera, kCrPhoneCameraNames.data(), kCrPhoneCameraCount,
@@ -93,6 +94,10 @@ static const CrChoiceDef kCrChoices[] = {
       "Salata: opaca, nelle fibre. Albumina: lucida, neri più profondi" },
     { "analog", "Formato video", &CreativeControls::analog, kCrAnalogNames, kCrAnalogCount, CR_BIT(kCrAnalog),
       "Banda del luma e del colore, ritardo del colore, rumore, testine e dropout del formato" },
+    { "sensor", "Sensore", &CreativeControls::sensor, kCrSensorNames, kCrSensorCount, CR_BIT(kCrAnalog),
+      "Che cosa legge la luce nella camera. Tubi: l'immagine ricorda i quadri prima (scia nelle ombre, code di "
+      "cometa dietro le luci forti), a strisce con falso colore sui dettagli fini. CCD: striscia verticale sopra e "
+      "sotto le luci fortissime. MOS: un disegno fisso di righe. Nessuno = il segnale com'è", kGrSignal },
     { "digital", "Camera", &CreativeControls::digital, kCrDigitalNames, kCrDigitalCount, CR_BIT(kCrDigital),
       "Gamma dinamica, spalla, colore, nitidezza, rumore e sottocampionamento della camera" },
     { "generation", "Generazione", &CreativeControls::generation, kCrGenerationNames, kCrGenerationCount, kCrPrinted,
@@ -196,6 +201,14 @@ static const CrSliderDef kCrSliders[] = {
     { "toning", "Viraggio", &CreativeControls::toning, 0, 1, 0.01, kGrPlate, kCrToned,
       "Oro (dagherrotipo, albumina), tannino (cianotipia), palladio (platino): il colore dell'immagine" },
     // signal
+    { "lag", "Scia del tubo", &CreativeControls::lag, 0, 3, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "Quanto il tubo trattiene i quadri prima: si vede nelle ombre e nei mezzitoni, poco nelle luci. 1 = quello "
+      "del tubo" },
+    { "comet", "Code di cometa", &CreativeControls::comet, 0, 3, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "La scia satura dietro le luci forti in movimento, che il fascio non riesce a scaricare. 1 = quella del tubo" },
+    { "smear", "Smear del CCD", &CreativeControls::smear, 0, 3, 0.01, kGrSignal, CR_BIT(kCrAnalog),
+      "La striscia verticale che le luci fortissime (sole, fari, lampadine) lasciano su tutta la colonna. 1 = "
+      "quella del sensore" },
     { "wear", "Usura del nastro", &CreativeControls::wear, 0, 1, 0.01, kGrSignal, CR_BIT(kCrAnalog),
       "Nastro copiato e ripassato: più rumore, meno colore, dropout" },
     { "heads", "Cambio testine", &CreativeControls::heads, 0, 1, 0.01, kGrSignal, CR_BIT(kCrAnalog),
@@ -293,6 +306,8 @@ inline bool crRowIdle(const char* name, const CreativeControls& c)
     if (!texture && crIs(name, { "grain", "grainSize", "halation", "bloom", "bloomRadius", "aberration", "vignette",
                                  "weave", "breath", "dust", "scratches", "printGrain" }))
         return true;
+    if (crIs(name, { "lag", "comet" })) return !creativeSensorTube(c.sensor);
+    if (!std::strcmp(name, "smear")) return !creativeSensorCCD(c.sensor);
     const bool log = creativeLogOut(c);
     const bool scan = c.process == kCrColourNegative && (c.print == 0 || log);
     if (!std::strcmp(name, "generation") || !std::strcmp(name, "printGrain")) return scan;

@@ -200,7 +200,7 @@ void CreativeEffect::loadDevice()
     creativeLoadDevice(c);
     for (int i = 0; i < kCrChoiceCount; ++i) {
         const char* n = kCrChoices[i].name;
-        if (m_Choices[i] && (!std::strcmp(n, "format") || !std::strcmp(n, "analog"))) {
+        if (m_Choices[i] && (!std::strcmp(n, "format") || !std::strcmp(n, "analog") || !std::strcmp(n, "sensor"))) {
             int cur = 0;
             m_Choices[i]->getValue(cur);
             if (cur != c.*(kCrChoices[i].field)) m_Choices[i]->setValue(c.*(kCrChoices[i].field));
@@ -304,6 +304,7 @@ void CreativeEffect::getFramesNeeded(const OFX::FramesNeededArguments& p_Args, O
         recordTimes(c, p_Args.time, t);
         for (double v : t) range.max = std::max(range.max, v);
         if (creativeNeedsPrevious(c)) range.min = p_Args.time - 1;   // an LCD still shows the previous picture
+        range.min = std::min(range.min, p_Args.time - creativeHistory(c));   // a pickup tube remembers the frames before
     }
     p_Frames.setFramesNeeded(*m_SrcClip, range);
 }
@@ -442,10 +443,20 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
         previous = before && sameLayout(*src, *before);
         if (previous) fetchRecords(controls, p_Args.time - 1, *src, before.get(), other + 3, prevInputs);
     }
+    // a pickup tube still holds the charge of the frames before: as many as the clip has (none before its start)
+    std::unique_ptr<OFX::Image> earlier[3];
+    CreativeHistory history = {};
+    int historyCount = 0;
+    for (int k = 0, n = creativeHistory(controls); k < n; ++k) {
+        earlier[k].reset(m_SrcClip->fetchImage(p_Args.time - 1 - k));
+        if (!earlier[k] || !sameLayout(*src, *earlier[k])) break;
+        history.src[k] = static_cast<const float*>(earlier[k]->getPixelData());
+        historyCount = k + 1;
+    }
     // the whole frame arrives (no tiles), so its height is the reference of every radius: the same look at full
     // size, in proxy and in the viewer
     CreativeParams p;
-    creativePrepare(p, controls, W, H, (int)std::lround(p_Args.time), space, gamma);
+    creativePrepare(p, controls, W, H, (int)std::lround(p_Args.time), space, gamma, historyCount);
     p.rowPixels = (int)(src->getRowBytes() / 16);
     p.dstRowPixels = (int)(dst->getRowBytes() / 16);
     CreativePrevious prev;
@@ -458,7 +469,7 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
 #ifdef __APPLE__
     if (p_Args.isEnabledMetalRender) {
         if (!RunCreativeKernels(p_Args.pMetalCmdQ, p, inputs, static_cast<float*>(dst->getPixelData()),
-                                previous ? &prev.p : nullptr, previous ? prev.src : nullptr))
+                                previous ? &prev.p : nullptr, previous ? prev.src : nullptr, history.src))
             OFX::throwSuiteStatusException(kOfxStatFailed);
         return;
     }
@@ -471,5 +482,5 @@ void CreativeEffect::render(const OFX::RenderArguments& p_Args)
     };
     ScratchLease scratch((size_t)W * H);
     creativeRenderCPU(p, inputs, (size_t)src->getRowBytes() / 4, static_cast<float*>(dst->getPixelData()),
-                      (size_t)dst->getRowBytes() / 4, parallel, *scratch, previous ? &prev : nullptr);
+                      (size_t)dst->getRowBytes() / 4, parallel, *scratch, previous ? &prev : nullptr, &history);
 }
