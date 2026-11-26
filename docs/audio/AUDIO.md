@@ -120,6 +120,38 @@ destra), non salvate.
 - Cambiati di conseguenza: il Geloso registra solo a 4,75 cm/s; l'Uher ha anche 2,4 cm/s (nuovo supporto); il Nagra
   4.2 anche 9,5 cm/s; il Webster ha la lampada al neon e non l'occhio magico; il REDD.51 quattro VU e non PPM.
 
+## Livello di registrazione, automazione e guide (`AuParams.h`, `AuGuide.h`)
+
+- **Livello di registrazione** (*Ripresa*: dopo il preamplificatore; *Mix e supporto*: «Livello sul master», prima del
+  banco): guadagno verso il supporto, restituito in riproduzione. Il volume resta, cambia quanto il supporto è spinto
+  contro il suo fruscio: basso = più fruscio, alto = più saturazione. Le manopole di registrazione dei frontali (RECORD
+  LEVEL, AUSSTEUERUNG, MIC GAIN, TRIM, fader del REDD…) muovono questo parametro; *Saturazione* resta il carattere.
+  Il meter in registrazione o TEST legge ingresso + livello, come sulla macchina.
+- **Automazione**: ogni comando che agisce sul suono è un parametro automatizzabile; girarlo nel frontale scrive
+  l'automazione (gesto completo). Livelli, uscita e dry/wet scorrono in 10 ms, senza gradini. I comandi solo
+  meccanici (Mech) non hanno effetto sul suono e non si automatizzano. Cambiare macchina o supporto durante la
+  riproduzione riparte quei blocchi (piccolo scatto possibile).
+- **«?»** sulla targhetta: al passaggio del puntatore, la storia della macchina o del banco (`kAuDeviceStories`,
+  `kAuDeskStories`, una per riga delle tabelle; le static_assert lo controllano).
+- **Cosa registri / Cosa missi**: la sorgente (voce, strumenti, batteria, ambiente, concerto) o il programma (parlato,
+  generi per epoca, classica, film). La guida dice dove portare le punte sul meter della macchina, misura le punte
+  degli ultimi 8 secondi e propone il livello; consiglia microfono (il primo adatto a quell'epoca e registratore),
+  filtro, limitatore, macchine e banchi d'uso. *Applica* imposta livello, microfono, filtro e limitatore.
+  Obiettivi di picco [prassi]: VU e indicatori a media circa 0 (parlato −3, percussioni −5, il VU le sottostima);
+  PPM 5 parlato e PPM 6 musica (prassi BBC); modulometro Nagra 0 dB (parlato −2); LED +3; neon appena acceso.
+  Consigli di microfono e macchine: scelte d'uso comuni, non regole [dedotto].
+
+## Il banco e i canali (fase 2)
+
+Ogni traccia con *Ripresa* è un canale del banco, come in una presa diretta vera: microfono → **ingresso del canale**
+(stereo, mono somma, mono dal sinistro o dal destro) → **banco (canale)** (preamplificatore ed equalizzazione del banco
+scelto colorano la traccia prima del registratore; la compressione di bus resta alla sezione master) → registratore →
+**panpot** (mono a potenza costante, 0 dB al centro e +3 dB ai lati; stereo come bilanciamento) → **fader del canale**.
+*Mix e supporto* sul bus è la sezione master: ingresso (stereo o mono), banco, livello sul master, supporto,
+riversaggio, ascolto. Una band: una traccia per strumento, ciascuna con il suo microfono e registratore, lo stesso
+banco su tutte le tracce e sul bus. Ogni istanza è indipendente: il pannello di *Mix* non vede le tracce. Di serie un
+canale di *Ripresa* non ha banco, quindi i progetti salvati suonano come prima.
+
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
 Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
@@ -155,6 +187,11 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
   balistiche VU e PPM verificate da test contro le norme.
   Il movimento delle lancette è stato visto con un segnale finto nel pannello: l'host di prova dell'SDK non fa passare
   audio, quindi il meter con audio vero va visto in Fairlight.
+- Implementato e verificato da test e in editorhost (26/11/2026): livello di registrazione (volume costante, fruscio
+  e saturazione che cambiano), levigatura di livelli/uscita/dry-wet, «?» con la storia, guida «Cosa registri».
+  La misura delle punte con audio vero va provata in Fairlight (l'host di prova non fa passare audio).
+- Implementato e verificato da test (26/11/2026): canale del banco in *Ripresa* (ingresso mono/stereo, banco prima del
+  registratore, panpot, fader), ingresso mono/stereo del master.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.
 - Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
   (fase 4). Dolby come compander,

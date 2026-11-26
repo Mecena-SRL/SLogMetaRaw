@@ -365,6 +365,106 @@ int main()
             }
     }
 
+
+    // The record level drives the medium against its hiss and is given back on playback: loudness stays, the hiss
+    // falls relative to the signal, saturation grows.
+    {
+        auto take = [&](float rec, bool tone) {
+            AuSettings s = bare();
+            s.on[kStMedium] = s.on[kStNoise] = true;
+            s.useDevice = false;
+            s.medium = 5;   // cassette type I
+            s.recDb = rec;
+            Buffer in = tone ? sine(1000, 0.05f, 48000) : Buffer(2, std::vector<float>(48000));
+            return 20 * std::log10(rms(render(s, in)[0], 12000) + 1e-12);
+        };
+        check(std::fabs(take(-12, true) - take(6, true)) < 1, "record level keeps the loudness");
+        check(take(-12, false) > take(6, false) + 15, "low record level: more hiss");
+        AuSettings s = bare();
+        s.on[kStMedium] = true;
+        s.useDevice = false;
+        s.medium = 5;
+        s.recDb = 12;
+        Buffer hot = render(s, sine(1000, 0.5f, 24000));
+        s.recDb = -12;
+        Buffer cold = render(s, sine(1000, 0.5f, 24000));
+        check(rms(hot[0], 12000) < rms(cold[0], 12000) * 0.9, "high record level saturates");
+    }
+    // Automation: a level, the output and dry/wet glide to a new value instead of stepping.
+    {
+        AuSettings s = bare();
+        Buffer x(2, std::vector<float>(9600, 0.5f));
+        AuEngine e;
+        e.prepare(kFs, 2, s);
+        float* a[2] = { x[0].data(), x[1].data() };
+        e.process(a, 4800);
+        s.outDb = -12;
+        s.recDb = 6;
+        s.mix = 0.5f;
+        e.prepare(kFs, 2, s);
+        float* b[2] = { x[0].data() + 4800, x[1].data() + 4800 };
+        e.process(b, 4800);
+        double step = 0;
+        for (int i = 1; i < 9600; ++i) step = std::max(step, double(std::fabs(x[0][i] - x[0][i - 1])));
+        check(step < 0.01 && std::fabs(x[0][9599] - 0.5 * std::pow(10, -12 / 20.0)) < 1e-3, "automation glides");
+    }
+    // The guide: every source and programme points at machines that exist, microphones that exist, a target per
+    // meter; the level it suggests brings the measured peaks to the target.
+    {
+        for (const AuSource& src : kAuSources) {
+            for (int m : src.mics) {
+                if (m < 0) break;
+                check(m > 0 && m < int(std::size(kAuMics)), "guide mic", src.name);
+            }
+            for (const char* r : src.recorders)
+                if (r) check(auDeviceNamed(r) >= 0, "guide recorder", r);
+        }
+        for (const AuProgram& p : kAuPrograms) {
+            for (const char* d : p.desks)
+                if (d) check(auDeskNamed(d) >= 0, "guide desk", d);
+            for (const char* r : p.recorders)
+                if (r) check(auDeviceNamed(r) >= 0, "guide recorder", r);
+        }
+        double v[kPCount];
+        for (int i = 0; i < kPCount; ++i) v[i] = auDefault(AuParamId(i), false);
+        v[kPDevice] = auDeviceIndex(0, 3);   // Nagra 4.2: modulometer
+        v[kPSource] = 1;                     // speech: peaks at -2 dB on the modulometer
+        check(auGuideLevel(v, false, -14) == 12, "guide level");
+        check(auGuideMic(v, 1) == 0, "guide mic for speech on a Nagra 4.2: its own shotgun");
+        check(!auGuideText(v, false, -14).empty() && !auGuideApply(v, false, -14).empty(), "guide text");
+        v[kPDevice] = auDeviceIndex(4, 0);   // phonograph: the horn only
+        check(auGuideMic(v, 2) == -1 || auGuideMic(v, 2) == 0, "guide keeps the horn");
+        check(auMeterReading(AuMeter::PPM, 8) == "PPM 6", "PPM marks");
+        for (int i = 0; i < kPCount; ++i) v[i] = auDefault(AuParamId(i), true);
+        v[kPSource] = 4;
+        check(!auGuideText(v, true, kAuNoMeasure).empty(), "mix guide text");
+    }
+
+
+    // The desk channel: a mono input sums the sides, the pan places it at constant power, the fader is a gain; the
+    // channel's desk colours the track in Ripresa.
+    {
+        AuSettings s = bare();
+        Buffer in = sine(1000, 0.2f, 24000);
+        for (float& x : in[1]) x = 0;
+        s.input = 1;
+        Buffer y = render(s, in);
+        check(std::fabs(rms(y[0]) - rms(y[1])) < 1e-6 && std::fabs(rms(y[0]) - 0.1 / std::sqrt(2.0)) < 1e-3, "mono sums the sides");
+        s.input = 2;
+        s.pan = -1;
+        y = render(s, in);
+        check(rms(y[1], 12000) < 1e-6 && std::fabs(20 * std::log10(rms(y[0], 12000) / (0.2 / std::sqrt(2.0))) - 3.01) < 0.05,
+              "pan hard left, +3 dB at the side");
+        s.pan = 0;
+        s.faderDb = -6;
+        check(std::fabs(gainDb(s, 1000) + 6) < 0.05, "channel fader");
+        check(auDefault(kPDesk, false) == 0 && auDefault(kPInput, false) == 0, "a Ripresa channel starts plain");
+        AuSettings r;   // Ripresa with a Neve channel before the recorder
+        r.desk = 3;
+        Buffer m = render(r, sine(220, 0.5f, 9600));
+        check(sane(m) && m != render(AuSettings {}, sine(220, 0.5f, 9600)), "channel desk colours the track");
+    }
+
     if (!failures) std::printf("audio_test OK\n");
     return failures ? 1 : 0;
 }
