@@ -7,8 +7,12 @@ G.257 a 4,75 cm/s col suo microfono piezo, mix su EMI REDD.51, stampato su 78 gi
 
 OFX non elabora audio: in Resolve serve un plugin per Fairlight. Formato: **VST3** (macOS universale e Windows x64),
 con l'SDK VST3 di Steinberg (licenza MIT dalla 3.8, ottobre 2025, scaricato dal CMake al tag `v3.8.1_build_84`) e
-VSTGUI per il pannello, senza JUCE. Fairlight carica il VST3 anche su Mac, quindi l'AU non serve (il wrapper AU
-dell'SDK richiede Xcode e l'SDK CoreAudio di Apple). Linux: Resolve non carica plugin VST nativi; lì il plugin si
+VSTGUI per il pannello, senza JUCE. Fairlight carica il VST3 anche su Mac. Per Logic Pro (e GarageBand, le altre app
+Mac) ci sono le **Audio Unit v2** `Log MetaRaw Ripresa.component` e `Log MetaRaw Mix e supporto.component` (codici
+`aufx LMrp Mcna`, `aufx LMmx Mcna`): il wrapper AU dell'SDK Steinberg attorno a un VST3 con un solo plugin (il wrapper
+prende il primo effetto del modulo, da qui `AU_ONLY`), copiato in `Contents/Resources/plugin.vst3`; l'AudioUnitSDK di
+Apple (Apache-2.0, tag 1.1.0, C++17) si compila dentro, così basta un generatore CMake qualunque (target
+`LogMetaRawAU`). La CI le verifica con `auval -strict`; l'installer Mac le ha come componente a parte. Linux: Resolve non carica plugin VST nativi; lì il plugin si
 compila solo per i controlli.
 
 Un solo modulo, `Log MetaRaw Audio.vst3`, contiene i due plugin. Installazione: `/Library/Audio/Plug-Ins/VST3/` su Mac
@@ -54,6 +58,30 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Banco**: RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604.
 - **Ascolto**: radio a valvole, radiolina a transistor, juke-box Wurlitzer 1015, TV CRT, sala (curva X).
 
+## Frontale e meter (`audio/vst3/AuPlugin.cpp`)
+
+Il pannello si apre sul frontale del modello scelto (in *Mix e supporto*, del banco), disegnato e non fotografato,
+senza marchi: colori e materiali della macchina, targhetta con il nome, quattro manopole (*Saturazione*, *Dry/wet*,
+*Uscita*, *Taratura*) e l'indicatore di livello che quella macchina aveva, con la sua scala e la sua balistica. I dati
+stanno in `audio/vst3/AuLooks.h`, una riga per ogni registratore e banco, nello stesso ordine delle tabelle [gen]:
+
+| Indicatore | Scala e movimento | Dove |
+|---|---|---|
+| VU | −20…+3, lineare in tensione (0 VU al 71 %), media, circa 300 ms | Ampex 350 (uno), Studer J37 e A80, Revox A77, Portastudio 144, TC-D5M, Auricon (uno), RCA BC-2B (uno), Neve, SSL |
+| PPM | tacche 1–7 a 4 dB, la 4 al riferimento; sale in 10 ms, scende 24 dB in 2,8 s; quadrante nero | EMI REDD.51 |
+| Modulometro | −30…+5 dB, picco, discesa più lenta | Nagra III, Nagra 4.2 |
+| Indicatore REC | ago senza numeri, arco nero e rosso | Uher 4000, Philips EL 3300, Canon 514XL-S |
+| Occhio magico | ventaglio verde che si chiude col livello | Geloso G.257, Webster-Chicago 180 |
+| LED | scala −40…+6 dB, verde, giallo, rosso; picco tenuto | Walkman Pro WM-D6C, Mackie CR-1604 |
+| Livello automatico | nessun meter, una spia che si accende col suono | Ektasound 130, JVC GR-C1, CCD-V8 |
+| Nessuno | — | fonografo Edison |
+
+- *Taratura* è il livello digitale che legge 0 VU (la tacca 4 del PPM, lo 0 del modulometro), da −24 a −6 dBFS, di
+  serie −18 dBFS; la lampada rossa si accende oltre il fondo scala.
+- Il livello lo misura il processore all'uscita, a ogni blocco (media quadratica per VU e aghi semplici, picco per gli
+  altri), e lo
+  manda al pannello con due parametri in sola lettura (`Meter sinistro`/`destro`, non salvati, non automatizzabili).
+
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
 Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
@@ -81,9 +109,12 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
   Dolby, wow misurato sugli attraversamenti dello zero, supporti mono, perdita di acuti per copia, dry/wet e uscita.
 - Implementato e verificato: plugin VST3 (validatore Steinberg 94/94 su Linux), pannello aperto e fotografato nell'host
   VST3 di prova dell'SDK (editorhost), job CI `audio` su Linux, macOS e Windows, pkg Mac e setup Windows.
-- Incerto: comportamento in Fairlight (mai caricato in Resolve), build Mac e Windows finché la CI non passa.
+- Incerto: comportamento in Fairlight (mai caricato in Resolve) e in Logic Pro (verificato solo da `auval`), build Mac e Windows finché la CI non passa.
 - Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
   coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
+- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali e indicatori per ogni registratore e banco, manopole.
+  Il movimento delle lancette è stato visto con un segnale finto nel pannello: l'host di prova dell'SDK non fa passare
+  audio, quindi il meter con audio vero va visto in Fairlight.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.
 - Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
   (fase 4). Dolby come compander,
