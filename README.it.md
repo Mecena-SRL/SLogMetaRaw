@@ -53,6 +53,9 @@ meglio da quello che c'è. Non può creare quello che non c'è.
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
 
+Solo i plugin audio (Logic Pro, GarageBand, Cubase, Reaper, Ableton e le altre DAW): `LogMetaRawAudio-<versione>.dmg`
+(VST3 e Audio Unit) o `LogMetaRawAudio-<versione>-windows-x64.zip` (VST3), ognuno con la sua guida.
+
 L'installer cancella anche la cache dei plugin di Resolve (`OFXPluginCacheV2.xml`), che Resolve ricostruisce al
 prossimo avvio. Senza, Resolve mostrerebbe ancora il pannello vecchio e non vedrebbe il nodo Creative.
 

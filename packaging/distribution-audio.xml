@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The audio-only installer (LogMetaRawAudio-<version>.dmg): the same two components as in the full package -->
+<installer-gui-script minSpecVersion="2">
+    <title>Log MetaRaw Audio @VERSION@</title>
+    <background file="background.png" alignment="bottomleft" scaling="none"/>
+    <background-darkAqua file="background.png" alignment="bottomleft" scaling="none"/>
+    <license file="license.txt"/>
+    <options customize="always" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <domains enable_localSystem="true"/>
+    <os-version min="12.0"/>
+    <choices-outline>
+        <line choice="audio"/>
+        <line choice="audiounit"/>
+    </choices-outline>
+    <choice id="audio" title="VST3 (Fairlight, Cubase, Reaper, Ableton, Studio One…)" start_selected="true"
+            description="Plugin Log MetaRaw Ripresa e Mix e supporto: registratori, microfoni, banchi e supporti d'epoca.">
+        <pkg-ref id="com.slogmetaraw.audio.pkg"/>
+    </choice>
+    <choice id="audiounit" title="Audio Unit (Logic Pro, GarageBand, MainStage)" start_selected="true"
+            description="Gli stessi plugin Ripresa e Mix e supporto come Audio Unit.">
+        <pkg-ref id="com.slogmetaraw.audiounit.pkg"/>
+    </choice>
+    <pkg-ref id="com.slogmetaraw.audio.pkg" version="@VERSION@" onConclusion="none">LogMetaRawAudio-component.pkg</pkg-ref>
+    <pkg-ref id="com.slogmetaraw.audiounit.pkg" version="@VERSION@" onConclusion="none">LogMetaRawAU-component.pkg</pkg-ref>
+</installer-gui-script>

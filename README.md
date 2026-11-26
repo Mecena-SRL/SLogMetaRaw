@@ -53,6 +53,9 @@ is there. It cannot create what is not there.
    right-click it and choose **Open**. It asks for the Mac password because the plugin goes in a system folder.
 3. Restart DaVinci Resolve.
 
+The audio plugins alone (Logic Pro, GarageBand, Cubase, Reaper, Ableton and other DAWs): `LogMetaRawAudio-<version>.dmg`
+(VST3 and Audio Unit) or `LogMetaRawAudio-<version>-windows-x64.zip` (VST3), each with its own guide.
+
 The installer also deletes Resolve's plugin cache (`OFXPluginCacheV2.xml`), which Resolve rebuilds on its next start.
 Without that step Resolve would keep showing the old panel and would not list the Creative node.
 

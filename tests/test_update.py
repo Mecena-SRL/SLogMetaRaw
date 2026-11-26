@@ -88,8 +88,12 @@ class State(unittest.TestCase):
         base = 'https://github.com/Mecena-SRL/SLogMetaRaw/releases/download/v9.9.9/SLogMetaRaw-9.9.9'
         for ext in ('.dmg', '.exe', '.deb', '.rpm', '.run', '.zip'):
             self.assertEqual(update.trusted_dmg_url(base + ext), ext in update.installer_exts(), ext)
-        assets = [{'name': 'SLogMetaRaw-9.9.9' + e, 'browser_download_url': base + e, 'size': 1}
-                  for e in ('.zip', '.dmg', '.exe', '.deb', '.rpm', '.run')]
+        audio = base.replace('SLogMetaRaw-9.9.9', 'LogMetaRawAudio-9.9.9')
+        # the audio-only package comes first in the list and is never the update
+        assets = [{'name': 'LogMetaRawAudio-9.9.9' + e, 'browser_download_url': audio + e, 'size': 1}
+                  for e in ('.dmg', '-windows-x64.zip')]
+        assets += [{'name': 'SLogMetaRaw-9.9.9' + e, 'browser_download_url': base + e, 'size': 1}
+                   for e in ('.zip', '.dmg', '.exe', '.deb', '.rpm', '.run')]
         response = mock.MagicMock()
         response.__enter__.return_value = io.StringIO(json.dumps({'assets': assets}))
         with mock.patch('urllib.request.urlopen', return_value=response):

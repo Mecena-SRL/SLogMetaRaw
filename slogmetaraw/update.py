@@ -119,8 +119,10 @@ def release_details(timeout=6.0):
     with urllib.request.urlopen(request, timeout=timeout) as response:
         release = json.load(response)
     assets = release.get('assets') or []
+    # LogMetaRawAudio-* is the audio plugins alone (for other DAWs): never the update of the whole package
     dmg = next((a for ext in installer_exts() for a in assets
-                if (a.get('name') or '').lower().endswith(ext)), None) or {}
+                if (a.get('name') or '').lower().endswith(ext)
+                and not (a.get('name') or '').lower().startswith('logmetarawaudio')), None) or {}
     return {
         'notes': release.get('body') or '',
         'title': release.get('name') or '',

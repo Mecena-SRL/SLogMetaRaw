@@ -36,6 +36,11 @@ struct AuSettings
     // from the left, 3 from the right), then at the end the pan (-1..1) and the fader (dB).
     int input = 0;
     float pan = 0, faderDb = 0;
+    // The microphone's own switches (positions in kAuMicFilters / kAuMicPatterns; -1 = as it left the factory) and
+    // the medium's wear: 0 = new, as it sounded then; 1 = worn (more hiss and dropouts, duller, less steady).
+    int micFilter = -1, micPattern = -1;
+    float age = 0;
+    int capture = 0;   // kAuCaptures: how the copy is played back and digitised at the end (0 = not)
     uint32_t seed = 1;
 };
 
@@ -66,6 +71,7 @@ private:
     // One stage of the chain: filters and nonlinearity, plus a medium's moving parts when it is one.
     struct Block
     {
+        std::vector<Biquad> pre;                 // before the nonlinearity: a medium's record pre-emphasis
         std::vector<Biquad> eq;                  // run in order
         float drive = 0, asym = 0, comp = 0;     // saturation, even harmonics, level-riding (0..1)
         bool mono = false;
@@ -73,9 +79,12 @@ private:
         float gain = 1, gainZ = 1;               // target and the smoothed gain (no zipper when automated)
         float wowA = 0, wowW = 0, flutA = 0, flutW = 0;           // delay swing (s) and rate (rad/s)
         float hiss = 0, hum = 0, rumble = 0, crackle = 0, dropout = 0;  // linear levels; events per sample
+        float modNoise = 0;
+        float quant = 0, clip = 0;   // a converter: step of its bits, its hard clipping level (0 = none)
+        float slip = 0;              // seconds the right channel lags the left (a head's azimuth error)   // a magnetic medium's modulation noise: hiss that rides on the signal (× signal)
         Biquad hissLp;
         // state, per channel where it is a vector
-        std::vector<float> z, env, line, tail, hissZ;
+        std::vector<float> z, zPre, env, line, tail, hissZ;
         uint64_t pos = 0;   // samples since reset: the medium's clock, shared by its channels
         float drop = 1, dropTo = 1, rumbleZ = 0;
         int dropLeft = 0;

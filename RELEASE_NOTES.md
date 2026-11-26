@@ -40,9 +40,28 @@
   (somma o un solo lato), banco scelto prima del registratore, panpot e fader del canale. Con una band si mette
   *Ripresa* su ogni strumento, ciascuno col suo microfono e registratore, e *Mix e supporto* sul bus come sezione
   master (anche lì l'ingresso può essere mono).
+- **Audio, preset d'uso e suono da nuovo**: sotto il frontale, preset a categorie (Cinema, Televisione, Radio, Sala
+  di registrazione, Concerto, In casa) impostano la macchina come in quella presa; *Regola livello* porta le punte
+  dove andavano. I microfoni hanno i loro commutatori veri (filtro del MD 421, Voce/Musica e direttività del RCA
+  77-DX, cardioide/omni del U 47, direttività del C12). Tutto parte nuovo, come suonava allora; *Usura del supporto*
+  invecchia il nastro. Il nastro registra con le equalizzazioni di norma (gli acuti saturano prima), con il rumore di
+  modulazione; i trasformatori dei banchi saturano nei bassi.
+- **Audio, acquisizione**: in *Mix e supporto*, dopo il riversaggio, si sceglie come la copia torna nel computer: il
+  lettore (piastra a cassetta, videoregistratore, giradischi, bobine, proiettore, radio) con l'azimut, il wow e il
+  ronzio, e il convertitore con i suoi bit, il suo rumore e il suo taglio.
 
 ## Log MetaRaw 4.3.1
 
+- **Audio, download a parte**: oltre al pacchetto completo, la release ha i soli plugin audio per Logic Pro,
+  GarageBand, Cubase, Reaper, Ableton e le altre DAW: `LogMetaRawAudio-<versione>.dmg` (VST3 e Audio Unit, con
+  installer e disinstallatore) e `LogMetaRawAudio-<versione>-windows-x64.zip` (VST3). Dentro c'è una guida dedicata di
+  quattro pagine, in italiano e in inglese: installazione, dove si trovano i plugin in ogni DAW, il pannello, a che
+  livello registrare, la band, il film, l'automazione e le macchine. Il controllo aggiornamenti dell'app propone sempre
+  il pacchetto completo.
+- **Audio, Perfectone EP 6 e AKG D 25**: nuova famiglia *Registratore a bobine sincrono (cinema)* con il Perfectone EP 6
+  svizzero del 1959 (pista intera a 19,05 cm/s con pilota, VU, a batterie), usato dalla Nouvelle Vague in presa
+  diretta, con il suo frontale; nuovo microfono AKG D 25, il dinamico da giraffa del 1953. Comandi e curva dedotti:
+  non abbiamo trovato il manuale.
 - **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra, come nel
   Creative. In *Ripresa* i registratori sono divisi per famiglia; microfono, supporto e riduzione rumore mostrano per
   prima la dotazione del registratore («Del registratore · Nastro ¼" · 19 cm/s») e poi solo le alternative compatibili:

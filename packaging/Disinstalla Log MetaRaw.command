@@ -44,7 +44,7 @@ USERS=(
   "$HOME/Library/Application Support/Blackmagic Design/DaVinci Resolve/OFXPluginCacheV2.xml"
 )
 CSV="$HOME/Documents/SLogMetaRaw"
-RECEIPTS=(com.slogmetaraw.pkg com.sonymeta.pkg it.mecena.motion.pkg)
+RECEIPTS=(com.slogmetaraw.pkg com.sonymeta.pkg it.mecena.motion.pkg com.slogmetaraw.audio.pkg com.slogmetaraw.audiounit.pkg)
 
 exists() { [[ -e "$1" || -L "$1" ]]; }
 ask() {   # ask "question" -> 0 on s/S

@@ -17,7 +17,7 @@ enum AuParamId : int {
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
     kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR,
     kPLowCut, kPLow, kPHigh, kPLimit, kPAuto, kPMeterInL, kPMeterInR,
-    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPCount
+    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPMicFilter, kPMicPattern, kPAge, kPCapture, kPCount
 };
 
 enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
@@ -80,8 +80,11 @@ inline std::vector<std::string> auListNames(AuParamId id, bool mix)
     case kPDesk: return auNames(kAuConsoles);
     case kPTransfer: return auNames(kAuMedia, 1, "Nessuno");
     case kPListen: return auNames(kAuListen);
-    case kPSource: return mix ? auNames(kAuPrograms) : auNames(kAuSources);
+    case kPSource: return mix ? auPresetNames(kAuPrograms) : auPresetNames(kAuSources);
+    case kPCapture: return auNames(kAuCaptures);
     case kPInput: return { "Stereo", "Mono (somma L+R)", "Mono dal sinistro", "Mono dal destro" };
+    case kPMicFilter:
+    case kPMicPattern: return { "Di fabbrica", "1", "2", "3", "4", "5" };
     default: return {};
     }
 }
@@ -129,6 +132,11 @@ inline const AuParamDef& auParam(AuParamId id)
         { kPInput, "Ingresso", AuKind::List },
         { kPPan, "Panpot", AuKind::Range, -100, 100, 0, "L/R" },
         { kPFader, "Fader del canale", AuKind::Range, -60, 10, 0, "dB" },
+        // the microphone's own switches: 0 = as it left the factory, then its positions (kAuMicFilters, kAuMicPatterns)
+        { kPMicFilter, "Filtro del microfono", AuKind::List },
+        { kPMicPattern, "Direttività del microfono", AuKind::List },
+        { kPAge, "Usura del supporto", AuKind::Range, 0, 100, 0, "%" },   // 0 = new, as it sounded then
+        { kPCapture, "Acquisizione", AuKind::List },   // the copy played back and digitised (kAuCaptures)
     };
     return defs[id];
 }
@@ -197,6 +205,14 @@ inline std::vector<int> auAllowed(AuParamId id, const double* v, bool mix)
         for (int k = 0; k < int(std::size(kAuNR)); ++k)
             keep((mix || k != dev.nr) && auNRFits(k, medium, maxYear), k + (mix ? 0 : 1));
         break;
+    case kPMicFilter:
+    case kPMicPattern: {   // the positions the microphone in use has
+        out.push_back(0);
+        const int mic = auPlain(v, kPMic) > 0 ? auPlain(v, kPMic) : dev.mic;
+        if (const AuMicSwitch* sw = auMicSwitch(id == kPMicFilter, mic))
+            for (int i = 0; i < sw->count; ++i) out.push_back(i + 1);
+        break;
+    }
     case kPTransfer:   // a copy onto anything still in use when the master was made
         out.push_back(0);
         for (int m = 1; m < n; ++m) keep(kAuMedia[m].to >= kAuMedia[medium].from, m);
@@ -213,7 +229,7 @@ inline std::vector<AuParamId> auCoerce(double* v, bool mix)
 {
     std::vector<AuParamId> changed;
     const std::vector<AuParamId> order = mix ? std::vector { kPMedium, kPNR, kPTransfer }
-                                             : std::vector { kPMic, kPMedium, kPNR };
+                                             : std::vector { kPMic, kPMicFilter, kPMicPattern, kPMedium, kPNR };
     for (AuParamId id : order) {
         auto ok = auAllowed(id, v, mix);
         if (std::find(ok.begin(), ok.end(), auPlain(v, id)) == ok.end()) {
@@ -227,6 +243,13 @@ inline std::vector<AuParamId> auCoerce(double* v, bool mix)
 // The name a menu shows for one entry: in Ripresa the recorder's own says what it is.
 inline std::string auEntryName(AuParamId id, int plain, const double* v, bool mix)
 {
+    if (id == kPMicFilter || id == kPMicPattern) {
+        const int mic = auPlain(v, kPMic) > 0 ? auPlain(v, kPMic) : auDevice(v).mic;
+        const AuMicSwitch* sw = auMicSwitch(id == kPMicFilter, mic);
+        if (!sw) return plain == 0 ? "Il microfono non ne ha" : auListNames(id, mix)[size_t(plain)];
+        if (plain == 0) return std::string("Di fabbrica · ") + sw->pos[sw->def].name;
+        return plain <= sw->count ? sw->pos[plain - 1].name : auListNames(id, mix)[size_t(plain)];
+    }
     if (!mix && plain == 0) {
         const AuDevice& dev = auDevice(v);
         if (id == kPMic) return std::string("Di serie · ") + kAuMics[dev.mic].name;
@@ -236,48 +259,64 @@ inline std::string auEntryName(AuParamId id, int plain, const double* v, bool mi
     return auListNames(id, mix)[size_t(plain)];
 }
 
-// A panel row: an optional stage switch on the left, then an optional control.
+// A panel row: an optional stage switch on the left, then an optional control. Half rows go two to a line; a header
+// opens a group (the panel reads top to bottom: the machine, the preset of use, the choices from microphone to
+// medium, the trims).
+enum class AuRowKind : uint8_t { Full, Half, Header };
 struct AuRow
 {
     const char* label;
     int toggle, control;   // parameter ids, -1 = none
+    AuRowKind kind = AuRowKind::Full;
 };
 
 inline const std::vector<AuRow>& auRows(bool mix)
 {
+    using K = AuRowKind;
     static const std::vector<AuRow> ripresa = {
         { "Registratore", -1, kPDevice },
+        { "Preset d'uso", -1, kPSource },
+        { "Dal microfono al supporto", -1, -1, K::Header },
         { "Microfono", kPOnMic, kPMic },
-        { "Ingresso del canale", -1, kPInput },
+        { "Filtro", -1, kPMicFilter, K::Half },
+        { "Direttività", -1, kPMicPattern, K::Half },
+        { "Ingresso", -1, kPInput, K::Half },
+        { "Preamplificatore", kPOnPre, -1, K::Half },
         { "Banco (canale)", kPOnDesk, kPDesk },
-        { "Preamplificatore", kPOnPre, -1 },
-        { "Livello di registrazione", -1, kPRecLevel },
         { "Supporto", kPOnMedium, kPMedium },
         { "Riduzione rumore", kPOnNR, kPNR },
-        { "Wow e flutter", kPOnWow, kPWow },
-        { "Rumori", kPOnNoise, kPNoise },
-        { "Panpot", -1, kPPan },
-        { "Fader del canale", -1, kPFader },
-        { "Saturazione", -1, kPDrive },
-        { "Dry/wet", -1, kPMix },
-        { "Uscita", -1, kPOut },
-        { "Taratura meter", -1, kPMeterRef },
+        { "Regolazioni", -1, -1, K::Header },
+        { "Livello reg.", -1, kPRecLevel, K::Half },
+        { "Usura supporto", -1, kPAge, K::Half },
+        { "Rumori", kPOnNoise, kPNoise, K::Half },
+        { "Wow e flutter", kPOnWow, kPWow, K::Half },
+        { "Panpot", -1, kPPan, K::Half },
+        { "Fader canale", -1, kPFader, K::Half },
+        { "Saturazione", -1, kPDrive, K::Half },
+        { "Dry/wet", -1, kPMix, K::Half },
+        { "Uscita", -1, kPOut, K::Half },
+        { "Taratura meter", -1, kPMeterRef, K::Half },
     };
     static const std::vector<AuRow> mixRows = {
-        { "Ingresso", -1, kPInput },
         { "Banco", kPOnDesk, kPDesk },
-        { "Livello sul master", -1, kPRecLevel },
+        { "Preset di missaggio", -1, kPSource },
+        { "Dal banco al supporto", -1, -1, K::Header },
+        { "Ingresso", -1, kPInput, K::Half },
+        { "Copie", -1, kPCopies, K::Half },
         { "Supporto", kPOnMedium, kPMedium },
         { "Riduzione rumore", kPOnNR, kPNR },
-        { "Wow e flutter", kPOnWow, kPWow },
-        { "Rumori", kPOnNoise, kPNoise },
         { "Riversaggio su", kPOnTransfer, kPTransfer },
-        { "Copie", -1, kPCopies },
+        { "Acquisizione", -1, kPCapture },
         { "Ascolto", kPOnListen, kPListen },
-        { "Saturazione", -1, kPDrive },
-        { "Dry/wet", -1, kPMix },
-        { "Uscita", -1, kPOut },
-        { "Taratura meter", -1, kPMeterRef },
+        { "Regolazioni", -1, -1, K::Header },
+        { "Livello master", -1, kPRecLevel, K::Half },
+        { "Usura supporto", -1, kPAge, K::Half },
+        { "Rumori", kPOnNoise, kPNoise, K::Half },
+        { "Wow e flutter", kPOnWow, kPWow, K::Half },
+        { "Saturazione", -1, kPDrive, K::Half },
+        { "Dry/wet", -1, kPMix, K::Half },
+        { "Uscita", -1, kPOut, K::Half },
+        { "Taratura meter", -1, kPMeterRef, K::Half },
     };
     return mix ? mixRows : ripresa;
 }
@@ -293,7 +332,6 @@ inline std::vector<AuParamId> auParams(bool mix)
         if (r.control >= 0) out.push_back(AuParamId(r.control));
     }
     for (AuParamId k : { kPLowCut, kPLow, kPHigh, kPLimit, kPAuto }) out.push_back(k);   // the fronts' own controls
-    out.push_back(kPSource);   // the guide's menu sits under the rows
     for (AuParamId k : { kPMeterL, kPMeterR, kPMeterInL, kPMeterInR }) out.push_back(k);
     return out;
 }
@@ -321,6 +359,10 @@ inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)
     s.input = int(v[kPInput]);
     s.pan = mix ? 0 : float(v[kPPan] / 100);
     s.faderDb = mix ? 0 : float(v[kPFader]);
+    s.micFilter = auPlain(v, kPMicFilter) - 1;   // -1: as it left the factory
+    s.micPattern = auPlain(v, kPMicPattern) - 1;
+    s.age = float(v[kPAge] / 100);
+    s.capture = mix ? auPlain(v, kPCapture) : 0;
     s.transfer = mix ? int(v[kPTransfer]) : 0;
     s.copies = int(v[kPCopies] + 0.5);
     s.listen = mix ? int(v[kPListen]) : 0;
@@ -360,7 +402,7 @@ inline std::string auMeterReading(AuMeter meter, double db)
     return auSignedDb(db) + " dB";
 }
 
-// The microphone the guide suggests for this source on this recorder, as the menu's plain value (-1: none fits).
+// The microphone a preset of use picks on this recorder, as the menu's plain value (-1: none of its choices fits).
 inline int auGuideMic(const double* v, int source)
 {
     const AuSource& s = kAuSources[std::clamp(source, 0, int(std::size(kAuSources)) - 1)];
@@ -374,36 +416,81 @@ inline int auGuideMic(const double* v, int source)
     return -1;
 }
 
+inline AuLoud auPresetLoud(const double* v, bool mix)
+{
+    return mix ? kAuPrograms[std::clamp(auPlain(v, kPSource), 0, int(std::size(kAuPrograms)) - 1)].loud
+               : kAuSources[std::clamp(auPlain(v, kPSource), 0, int(std::size(kAuSources)) - 1)].loud;
+}
+
 // The record level that brings the measured peaks (dB on the machine's meter, before the record level) to the target.
 inline double auGuideLevel(const double* v, bool mix, double measured)
 {
-    const AuLoud loud = mix ? kAuPrograms[std::clamp(auPlain(v, kPSource), 0, int(std::size(kAuPrograms)) - 1)].loud
-                            : kAuSources[std::clamp(auPlain(v, kPSource), 0, int(std::size(kAuSources)) - 1)].loud;
     const AuParamDef& d = auParam(kPRecLevel);
-    return std::clamp(std::round(auTargetPeak(auLook(v, mix).meter, loud) - measured), d.min, d.max);
+    return std::clamp(std::round(auTargetPeak(auLook(v, mix).meter, auPresetLoud(v, mix)) - measured), d.min, d.max);
 }
 
 constexpr double kAuNoMeasure = -1000;   // nothing measured yet (no signal in the last seconds)
+
+// What a preset of use sets on this machine, in order (each value fits the ones before it): microphone, its
+// switches, input, filter, limiter, speed or cassette. Mix: the master's input.
+inline std::vector<std::pair<AuParamId, double>> auPresetValues(const double* values, bool mix)
+{
+    std::vector<std::pair<AuParamId, double>> out;
+    const int source = auPlain(values, kPSource);
+    if (source <= 0) return out;
+    std::vector<double> v(values, values + kPCount);
+    auto set = [&](AuParamId id, double plain) {
+        v[id] = plain;
+        out.push_back({ id, plain });
+    };
+    if (mix) {
+        set(kPInput, kAuPrograms[std::clamp(source, 0, int(std::size(kAuPrograms)) - 1)].input);
+        return out;
+    }
+    const AuSource& s = kAuSources[std::clamp(source, 0, int(std::size(kAuSources)) - 1)];
+    if (int mic = auGuideMic(v.data(), source); mic >= 0) set(kPMic, mic);
+    auto position = [&](AuParamId id, const char* const* names) {   // the first named position the microphone has
+        double plain = 0;
+        for (int p : auAllowed(id, v.data(), false))
+            for (int k = 0; k < 3 && names[k] && p > 0 && plain == 0; ++k)
+                if (auEntryName(id, p, v.data(), false) == names[k]) plain = p;
+        set(id, plain);
+    };
+    position(kPMicFilter, s.filter);
+    position(kPMicPattern, s.pattern);
+    set(kPInput, s.input);
+    set(kPLowCut, s.lowCut);
+    set(kPLimit, s.limit ? 1 : 0);
+    if (s.speed != AuSpeed::Keep) {   // the quietest medium the machine takes, or the next (the usual for speech)
+        const AuDevice& dev = auDevice(v.data());
+        std::vector<int> media = auAllowed(kPMedium, v.data(), false);
+        auto hiss = [&](int plain) { return kAuMedia[plain == 0 ? dev.medium : plain].hissDb; };
+        std::stable_sort(media.begin(), media.end(), [&](int x, int y) { return hiss(x) < hiss(y); });
+        set(kPMedium, media[s.speed == AuSpeed::Standard && media.size() > 1 ? 1 : 0]);
+    }
+    return out;
+}
 
 // What the guide says, in a few lines. `measured`: the peaks of the last seconds on this meter, without the record
 // level (kAuNoMeasure if silent).
 inline std::string auGuideText(const double* v, bool mix, double measured)
 {
     const int source = auPlain(v, kPSource);
-    if (source <= 0) return "Scegli cosa registri: ti dico a che livello portare le punte su questo meter, e con "
-                            "quali microfoni e macchine si faceva.";
+    if (source <= 0) return mix ? "Scegli un preset di missaggio: imposta l'ingresso e ti dico a che livello portare "
+                                  "le punte sul meter del banco, con quali banchi e macchine si faceva."
+                                : "Scegli un preset d'uso: imposta il registratore come in quella presa (microfono e "
+                                  "suoi commutatori, filtro, limitatore, velocità) e ti dico a che livello registrare.";
     const AuMeter meter = auLook(v, mix).meter;
-    const AuLoud loud = mix ? kAuPrograms[source].loud : kAuSources[source].loud;
-    const double target = auTargetPeak(meter, loud);
+    const double target = auTargetPeak(meter, auPresetLoud(v, mix));
     std::string t;
     if (meter == AuMeter::None) t = "Nessun meter: si regolava la distanza dalla tromba. ";
     else if (meter == AuMeter::Neon) t = "Le punte devono appena accendere la lampada al neon. ";
     else t = "Punte a " + auMeterReading(meter, target) + (mix ? " sul meter del banco. " : " su questo meter. ");
     if (measured > kAuNoMeasure / 2)
-        t += "Ora arrivano a " + auMeterReading(meter, measured + v[kPRecLevel]) + ": livello consigliato " +
+        t += "Ora arrivano a " + auMeterReading(meter, measured + v[kPRecLevel]) + ": «Regola livello» lo porta a " +
              auSignedDb(auGuideLevel(v, mix, measured)) + " dB.\n";
     else
-        t += "Fai suonare la sorgente qualche secondo e misuro le punte.\n";
+        t += "Fai suonare la sorgente qualche secondo: misuro le punte e regolo il livello.\n";
     auto names = [](const char* const* list, int count, bool desks) {
         std::string out;
         for (int i = 0; i < count && list[i]; ++i) {
@@ -415,40 +502,17 @@ inline std::string auGuideText(const double* v, bool mix, double measured)
         }
         return out;
     };
+    auto capital = [](std::string tip) {
+        if (!tip.empty()) tip[0] = char(std::toupper(static_cast<unsigned char>(tip[0])));
+        return tip;
+    };
     if (mix) {
         const AuProgram& p = kAuPrograms[source];
-        t += "Banchi d'uso: " + names(p.desks, 3, true) + ". Per le tracce: " + names(p.recorders, 3, false) + ".\n";
-        std::string tip = p.tip;
-        if (!tip.empty()) tip[0] = char(std::toupper(static_cast<unsigned char>(tip[0])));
-        t += tip + ".";
-        return t;
+        return t + "Banchi d'uso: " + names(p.desks, 3, true) + ". Per le tracce: " + names(p.recorders, 3, false) +
+               ".\n" + capital(p.tip) + ".";
     }
     const AuSource& s = kAuSources[source];
-    const int mic = auGuideMic(v, source);
-    t += "Microfono: " + (mic < 0 ? std::string("quello del registratore")
-                                  : std::string(kAuMics[mic == 0 ? auDevice(v).mic : mic].name));
-    if (s.lowCut) t += ", filtro " + std::to_string(s.lowCut) + " Hz";
-    if (s.limit) t += ", limitatore";
-    std::string tip = s.tip;
-    if (!tip.empty()) tip[0] = char(std::toupper(static_cast<unsigned char>(tip[0])));
-    t += ". Macchine d'uso: " + names(s.recorders, 4, false) + ".\n" + tip + ".";
-    return t;
-}
-
-// What «Applica» sets: the record level from the measure, and in Ripresa the microphone, the filter and the limiter.
-inline std::vector<std::pair<AuParamId, double>> auGuideApply(const double* v, bool mix, double measured)
-{
-    std::vector<std::pair<AuParamId, double>> out;
-    const int source = auPlain(v, kPSource);
-    if (source <= 0) return out;
-    if (measured > kAuNoMeasure / 2) out.push_back({ kPRecLevel, auGuideLevel(v, mix, measured) });
-    if (!mix) {
-        const AuSource& s = kAuSources[source];
-        if (int mic = auGuideMic(v, source); mic >= 0) out.push_back({ kPMic, double(mic) });
-        out.push_back({ kPLowCut, double(s.lowCut) });
-        out.push_back({ kPLimit, s.limit ? 1.0 : 0.0 });
-    }
-    return out;
+    return t + "Macchine d'uso: " + names(s.recorders, 4, false) + ".\n" + capital(s.tip) + ".";
 }
 
 // The «?»: the story of the machine on show.

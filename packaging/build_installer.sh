@@ -1,7 +1,8 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Builds dist/SLogMetaRaw-<version>.dmg with the installer (.pkg), the illustrated guides (at most eleven pages) and the
-# uninstaller.
+# uninstaller, and dist/LogMetaRawAudio-<version>.dmg: the audio plugins alone (VST3 and AU, for Logic and other DAWs)
+# with their own guide and uninstaller.
 #   ./packaging/build_installer.sh
 set -euo pipefail
 export COPYFILE_DISABLE=1   # no AppleDouble ._ files in the package
@@ -16,10 +17,10 @@ MOTION="$ROOT/motion"
 MOTION_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$MOTION/release/Info.plist")"
 rm -rf "$BUILD" && mkdir -p "$BUILD/root" "$BUILD/resources" "$BUILD/dmg" "$DIST"
 
-echo "1/6 plugin"
+echo "1/7 plugin"
 make -C "$ROOT/ofx/SLogMetaRaw" >/dev/null
 
-echo "2/6 icone e guida"
+echo "2/7 icone e guida"
 swift "$ROOT/tools/make_icons.swift" "$ROOT/assets" >/dev/null
 # .icns for the installer package and the disk image
 ICONSET="$BUILD/SLogMetaRaw.iconset"; mkdir -p "$ICONSET"
@@ -40,7 +41,8 @@ cp "$ROOT/assets/icon_1024.png" "$PKG_DIR/guide/icon.png"
 # tools/make_guide_figures.py)
 GUIDE="$BUILD/guide"; mkdir -p "$GUIDE"
 cp -R "$PKG_DIR/guide/"* "$GUIDE/"
-sed -i '' "s/@VERSION@/$VERSION/g" "$GUIDE/guida.html" "$GUIDE/guide-en.html"
+sed -i '' "s/@VERSION@/$VERSION/g" "$GUIDE/guida.html" "$GUIDE/guide-en.html" "$GUIDE/guida-audio.html" \
+    "$GUIDE/guide-audio-en.html"
 # find any Chromium-based browser for headless PDF generation
 CHROME=""
 for app in \
@@ -59,8 +61,15 @@ fi
     --print-to-pdf="$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "file://$GUIDE/guida.html" 2>/dev/null
 "$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
     --print-to-pdf="$BUILD/dmg/Log MetaRaw Guide (english).pdf" "file://$GUIDE/guide-en.html" 2>/dev/null
+# the audio guides go on the audio-only disk (four pages each)
+mkdir -p "$BUILD/audio-dmg"
+"$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
+    --print-to-pdf="$BUILD/audio-dmg/Guida Log MetaRaw Audio (italiano).pdf" "file://$GUIDE/guida-audio.html" 2>/dev/null
+"$CHROME" --headless=new --disable-gpu --no-pdf-header-footer \
+    --print-to-pdf="$BUILD/audio-dmg/Log MetaRaw Audio Guide (english).pdf" "file://$GUIDE/guide-audio-en.html" 2>/dev/null
 # each guide: page 1 is the summary of every function, eleven pages at most (the 4.2 Audio page)
-for g in "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf"; do
+for g in "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf" \
+         "$BUILD/audio-dmg/Guida Log MetaRaw Audio (italiano).pdf" "$BUILD/audio-dmg/Log MetaRaw Audio Guide (english).pdf"; do
   python3 - "$g" <<'EOF'
 import sys
 d = open(sys.argv[1], 'rb').read()
@@ -70,7 +79,7 @@ if not 1 <= n <= 11:
 EOF
 done
 
-echo "3/6 contenuto del pacchetto (Log MetaRaw e Mecena Motion)"
+echo "3/7 contenuto del pacchetto (Log MetaRaw e Mecena Motion)"
 R="$BUILD/root"
 mkdir -p "$R/Library/OFX/Plugins" "$R/Library/Application Support/SLogMetaRaw/lib" \
          "$R/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility"
@@ -101,7 +110,7 @@ bash "$MOTION/release/build-mac.sh" > "$BUILD/motion-build.log" 2>&1 || { tail -
 ditto -x -k "$MOTION/dist/MecenaMotion-$MOTION_VERSION-$(uname -m).zip" "$M/Library/OFX/Plugins/"
 cp "$MOTION/release/installer/preinstall" "$MOTION/release/installer/postinstall" "$BUILD/motion-scripts/"
 
-echo "4/6 pacchetto"
+echo "4/7 pacchetto"
 # a checkout that lost the mode bit would ship a package whose scripts execve cannot run
 chmod +x "$PKG_DIR/scripts/preinstall" "$PKG_DIR/scripts/postinstall" \
          "$BUILD/motion-scripts/preinstall" "$BUILD/motion-scripts/postinstall"
@@ -129,14 +138,14 @@ productbuild --distribution "$BUILD/distribution.xml" --resources "$BUILD/resour
              --package-path "$BUILD" "$BUILD/dmg/Installa Log MetaRaw.pkg" > "$BUILD/productbuild.log" 2>&1
 swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/dmg/Installa Log MetaRaw.pkg"
 
-echo "5/6 disinstallatore"
+echo "5/7 disinstallatore"
 cp "$PKG_DIR/Disinstalla Log MetaRaw.command" "$BUILD/dmg/"
 chmod +x "$BUILD/dmg/Disinstalla Log MetaRaw.command"   # Finder opens it only if executable
 cp "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/dmg/.VolumeIcon.icns"
 xattr -c "$BUILD/dmg/Guida Log MetaRaw (italiano).pdf" "$BUILD/dmg/Log MetaRaw Guide (english).pdf" \
          "$BUILD/dmg/Disinstalla Log MetaRaw.command" "$BUILD/dmg/.VolumeIcon.icns"
 
-echo "6/6 disco"
+echo "6/7 disco"
 DMG="$DIST/SLogMetaRaw-$VERSION.dmg"
 rm -f "$DMG" "$BUILD/rw.dmg"
 hdiutil create -quiet -volname "Log MetaRaw $VERSION" -srcfolder "$BUILD/dmg" -fs HFS+ -format UDRW "$BUILD/rw.dmg"
@@ -147,3 +156,26 @@ hdiutil convert -quiet "$BUILD/rw.dmg" -format UDZO -o "$DMG"
 rm -f "$BUILD/rw.dmg"
 swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$DMG"
 echo "Creato: $DMG"
+
+echo "7/7 disco solo audio"
+# the same component packages as above, under their own installer: Logic and the other DAWs without Resolve
+sed -e "s/@VERSION@/$VERSION/g" "$PKG_DIR/distribution-audio.xml" > "$BUILD/distribution-audio.xml"
+mkdir -p "$BUILD/audio-resources"
+cp "$PKG_DIR/resources/license.txt" "$BUILD/resources/background.png" "$BUILD/audio-resources/"
+productbuild --distribution "$BUILD/distribution-audio.xml" --resources "$BUILD/audio-resources" \
+             --package-path "$BUILD" "$BUILD/audio-dmg/Installa Log MetaRaw Audio.pkg" >> "$BUILD/productbuild.log" 2>&1
+swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/audio-dmg/Installa Log MetaRaw Audio.pkg"
+cp "$PKG_DIR/Disinstalla Log MetaRaw Audio.command" "$BUILD/audio-dmg/"
+chmod +x "$BUILD/audio-dmg/Disinstalla Log MetaRaw Audio.command"
+cp "$ROOT/assets/SLogMetaRaw.icns" "$BUILD/audio-dmg/.VolumeIcon.icns"
+xattr -c "$BUILD/audio-dmg/"*.pdf "$BUILD/audio-dmg/Disinstalla Log MetaRaw Audio.command" "$BUILD/audio-dmg/.VolumeIcon.icns"
+ADMG="$DIST/LogMetaRawAudio-$VERSION.dmg"
+rm -f "$ADMG" "$BUILD/rw.dmg"
+hdiutil create -quiet -volname "Log MetaRaw Audio $VERSION" -srcfolder "$BUILD/audio-dmg" -fs HFS+ -format UDRW "$BUILD/rw.dmg"
+MNT="$(hdiutil attach -nobrowse -noverify -noautoopen "$BUILD/rw.dmg" | awk -F'\t' '/\/Volumes\//{print $NF}')"
+xcrun SetFile -a C "$MNT" 2>/dev/null || true
+hdiutil detach -quiet "$MNT"
+hdiutil convert -quiet "$BUILD/rw.dmg" -format UDZO -o "$ADMG"
+rm -f "$BUILD/rw.dmg"
+swift "$ROOT/tools/set_icon.swift" "$ROOT/assets/SLogMetaRaw.icns" "$ADMG"
+echo "Creato: $ADMG"

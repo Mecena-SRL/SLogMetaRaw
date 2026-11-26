@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Builds dist\SLogMetaRaw-<version>-windows-x64.zip (plugin bundle, Python library, launcher, install.ps1) and,
-# when Inno Setup (iscc) is installed, dist\SLogMetaRaw-<version>-windows-x64-setup.exe.
+# when Inno Setup (iscc) is installed, dist\SLogMetaRaw-<version>-windows-x64-setup.exe; also
+# dist\LogMetaRawAudio-<version>-windows-x64.zip, the audio plugins alone (VST3) with their own guide.
 # Needs cmake, Visual Studio Build Tools (or mingw) and python. $env:OFX_SDK_DIR may point to a local OpenFX SDK.
 #   powershell -File packaging\windows\build_package.ps1
 $ErrorActionPreference = 'Stop'
@@ -38,6 +39,50 @@ $Zip = Join-Path $Dist "$Name.zip"
 if (Test-Path -LiteralPath $Zip) { Remove-Item -Force -LiteralPath $Zip }
 Compress-Archive -Path $Stage -DestinationPath $Zip
 Write-Host $Zip
+
+# The audio plugins alone, for any VST3 host: the plugin, the guides (PDF through Edge when present, else HTML)
+$AName = "LogMetaRawAudio-$Version-windows-x64"
+$AStage = Join-Path $Root "build\package\$AName"
+if (Test-Path -LiteralPath $AStage) { Remove-Item -Recurse -Force -LiteralPath $AStage }
+New-Item -ItemType Directory -Force $AStage | Out-Null
+Copy-Item -Recurse -LiteralPath (Join-Path $AudioBuild 'VST3\Release\Log MetaRaw Audio.vst3') $AStage
+Copy-Item (Join-Path $Root 'LICENSE') $AStage
+$Guide = Join-Path $Root 'build\package\guide-audio'
+if (Test-Path -LiteralPath $Guide) { Remove-Item -Recurse -Force -LiteralPath $Guide }
+Copy-Item -Recurse (Join-Path $Root 'packaging\guide') $Guide
+$edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+          "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+foreach ($g in @(@('guida-audio.html', 'Guida Log MetaRaw Audio (italiano)'), @('guide-audio-en.html', 'Log MetaRaw Audio Guide (english)'))) {
+    $html = Join-Path $Guide $g[0]
+    (Get-Content -Raw -Encoding UTF8 $html).Replace('@VERSION@', $Version) | Set-Content -Encoding UTF8 $html
+    $pdf = Join-Path $AStage ($g[1] + '.pdf')
+    if ($edge) {
+        & $edge --headless --disable-gpu --no-pdf-header-footer "--print-to-pdf=$pdf" ([System.Uri]$html).AbsoluteUri | Out-Null
+        Start-Sleep -Seconds 3
+    }
+    if (-not (Test-Path -LiteralPath $pdf)) {   # no Edge: the guide as a page, with its figures
+        if (-not (Test-Path (Join-Path $AStage 'guida'))) {
+            New-Item -ItemType Directory -Force (Join-Path $AStage 'guida\img') | Out-Null
+            Copy-Item (Join-Path $Guide 'icon.png') (Join-Path $AStage 'guida')
+            Copy-Item (Join-Path $Guide 'img\audio-*.png') (Join-Path $AStage 'guida\img')
+        }
+        Copy-Item $html (Join-Path $AStage 'guida')
+    }
+}
+@"
+Log MetaRaw Audio $Version - VST3 per Windows
+
+Copia la cartella "Log MetaRaw Audio.vst3" in C:\Program Files\Common Files\VST3, poi riapri la DAW
+(Fairlight, Cubase, Reaper, Ableton Live, Studio One...) e, se serve, rifai la scansione dei plugin.
+Due plugin: Log MetaRaw Ripresa (sulle tracce) e Log MetaRaw Mix e supporto (sul bus o sul master).
+Per toglierli cancella la stessa cartella. La guida e' accanto a questo file.
+
+Copy the "Log MetaRaw Audio.vst3" folder to C:\Program Files\Common Files\VST3 and reopen the DAW.
+"@ | Set-Content -Encoding UTF8 (Join-Path $AStage 'LEGGIMI.txt')
+$AZip = Join-Path $Dist "$AName.zip"
+if (Test-Path -LiteralPath $AZip) { Remove-Item -Force -LiteralPath $AZip }
+Compress-Archive -Path $AStage -DestinationPath $AZip
+Write-Host $AZip
 
 $iscc = Get-Command iscc -ErrorAction SilentlyContinue
 $exe = $null
