@@ -116,7 +116,7 @@ Non dipende dal plugin OFX. Installer: `packaging/build_installer.sh` e `packagi
 ```
 shared/EraSetups.h  (setup d'epoca: righe per nome delle tabelle di Creative e Audio)
       ├──> creative/CreativeModel.cpp (creativeApplySetup), CreativeFactory.cpp (scelta eraSetup)
-      └──> Audio: in arrivo (stessa lista nel pannello)
+      └──> audio/vst3/AuParams.h (auSetupValues, menu kPEraSetup) ──> AuPlugin.cpp
 ```
 Documento: `docs/SETUPS.md`.
 

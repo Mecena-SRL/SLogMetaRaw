@@ -5,6 +5,7 @@
 #include "AudioEngine.h"
 #include "AuGuide.h"
 #include "AuLooks.h"
+#include "../../shared/EraSetups.h"
 
 #include <algorithm>
 #include <cctype>
@@ -17,7 +18,7 @@ enum AuParamId : int {
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
     kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR,
     kPLowCut, kPLow, kPHigh, kPLimit, kPAuto, kPMeterInL, kPMeterInR,
-    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPCount
+    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPEraSetup, kPCount
 };
 
 enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
@@ -81,6 +82,11 @@ inline std::vector<std::string> auListNames(AuParamId id, bool mix)
     case kPTransfer: return auNames(kAuMedia, 1, "Nessuno");
     case kPListen: return auNames(kAuListen);
     case kPSource: return mix ? auNames(kAuPrograms) : auNames(kAuSources);
+    case kPEraSetup: {
+        std::vector<std::string> out;
+        for (const EraSetup& e : kEraSetups) out.emplace_back(e.name);
+        return out;
+    }
     case kPInput: return { "Stereo", "Mono (somma L+R)", "Mono dal sinistro", "Mono dal destro" };
     default: return {};
     }
@@ -129,6 +135,7 @@ inline const AuParamDef& auParam(AuParamId id)
         { kPInput, "Ingresso", AuKind::List },
         { kPPan, "Panpot", AuKind::Range, -100, 100, 0, "L/R" },
         { kPFader, "Fader del canale", AuKind::Range, -60, 10, 0, "dB" },
+        { kPEraSetup, "Setup d'epoca", AuKind::List },   // shared/EraSetups.h: loads the chain, then stays a label
     };
     return defs[id];
 }
@@ -224,6 +231,53 @@ inline std::vector<AuParamId> auCoerce(double* v, bool mix)
     return changed;
 }
 
+// The row of `name` in a table, -1 if absent.
+template <class T, size_t N> int auRowNamed(const T (&table)[N], const char* name)
+{
+    for (size_t i = 0; i < N; ++i)
+        if (name && !std::strcmp(table[i].name, name)) return int(i);
+    return -1;
+}
+
+// What era setup s (shared/EraSetups.h) sets in this plugin, before auCoerce. Ripresa: the recorder, its microphone
+// and its medium (the recorder's own when the row leaves them empty), only if the row names a recorder. Mix e
+// supporto: desk, master medium, transfer and listening (none when empty). ok: every name the row gives exists.
+inline std::vector<std::pair<AuParamId, double>> auSetupValues(int s, bool mix, bool* ok = nullptr)
+{
+    std::vector<std::pair<AuParamId, double>> out;
+    if (ok) *ok = true;
+    if (s <= 0 || s >= kEraSetupCount) return out;
+    const EraSetup& e = kEraSetups[s];
+    auto named = [&](int row, const char* name) {   // the row, 0 for no name; a missing name fails the check
+        if (name && row < 0 && ok) *ok = false;
+        return name && row >= 0 ? row : 0;
+    };
+    const int device = e.recorder ? auDeviceNamed(e.recorder) : -1;
+    const int mic = named(auRowNamed(kAuMics, e.mic), e.mic), tape = named(auRowNamed(kAuMedia, e.tape), e.tape);
+    if (!mix) {
+        if (e.recorder && device < 0 && ok) *ok = false;
+        if (device < 0) return out;
+        int f, m;
+        auDeviceSplit(device, f, m);
+        const AuDevice& dev = kAuFamilies[f].devices[m];
+        out = { { kPDevice, device }, { kPMic, mic == dev.mic ? 0 : mic }, { kPMedium, tape == dev.medium ? 0 : tape },
+                { kPNR, 0 }, { kPDesk, 0 } };
+        return out;
+    }
+    const int desk = named(auRowNamed(kAuConsoles, e.desk), e.desk);
+    const int transfer = named(auRowNamed(kAuMedia, e.audioTransfer), e.audioTransfer);
+    const int listen = named(auRowNamed(kAuListen, e.listen), e.listen);
+    int master = tape;
+    if (!e.tape && device >= 0) {
+        int f, m;
+        auDeviceSplit(device, f, m);
+        master = kAuFamilies[f].devices[m].medium;
+    }
+    if (!e.desk && !e.tape && !e.recorder && !e.audioTransfer && !e.listen) return out;   // a silent era
+    out = { { kPDesk, desk }, { kPMedium, master }, { kPNR, 0 }, { kPTransfer, transfer }, { kPListen, listen } };
+    return out;
+}
+
 // The name a menu shows for one entry: in Ripresa the recorder's own says what it is.
 inline std::string auEntryName(AuParamId id, int plain, const double* v, bool mix)
 {
@@ -246,6 +300,7 @@ struct AuRow
 inline const std::vector<AuRow>& auRows(bool mix)
 {
     static const std::vector<AuRow> ripresa = {
+        { "Setup d'epoca", -1, kPEraSetup },
         { "Registratore", -1, kPDevice },
         { "Microfono", kPOnMic, kPMic },
         { "Ingresso del canale", -1, kPInput },
@@ -264,6 +319,7 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Taratura meter", -1, kPMeterRef },
     };
     static const std::vector<AuRow> mixRows = {
+        { "Setup d'epoca", -1, kPEraSetup },
         { "Ingresso", -1, kPInput },
         { "Banco", kPOnDesk, kPDesk },
         { "Livello sul master", -1, kPRecLevel },

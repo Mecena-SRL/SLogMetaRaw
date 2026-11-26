@@ -1119,6 +1119,9 @@ public:
                 int i = int(m.menu->getCurrentIndex());
                 if (i < 0 || i >= int(m.plains.size()) || m.plains[size_t(i)] < 0) return sync(true);
                 edit(id, m.plains[size_t(i)]);
+                if (id == kPEraSetup)   // an era: its recorder or desk, then what goes with it
+                    for (auto [p, plain] : auSetupValues(m.plains[size_t(i)], mix_))
+                        if (has_[p]) editWhole(p, plain);
                 coerce();
                 return sync(true);
             }
