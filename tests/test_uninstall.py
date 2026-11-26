@@ -163,6 +163,7 @@ if __name__ == '__main__':
     unittest.main()
 
 
+@unittest.skipIf(os.name == 'nt', 'il disinstallatore e uno script bash per macOS')
 class AudioUninstallTest(unittest.TestCase):
     """The audio-only disk's uninstaller: the two plugin formats go, everything else stays."""
 

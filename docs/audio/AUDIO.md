@@ -48,10 +48,12 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Dispositivo › Modello** (Ripresa): bobine portatili (Geloso G.257, Nagra III, Uher 4000 Report-L, Nagra 4.2),
   bobine da studio (Ampex 350, Studer J37, Revox A77, Studer A80), cassetta (Philips EL 3300, Tascam Portastudio 144,
   Walkman Pro WM-D6C, Sony TC-D5M), cinepresa e videocamera (Auricon Cine-Voice 16 mm, Kodak Ektasound 130,
-  Canon 514XL-S, JVC GR-C1, Sony CCD-V8), prima del nastro (fonografo Edison, registratore a filo Webster-Chicago).
+  Canon 514XL-S, JVC GR-C1, Sony CCD-V8), prima del nastro (fonografo Edison, registratore a filo Webster-Chicago), bobine sincrono per il cinema (Perfectone
+  EP 6, 1959: pista intera ¼" a 19,05 cm/s con pilota, 30 Hz-13 kHz, VU, a batterie; valvole o transistor è
+  discusso, preamplificatore [dedotto] a metà).
   Ogni modello porta microfono di serie, supporti compatibili, preamplificatore, ronzio di rete, riduzione rumore.
 - **Microfono**: di serie, tromba acustica, carbone, piezo, RCA 44-BX e 77-DX, Shure 55, Neumann U 47, AKG C12,
-  EV 635A, MD 421, SM58, MKH 416, electret.
+  EV 635A, MD 421, SM58, MKH 416, electret, AKG D 25 (dinamico da giraffa, 1953; curva [dedotta]).
 - **Supporto**: nastro ¼" a 38/19/9,5/4,75 cm/s, cassetta Tipo I/II/IV, filo, cilindro, 78/45/33 giri, VHS lineare
   SP/LP e Hi-Fi, Video8, U-matic, banda ottica 35 e 16 mm, pista magnetica Super 8, radio AM/FM, telefono.
 - **Riduzione rumore**: Dolby A/B/C, dbx (per ora come riduzione del soffio, non come compander).
@@ -115,7 +117,8 @@ destra), non salvate.
   Webster-Chicago 79/80 (bollettino: RECORD-LISTEN, MICROPHONE VOLUME, TONE, RUN-REWIND, OUTPUT, neon), Geloso G.257
   (schede museali: tasti colorati, manopola rossa, interruttore a rotella; 4,75 cm/s).
 - [dedotto] da fotografie e dalla tipologia, senza manuale letto: Studer J37 e A80, Philips EL 3300, Sony TC-D5M,
-  Auricon, Ektasound, Canon 514XL-S, JVC GR-C1, CCD-V8, fonografo Edison, Neve 8078, SSL 4000 E, Mackie CR-1604. Le
+  Auricon, Ektasound, Canon 514XL-S, JVC GR-C1, CCD-V8, fonografo Edison, Neve 8078, SSL 4000 E, Mackie CR-1604, Perfectone EP 6 (nessuna
+  fotografia dei comandi trovata: comandi tipici di un registratore sincrono svizzero, scritte in francese). Le
   scritte di questi vanno confrontate con le macchine vere.
 - Cambiati di conseguenza: il Geloso registra solo a 4,75 cm/s; l'Uher ha anche 2,4 cm/s (nuovo supporto); il Nagra
   4.2 anche 9,5 cm/s; il Webster ha la lampada al neon e non l'occhio magico; il REDD.51 quattro VU e non PPM.

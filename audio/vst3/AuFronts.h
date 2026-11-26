@@ -400,6 +400,24 @@ inline constexpr AuControl kWebsterControls[] = {
     auPick(AuWidget::Selector, 340, 150, 74, 74, "OUTPUT", kWebsterOutput, 0, AuUse::Mech),
 };
 
+// Perfectone EP 6 (1959) [dedotto: no manual found; the controls a synchronous film recorder of its kind had]: the VU
+// on the left, record level, the pilot check, playback volume, the function selector, the meter switch (level or
+// battery). One speed, 19,05 cm/s full track: no speed selector.
+inline constexpr AuPos kEP6Function[] = {
+    { "STOP", kStop }, { "TEST", kRun, kTapeOff, kReadsIn }, { "ENREG.", kRun, kTapeOn, kReadsIn },
+    { "LECTURE", kRun, kTapeOn, kReadsOut },
+};
+inline constexpr AuPos kEP6Meter[] = { { "MODUL.", kReadsIn }, { "PILOTE", { kSetMeter, kReadFixed } },
+                                       { "BATT.", { kSetMeter, kReadBattery } } };
+inline constexpr AuPos kEP6Limit[] = { { "OFF", { kPLimit, 0 } }, { "ON", { kPLimit, 1 } } };
+inline constexpr AuControl kEP6Controls[] = {
+    auKnob(240, 40, 60, "NIVEAU", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
+    auKnob(330, 40, 50, "ÉCOUTE", kPOut, -24, 12, "0|10"),
+    auPick(AuWidget::Selector, 420, 30, 100, 100, "", kEP6Function, 2),
+    auPick(AuWidget::Selector, 240, 140, 80, 80, "MESURE", kEP6Meter, 0),
+    auPick(AuWidget::Lever, 560, 50, 34, 46, "LIMITEUR", kEP6Limit, 0),
+};
+
 inline constexpr AuFront kAuReelPortableFronts[] = {
     AU_FRONT(26, 40, 160, 160, 300, 30, kReadOut, kGelosoControls),
     AU_FRONT(170, 24, 230, 120, 186, 172, kReadIn, kNagra3Controls),
@@ -429,14 +447,18 @@ inline constexpr AuFront kAuEarlyFronts[] = {
     AU_FRONT(30, 40, 230, 90, 30, 150, kReadOut, kEdisonControls),
     AU_FRONT(40, 40, 120, 120, 430, 196, kReadIn, kWebsterControls),
 };
+inline constexpr AuFront kAuReelSyncFronts[] = {
+    AU_FRONT(24, 30, 190, 120, 24, 180, kReadIn, kEP6Controls),
+};
 inline constexpr const AuFront* kAuFamilyFronts[] = {
-    kAuReelPortableFronts, kAuReelStudioFronts, kAuCassetteFronts, kAuCameraFronts, kAuEarlyFronts,
+    kAuReelPortableFronts, kAuReelStudioFronts, kAuCassetteFronts, kAuCameraFronts, kAuEarlyFronts, kAuReelSyncFronts,
 };
 static_assert(std::size(kAuReelPortableFronts) == std::size(kAuReelPortable));
 static_assert(std::size(kAuReelStudioFronts) == std::size(kAuReelStudio));
 static_assert(std::size(kAuCassetteFronts) == std::size(kAuCassetteDecks));
 static_assert(std::size(kAuCameraFronts) == std::size(kAuCameras));
 static_assert(std::size(kAuEarlyFronts) == std::size(kAuEarly));
+static_assert(std::size(kAuReelSyncFronts) == std::size(kAuReelSync));
 
 // ================================================================== Banchi di missaggio
 

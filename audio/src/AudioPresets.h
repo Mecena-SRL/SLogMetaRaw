@@ -30,6 +30,8 @@ inline constexpr AuMic kAuMics[] = {
     { "Sennheiser MKH 416 (fucile, 1975)", 60, 20000, 9000, 5, 1, 0, 0, 1975 },
     { "Dinamico economico di serie", 150, 8000, 3000, 4, 1, 0, 0.1f, 1955 },
     { "Electret di videocamera", 120, 12000, 4000, 3, 1, 0, 0, 1975 },
+    // dynamic cardioid for the boom, the European film and broadcast microphone of the late '50s [dedotto: the curve]
+    { "AKG D 25 (dinamico da giraffa, 1953)", 50, 15000, 4000, 3, 0.9f, 1.5f, 0, 1953 },
 };
 
 // The switches a microphone really had (from its data sheet): a bass filter and a polar pattern. A filter position
@@ -174,6 +176,11 @@ inline constexpr AuDevice kAuCameras[] = {
     { "JVC GR-C1 VHS-C (1984)", 14, auBit(13) | auBit(14) | auBit(15), 13, 0.5f, 0.03f, -200, 1984 },
     { "Sony Handycam CCD-V8 Video8 (1985)", 14, auBit(16), 16, 0.4f, 0.03f, -200, 1985 },
 };
+// Synchronous portable reels for film (pilot tone for the camera): full-track ¼" mono at 19,05 cm/s, on batteries.
+// Perfectone EP 6 (Bienne, 1959): 30 Hz-13 kHz, VU; valves or transistors is disputed [dedotto: preamp in between].
+inline constexpr AuDevice kAuReelSync[] = {
+    { "Perfectone EP 6 (1959)", 15, auBit(2), 2, 0.5f, 0.12f, -200, 1959 },
+};
 inline constexpr AuDevice kAuEarly[] = {
     { "Fonografo Edison a cilindro (1900)", 1, auBit(9), 9, 0, 0, -200, 1900 },
     { "Webster-Chicago 180 a filo (1948)", 3, auBit(8), 8, 1, 0.3f, -50, 1948 },
@@ -192,6 +199,7 @@ inline constexpr AuFamily kAuFamilies[] = {
     AU_FAMILY("Registratore a cassetta", kAuCassetteDecks),
     AU_FAMILY("Cinepresa e videocamera sonora", kAuCameras),
     AU_FAMILY("Prima del nastro", kAuEarly),
+    AU_FAMILY("Registratore a bobine sincrono (cinema)", kAuReelSync),   // appended: the flat device list is saved
 };
 #undef AU_FAMILY
 

@@ -64,6 +64,10 @@ inline constexpr const char* kAuDeviceStories[] = {
     "incide la cera. Si registrava gridando o suonando vicino alla tromba; il livello si regolava spostandosi.",
     "Registratore a filo d'acciaio americano del dopoguerra, prima che il nastro arrivasse nelle case: il filo "
     "sottile dà poca banda, fruscio e cadute di livello. L'indicatore è una lampadina al neon.",
+    // Registratore a bobine sincrono
+    "Registratore svizzero a batterie per il cinema, costruito a Bienne: pista intera su nastro da 6,35 mm a 19,05 "
+    "cm/s con il segnale pilota per il sincrono con la cinepresa, più leggero dei Nagra. Lo usò la Nouvelle Vague "
+    "per la presa diretta, per esempio in Vivre sa vie (1962) di Godard.",
 };
 
 inline constexpr const char* kAuDeskStories[] = {
@@ -82,7 +86,7 @@ inline constexpr const char* kAuDeskStories[] = {
 };
 
 static_assert(std::size(kAuDeviceStories) == std::size(kAuReelPortable) + std::size(kAuReelStudio) +
-                  std::size(kAuCassetteDecks) + std::size(kAuCameras) + std::size(kAuEarly),
+                  std::size(kAuCassetteDecks) + std::size(kAuCameras) + std::size(kAuEarly) + std::size(kAuReelSync),
               "one story per recorder");
 static_assert(std::size(kAuDeskStories) == std::size(kAuConsoles), "one story per desk");
 
