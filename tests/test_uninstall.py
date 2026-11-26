@@ -161,3 +161,29 @@ class Preinstall(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+@unittest.skipIf(os.name == 'nt', 'il disinstallatore e uno script bash per macOS')
+class AudioUninstallTest(unittest.TestCase):
+    """The audio-only disk's uninstaller: the two plugin formats go, everything else stays."""
+
+    def test_removes_only_the_audio_plugins(self):
+        script = os.path.join(ROOT, 'packaging', 'Disinstalla Log MetaRaw Audio.command')
+        gone = ['Library/Audio/Plug-Ins/VST3/Log MetaRaw Audio.vst3/Contents/x',
+                'Library/Audio/Plug-Ins/Components/Log MetaRaw Ripresa.component/Contents/x',
+                'Library/Audio/Plug-Ins/Components/Log MetaRaw Mix e supporto.component/Contents/x']
+        kept = ['Library/OFX/Plugins/SLogMetaRaw.ofx.bundle/Contents/Info.plist',
+                'Library/Audio/Plug-Ins/VST3/Other.vst3/Contents/x']
+        with tempfile.TemporaryDirectory() as root:
+            for rel in gone + kept:
+                touch(root, rel)
+            env = dict(os.environ, SLOGMETARAW_ROOT=root, SLOGMETARAW_YES='1', SLOGMETARAW_NO_SUDO='1')
+            dry = subprocess.run(['/bin/bash', script, '--dry-run'], env=env, capture_output=True, text=True)
+            self.assertEqual(dry.returncode, 0, dry.stderr)
+            self.assertTrue(all(os.path.exists(os.path.join(root, r)) for r in gone))
+            run = subprocess.run(['/bin/bash', script], env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            for rel in gone:
+                self.assertFalse(os.path.exists(os.path.join(root, rel.split('/Contents/')[0])), rel)
+            for rel in kept:
+                self.assertTrue(os.path.exists(os.path.join(root, rel)), rel)

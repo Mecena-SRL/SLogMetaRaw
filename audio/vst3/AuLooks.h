@@ -60,9 +60,13 @@ inline constexpr AuLook kAuEarlyLooks[] = {
     { 0x7C4E2A, 0x4A2A12, 0xC6A25E, 0x32200C, 0x000000, 0xB08A48, false, AuMeter::None, 1 },        // Edison
     { 0x8A6A4A, 0x58422E, 0xD8C8A0, 0x3A2A18, 0x000000, 0x3A2A1A, false, AuMeter::Neon, 1 },        // Webster-Chicago
 };
-inline constexpr const AuLook* kAuFamilyLooks[] = {
-    kAuReelPortableLooks, kAuReelStudioLooks, kAuCassetteLooks, kAuCameraLooks, kAuEarlyLooks,
+inline constexpr AuLook kAuReelSyncLooks[] = {
+    { 0x7E8288, 0x55595E, 0x1E2022, 0xE8E6E0, 0xF0E8D0, 0x222224, false, AuMeter::VU, 1 },          // Perfectone EP 6
 };
+inline constexpr const AuLook* kAuFamilyLooks[] = {
+    kAuReelPortableLooks, kAuReelStudioLooks, kAuCassetteLooks, kAuCameraLooks, kAuEarlyLooks, kAuReelSyncLooks,
+};
+static_assert(std::size(kAuReelSyncLooks) == std::size(kAuReelSync));
 static_assert(std::size(kAuReelPortableLooks) == std::size(kAuReelPortable));
 static_assert(std::size(kAuReelStudioLooks) == std::size(kAuReelStudio));
 static_assert(std::size(kAuCassetteLooks) == std::size(kAuCassetteDecks));

@@ -11,8 +11,8 @@ Legenda: **[fonte]** = scritto nella fonte citata; **[ded]** = dedotto da noi (l
 coerente con l'epoca e il resto della catena, da sostituire appena si trova una fonte).
 
 Stato: video nel Creative; audio nei due plugin (*Ripresa*: registratore, microfono, supporto; *Mix e supporto*:
-banco, master, riversaggio, ascolto). Le righe senza registratore (TV, *Numéro deux*, *Vivre sa vie* finché non
-arrivano Perfectone EP 6 e AKG D 25) caricano solo *Mix e supporto*; il Cinématographe è muto.
+banco, master, riversaggio, ascolto). Le righe senza registratore (TV, *Numéro deux*) caricano solo *Mix e
+supporto*; il Cinématographe è muto. *Vivre sa vie* carica il Perfectone EP 6 col suo AKG D 25.
 
 ## Pre-cinema · Cinématographe Lumière (1895)
 

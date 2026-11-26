@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Log MetaRaw Audio – guida</title>
+<style>
+  @page { size: A4; margin: 11mm 13mm 9mm; }
+  :root { --ink: #1c1f26; --muted: #5b6270; --warm: #e8893a; --cool: #3d7bff; --green: #2e9e5b; --line: #e3e5ea;
+          --soft: #f6f7f9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 9.6pt;
+         line-height: 1.34; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 184mm; height: 276mm; display: flex; flex-direction: column; overflow: hidden;
+          break-before: page; }
+  .page:first-child { break-before: auto; }
+  .content { flex: 1 1 auto; min-height: 0; }
+  header.top { display: flex; align-items: center; gap: 4mm; padding-bottom: 2.4mm; margin-bottom: 2mm;
+               border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  header.top img { width: 15mm; height: 15mm; }
+  header.top h1 { font-size: 19pt; margin: 0; letter-spacing: -0.3px; }
+  header.top .sub { color: var(--muted); font-size: 9.4pt; margin-top: 0.6mm; }
+  .part { display: flex; align-items: baseline; justify-content: space-between; gap: 3mm; padding-bottom: 1.6mm;
+          margin-bottom: 2mm; border-bottom: 2px solid transparent;
+          border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  .part h1 { font-size: 15pt; margin: 0; letter-spacing: -0.2px; }
+  .part .where { color: var(--muted); font-size: 8.8pt; text-align: right; }
+  h2 { font-size: 11pt; margin: 2.6mm 0 1mm; }
+  h3 { font-size: 9.8pt; margin: 1.8mm 0 0.6mm; }
+  p { margin: 0.9mm 0; }
+  ul, ol { margin: 0.6mm 0; padding-left: 4.6mm; }
+  li { margin: 0.4mm 0; }
+  .cols { display: grid; grid-template-columns: 89mm 89mm; column-gap: 6mm; }
+  .cols > div { min-width: 0; }
+  figure { margin: 1.2mm 0 1.6mm; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 8.3pt; color: var(--muted); line-height: 1.28; margin-top: 0.6mm; }
+  figcaption b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; line-height: 1.28; }
+  th { text-align: left; font-size: 8.2pt; color: var(--muted); font-weight: 600; padding: 0.6mm 1.2mm;
+       border-bottom: 1.2px solid #c9cdd5; }
+  td { padding: 0.65mm 1.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.k { font-weight: 600; white-space: nowrap; }
+  td.pg { color: var(--muted); text-align: right; white-space: nowrap; width: 7mm; }
+  tr.grp td { background: var(--soft); font-weight: 700; font-size: 8.8pt; border-bottom: 1px solid #c9cdd5;
+              padding-top: 0.9mm; }
+  tr.grp td span { font-weight: 400; color: var(--muted); }
+  .sum td { padding: 0.45mm 1.2mm; font-size: 8.7pt; }
+  .sum td.k { width: 47mm; }
+  .sum.tight td { padding: 0.2mm 1.2mm; font-size: 8pt; line-height: 1.17; }
+  .sum.tight tr.grp td { font-size: 8pt; }
+  .note { color: var(--muted); }
+  .new { display: inline-block; font-size: 7pt; font-weight: 700; color: #fff; background: var(--green);
+         border-radius: 1mm; padding: 0 1mm; vertical-align: 0.3mm; margin-left: 0.8mm; }
+  .box { background: var(--soft); border: 1px solid var(--line); border-radius: 2mm; padding: 1.8mm 2.6mm; margin: 1.4mm 0; }
+  .premise { background: linear-gradient(90deg, #fff6ef, #eef4ff); border: 1px solid var(--line); border-radius: 2mm;
+             padding: 1.8mm 2.8mm; margin: 1.2mm 0; }
+  .sci { border-left: 2.5px solid var(--cool); background: #f3f7ff; padding: 1.3mm 2.4mm; margin: 1.4mm 0;
+         font-size: 9pt; }
+  .sci b:first-child { color: #2a5fd6; }
+  .warn { border-left: 2.5px solid var(--warm); background: #fff7f0; padding: 1.3mm 2.4mm; margin: 1.4mm 0; font-size: 9pt; }
+  .formula { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.4pt; background: var(--soft);
+             border: 1px solid var(--line); border-radius: 1.5mm; padding: 1.2mm 2.2mm; margin: 1mm 0; white-space: pre; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.2pt; background: #eceef2; padding: 0.1mm 0.8mm;
+         border-radius: 0.8mm; }
+  .fc td:first-child { white-space: nowrap; }
+  .sw { display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 0.5mm; vertical-align: -0.35mm; margin-right: 0.5mm; }
+  footer { margin-top: auto; padding-top: 1.6mm; border-top: 1px solid var(--line); display: flex;
+           justify-content: space-between; color: var(--muted); font-size: 8pt; }
+  .shot img { border: 1px solid var(--line); border-radius: 1.5mm; }
+</style>
+</head>
+<body>
+
+<section class="page"><div class="content">
+  <header class="top">
+    <img src="icon.png" alt="">
+    <div>
+      <h1>Log MetaRaw Audio</h1>
+      <div class="sub">Registratori, microfoni, banchi e supporti d'epoca · VST3 e Audio Unit · guida · v@VERSION@</div>
+    </div>
+  </header>
+  <p>Due plugin per registrare e missare <b>come si faceva</b>: «presa diretta col Nagra 4.2 e un fucile, missato su Neve,
+  riversato su VHS e riacquisito con una chiavetta USB». Ogni macchina si apre sul <b>suo frontale</b>, con i comandi veri
+  e il suo meter, e suona <b>come da nuova</b>, cioè come la si sentiva allora, non come ci arriva oggi.</p>
+  <div class="cols">
+    <div>
+      <h2>I due plugin</h2>
+      <table>
+        <tr><td class="k">Ripresa</td><td>Sulle tracce. Microfono → canale del banco → registratore → supporto. Un'istanza per
+          traccia: ogni strumento ha il suo microfono e la sua macchina.</td></tr>
+        <tr><td class="k">Mix e supporto</td><td>Sul bus o sul master. Banco → supporto del master → riversaggi → acquisizione →
+          ascolto (radio, TV, juke-box, sala).</td></tr>
+      </table>
+      <h2>Installazione</h2>
+      <h3>Mac (Logic Pro, GarageBand, Fairlight, Ableton, Cubase, Reaper…)</h3>
+      <ol>
+        <li>Apri <code>LogMetaRawAudio-@VERSION@.dmg</code> e fai doppio clic su <b>Installa Log MetaRaw Audio.pkg</b>.</li>
+        <li>In <i>Personalizza</i> scegli <b>VST3</b> (Fairlight, Cubase, Reaper, Ableton, Studio One, Bitwig) e/o
+          <b>Audio Unit</b> (Logic Pro, GarageBand, MainStage). Di serie entrambi.</li>
+        <li>Riapri la DAW. Logic ricontrolla da solo le Audio Unit nuove.</li>
+      </ol>
+      <p class="note">Si installano in <code>/Library/Audio/Plug-Ins/VST3</code> e <code>/Library/Audio/Plug-Ins/Components</code>.
+      Per toglierli: <b>Disinstalla Log MetaRaw Audio.command</b> nel disco.</p>
+      <h3>Windows (Fairlight, Cubase, Reaper, Ableton, Studio One…)</h3>
+      <ol>
+        <li>Estrai lo zip <code>LogMetaRawAudio-@VERSION@-windows-x64.zip</code>.</li>
+        <li>Copia la cartella <code>Log MetaRaw Audio.vst3</code> in <code>C:\Program Files\Common Files\VST3</code>.</li>
+        <li>Riapri la DAW e, se serve, rifai la scansione dei plugin.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Dove si trovano</h2>
+      <table>
+        <tr><td class="k">Logic Pro</td><td>Slot <i>Audio FX</i> › Audio Units › Log MetaRaw › Ripresa o Mix e supporto.</td></tr>
+        <tr><td class="k">DaVinci Resolve</td><td>Fairlight › Mixer › slot <i>Effetti</i> › VST3 › Log MetaRaw.</td></tr>
+        <tr><td class="k">Cubase, Reaper, Ableton, Studio One, Bitwig</td><td>Effetti VST3 › Log MetaRaw.</td></tr>
+      </table>
+      <h2>In tre passi</h2>
+      <ol>
+        <li><b>Ripresa</b> sulla traccia: scegli il <b>registratore</b>, poi un <b>preset d'uso</b> (es. <i>Cinema · Presa
+          diretta</i>, <i>Sala di registrazione · Voce</i>): la macchina si imposta come in quella presa.</li>
+        <li>Fai suonare la traccia qualche secondo e premi <b>Regola livello</b>: le punte vanno dove le portava il fonico,
+          sul meter di quella macchina.</li>
+        <li><b>Mix e supporto</b> sul master: banco, supporto finale, eventuale riversaggio e acquisizione.</li>
+      </ol>
+      <div class="box"><b>Il «?»</b> sulla targhetta del frontale: passaci sopra e racconta la storia del registratore o del
+      banco.</div>
+      <div class="warn">Il suono è costruito da specifiche pubblicate, norme e descrizioni d'epoca: è una <b>stima</b> del
+      comportamento, non la misura di un esemplare. Dove un dato è dedotto lo dice la documentazione
+      (<code>docs/audio/AUDIO.md</code>). Nomi e marchi citati appartengono ai rispettivi proprietari; i frontali sono
+      disegni originali senza loghi.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Introduzione</span><span>1 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>Il pannello</h1><span class="where">dall'alto in basso</span></div>
+  <div class="cols">
+    <div>
+      <figure class="shot"><img src="img/audio-ripresa.png" alt=""><figcaption><b>Ripresa</b> con un Nagra 4.2: in alto il
+      frontale, sotto preset, scelte e regolazioni.</figcaption></figure>
+    </div>
+    <div>
+      <h2>1 · Il frontale</h2>
+      <p>I comandi della macchina vera, dove li aveva e con le loro scritte, e funzionanti: il selettore del Nagra mette in
+      TEST, RECORD o PLAYBACK, la velocità cambia il nastro, il filtro, il limitatore, il Dolby e il tono agiscono sul suono.
+      I comandi solo meccanici si muovono ma non cambiano il suono; i canali che il plugin non usa sono spenti.</p>
+      <h3>Il meter</h3>
+      <p>Ogni macchina ha il suo, con la sua scala e il suo movimento, calcolato sul segnale campione per campione:</p>
+      <table>
+        <tr><td class="k">VU</td><td>99 % in 300 ms, sovraelongazione 1-1,5 % (ANSI C16.5 / IEC 60268-17).</td></tr>
+        <tr><td class="k">PPM</td><td>IEC 60268-10 tipo IIa: 10 ms a 5 kHz leggono −2 dB; ricade 24 dB in 2,8 s.</td></tr>
+        <tr><td class="k">Modulometro</td><td>Picchi dei Nagra; zona batteria.</td></tr>
+        <tr><td class="k">Altri</td><td>Occhio magico, lampada al neon, LED, indicatore a lancetta.</td></tr>
+      </table>
+      <p>In registrazione e in TEST il meter legge ciò che va sul nastro (ingresso × livello), in riproduzione ciò che torna.
+      <i>Taratura meter</i> sceglie quale livello digitale legge 0 VU (di serie −18 dBFS).</p>
+      <h2>2 · Preset d'uso</h2>
+      <p>A categorie: <b>Cinema</b> (presa diretta, documentario, ambiente, Super 8), <b>Televisione</b> (servizio esterno, studio,
+      videocamera), <b>Radio</b> (intervista e radiocronaca, studio), <b>Sala di registrazione</b> (voce, cori, chitarre, basso,
+      batteria, pianoforte, fiati, archi, orchestra), <b>Concerto dal vivo</b>, <b>In casa</b>. Il preset sceglie microfono e suoi
+      commutatori, ingresso mono o stereo, filtro, limitatore e velocità (la più silenziosa per la musica, 19 cm/s per il
+      parlato come al cinema), e scrive sotto il livello a cui portare le punte e le macchine che si usavano.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h2>3 · Dal microfono al supporto</h2>
+      <table>
+        <tr><td class="k">Microfono</td><td>Quello di serie o un altro della sua epoca.</td></tr>
+        <tr><td class="k">Filtro, Direttività</td><td>I commutatori veri: filtro bassi M…S del MD 421, Voce/Musica e direttività del
+          RCA 77-DX, cardioide/omni del U 47, cinque figure del C12.</td></tr>
+        <tr><td class="k">Ingresso</td><td>Stereo, mono (somma) o un solo lato.</td></tr>
+        <tr><td class="k">Banco (canale)</td><td>Il canale del banco in cui entra il microfono: colora la traccia prima del nastro.</td></tr>
+        <tr><td class="k">Supporto, Riduzione</td><td>Solo ciò che la macchina accettava: un Nagra non registra su VHS.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>4 · Regolazioni</h2>
+      <table>
+        <tr><td class="k">Livello reg.</td><td>Quanto forte va sul nastro: basso = più fruscio, alto = più saturazione. Il volume resta.</td></tr>
+        <tr><td class="k">Usura supporto</td><td>0 % = nuovo (com'era allora). Salendo: fruscio, acuti persi, cadute, crepitio.</td></tr>
+        <tr><td class="k">Rumori, Wow e flutter</td><td>Più o meno di quelli veri.</td></tr>
+        <tr><td class="k">Panpot, Fader canale</td><td>Il canale nel mix.</td></tr>
+        <tr><td class="k">Saturazione, Dry/wet, Uscita</td><td>Il carattere, la miscela, il volume finale.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Il pannello</span><span>2 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>Presa diretta e missaggio</h1><span class="where">una band, un film, un'intervista</span></div>
+  <div class="cols">
+    <div>
+      <h2>Una band</h2>
+      <ol>
+        <li>Una traccia per strumento, con <b>Ripresa</b> su ognuna: lo stesso registratore (es. Studer J37 per il beat anni '60)
+          o macchine diverse, come in studio.</li>
+        <li>Su ogni traccia il preset dello strumento (<i>Sala di registrazione · Batteria</i>, <i>· Basso</i>…): sceglie il
+          microfono adatto all'epoca della macchina.</li>
+        <li><b>Banco (canale)</b> uguale su tutte le tracce (es. EMI REDD.51); ingresso <b>mono</b> per voce e strumenti,
+          <b>stereo</b> per panoramici e pianoforte; <b>panpot</b> e <b>fader</b> per il mix.</li>
+        <li>Sul master <b>Mix e supporto</b> con lo stesso banco: è la sezione master. Preset di missaggio, supporto finale
+          (es. nastro ¼" 38 cm/s), poi se vuoi un riversaggio (vinile, cassetta, VHS) e l'acquisizione.</li>
+      </ol>
+      <h2>Un film o un documentario</h2>
+      <ol>
+        <li>Dialoghi: <b>Ripresa</b> con Nagra III o 4.2, preset <i>Cinema · Presa diretta</i> (fucile, mono, filtro, limitatore,
+          19 cm/s). Ambienti su un'altra traccia con <i>Cinema · Ambiente</i>.</li>
+        <li>Master: preset <i>Cinema · Missaggio del film</i> (mono), supporto banda ottica 35 mm per la copia in sala, o
+          VHS per la TV.</li>
+      </ol>
+      <h2>Automazione: come una presa vera</h2>
+      <p>Ogni comando che cambia il suono è un parametro automatizzabile. In scrittura (Logic: <i>Touch/Latch</i>;
+      Fairlight: <i>Automazione</i>) giri le manopole del frontale e la DAW registra i keyframe; livelli, panpot, fader,
+      uscita e dry/wet scorrono senza scatti. Cambiare macchina o supporto mentre suona può dare un piccolo scatto.</p>
+    </div>
+    <div>
+      <h2>A che livello registrare</h2>
+      <p>La guida sotto il preset misura le punte degli ultimi 8 secondi e <b>Regola livello</b> le porta qui, sul meter della
+      macchina:</p>
+      <table>
+        <tr><th>Meter</th><th>Parlato</th><th>Musica</th><th>Batteria</th></tr>
+        <tr><td class="k">VU e indicatori</td><td>−3</td><td>0</td><td>−5 (il VU le sottostima)</td></tr>
+        <tr><td class="k">PPM (BBC)</td><td>PPM 5</td><td>PPM 6</td><td>PPM 6</td></tr>
+        <tr><td class="k">Modulometro Nagra</td><td>−2 dB</td><td>0 dB</td><td>0 dB</td></tr>
+        <tr><td class="k">LED</td><td>0</td><td>+3</td><td>+3</td></tr>
+        <tr><td class="k">Neon</td><td colspan="3">si accende appena sulle punte</td></tr>
+      </table>
+      <p class="note">Prassi d'epoca, non norme. Sui registratori con livello automatico (cineprese Super 8, videocamere) la
+      macchina lo fa da sé.</p>
+      <h2>Acquisizione</h2>
+      <p>In <b>Mix e supporto</b>, dopo il riversaggio: come la copia torna nel computer. Il lettore (piastra a cassetta di
+      casa, videoregistratore, giradischi con RIAA, bobine allineate, proiettore, sintonizzatore) con azimut, wow e ronzio,
+      e il convertitore (chiavetta USB, scheda audio, convertitore da studio, registratore a 8 bit) con i suoi bit, il suo
+      rumore e il suo taglio.</p>
+      <h2>Il suono, da nuovo</h2>
+      <p>Di base macchina, nastro e microfono sono nuovi. Il nastro registra con l'equalizzazione di norma della sua
+      velocità (CCIR/IEC, RIAA sul vinile, FM 50 µs): gli acuti arrivano esaltati e saturano per primi, come sulle macchine
+      vere; c'è il rumore di modulazione dell'ossido; i trasformatori dei banchi a valvole saturano nei bassi. Per
+      l'effetto «come ci arriva oggi» alza <i>Usura supporto</i>.</p>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Presa diretta e missaggio</span><span>3 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>Le macchine</h1><span class="where">nomi d'uso, frontali senza loghi</span></div>
+  <div class="cols">
+    <div>
+      <h2>Registratori (Ripresa)</h2>
+      <table>
+        <tr><td class="k">Bobine portatili</td><td>Geloso G.257 (1961), Nagra III (1958), Uher 4000 Report-L (1965), Nagra 4.2 (1971).</td></tr>
+        <tr><td class="k">Bobine da studio</td><td>Ampex 350 (1953), Studer J37 (1964), Revox A77 (1967), Studer A80 (1970).</td></tr>
+        <tr><td class="k">Cassetta</td><td>Philips EL 3300 (1963), Tascam Portastudio 144 (1979), Sony TC-D5M (1980), Walkman Pro WM-D6C (1984).</td></tr>
+        <tr><td class="k">Cineprese e videocamere</td><td>Auricon Cine-Voice 16 mm, Kodak Ektasound 130, Canon 514XL-S, JVC GR-C1 VHS-C, Sony CCD-V8.</td></tr>
+        <tr><td class="k">Prima del nastro</td><td>Fonografo Edison a cilindro, Webster-Chicago 180 a filo.</td></tr>
+        <tr><td class="k">Sincrono per il cinema</td><td>Perfectone EP 6 (1959).</td></tr>
+      </table>
+      <h2>Microfoni</h2>
+      <p>Tromba acustica, carbone, piezo, RCA 44-BX e 77-DX, Shure 55, Neumann U 47, AKG C12, EV 635A, Sennheiser MD 421,
+      Shure SM58, Sennheiser MKH 416, AKG D 25, dinamico economico, electret di videocamera. Ogni registratore offre i microfoni
+      usciti entro 15 anni da lui.</p>
+      <h2>Banchi (Ripresa e Mix)</h2>
+      <p>RCA BC-2B (1950), EMI REDD.51 (1964), Neve 8078 (1978), SSL 4000 E (1979), Mackie CR-1604 (1993).</p>
+    </div>
+    <div>
+      <h2>Supporti e riversaggi</h2>
+      <p>Nastro ¼" a 38, 19, 9,5, 4,75 e 2,4 cm/s; cassetta tipo I, II, IV; filo d'acciaio; cilindro di cera; 78 giri; vinile 45
+      e 33; VHS lineare SP e LP, VHS Hi-Fi, Video8, U-matic; banda ottica 35 e 16 mm; pista Super 8; radio AM e FM; telefono.
+      Riduzione rumore: Dolby A, B, C, dbx, dove il supporto li accettava. <i>Copie</i>: ogni riversaggio in più toglie acuti
+      e aggiunge fruscio.</p>
+      <h2>Ascolto</h2>
+      <p>Radio a valvole, radiolina a transistor, juke-box Wurlitzer 1015, televisore a tubo, sala cinematografica (curva X).</p>
+      <h2>Cosa è verificato</h2>
+      <ul>
+        <li>Verificato da test automatici: tempi dei meter secondo le norme, equalizzazioni, filtri, livello di registrazione,
+          preset, commutatori, acquisizione; plugin validato con lo strumento Steinberg; build su Mac, Windows e Linux.</li>
+        <li>Da provare con l'orecchio: Fairlight e Logic con registrazioni vere. Frontali di Studer, EL 3300, TC-D5M,
+          cineprese, Neve, SSL e Mackie ricostruiti da descrizioni dove mancava il manuale.</li>
+      </ul>
+      <div class="box">Licenza GPL-3.0. Sorgenti, documentazione tecnica e segnalazioni: il repository del progetto.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Le macchine</span><span>4 / 4</span></footer>
+</section>
+
+</body>
+</html>

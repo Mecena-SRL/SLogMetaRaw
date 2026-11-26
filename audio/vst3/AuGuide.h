@@ -10,6 +10,8 @@
 
 #include <cstring>
 #include <iterator>
+#include <string>
+#include <vector>
 
 // ---- the «?»: one story per recorder (family by family, in table order) and per desk
 
@@ -62,6 +64,10 @@ inline constexpr const char* kAuDeviceStories[] = {
     "incide la cera. Si registrava gridando o suonando vicino alla tromba; il livello si regolava spostandosi.",
     "Registratore a filo d'acciaio americano del dopoguerra, prima che il nastro arrivasse nelle case: il filo "
     "sottile dà poca banda, fruscio e cadute di livello. L'indicatore è una lampadina al neon.",
+    // Registratore a bobine sincrono
+    "Registratore svizzero a batterie per il cinema, costruito a Bienne: pista intera su nastro da 6,35 mm a 19,05 "
+    "cm/s con il segnale pilota per il sincrono con la cinepresa, più leggero dei Nagra. Lo usò la Nouvelle Vague "
+    "per la presa diretta, per esempio in Vivre sa vie (1962) di Godard.",
 };
 
 inline constexpr const char* kAuDeskStories[] = {
@@ -80,7 +86,7 @@ inline constexpr const char* kAuDeskStories[] = {
 };
 
 static_assert(std::size(kAuDeviceStories) == std::size(kAuReelPortable) + std::size(kAuReelStudio) +
-                  std::size(kAuCassetteDecks) + std::size(kAuCameras) + std::size(kAuEarly),
+                  std::size(kAuCassetteDecks) + std::size(kAuCameras) + std::size(kAuEarly) + std::size(kAuReelSync),
               "one story per recorder");
 static_assert(std::size(kAuDeskStories) == std::size(kAuConsoles), "one story per desk");
 
@@ -88,82 +94,143 @@ static_assert(std::size(kAuDeskStories) == std::size(kAuConsoles), "one story pe
 
 enum class AuLoud : uint8_t { Speech, Music, Percussive };
 
-// What is in front of the microphone (Ripresa). Microphones are rows of kAuMics, best first; recorders are names as
-// they appear in the device table, best first; the panel offers the first that fits the machine and its period.
+// The presets of use (Ripresa): what the take is for. Choosing one sets the recorder as an engineer of the period
+// would have: microphone (rows of kAuMics, the first that fits the recorder and its years), its switches (position
+// names, the first the microphone has), filter, limiter, input, tape speed. The record level comes from the measure.
+// Recorders are names as in the device table: the machines used for it, for the advice. [dedotto: period practice]
+enum class AuSpeed : uint8_t { Keep, Fastest, Standard };   // Standard: the second fastest (19 cm/s on a Nagra)
 struct AuSource
 {
+    const char* cat;             // the category the menu groups it under
     const char* name;
     AuLoud loud;
-    int lowCut;             // Hz, 0 = none
-    bool limit;             // the limiter on (live, unpredictable sources)
-    int mics[5];            // kAuMics rows, -1 ends
-    const char* recorders[4];   // nullptr ends
+    int lowCut;                  // Hz, 0 = none
+    bool limit;                  // the limiter on (live, unpredictable sources)
+    int mics[5];                 // kAuMics rows, -1 ends
+    const char* filter[3];       // the microphone's bass filter position, by name (nullptr ends)
+    const char* pattern[3];      // its polar pattern, by name
+    int input;                   // 0 stereo, 1 mono
+    AuSpeed speed;
+    const char* recorders[4];    // nullptr ends
     const char* tip;
 };
 
+#define AU_CARD { "Cardioide", "Unidirezionale" }
+#define AU_OMNI { "Omni", "Omnidirezionale", "Non direzionale" }
+#define AU_EIGHT { "Figura a 8", "Bidirezionale" }
+#define AU_MUSIC { "M", "M (musica)" }
+#define AU_SPEECH { "3", "V1 (voce)" }
+#define AU_WIND { "4", "V2 (voce, più taglio)" }
 inline constexpr AuSource kAuSources[] = {
-    { "Nessuna guida", AuLoud::Music, 0, false, { -1 }, { nullptr }, "" },
-    { "Voce parlata (dialogo, intervista)", AuLoud::Speech, 80, true, { 12, 10, 9, 5, 4 },
-      { "Nagra 4.2", "Nagra III", "Uher", "TC-D5M" }, "microfono vicino alla bocca, fuori asse dal fiato; filtro contro il vento e i passi" },
-    { "Voce cantata", AuLoud::Music, 60, false, { 7, 8, 5, 11, 6 },
-      { "Studer A80", "Studer J37", "Ampex 350", "Revox A77" }, "a un palmo dal microfono, più lontano negli acuti forti" },
-    { "Coro o gruppo vocale", AuLoud::Music, 40, false, { 8, 7, 4, -1 },
-      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "un microfono davanti al gruppo, all'altezza delle teste" },
-    { "Chitarra acustica", AuLoud::Music, 60, false, { 8, 7, 10, -1 },
-      { "Revox A77", "Studer A80", "Portastudio", nullptr }, "verso il dodicesimo tasto, a 20-30 cm" },
-    { "Chitarra elettrica (amplificatore)", AuLoud::Music, 80, false, { 10, 11, 4, 9, -1 },
-      { "Studer J37", "Studer A80", "Portastudio", nullptr }, "vicino al cono, a metà tra centro e bordo" },
-    { "Basso (amplificatore)", AuLoud::Music, 30, false, { 7, 10, 9, -1 },
+    { "", "Nessun preset", AuLoud::Music, 0, false, { -1 }, {}, {}, 0, AuSpeed::Keep, { nullptr }, "" },
+    // Cinema
+    { "Cinema", "Presa diretta", AuLoud::Speech, 80, true, { 12, 10, 5, -1 }, AU_SPEECH, AU_CARD, 1, AuSpeed::Standard,
+      { "Nagra 4.2", "Nagra III", "Auricon", nullptr }, "fucile sull'asta appena fuori quadro, puntato alla bocca; pilota per il sincrono" },
+    { "Cinema", "Documentario", AuLoud::Speech, 80, true, { 12, 10, 9, 13, -1 }, AU_SPEECH, AU_CARD, 1, AuSpeed::Standard,
+      { "Nagra 4.2", "Nagra III", "Uher", "TC-D5M" }, "il microfono segue chi parla; l'ambiente si registra a parte, un minuto per scena" },
+    { "Cinema", "Ambiente e rumori di scena", AuLoud::Speech, 40, false, { 12, 8, 13, -1 }, AU_MUSIC, AU_OMNI, 0, AuSpeed::Standard,
+      { "Nagra 4.2", "Nagra III", "TC-D5M", "WM-D6C" }, "fermi e lontani dal passaggio; si registra in silenzio di troupe" },
+    { "Cinema", "Super 8 e film di famiglia", AuLoud::Speech, 0, false, { 13, 14, -1 }, {}, {}, 1, AuSpeed::Keep,
+      { "Ektasound", "Canon 514XL-S", nullptr }, "il microfono a mano verso chi parla, il livello è automatico" },
+    // Televisione
+    { "Televisione", "Servizio esterno e intervista", AuLoud::Speech, 100, true, { 9, 10, 12, 6, -1 }, AU_WIND, AU_CARD, 1,
+      AuSpeed::Standard, { "Nagra 4.2", "Auricon", "Uher", nullptr }, "microfono a mano a un palmo dalla bocca, il filtro toglie vento e maneggio" },
+    { "Televisione", "Studio, conduttore e ospiti", AuLoud::Speech, 80, false, { 5, 10, 11, 7, -1 }, AU_SPEECH, AU_CARD, 1,
+      AuSpeed::Standard, { "Ampex 350", "Studer A80", nullptr }, "microfono da tavolo o a giraffa, voce piena e vicina" },
+    { "Televisione", "Videocamera di famiglia", AuLoud::Speech, 0, false, { 14, -1 }, {}, {}, 1, AuSpeed::Keep,
+      { "JVC", "CCD-V8", nullptr }, "il microfono della videocamera, livello automatico" },
+    // Radio
+    { "Radio", "Intervista e radiocronaca", AuLoud::Speech, 100, true, { 9, 10, 6, 11, -1 }, AU_WIND, AU_CARD, 1,
+      AuSpeed::Standard, { "Uher", "Nagra III", "WM-D6C", "TC-D5M" }, "microfono a mano tra chi chiede e chi risponde" },
+    { "Radio", "Annunci e radiodramma in studio", AuLoud::Speech, 60, false, { 4, 5, 7, 10, -1 }, AU_SPEECH, AU_EIGHT, 1,
+      AuSpeed::Fastest, { "Ampex 350", "Studer A80", "Revox A77", nullptr }, "a un palmo, di lato al fiato; la voce calda del nastro" },
+    // Sala di registrazione
+    { "Sala di registrazione", "Voce", AuLoud::Music, 40, false, { 7, 8, 5, 11, 6 }, AU_MUSIC, AU_CARD, 1, AuSpeed::Fastest,
+      { "Studer A80", "Studer J37", "Ampex 350", "Revox A77" }, "a un palmo dal microfono, più lontano nei passaggi forti" },
+    { "Sala di registrazione", "Cori", AuLoud::Music, 40, false, { 8, 7, 4, 5, -1 }, AU_MUSIC, AU_OMNI, 1, AuSpeed::Fastest,
+      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "un microfono davanti al coro, alto, a distanza pari alla larghezza del gruppo" },
+    { "Sala di registrazione", "Chitarra acustica", AuLoud::Music, 60, false, { 8, 7, 10, -1 }, AU_MUSIC, AU_CARD, 1,
+      AuSpeed::Fastest, { "Revox A77", "Studer A80", "Portastudio", nullptr }, "verso il dodicesimo tasto, a 20-30 cm" },
+    { "Sala di registrazione", "Chitarra elettrica", AuLoud::Music, 80, false, { 10, 11, 4, 9, -1 }, AU_MUSIC, {}, 1,
+      AuSpeed::Fastest, { "Studer J37", "Studer A80", "Portastudio", nullptr }, "vicino al cono dell'amplificatore, a metà tra centro e bordo" },
+    { "Sala di registrazione", "Basso", AuLoud::Music, 0, false, { 7, 10, 9, -1 }, AU_MUSIC, AU_CARD, 1, AuSpeed::Fastest,
       { "Studer A80", "Studer J37", "Portastudio", nullptr }, "davanti al cono; niente filtro, il basso è tutto sotto" },
-    { "Grancassa", AuLoud::Percussive, 30, false, { 10, 7, 9, -1 },
-      { "Studer A80", "Studer J37", "Portastudio", nullptr }, "nel foro della pelle risonante" },
-    { "Rullante e tom", AuLoud::Percussive, 80, false, { 11, 10, -1 },
-      { "Studer A80", "Studer J37", "Portastudio", nullptr }, "a due dita dal bordo, puntato al centro della pelle" },
-    { "Batteria intera (panoramici)", AuLoud::Percussive, 60, false, { 8, 7, 4, -1 },
-      { "Studer A80", "Studer J37", "Ampex 350", "Portastudio" }, "sopra la batteria, un metro sopra i piatti" },
-    { "Pianoforte", AuLoud::Music, 40, false, { 7, 8, 4, -1 },
-      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "a coda aperto, sopra le corde a metà" },
-    { "Fiati (ottoni, sassofono)", AuLoud::Music, 60, false, { 4, 5, 10, 7, -1 },
-      { "Ampex 350", "Studer J37", "Studer A80", nullptr }, "fuori asse dalla campana, il nastro regge gli ottoni" },
-    { "Archi", AuLoud::Music, 40, false, { 8, 4, 7, -1 },
-      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "sopra lo strumento, un metro circa" },
-    { "Orchestra o banda", AuLoud::Music, 30, false, { 8, 7, 4, -1 },
-      { "Studer A80", "Ampex 350", "Nagra 4.2", nullptr }, "dietro il direttore, in alto" },
-    { "Ambiente e rumori di scena", AuLoud::Speech, 40, false, { 12, 8, 13, -1 },
-      { "Nagra 4.2", "Nagra III", "TC-D5M", "WM-D6C" }, "fermo e lontano dal passaggio, a mano o su asta" },
-    { "Concerto dal vivo", AuLoud::Percussive, 60, true, { 11, 10, 12, -1 },
-      { "Nagra 4.2", "Studer A80", "Portastudio", "WM-D6C" }, "dal mixer di sala o con una coppia in platea" },
+    { "Sala di registrazione", "Batteria", AuLoud::Percussive, 40, false, { 8, 7, 4, -1 }, AU_MUSIC, AU_CARD, 0,
+      AuSpeed::Fastest, { "Studer A80", "Studer J37", "Ampex 350", "Portastudio" },
+      "panoramici un metro sopra i piatti; grancassa e rullante, se servono, su tracce a parte" },
+    { "Sala di registrazione", "Pianoforte", AuLoud::Music, 30, false, { 7, 8, 4, -1 }, AU_MUSIC, AU_CARD, 0, AuSpeed::Fastest,
+      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "a coda aperta, sopra le corde a metà" },
+    { "Sala di registrazione", "Fiati", AuLoud::Music, 60, false, { 4, 5, 10, 7, -1 }, AU_MUSIC, AU_EIGHT, 1, AuSpeed::Fastest,
+      { "Ampex 350", "Studer J37", "Studer A80", nullptr }, "fuori asse dalla campana; il microfono a nastro regge gli ottoni" },
+    { "Sala di registrazione", "Archi", AuLoud::Music, 40, false, { 8, 4, 7, -1 }, AU_MUSIC, AU_CARD, 1, AuSpeed::Fastest,
+      { "Studer A80", "Ampex 350", "Revox A77", nullptr }, "sopra lo strumento, a un metro circa" },
+    { "Sala di registrazione", "Orchestra", AuLoud::Music, 30, false, { 8, 7, 4, -1 }, AU_MUSIC, AU_OMNI, 0, AuSpeed::Fastest,
+      { "Studer A80", "Ampex 350", "Nagra 4.2", nullptr }, "dietro e sopra il direttore; la dinamica è dell'orchestra, il livello non si tocca" },
+    // Concerto
+    { "Concerto dal vivo", "Dal mixer di sala", AuLoud::Percussive, 60, true, { 11, 10, -1 }, AU_MUSIC, AU_CARD, 0,
+      AuSpeed::Fastest, { "Studer A80", "Revox A77", "Portastudio", nullptr }, "l'uscita del mixer di sala sul registratore, livello con margine" },
+    { "Concerto dal vivo", "Coppia in platea", AuLoud::Percussive, 60, true, { 8, 12, 10, -1 }, AU_MUSIC, AU_CARD, 0,
+      AuSpeed::Fastest, { "Nagra 4.2", "WM-D6C", "TC-D5M", nullptr }, "due microfoni alti al centro della sala, lontano dagli altoparlanti" },
+    // Casa
+    { "In casa", "Voci di famiglia", AuLoud::Speech, 0, false, { 3, 13, -1 }, {}, {}, 1, AuSpeed::Keep,
+      { "Geloso", "EL 3300", "Revox A77", nullptr }, "il microfono sul tavolo in mezzo a chi parla" },
+    { "In casa", "Provino musicale", AuLoud::Music, 40, false, { 11, 13, 10, -1 }, AU_MUSIC, {}, 1, AuSpeed::Fastest,
+      { "Portastudio", "Revox A77", "Geloso", nullptr }, "una pista per strumento; livelli alti contro il fruscio" },
 };
+#undef AU_CARD
+#undef AU_OMNI
+#undef AU_EIGHT
+#undef AU_MUSIC
+#undef AU_SPEECH
+#undef AU_WIND
 
-// The kind of programme on the master (Mix e supporto), and the desks it was made on.
+// The presets of the mix (Mix e supporto): the kind of programme, the desks it was made on, the master's input.
 struct AuProgram
 {
+    const char* cat;
     const char* name;
     AuLoud loud;
+    int input;                 // 0 stereo, 1 mono
     const char* desks[3];      // names as in kAuConsoles, best first; nullptr ends
     const char* recorders[3];  // in Ripresa, for the tracks
     const char* tip;
 };
 
 inline constexpr AuProgram kAuPrograms[] = {
-    { "Nessuna guida", AuLoud::Music, { nullptr }, { nullptr }, "" },
-    { "Parlato, radiodramma, notiziario", AuLoud::Speech, { "RCA", "Neve", nullptr }, { "Nagra 4.2", "Uher", "Ampex 350" },
+    { "", "Nessun preset", AuLoud::Music, 0, { nullptr }, { nullptr }, "" },
+    { "Cinema", "Missaggio del film", AuLoud::Speech, 1, { "Neve", "RCA", nullptr }, { "Nagra 4.2", "Nagra III", nullptr },
+      "dialoghi, musica ed effetti su piste separate, poi il missaggio in mono" },
+    { "Cinema", "Documentario", AuLoud::Speech, 1, { "Neve", "RCA", nullptr }, { "Nagra 4.2", "Uher", nullptr },
       "voce in primo piano, musica di commento sotto di 10-15 dB" },
-    { "Rock'n'roll, jazz anni '50", AuLoud::Music, { "RCA", nullptr }, { "Ampex 350", "Revox A77", nullptr },
-      "pochi microfoni, la stanza fa il suono" },
-    { "Beat e pop anni '60", AuLoud::Music, { "REDD", "RCA", nullptr }, { "Studer J37", "Ampex 350", nullptr },
+    { "Televisione", "Programma di studio", AuLoud::Speech, 1, { "Neve", "SSL", "RCA" }, { "Ampex 350", "Studer A80", nullptr },
+      "voci al centro e vicine, applausi e musica sotto" },
+    { "Televisione", "Telegiornale e servizi", AuLoud::Speech, 1, { "RCA", "Neve", nullptr }, { "Nagra 4.2", "Auricon", nullptr },
+      "la voce del giornalista sopra l'ambiente del servizio" },
+    { "Radio", "Radiodramma e varietà", AuLoud::Speech, 1, { "RCA", "REDD", nullptr }, { "Ampex 350", "Studer A80", nullptr },
+      "voci, effetti e musica dal vivo in uno studio solo" },
+    { "Radio", "Programma musicale", AuLoud::Music, 1, { "RCA", "Neve", nullptr }, { "Ampex 350", "Revox A77", nullptr },
+      "dischi e nastri in onda, il livello costante del broadcast" },
+    { "Sala di registrazione", "Musica anni '50", AuLoud::Music, 1, { "RCA", nullptr }, { "Ampex 350", "Revox A77", nullptr },
+      "pochi microfoni, la stanza fa il suono; tutto in mono" },
+    { "Sala di registrazione", "Beat e pop anni '60", AuLoud::Music, 0, { "REDD", "RCA", nullptr }, { "Studer J37", "Ampex 350", nullptr },
       "quattro piste: si riversa per liberarne" },
-    { "Rock anni '70", AuLoud::Percussive, { "Neve", "SSL", nullptr }, { "Studer A80", nullptr },
+    { "Sala di registrazione", "Rock anni '70", AuLoud::Percussive, 0, { "Neve", "SSL", nullptr }, { "Studer A80", nullptr },
       "batteria a molti microfoni, basso diretto" },
-    { "Pop anni '80", AuLoud::Percussive, { "SSL", "Neve", nullptr }, { "Studer A80", "Portastudio", nullptr },
+    { "Sala di registrazione", "Pop anni '80", AuLoud::Percussive, 0, { "SSL", "Neve", nullptr }, { "Studer A80", "Portastudio", nullptr },
       "compressione su ogni canale, riverbero ampio" },
-    { "Registrazione casalinga, demo", AuLoud::Music, { "Mackie", nullptr }, { "Portastudio", "Revox A77", "WM-D6C" },
-      "quattro piste a cassetta, si registra a livello alto contro il fruscio" },
-    { "Classica, orchestra", AuLoud::Music, { "Neve", "REDD", nullptr }, { "Studer A80", "Nagra 4.2", nullptr },
-      "pochi microfoni lontani; il livello resta fermo, la dinamica è dell'orchestra" },
-    { "Colonna sonora di film", AuLoud::Speech, { "Neve", "RCA", nullptr }, { "Nagra 4.2", "Nagra III", nullptr },
-      "dialoghi, musica ed effetti su piste separate, poi il missaggio" },
+    { "Sala di registrazione", "Classica", AuLoud::Music, 0, { "Neve", "REDD", nullptr }, { "Studer A80", "Nagra 4.2", nullptr },
+      "pochi microfoni lontani; il livello resta fermo" },
+    { "In casa", "Registrazione casalinga", AuLoud::Music, 0, { "Mackie", nullptr }, { "Portastudio", "Revox A77", "WM-D6C" },
+      "quattro piste a cassetta, livelli alti contro il fruscio" },
 };
+
+// The menu's entries: «Categoria · Preset», as the host lists them.
+template <class T, size_t N> std::vector<std::string> auPresetNames(const T (&table)[N])
+{
+    std::vector<std::string> out;
+    for (const T& p : table) out.push_back(*p.cat ? std::string(p.cat) + " · " + p.name : std::string(p.name));
+    return out;
+}
 
 // Where the peaks should reach on a meter of this kind, in dB on its own scale (0 = the alignment tone).
 inline double auTargetPeak(AuMeter meter, AuLoud loud)

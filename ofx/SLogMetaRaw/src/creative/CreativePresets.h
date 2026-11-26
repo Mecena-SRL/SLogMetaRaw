@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Creative node's presets as data: device families, their models (real commercial names), the film
-// manufacturers and their stocks. A name says which look a row aims at; every number is a parametric estimate from
-// the research (docs/CREATIVE.md, "Preset"), not a measured profile of that product. Order is permanent within each
-// list (Resolve saves the index); append only.
+// manufacturers and their stocks. A name says which look a row aims at; every number here is a parametric estimate
+// from the research (docs/CREATIVE.md, "Preset"); the stocks linked to a datasheet (kCrSheetLinks) take their curves,
+// sensitivities and dyes from it instead. Order is permanent within each list (Resolve saves the index); append only.
 #pragma once
 #include <array>
 #include <cstddef>
@@ -59,7 +59,7 @@ inline constexpr CrStock kCrKodak[] = {
     { "Ektachrome EF 7241 (1966)", kStRev, 1, kG16, 14, 1.05f, 1.05f },
     { "Ektachrome Commercial 7252 (1970)", kStRev, 1, kG16, 9, 0.95f, 0.8f },
     { "Ektachrome E100 (foto)", kStRev, 4, kG135 | kG120, 8, 1.1f },
-    { "Ektachrome 100VS (foto)", kStRev, 0, kG135 | kG120, 11 },
+    { "Ektachrome 100VS (foto)", kStRev, 0, kG135 | kG120, 11, 1.25f, 1.05f },
     { "Portra 160 (foto)", kStNeg, 17, kG135 | kG120, 7 },
     { "Portra 400 (foto)", kStNeg, 16, kG135 | kG120, 10, 0.95f, 0.97f },
     { "Portra 800 (foto)", kStNeg, 18, kG135 | kG120, 14, 0.95f },
@@ -79,21 +79,21 @@ inline constexpr CrStock kCrKodak[] = {
     { "Eastmancolor 5251 (1962)", kStNeg, 9, kG16 | kG35, 18, 0.95f } };
 
 inline constexpr CrStock kCrFuji[] = {
-    { "Eterna 500 8573 (2004)", kStNeg, 3, kG16 | kG35, 9, 1, 0.95f, 1, CR_FUJI },
-    { "Eterna 250D 8563 (2006)", kStNeg, 3, kG16 | kG35, 7, 1, 0.95f, 1, CR_FUJI },
-    { "Eterna Vivid 500 8547 (2009)", kStNeg, 4, kG16 | kG35, 10, 1.15f, 1, 1, CR_FUJI },
-    { "Eterna Vivid 160 8543 (2007)", kStNeg, 4, kG16 | kG35, 7, 1.15f, 1, 1, CR_FUJI },
+    { "Eterna 500 8573 (2004)", kStNeg, 3, kG16 | kG35, 9, 0.85f, 0.95f },
+    { "Eterna 250D 8563 (2006)", kStNeg, 3, kG16 | kG35, 7, 0.85f, 0.95f },
+    { "Eterna Vivid 500 8547 (2009)", kStNeg, 4, kG16 | kG35, 10, 1.15f },
+    { "Eterna Vivid 160 8543 (2007)", kStNeg, 4, kG16 | kG35, 7, 1.15f },
     { "Reala 500D 8592 (2001)", kStNeg, 0, kG16 | kG35, 9, 1, 0.97f, 1, { -0.01f, 0.005f, 0.005f } },
-    { "F-64D 8522 (anni '90)", kStNeg, 14, kG16 | kG35, 5, 1.1f, 1, 1, CR_FUJI },
-    { "F-500 8572 (anni '90)", kStNeg, 1, kG16 | kG35, 13, 1, 1, 1, CR_FUJI },
+    { "F-64D 8522 (anni '90)", kStNeg, 14, kG16 | kG35, 5, 1.05f },
+    { "F-500 8572 (anni '90)", kStNeg, 1, kG16 | kG35, 13 },
     { "Fujicolor AX 8514 (anni '80)", kStNeg, 1, kG16 | kG35, 15, 1, 1, 1, CR_FUJI },
     { "Fujicolor 8517 (1977)", kStNeg, 19, kG16 | kG35, 14, 1, 1, 1, CR_FUJI },
     { "Fujichrome R25 Single-8 (anni '70)", kStRev, 1, kGS8, 10, 1, 1, 1, CR_FUJI },
-    { "Velvia 50 (foto)", kStRev, 0, kG135 | kG120, 9, 1.2f, 1.1f },
+    { "Velvia 50 (foto)", kStRev, 0, kG135 | kG120, 9, 0.97f, 1, 1, { 0.01f, 0, -0.01f } },
     { "Provia 100F (foto)", kStRev, 1, kG135 | kG120, 8 },
     { "Astia 100F (foto)", kStRev, 1, kG135 | kG120, 7, 0.95f, 0.85f },
     { "Pro 400H (foto)", kStNeg, 5, kG135 | kG120, 9, 0.9f, 1, 1, { -0.02f, 0.02f, 0.01f } },
-    { "Superia 400 (foto)", kStNeg, 16, kG135, 12, 1, 1, 1, CR_FUJI } };
+    { "Superia 400 (foto)", kStNeg, 16, kG135, 12 } };
 
 inline constexpr CrStock kCrAgfa[] = {
     { "Agfacolor Neu invertibile (1936)", kStRev, 1, kG16 | kG135, 14, 0.8f, 0.95f, 1, CR_AGFA },
@@ -160,9 +160,9 @@ inline constexpr CrStock kCrDupont[] = {
     { "Rapid Reversal 931", kStBW, 1, kG16, 17, 1, 1.25f } };
 
 inline constexpr CrStock kCrCinestill[] = {
-    { "CineStill 800T", kStNeg, 2, kG135 | kG120, 12, 1, 1.12f },
-    { "CineStill 50D", kStNeg, 2, kG135 | kG120, 6, 1, 1.12f },
-    { "CineStill 400D", kStNeg, 2, kG135 | kG120, 10, 1, 1.12f },
+    { "CineStill 800T", kStNeg, 2, kG135 | kG120, 12 },
+    { "CineStill 50D", kStNeg, 2, kG135 | kG120, 6 },
+    { "CineStill 400D", kStNeg, 2, kG135 | kG120, 10 },
     { "CineStill BwXX", kStBW, 0, kG135 | kG120, 15 } };
 
 inline constexpr CrStock kCrLomo[] = {
@@ -181,6 +181,23 @@ inline constexpr CrStock kCrKonica[] = {
 #undef CR_FUJI
 #undef CR_EAST
 #undef CR_AGFA
+
+// The stocks measured on their datasheets (CreativeSheets.h, kCrSheetFilms), and those a measured sibling of the same
+// maker and generation stands for (measured 0, [ded]: docs/creative/SCHEDE_TECNICHE.md): these go through the spectral
+// chain, a sibling with its own contrast, saturation and cast over the measured one; the rest keep the model.
+// Pairs: kCrMakers index, stock index; then the sheet. Order is free (looked up).
+struct CrSheetLink { unsigned char maker, stock, sheet, measured; };
+inline constexpr CrSheetLink kCrSheetLinks[] = {
+    { 0, 0, 0, 1 },   { 0, 1, 1, 1 },   { 0, 2, 2, 1 },   { 0, 3, 3, 1 },   { 0, 16, 4, 1 },  { 0, 31, 5, 1 },
+    { 0, 32, 6, 1 },  { 0, 33, 7, 1 },  { 0, 34, 8, 1 },  { 0, 35, 9, 1 },  { 0, 36, 10, 1 }, { 0, 21, 17, 1 },
+    { 0, 29, 16, 1 }, { 0, 23, 16, 1 },   // Ektachrome 100D 7294: the E100 emulsion on cine base (Kodak, 2018)
+    { 1, 11, 14, 1 }, { 1, 13, 12, 1 },
+    { 0, 4, 0, 0 },   { 0, 5, 0, 0 },   { 0, 6, 0, 0 },   { 0, 7, 0, 0 },   { 0, 8, 0, 0 },   { 0, 9, 1, 0 },
+    { 0, 10, 3, 0 },  { 0, 17, 17, 0 }, { 0, 18, 17, 0 }, { 0, 20, 17, 0 }, { 0, 22, 17, 0 }, { 0, 24, 16, 0 },
+    { 0, 25, 16, 0 }, { 0, 30, 16, 0 },
+    { 1, 0, 12, 0 },  { 1, 1, 12, 0 },  { 1, 2, 12, 0 },  { 1, 3, 12, 0 },  { 1, 4, 12, 0 },  { 1, 5, 11, 0 },
+    { 1, 6, 13, 0 },  { 1, 10, 15, 0 }, { 1, 12, 14, 0 }, { 1, 14, 13, 0 },
+    { 10, 0, 0, 0 },  { 10, 1, 3, 0 },  { 10, 2, 2, 0 } };   // CineStill: Kodak cine stock without its remjet
 
 // The manufacturers: their stock lists, each its own choice (name permanent), shown with its manufacturer.
 struct CrMaker { const char* name; const char* param; const CrStock* stocks; int count; };

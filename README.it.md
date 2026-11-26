@@ -53,6 +53,9 @@ meglio da quello che c'è. Non può creare quello che non c'è.
    destro › **Apri**. Chiede la password del Mac perché il plugin va in una cartella di sistema.
 3. Riavvia DaVinci Resolve.
 
+Solo i plugin audio (Logic Pro, GarageBand, Cubase, Reaper, Ableton e le altre DAW): `LogMetaRawAudio-<versione>.dmg`
+(VST3 e Audio Unit) o `LogMetaRawAudio-<versione>-windows-x64.zip` (VST3), ognuno con la sua guida.
+
 L'installer cancella anche la cache dei plugin di Resolve (`OFXPluginCacheV2.xml`), che Resolve ricostruisce al
 prossimo avvio. Senza, Resolve mostrerebbe ancora il pannello vecchio e non vedrebbe il nodo Creative.
 
@@ -421,6 +424,10 @@ sulle sue trasformazioni integrate (ACES: Academy of Motion Picture Arts and Sci
 v1.1.0 è di Jed Smith (GPL-3.0), portato dalla sua DCTL. Curva e gamut DJI D-Log M vengono dalle misure della Osmo Action
 6 in [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 e dalla LUT DJI della Action 6, usata solo come
 riferimento e non distribuita; fino alla 3.1.x la curva era il fit di Thatcher Freeman.
+
+Le pellicole misurate del nodo Creative vengono dalle schede tecniche Kodak e Fujifilm digitalizzate da
+[spektrafilm](https://github.com/andreavolpato/agx-emulsion) (Andrea Volpato, profili CC BY-SA 4.0), ridotte da
+`tools/creative/datasheets.py`; dati colorimetrici (osservatore CIE, illuminanti, set di rawtoaces) da colour-science (BSD-3).
 
 Stabilize si basa su [Gyroflow](https://github.com/gyroflow/gyroflow) di AdrianEddy e contributori (GPL-3.0) e sul suo
 catalogo degli obiettivi. Il filtro spaziale del nodo Noise segue NeighShrink (Chen, Bui e Krzyżak, 2004).

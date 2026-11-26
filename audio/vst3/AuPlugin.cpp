@@ -24,6 +24,7 @@
 #include <deque>
 #include <functional>
 #include <cmath>
+#include <cstring>
 #include <random>
 
 using namespace Steinberg;
@@ -1008,10 +1009,40 @@ public:
     }
     static constexpr CCoord kGuideLines = 64;   // the guide's advice under its menu
     static constexpr int32_t kApplyTag = 20000;
+    // Where each row goes: full rows one to a line, half rows two to a line, the preset row with its advice below.
+    struct Slot
+    {
+        const AuRow* row;
+        CCoord x, y, w;
+    };
+    static std::vector<Slot> layout(bool mix, CCoord& height)
+    {
+        std::vector<Slot> out;
+        CCoord y = kTop;
+        bool right = false;   // a half row is waiting for its neighbour
+        for (const AuRow& row : auRows(mix)) {
+            if (row.kind == AuRowKind::Half) {
+                out.push_back({ &row, right ? kW / 2 + 6 : 12, y, kW / 2 - 18 });
+                if (right) y += kRow;
+                right = !right;
+                continue;
+            }
+            if (right) y += kRow, right = false;
+            out.push_back({ &row, 12, y, kW - 24 });
+            y += row.kind == AuRowKind::Header ? kRow - 2 : kRow;
+            if (row.control == kPSource) y += kGuideLines;
+        }
+        if (right) y += kRow;
+        height = y + 10;
+        return out;
+    }
     static ViewRect sizeFor(bool mix)
     {
-        return ViewRect(0, 0, int32(kW), int32(kTop + (auRows(mix).size() + 1) * kRow + kGuideLines + 10));
+        CCoord h;
+        layout(mix, h);
+        return ViewRect(0, 0, int32(kW), int32(h));
     }
+
 
     bool PLUGIN_API open(void* parent, const PlatformType& platform) override
     {
@@ -1023,36 +1054,50 @@ public:
         frame->addView(plate_);
         meters_ = new Meters(CRect(0, 0, 10, 10));
         frame->addView(meters_);
-        CCoord y = kTop;
-        for (const AuRow& row : auRows(mix_)) {
-            auto* label = new CTextLabel(CRect(12, y, 172, y + kRow - 4), row.label);
-            style(label, kNormalFont, CColor(220, 214, 200));
+        CCoord height;
+        for (const Slot& at : layout(mix_, height)) {
+            const AuRow& row = *at.row;
+            const CCoord x = at.x, y = at.y, right = at.x + at.w;
+            if (row.kind == AuRowKind::Header) {   // a group: its name and a rule
+                auto* head = new CTextLabel(CRect(x, y + 2, right, y + kRow - 4), row.label);
+                style(head, kNormalFontSmall, CColor(232, 196, 120));
+                head->setHoriAlign(kLeftText);
+                frame->addView(head);
+                auto* rule = new CViewContainer(CRect(x + 200, y + kRow / 2, right, y + kRow / 2 + 1));
+                rule->setBackgroundColor(CColor(232, 196, 120, 70));
+                rule->setMouseEnabled(false);
+                frame->addView(rule);
+                continue;
+            }
+            const bool half = row.kind == AuRowKind::Half;
+            const CCoord labelW = half ? 104 : 160, toggleX = x + labelW + 2, controlX = x + labelW + (half ? 24 : 32);
+            auto* label = new CTextLabel(CRect(x, y, x + labelW, y + kRow - 4), row.label);
+            style(label, half ? kNormalFontSmall : kNormalFont, CColor(220, 214, 200));
             label->setHoriAlign(kLeftText);
             frame->addView(label);
-            if (row.toggle >= 0) add(new CCheckBox(CRect(176, y + 3, 196, y + kRow - 5), this, row.toggle), row.toggle);
-            if (row.control >= 0) addControl(AuParamId(row.control), CRect(204, y, kW - 84, y + kRow - 4));
-            y += kRow;
+            if (row.toggle >= 0) add(new CCheckBox(CRect(toggleX, y + 3, toggleX + 20, y + kRow - 5), this, row.toggle), row.toggle);
+            if (row.control == kPSource) {   // the preset menu, «Regola livello», the advice below
+                addControl(kPSource, CRect(controlX, y, right - 132, y + kRow - 4));
+                auto* level = new CTextButton(CRect(right - 124, y, right, y + kRow - 4), this, kApplyTag, "Regola livello");
+                level->setFont(kNormalFontSmall);
+                level->setTextColor(CColor(240, 234, 220));
+                level->setGradient(VSTGUI::owned(CGradient::create(0, 1, CColor(84, 76, 66), CColor(52, 48, 44))));
+                level->setGradientHighlighted(VSTGUI::owned(CGradient::create(0, 1, CColor(150, 120, 70), CColor(110, 88, 52))));
+                level->setFrameColor(CColor(120, 110, 96));
+                level->setRoundRadius(3);
+                frame->addView(level);
+                advice_ = new CMultiLineTextLabel(CRect(x, y + kRow - 2, right, y + kRow - 2 + kGuideLines));
+                advice_->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
+                style(advice_, kNormalFontSmall, CColor(208, 200, 184));
+                advice_->setHoriAlign(kLeftText);
+                frame->addView(advice_);
+                continue;
+            }
+            if (row.control >= 0) {
+                const bool list = auParam(AuParamId(row.control)).kind == AuKind::List;
+                addControl(AuParamId(row.control), CRect(controlX, y, list ? right : right - (half ? 62 : 72), y + kRow - 4), right);
+            }
         }
-        // The guide: what is being recorded, the advice for this machine, «Applica».
-        auto* label = new CTextLabel(CRect(12, y, 172, y + kRow - 4), mix_ ? "Cosa missi" : "Cosa registri");
-        style(label, kNormalFont, CColor(232, 196, 120));
-        label->setHoriAlign(kLeftText);
-        frame->addView(label);
-        addControl(kPSource, CRect(204, y, kW - 170, y + kRow - 4));
-        auto* apply = new CTextButton(CRect(kW - 162, y, kW - 84, y + kRow - 4), this, kApplyTag, "Applica");
-        apply->setFont(kNormalFontSmall);
-        apply->setTextColor(CColor(240, 234, 220));
-        apply->setGradient(VSTGUI::owned(CGradient::create(0, 1, CColor(84, 76, 66), CColor(52, 48, 44))));
-        apply->setGradientHighlighted(VSTGUI::owned(CGradient::create(0, 1, CColor(150, 120, 70), CColor(110, 88, 52))));
-        apply->setFrameColor(CColor(120, 110, 96));
-        apply->setRoundRadius(3);
-        frame->addView(apply);
-        y += kRow;
-        advice_ = new CMultiLineTextLabel(CRect(12, y, kW - 12, y + kGuideLines));
-        advice_->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
-        style(advice_, kNormalFontSmall, CColor(208, 200, 184));
-        advice_->setHoriAlign(kLeftText);
-        frame->addView(advice_);
         // The «?» and its card, above everything else (dress() keeps them on top).
         card_ = new CMultiLineTextLabel(CRect(0, 0, 10, 10));
         card_->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
@@ -1123,6 +1168,7 @@ public:
                     for (auto [p, plain] : auSetupValues(m.plains[size_t(i)], mix_))
                         if (has_[p]) editWhole(p, plain);
                 coerce();
+                if (id == kPSource) applyPreset();
                 return sync(true);
             }
         ParamValue n = control->getValueNormalized();
@@ -1180,7 +1226,7 @@ private:
         frame->addView(c);
         controls_.push_back({ c, id });
     }
-    void addControl(AuParamId id, const CRect& r)
+    void addControl(AuParamId id, const CRect& r, CCoord valueRight = kW - 12)
     {
         if (auParam(id).kind == AuKind::List) {   // filled by sync(): its entries depend on the other menus
             auto* menu = new COptionMenu(r, this, id);
@@ -1200,7 +1246,7 @@ private:
         slider->setValueColor(CColor(232, 196, 120));
         slider->setDefaultValue(scaleOf(id, mix_).norm(auDefault(id, mix_)));
         add(slider, id);
-        auto* text = new CTextLabel(CRect(r.right + 6, r.top, kW - 12, r.bottom));
+        auto* text = new CTextLabel(CRect(r.right + 4, r.top, valueRight, r.bottom));
         style(text, kNormalFontSmall, CColor(220, 214, 200));
         text->setHoriAlign(kRightText);
         frame->addView(text);
@@ -1297,7 +1343,22 @@ private:
                     names.push_back(kAuFamilies[f].devices[i].name);
                 }
             }
-        else
+        else if (m.id == kPSource) {   // presets under their category
+            auto group = [&](const auto& table) {
+                const char* cat = nullptr;
+                for (int i = 0; i < int(std::size(table)); ++i) {
+                    if (*table[i].cat && (!cat || std::strcmp(cat, table[i].cat) != 0)) {
+                        cat = table[i].cat;
+                        plains.push_back(-1);
+                        names.push_back(cat);
+                    }
+                    plains.push_back(i);
+                    names.push_back(table[i].name);
+                }
+            };
+            if (mix_) group(kAuPrograms);
+            else group(kAuSources);
+        } else
             for (int p : auAllowed(m.id, v, mix_)) {
                 plains.push_back(p);
                 names.push_back(auEntryName(m.id, p, v, mix_));
@@ -1469,14 +1530,20 @@ private:
             advice_->invalid();
         }
     }
-    void applyGuide()
+    void applyGuide()   // «Regola livello»: the record level from the peaks just measured
     {
         double v[kPCount];
         values(v);
-        for (auto [id, plain] : auGuideApply(v, mix_, measured()))
+        if (measured() > kAuNoMeasure / 2) editWhole(kPRecLevel, auGuideLevel(v, mix_, measured()));
+        sync(true);
+    }
+    void applyPreset()   // a preset of use sets the machine as the engineer would have
+    {
+        double v[kPCount];
+        values(v);
+        for (auto [id, plain] : auPresetValues(v, mix_))
             if (has_[id]) editWhole(id, plain);
         coerce();
-        sync(true);
     }
 
     static constexpr int kTick = 33;   // ms: meters at 30 frames a second

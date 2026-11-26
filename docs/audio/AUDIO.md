@@ -48,10 +48,12 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Dispositivo › Modello** (Ripresa): bobine portatili (Geloso G.257, Nagra III, Uher 4000 Report-L, Nagra 4.2),
   bobine da studio (Ampex 350, Studer J37, Revox A77, Studer A80), cassetta (Philips EL 3300, Tascam Portastudio 144,
   Walkman Pro WM-D6C, Sony TC-D5M), cinepresa e videocamera (Auricon Cine-Voice 16 mm, Kodak Ektasound 130,
-  Canon 514XL-S, JVC GR-C1, Sony CCD-V8), prima del nastro (fonografo Edison, registratore a filo Webster-Chicago).
+  Canon 514XL-S, JVC GR-C1, Sony CCD-V8), prima del nastro (fonografo Edison, registratore a filo Webster-Chicago), bobine sincrono per il cinema (Perfectone
+  EP 6, 1959: pista intera ¼" a 19,05 cm/s con pilota, 30 Hz-13 kHz, VU, a batterie; valvole o transistor è
+  discusso, preamplificatore [dedotto] a metà).
   Ogni modello porta microfono di serie, supporti compatibili, preamplificatore, ronzio di rete, riduzione rumore.
 - **Microfono**: di serie, tromba acustica, carbone, piezo, RCA 44-BX e 77-DX, Shure 55, Neumann U 47, AKG C12,
-  EV 635A, MD 421, SM58, MKH 416, electret.
+  EV 635A, MD 421, SM58, MKH 416, electret, AKG D 25 (dinamico da giraffa, 1953; curva [dedotta]).
 - **Supporto**: nastro ¼" a 38/19/9,5/4,75 cm/s, cassetta Tipo I/II/IV, filo, cilindro, 78/45/33 giri, VHS lineare
   SP/LP e Hi-Fi, Video8, U-matic, banda ottica 35 e 16 mm, pista magnetica Super 8, radio AM/FM, telefono.
 - **Riduzione rumore**: Dolby A/B/C, dbx (per ora come riduzione del soffio, non come compander).
@@ -115,7 +117,8 @@ destra), non salvate.
   Webster-Chicago 79/80 (bollettino: RECORD-LISTEN, MICROPHONE VOLUME, TONE, RUN-REWIND, OUTPUT, neon), Geloso G.257
   (schede museali: tasti colorati, manopola rossa, interruttore a rotella; 4,75 cm/s).
 - [dedotto] da fotografie e dalla tipologia, senza manuale letto: Studer J37 e A80, Philips EL 3300, Sony TC-D5M,
-  Auricon, Ektasound, Canon 514XL-S, JVC GR-C1, CCD-V8, fonografo Edison, Neve 8078, SSL 4000 E, Mackie CR-1604. Le
+  Auricon, Ektasound, Canon 514XL-S, JVC GR-C1, CCD-V8, fonografo Edison, Neve 8078, SSL 4000 E, Mackie CR-1604, Perfectone EP 6 (nessuna
+  fotografia dei comandi trovata: comandi tipici di un registratore sincrono svizzero, scritte in francese). Le
   scritte di questi vanno confrontate con le macchine vere.
 - Cambiati di conseguenza: il Geloso registra solo a 4,75 cm/s; l'Uher ha anche 2,4 cm/s (nuovo supporto); il Nagra
   4.2 anche 9,5 cm/s; il Webster ha la lampada al neon e non l'occhio magico; il REDD.51 quattro VU e non PPM.
@@ -140,6 +143,37 @@ destra), non salvate.
   Obiettivi di picco [prassi]: VU e indicatori a media circa 0 (parlato −3, percussioni −5, il VU le sottostima);
   PPM 5 parlato e PPM 6 musica (prassi BBC); modulometro Nagra 0 dB (parlato −2); LED +3; neon appena acceso.
   Consigli di microfono e macchine: scelte d'uso comuni, non regole [dedotto].
+
+## Pannello: frontale, preset d'uso, scelte, regolazioni (richiesta di Ivan, 26/11/2026)
+
+Dall'alto: il frontale della macchina con i suoi comandi; **preset d'uso** a categorie (Cinema, Televisione, Radio,
+Sala di registrazione, Concerto dal vivo, In casa; nel mix: preset di missaggio), che impostano la macchina come in
+quella presa (microfono e suoi commutatori, ingresso, filtro, limitatore, velocità o cassetta: la più silenziosa per
+la musica, la seconda per il parlato, come i 19 cm/s del Nagra al cinema) e dicono a che livello registrare;
+**«Regola livello»** porta le punte misurate all'obiettivo. Poi le **scelte dal microfono al supporto** e le
+**regolazioni**, due per riga. Ogni preset e consiglio è prassi d'epoca [dedotto] (`kAuSources`, `kAuPrograms` in
+`AuGuide.h`).
+
+- **Commutatori dei microfoni** (`kAuMicFilters`, `kAuMicPatterns` in `AudioPresets.h`): filtro dei bassi a 5
+  posizioni del MD 421 (M…S), Voce/Musica del RCA 77-DX (M, V1, V2) e la sua direttività, cardioide/omni del U 47,
+  cinque direttività del C12. Posizioni dalle schede; quantità del taglio e della prossimità [dedotto]. *Di fabbrica*
+  è la posizione di uscita.
+- **Di base tutto è nuovo**: macchina, supporto, microfono come suonavano all'epoca. *Usura del supporto* (0-100 %)
+  aggiunge fruscio (+8 dB), perdita di acuti (−35 % di banda), cadute, crepitio e instabilità. Rivisti da nuovi:
+  meno crepitio su cilindro e piste ottiche nuove.
+- **Processo hardware** (`AudioEngine.cpp`): equalizzazione di norma del supporto, preenfasi in registrazione e
+  deenfasi in riproduzione (CCIR/IEC 35 µs a 38 cm/s, 70 a 19, 90 a 9,5, 120 a 4,75 e cassette tipo I, 70 tipo II e
+  IV, RIAA 75 µs, FM 50 µs [standard]; preenfasi 12 dB [dedotto]): gli acuti saturano prima, come sul nastro vero.
+  Rumore di modulazione sui supporti magnetici (circa −50 dB sotto il segnale [dedotto]). Trasformatori dei banchi a
+  valvole e a trasformatore che saturano prima nei bassi [dedotto].
+
+## Acquisizione (`kAuCaptures` in `AudioPresets.h`, solo in *Mix e supporto*)
+
+Dopo il riversaggio, come la copia analogica torna nel computer: il lettore che la suona (banda, errore di azimut
+della testina: acuti persi e ritardo tra i canali, wow proprio, ronzio di massa) e il convertitore (rumore, bit,
+taglio netto al fondo scala). Voci: piastra a cassetta di casa + scheda audio, VHS + chiavetta USB, giradischi + RIAA
++ convertitore, bobine allineate + convertitore da studio, lettore ottico del proiettore, sintonizzatore radio,
+registratore digitale a 8 bit. Valori tipici del genere, non di un'unità misurata [dedotto].
 
 ## Il banco e i canali (fase 2)
 

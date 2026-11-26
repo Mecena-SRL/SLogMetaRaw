@@ -34,7 +34,7 @@ inline constexpr EraSetup kEraSetups[] = {
       "Nastro ¼\" · 38 cm/s", nullptr, "Banda ottica 35 mm (Academy)", "Sala cinematografica (curva X)" },
     { "Nouvelle Vague · Vivre sa vie (Godard, 1962)", "Mitchell BNC (35 mm Academy, 1934)", nullptr,
       "Double-X 5222 (1959)", 0, nullptr, nullptr, "Copia di distribuzione (interpositivo e internegativo)", nullptr,
-      "Proiezione in sala (xeno)", nullptr, nullptr, "Nastro ¼\" · 19 cm/s",
+      "Proiezione in sala (xeno)", "Perfectone EP 6 (1959)", nullptr, "Nastro ¼\" · 19 cm/s",
       nullptr, "Banda ottica 35 mm (Academy)", "Sala cinematografica (curva X)" },
     { "Nouvelle Vague · Le Mépris (Godard, 1963)", "Mitchell BNC (35 mm Academy, 1934)", "35 mm anamorfico",
       "Eastmancolor 5251 (1962)", 0, "Franscope (anamorfico, anni '50-'60)", nullptr,

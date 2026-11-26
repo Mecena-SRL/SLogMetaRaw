@@ -620,6 +620,54 @@ class Creative(unittest.TestCase):
         kodachrome = self.steps(self.render(dict(self.FILM, stockKodak=17, useTexture=0), [ramp()]))
         self.assertGreater(max(abs(sum(a) - sum(b)) for a, b in zip(vision, kodachrome)), 0.1)
 
+    # ---- stocks from their datasheets (CreativeSheets.h, docs/creative/SCHEDE_TECNICHE.md)
+
+    GREYS = [(0.18 * 2 ** e,) * 3 for e in (-4, -2, -1, 0, 1, 2, 4)]
+    COLOURS = [(0.30, 0.05, 0.04), (0.05, 0.25, 0.05), (0.04, 0.06, 0.30), (0.35, 0.30, 0.04), (0.30, 0.18, 0.12),
+               (0.05, 0.20, 0.30)]   # scene light, linear Rec.2020
+
+    def scene(self, controls, patches, enc):
+        """Scene patches (linear Rec.2020) encoded in enc (space, gamma), through the node: display code values."""
+        space, gamma = enc
+        px = []
+        for p in patches:
+            rgb = dm.mul(dm.MATS[space][1], dm.mul(dm.MATS[2][0], p))
+            px.append([dm.encode1(v, gamma) if gamma != 1 else v for v in rgb])
+        return self.render(dict(controls, grain=0, printGrain=0, halation=0), [px], size=(len(px), 1), enc=enc)
+
+    def test_a_measured_stock_sees_the_scene_alike_from_every_encoding(self):
+        """The film is exposed by the scene's light: S-Log3, DaVinci WG, ACEScct, ACES2065-1, LogC4, V-Log and
+        Apple Log of the same scene give the same picture (Vision3 500T on 2383, Provia 100F)."""
+        for stock in ({'stockKodak': 0}, {'maker': 1, 'stockFuji': 11}):
+            ref = self.scene(dict(self.FILM, **stock), self.GREYS + self.COLOURS, (8, 9))
+            for enc in ((0, 0), (10, 10), (9, 1), (16, 21), (11, 11), (12, 12)):
+                with self.subTest(stock=stock, encoding=enc):
+                    got = self.scene(dict(self.FILM, **stock), self.GREYS + self.COLOURS, enc)
+                    self.assertLess(max(abs(a - b) for p, q in zip(ref, got) for a, b in zip(p, q)), 0.004)
+
+    def test_a_measured_negative_prints_its_grey_neutral(self):
+        """The lab times the printer's lights on the negative's grey: on 2383 and 2393 it lands neutral at display
+        0.115 (code 0.405), as Kodak's print aim; the stock's own character shows away from it (shadows, colours)."""
+        for stock in (0, 1, 2, 3, 16, 31, 32, 33, 34, 35, 36):
+            for prt in (1, 2):
+                with self.subTest(stock=stock, print=prt):
+                    g = self.scene(dict(self.FILM, stockKodak=stock, print=prt), [(0.18, 0.18, 0.18)], (8, 9))[0]
+                    self.assertLess(max(g) - min(g), 0.004)
+                    self.assertAlmostEqual(g[1], 0.405, delta=0.004)
+
+    def test_a_measured_negative_on_a_light_box_is_orange_and_inverted(self):
+        out = self.scene(dict(self.FILM, stockKodak=2, output=2), self.GREYS, (8, 9))
+        for o in out:
+            self.assertGreater(o[0], o[1])
+            self.assertGreater(o[1], o[2])
+        self.assertTrue(all(a[1] > b[1] for a, b in zip(out, out[1:])))   # more light, more density
+
+    def test_printer_points_follow_the_lab(self):
+        """More red light in the printer: more cyan dye, a print less red (the panel's own words)."""
+        base = self.scene(dict(self.FILM, stockKodak=0), [(0.18, 0.18, 0.18)], (8, 9))[0]
+        red = self.scene(dict(self.FILM, stockKodak=0, printR=12), [(0.18, 0.18, 0.18)], (8, 9))[0]
+        self.assertLess(red[0], base[0] - 0.03)
+
     def test_a_device_is_the_process_it_names(self):
         """A model picks the engine's row: the Panasonic VHS camera renders as the VHS SP tape with that camera's
         faults and sensor. A digital model adds its own pipeline (sensor size, codec) to its row: not the row alone."""

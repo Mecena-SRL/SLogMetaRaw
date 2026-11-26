@@ -554,12 +554,16 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <div class="sci"><b>Il motore.</b> Per record: <code>s = log2(E/0,18)</code>, curva H&amp;D con piede e spalla morbidi,
       grana per strato, poi la curva del positivo (Naka-Rushton). Sottrattivo: densità dei coloranti per una matrice di
       assorbimenti; additivo: filtri per mosaico; monocromo: carta · 10<sup>−D·K</sup>. Rumore deterministico: stessi bit su CPU
-      e Metal, a ogni render. I raggi seguono l'altezza: stesso aspetto in proxy.</div>
+      e Metal, a ogni render. I raggi seguono l'altezza: stesso aspetto in proxy.
+      <span class="new">Schede tecniche</span> Le pellicole colore Kodak e Fujifilm con una scheda (Vision3, Portra, Ektar,
+      E100, Kodachrome, Provia, Pro 400H e le loro sorelle) seguono le misure: sensibilità spettrali degli strati, curve
+      della scheda, stampa sulla 2383 o 2393 come integrale spettrale a 10 nm, proiezione allo xeno; grigio neutro come
+      lo fissa il laboratorio.</div>
     </div>
     <div>
       <h2>I comandi</h2>
       <table>
-        <tr><td class="k">Ingresso (IDT)</td><td>Anche Rec.709, DaVinci WG, ACES, Cineon: dopo un grade.</td></tr>
+        <tr><td class="k">Ingresso (IDT)</td><td>Anche Rec.709, DaVinci WG, ACES, Cineon (dopo un grade) e tutti i Log delle camere: la pellicola vede la luce della scena, la resa è la stessa da ogni codifica.</td></tr>
         <tr><td class="k">Ripresa e sviluppo</td><td>Esposizione e bilanciamento della luce; <b>Sviluppo</b> spinto o tirato,
           <b>Argento trattenuto</b> (bleach bypass), Preflash, Età (coloranti che sbiadiscono, base che ingiallisce).</td></tr>
         <tr><td class="k">Stampa e copie</td><td>Positivo (9), <b>Generazione</b> (copia campione, di distribuzione, riduzione 16 mm,
@@ -671,9 +675,10 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       <div class="sci"><b>Il motore.</b> Indipendente dall'host: uno stadio spento lascia passare i campioni identici (verificato
       bit per bit); rumore deterministico con un seme per istanza; wow e flutter come errore di velocità. Validatore
       Steinberg superato.</div>
-      <div class="warn">Valori <b>stimati</b> da specifiche e descrizioni d'epoca (<code>docs/audio/AUDIO.md</code>), non misure. Negli
-      installer è un componente spuntato di serie (<i>Personalizza</i> sul Mac, <i>Scegli i componenti</i> su Windows). Linux:
-      Resolve non carica VST3. <b>Non ancora provato in Fairlight.</b></div>
+      <div class="warn">Valori <b>stimati</b> da specifiche e descrizioni d'epoca (<code>docs/audio/AUDIO.md</code>), non misure. Anche
+      Audio Unit per Logic Pro. Negli installer è un componente spuntato di serie; per Logic e le altre DAW c'è il download
+      a parte <code>LogMetaRawAudio-@VERSION@</code> con la sua guida (preset d'uso, livelli, acquisizione). Linux: Resolve
+      non carica VST3. <b>Non ancora provato in Fairlight.</b></div>
     </div>
   </div>
 </div>
