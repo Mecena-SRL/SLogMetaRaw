@@ -30,6 +30,17 @@
   registratore a filo, LED sul Walkman Pro e sul Mackie, quattro VU su Studer J37, Portastudio e EMI. Sotto il
   frontale restano menu e regolazioni del plugin; *Taratura meter* sceglie quale livello legge 0 VU (di serie −18 dBFS).
 
+- **Audio, presa diretta**: nuovo *Livello di registrazione* (in *Mix e supporto* «Livello sul master»): spinge il
+  supporto come sulla macchina vera, più fruscio se basso, più saturazione se alto, senza cambiare il volume. Le
+  manopole di registrazione dei frontali lo muovono. Ogni comando si automatizza in Fairlight girandolo, e livelli,
+  uscita e dry/wet scorrono senza scatti. Il «?» sulla targhetta racconta la storia del registratore o del banco.
+  *Cosa registri* (*Cosa missi* nel mix) dice a che livello portare le punte sul meter di quella macchina, misura il
+  segnale e con *Applica* imposta livello, microfono, filtro e limitatore; consiglia anche macchine e banchi d'uso.
+- **Audio, il banco per ogni traccia**: in *Ripresa* ogni traccia diventa un canale del banco: ingresso stereo o mono
+  (somma o un solo lato), banco scelto prima del registratore, panpot e fader del canale. Con una band si mette
+  *Ripresa* su ogni strumento, ciascuno col suo microfono e registratore, e *Mix e supporto* sul bus come sezione
+  master (anche lì l'ingresso può essere mono).
+
 ## Log MetaRaw 4.3.1
 
 - **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra, come nel

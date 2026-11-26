@@ -109,7 +109,7 @@ inline constexpr AuPos kGelosoKeys[] = {
 };
 inline constexpr AuPos kGelosoPower[] = { { "SPENTO", kStop }, { "ACCESO", kRun } };
 inline constexpr AuControl kGelosoControls[] = {
-    auKnob(206, 150, 64, "VOLUME", kPDrive, 0, 3, "0|1|2|3|4|5|6|7|8|9|10", AuUse::Live, 0xB02A22),
+    auKnob(206, 150, 64, "VOLUME", kPRecLevel, -24, 12, "0|1|2|3|4|5|6|7|8|9|10", AuUse::Live, 0xB02A22),
     auPick(AuWidget::Keys, 300, 150, 330, 44, "", kGelosoKeys, 0),
     auPick(AuWidget::Slide, 470, 214, 120, 22, "RETE", kGelosoPower, 1),
 };
@@ -132,7 +132,7 @@ inline constexpr AuPos kRefOscillator[] = { { "REF", { kSetTone, -8 } } };     /
 inline constexpr AuControl kNagra3Controls[] = {
     auPick(AuWidget::Coin, 34, 44, 60, 60, "SPEED", kNagra3Speed, 1),
     auPick(AuWidget::Selector, 20, 150, 70, 70, "TAPE", kNagra3Transport, 2, AuUse::Mech),
-    auKnob(116, 156, 56, "MICRO", kPDrive, 0, 3, "0|2|4|6|8|10"),
+    auKnob(116, 156, 56, "MICRO", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
     auPick(AuWidget::Button, 420, 60, 36, 36, "ZERO LEVEL", kRefButton, 0),
     auKnob(404, 166, 48, "LINE · VOLUME", kPOut, -24, 12, "0|2|4|6|8|10"),
     auPick(AuWidget::Selector, 480, 92, 116, 116, "", kNagra3Function, 4),
@@ -150,7 +150,7 @@ inline constexpr AuPos kUherKeys[] = {
 inline constexpr AuPos kUherBattery[] = { { "PEGEL", kReadsIn }, { "BATT.", { kSetMeter, kReadBattery } } };
 inline constexpr AuPos kUherPause[] = { { "PAUSE" }, { "" } };
 inline constexpr AuControl kUherControls[] = {
-    auKnob(220, 40, 58, "AUSSTEUERUNG", kPDrive, 0, 3, "0|2|4|6|8|10"),
+    auKnob(220, 40, 58, "AUSSTEUERUNG", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
     auKnob(306, 40, 50, "LAUTSTÄRKE", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Lever, 314, 118, 34, 40, "", kUherBattery, 0),
     auKnob(384, 40, 50, "KLANG", kPHigh, -15, 0, "−|+"),
@@ -189,8 +189,8 @@ inline constexpr AuControl kNagra42Controls[] = {
     auPick(AuWidget::Selector, 438, 30, 84, 84, "", kNagra42Meter, 5),
     auPick(AuWidget::Lever, 592, 36, 30, 42, "", kNagra42Monitor, 1),
     auPick(AuWidget::Coin, 34, 178, 50, 50, "SPEED", kNagra42Speed, 4),
-    auKnob(116, 186, 44, "LEVEL 1", kPDrive, 0, 3, "0|2|4|6|8|10"),
-    auKnob(186, 186, 44, "LEVEL 2", kPDrive, 0, 3, "0|2|4|6|8|10", AuUse::Idle),
+    auKnob(116, 186, 44, "LEVEL 1", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
+    auKnob(186, 186, 44, "LEVEL 2", kPRecLevel, -24, 12, "0|2|4|6|8|10", AuUse::Idle),
     auPick(AuWidget::Button, 252, 196, 26, 26, "REF.", kRefOscillator, 0),
     auKnob(308, 186, 44, "LINE · PB", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Selector, 448, 124, 118, 118, "", kNagra42Function, 4),
@@ -211,7 +211,7 @@ inline constexpr AuPos kAmpexSpeed[] = { { "LOW", { kSetMedium, 2 } }, { "HIGH",
 inline constexpr AuPos kAmpexReel[] = { { "LARGE" }, { "SMALL" } };
 inline constexpr AuPos kAmpexKeys[] = { { "REWIND" }, { "FAST FWD" }, { "STOP", kStop }, { "PLAY", kRun } };
 inline constexpr AuControl kAmpexControls[] = {
-    auKnob(30, 32, 56, "RECORD LEVEL", kPDrive, 0, 3, "0|10"),
+    auKnob(30, 32, 56, "RECORD LEVEL", kPRecLevel, -24, 12, "0|10"),
     auKnob(116, 32, 56, "PLAYBACK LEVEL", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Selector, 500, 44, 80, 80, "METER & OUTPUT", kAmpexMeter, 0),
     auPick(AuWidget::Lever, 436, 176, 30, 42, "POWER", kOnOff, 1),
@@ -228,7 +228,7 @@ inline constexpr AuPos kJ37Speed[] = { { "19", { kSetMedium, 2 } }, { "38", { kS
 inline constexpr AuPos kJ37Tracks[] = { { "1" }, { "2" }, { "3" }, { "4" } };
 inline constexpr AuPos kJ37Keys[] = { { "◀◀" }, { "▶▶" }, { "STOP", kStop }, { "START", kRun }, { "AUFNAHME", kRun, {}, {}, {}, 0xB02A22 } };
 inline constexpr AuControl kJ37Controls[] = {
-    auKnob(26, 138, 46, "AUFNAHME", kPDrive, 0, 3, "0|10"),
+    auKnob(26, 138, 46, "AUFNAHME", kPRecLevel, -24, 12, "0|10"),
     auKnob(100, 138, 46, "WIEDERGABE", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Lever, 176, 144, 30, 40, "", kInputTape, 1),
     auPick(AuWidget::Lever, 232, 144, 30, 40, "cm/s", kJ37Speed, 1),
@@ -245,9 +245,9 @@ inline constexpr AuPos kA77Mono[] = { { "MONO" }, { "STEREO" } };
 inline constexpr AuPos kA77Keys[] = { { "REW" }, { "FFW" }, { "PLAY", kRun }, { "STOP", kStop }, { "REC", kRun, {}, {}, {}, 0xB02A22 } };
 inline constexpr AuControl kA77Controls[] = {
     auPick(AuWidget::Selector, 22, 26, 76, 76, "INPUT 1", kA77Input, 0),
-    auKnob(30, 130, 58, "LEVEL 1", kPDrive, 0, 3, "0|10"),
+    auKnob(30, 130, 58, "LEVEL 1", kPRecLevel, -24, 12, "0|10"),
     auPick(AuWidget::Selector, 546, 26, 76, 76, "INPUT 2", kA77Input, 0),
-    auKnob(554, 130, 58, "LEVEL 2", kPDrive, 0, 3, "0|10"),
+    auKnob(554, 130, 58, "LEVEL 2", kPRecLevel, -24, 12, "0|10"),
     auPick(AuWidget::Lever, 140, 186, 28, 32, "", kA77Speed, 1),
     auPick(AuWidget::Lever, 192, 186, 28, 32, "", kA77Eq, 0, AuUse::Mech),
     auPick(AuWidget::Lever, 244, 186, 28, 32, "MONITOR", kInputTape, 1),
@@ -266,7 +266,7 @@ inline constexpr AuPos kA80Speed[] = { { "19", { kSetMedium, 2 } }, { "38", { kS
 inline constexpr AuPos kA80Eq[] = { { "CCIR" }, { "NAB" } };
 inline constexpr AuPos kA80Keys[] = { { "◀◀" }, { "▶▶" }, { "PLAY", kRun }, { "STOP", kStop }, { "REC", kRun, {}, {}, {}, 0xB02A22 } };
 inline constexpr AuControl kA80Controls[] = {
-    auKnob(24, 26, 50, "INPUT", kPDrive, 0, 3, "−|+"),
+    auKnob(24, 26, 50, "INPUT", kPRecLevel, -24, 12, "−|+"),
     auKnob(24, 96, 50, "OUTPUT", kPOut, -24, 12, "−|+"),
     auPick(AuWidget::Keys, 100, 150, 150, 26, "", kA80Mode, 2),
     auPick(AuWidget::Keys, 290, 150, 100, 26, "", kA80Ready, 1, AuUse::Mech),
@@ -282,7 +282,7 @@ inline constexpr AuControl kA80Controls[] = {
 inline constexpr AuPos kEL3300Slide[] = { { "◀◀" }, { "■", kStop }, { "▶", kRun, kReadsOut }, { "▶▶" } };
 inline constexpr AuPos kEL3300Rec[] = { { "", kReadsOut }, { "●", kReadsIn, {}, {}, {}, 0xB02A22 } };
 inline constexpr AuControl kEL3300Controls[] = {
-    auKnob(240, 40, 70, "", kPDrive, 0, 3, "0|10"),
+    auKnob(240, 40, 70, "", kPRecLevel, -24, 12, "0|10"),
     auPick(AuWidget::Slide, 340, 60, 220, 30, "", kEL3300Slide, 2),
     auPick(AuWidget::Keys, 580, 54, 44, 40, "", kEL3300Rec, 0),
 };
@@ -295,7 +295,7 @@ inline constexpr AuPos kDbx[] = { { "dbx ON", { kPOnNR, 1 } }, { "OFF", { kPOnNR
 inline constexpr AuPos kPortaKeys[] = { { "◀◀" }, { "▶▶" }, { "PLAY", kRun }, { "STOP", kStop }, { "REC", kRun, {}, {}, {}, 0xB02A22 } };
 #define AU_PORTA_STRIP(x, use, fader)                                                         \
     auPick(AuWidget::Lever, x + 4, 112, 24, 26, "", kMicTape, 0, AuUse::Mech),                \
-    auKnob(x + 4, 158, 24, "", kPDrive, 0, 3, "|", use),                                      \
+    auKnob(x + 4, 158, 24, "", kPRecLevel, -24, 12, "|", use),                                      \
     auKnob(x + 4, 190, 24, "", kPHigh, -12, 12, "|", use),                                    \
     auKnob(x + 4, 222, 24, "", kPLow, -12, 12, "|", use),                                     \
     auFader(AuWidget::Fader, x + 42, 110, 22, 136, "", fader, -24, 12, "10|8|6|4|2|0", use)
@@ -324,7 +324,7 @@ inline constexpr AuControl kD6Controls[] = {
     auPick(AuWidget::Slide, 200, 34, 100, 22, "", kD6Indicator, 0),
     auPick(AuWidget::Slide, 330, 34, 120, 22, "DOLBY NR", kDolbyBC, 1),
     auPick(AuWidget::Slide, 480, 34, 140, 22, "TAPE", kCassetteType, 1),
-    auKnob(30, 140, 64, "REC LEVEL", kPDrive, 0, 3, "0|2|4|6|8|10"),
+    auKnob(30, 140, 64, "REC LEVEL", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
     auPick(AuWidget::Slide, 120, 160, 70, 22, "MIC ATT", kMicAtt, 0, AuUse::Mech),
     auPick(AuWidget::Keys, 214, 136, 330, 38, "", kD6Keys, 4),
     auKnob(568, 130, 50, "VOLUME", kPOut, -24, 12, "0|10"),
@@ -339,7 +339,7 @@ inline constexpr AuPos kD5Keys[] = {
     { "REC", kRun, kReadsIn, {}, {}, 0xB02A22 }, { "◀◀" }, { "▶", kRun, kReadsOut }, { "▶▶" }, { "■", kStop }, { "II" },
 };
 inline constexpr AuControl kD5Controls[] = {
-    auKnob(30, 30, 60, "REC LEVEL", kPDrive, 0, 3, "0|2|4|6|8|10"),
+    auKnob(30, 30, 60, "REC LEVEL", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
     auPick(AuWidget::Lever, 30, 130, 34, 46, "DOLBY NR", kDolbyOnOff, 1),
     auPick(AuWidget::Lever, 96, 130, 34, 46, "LIMITER", kLimiter, 0),
     auPick(AuWidget::Lever, 162, 130, 34, 46, "", kMicLine, 0),
@@ -355,7 +355,7 @@ inline constexpr AuControl kD5Controls[] = {
 inline constexpr AuPos kBatteryTest[] = { { "BATT. TEST", { kSetMeter, kReadBattery } } };
 inline constexpr AuPos kCameraRun[] = { { "OFF", kStop }, { "RUN", kRun } };
 inline constexpr AuControl kAuriconControls[] = {
-    auKnob(300, 40, 66, "GAIN", kPDrive, 0, 3, "0|10"),
+    auKnob(300, 40, 66, "GAIN", kPRecLevel, -24, 12, "0|10"),
     auKnob(300, 140, 48, "PHONES", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Button, 590, 60, 34, 34, "", kBatteryTest, 0),
     auPick(AuWidget::Lever, 590, 150, 34, 46, "MOTOR", kCameraRun, 1),
@@ -369,7 +369,7 @@ inline constexpr AuControl kEktaControls[] = { auPick(AuWidget::Keys, 520, 150, 
 inline constexpr AuPos kAutoManual[] = { { "AUTO", { kPAuto, 1 } }, { "MANUAL", { kPAuto, 0 } } };
 inline constexpr AuControl kCanonControls[] = {
     auPick(AuWidget::Lever, 260, 60, 34, 46, "REC LEVEL", kAutoManual, 1),
-    auKnob(320, 52, 60, "", kPDrive, 0, 3, "0|10"),
+    auKnob(320, 52, 60, "", kPRecLevel, -24, 12, "0|10"),
     auPick(AuWidget::Keys, 520, 150, 60, 50, "", kTrigger, 1),
 };
 
@@ -393,7 +393,7 @@ inline constexpr AuPos kWebsterRun[] = { { "STOP" }, { "RUN" }, { "REWIND" } };
 inline constexpr AuPos kWebsterOutput[] = { { "1" }, { "2" }, { "3" } };
 inline constexpr AuControl kWebsterControls[] = {
     auPick(AuWidget::Lever, 200, 40, 34, 46, "", kWebsterMode, 0),
-    auKnob(260, 34, 60, "MICROPHONE VOLUME", kPDrive, 0, 3, "0|10"),
+    auKnob(260, 34, 60, "MICROPHONE VOLUME", kPRecLevel, -24, 12, "0|10"),
     auKnob(360, 34, 60, "TONE", kPHigh, -15, 0, "−|+"),
     auPick(AuWidget::Lever, 460, 40, 34, 46, "", kOnOff, 1),
     auPick(AuWidget::Selector, 200, 140, 90, 90, "RUN-REWIND", kWebsterRun, 1, AuUse::Mech),
@@ -452,7 +452,7 @@ inline constexpr AuControl kNoDeskControls[] = {
 inline constexpr AuPos kRcaKey[] = { { "AUD", kRun }, { "", kStop }, { "PGM", kRun } };
 #define AU_RCA_CHANNEL(x, label, use)                                                \
     auPick(AuWidget::Lever, x + 13, 140, 26, 30, "", kRcaKey, 2, use),               \
-    auKnob(x + 2, 190, 48, label, kPDrive, 0, 3, "|", use, 0x1A1A1A)
+    auKnob(x + 2, 190, 48, label, kPRecLevel, -24, 12, "|", use, 0x1A1A1A)
 inline constexpr AuControl kRcaControls[] = {
     AU_RCA_CHANNEL(16, "MIC 1", AuUse::Live), AU_RCA_CHANNEL(92, "MIC 2", AuUse::Idle),
     AU_RCA_CHANNEL(168, "MIC 3", AuUse::Idle), AU_RCA_CHANNEL(244, "MIC 4", AuUse::Idle),
@@ -467,16 +467,16 @@ inline constexpr AuControl kRcaControls[] = {
 // main), the channel's Pop/Classic equaliser (bass shelf at 100 Hz, treble at 10 kHz), four large VU meters.
 inline constexpr AuPos kReddEq[] = { { "CLASSIC" }, { "POP" } };
 #define AU_REDD_FADER(i, label, param, use) \
-    auFader(AuWidget::Quadrant, 146 + 34 * i, 132, 32, 106, label, param, param == kPOut ? -24 : 0, param == kPOut ? 12 : 3, "", use)
+    auFader(AuWidget::Quadrant, 146 + 34 * i, 132, 32, 106, label, param, -24, 12, "", use)
 inline constexpr AuControl kReddControls[] = {
     auKnob(22, 142, 40, "TREBLE", kPHigh, 0, 10, "0|10"),
     auKnob(84, 142, 40, "BASS", kPLow, 0, 10, "0|10"),
     auPick(AuWidget::Lever, 56, 208, 28, 30, "", kReddEq, 0, AuUse::Mech),
-    AU_REDD_FADER(0, "1", kPDrive, AuUse::Live), AU_REDD_FADER(1, "2", kPDrive, AuUse::Idle),
-    AU_REDD_FADER(2, "3", kPDrive, AuUse::Idle), AU_REDD_FADER(3, "4", kPDrive, AuUse::Idle),
-    AU_REDD_FADER(4, "5", kPDrive, AuUse::Idle), AU_REDD_FADER(5, "6", kPDrive, AuUse::Idle),
-    AU_REDD_FADER(6, "7", kPDrive, AuUse::Idle), AU_REDD_FADER(7, "8", kPDrive, AuUse::Idle),
-    AU_REDD_FADER(8, "AUX", kPDrive, AuUse::Idle), AU_REDD_FADER(9, "AUX", kPDrive, AuUse::Idle),
+    AU_REDD_FADER(0, "1", kPRecLevel, AuUse::Live), AU_REDD_FADER(1, "2", kPRecLevel, AuUse::Idle),
+    AU_REDD_FADER(2, "3", kPRecLevel, AuUse::Idle), AU_REDD_FADER(3, "4", kPRecLevel, AuUse::Idle),
+    AU_REDD_FADER(4, "5", kPRecLevel, AuUse::Idle), AU_REDD_FADER(5, "6", kPRecLevel, AuUse::Idle),
+    AU_REDD_FADER(6, "7", kPRecLevel, AuUse::Idle), AU_REDD_FADER(7, "8", kPRecLevel, AuUse::Idle),
+    AU_REDD_FADER(8, "AUX", kPRecLevel, AuUse::Idle), AU_REDD_FADER(9, "AUX", kPRecLevel, AuUse::Idle),
     AU_REDD_FADER(10, "A", kPOut, AuUse::Live), AU_REDD_FADER(11, "B", kPOut, AuUse::Idle),
     AU_REDD_FADER(12, "C", kPOut, AuUse::Idle), AU_REDD_FADER(13, "D", kPOut, AuUse::Idle),
 };
@@ -489,7 +489,7 @@ inline constexpr AuPos kNeveHp[] = {
     { "360", { kPLowCut, 360 } },
 };
 inline constexpr AuControl kNeveControls[] = {
-    auKnob(20, 26, 66, "MIC GAIN", kPDrive, 0, 3, "−70|−50|−30|−20", AuUse::Live, 0xA8302A),
+    auKnob(20, 26, 66, "MIC GAIN", kPRecLevel, -24, 12, "−70|−50|−30|−20", AuUse::Live, 0xA8302A),
     auPick(AuWidget::Selector, 110, 26, 70, 70, "HIGH PASS", kNeveHp, 0),
     auKnob(200, 26, 54, "HF", kPHigh, -15, 15, "−|+", AuUse::Live, 0x3A5A8C),
     auKnob(200, 110, 54, "LF", kPLow, -15, 15, "−|+", AuUse::Live, 0x3A5A8C),
@@ -499,7 +499,7 @@ inline constexpr AuControl kNeveControls[] = {
 
 // SSL 4000 E: a channel strip (input trim, filters, equaliser, dynamics), its fader, the VU meters. Deduced.
 inline constexpr AuControl kSslControls[] = {
-    auKnob(20, 26, 50, "TRIM", kPDrive, 0, 3, "−|+"),
+    auKnob(20, 26, 50, "TRIM", kPRecLevel, -24, 12, "−|+"),
     auKnob(84, 26, 50, "HPF", kPLowCut, 0, 350, "OUT|350"),
     auKnob(20, 110, 50, "HF", kPHigh, -15, 15, "−15|+15", AuUse::Live, 0xB8302A),
     auKnob(84, 110, 50, "LF", kPLow, -15, 15, "−15|+15", AuUse::Live, 0x6A4430),
@@ -513,7 +513,7 @@ inline constexpr AuControl kSslControls[] = {
 inline constexpr AuPos kMute[] = { { "", kRun }, { "MUTE", kStop } };
 inline constexpr AuPos kSolo[] = { { "" }, { "SOLO" } };
 inline constexpr AuControl kMackieControls[] = {
-    auKnob(20, 20, 40, "TRIM", kPDrive, 0, 3, "U|+60"),
+    auKnob(20, 20, 40, "TRIM", kPRecLevel, -24, 12, "U|+60"),
     auKnob(70, 20, 30, "AUX 1", -1, 0, 0, "|", AuUse::Mech), auKnob(110, 20, 30, "AUX 2", -1, 0, 0, "|", AuUse::Mech),
     auKnob(70, 66, 30, "AUX 3", -1, 0, 0, "|", AuUse::Mech), auKnob(110, 66, 30, "AUX 4", -1, 0, 0, "|", AuUse::Mech),
     auKnob(150, 20, 30, "AUX 5", -1, 0, 0, "|", AuUse::Mech), auKnob(150, 66, 30, "AUX 6", -1, 0, 0, "|", AuUse::Mech),
