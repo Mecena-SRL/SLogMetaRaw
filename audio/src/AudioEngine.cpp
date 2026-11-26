@@ -124,6 +124,20 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         if (noise) b.hum = dbToGain(dev.humDb + s.noiseDb);
         add(std::move(b));
     }
+    // The front panel's filter and limiter, at the machine's input.
+    auto inputControls = [&] {
+        Block b;
+        if (s.lowCutHz >= 10) b.eq.push_back(highpass(fs, s.lowCutHz, kQ));
+        b.comp = s.alc ? 1 : s.limit ? 0.5f : 0;
+        add(std::move(b));
+    };
+    auto tone = [&] {
+        Block b;
+        if (std::fabs(s.lowDb) > 0.05f) b.eq.push_back(shelf(fs, 100, s.lowDb, false));
+        if (std::fabs(s.highDb) > 0.05f && 10000 < 0.45 * fs) b.eq.push_back(shelf(fs, 10000, s.highDb, true));
+        add(std::move(b));
+    };
+    if (s.useDevice) inputControls();
     if (s.on[kStDesk] && s.desk > 0) {
         const AuConsole& c = pick(kAuConsoles, std::size(kAuConsoles), s.desk);
         Block b;
@@ -135,6 +149,11 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         b.comp = c.comp;
         if (noise) hiss(b.hissLp, b.hiss, fs, c.lp, c.noiseDb + s.noiseDb);
         add(std::move(b));
+    }
+
+    if (!s.useDevice) {   // the desk's own equaliser and limiter follow its colour
+        inputControls();
+        tone();
     }
 
     auto medium = [&](int index, float hissCut) {
@@ -170,6 +189,7 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     if (s.on[kStTransfer] && s.transfer > 0)
         for (int i = 0; i < std::clamp(s.copies, 1, 8); ++i) medium(s.transfer, 0);
 
+    if (s.useDevice) tone();   // the recorder's playback tone
     if (s.on[kStListen] && s.listen > 0) {
         const AuListen& l = pick(kAuListen, std::size(kAuListen), s.listen);
         Block b;

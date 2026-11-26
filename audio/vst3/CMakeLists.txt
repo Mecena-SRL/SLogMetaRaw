@@ -57,7 +57,7 @@ smtg_enable_vst3_sdk()
 set(AU_SOURCES
   AuPlugin.cpp
   AuParams.h
-  AuLooks.h
+  AuLooks.h AuFronts.h AuMeters.h
   "${REPO_ROOT}/audio/src/AudioEngine.cpp"
   "${REPO_ROOT}/audio/src/AudioEngine.h"
   "${REPO_ROOT}/audio/src/AudioPresets.h")

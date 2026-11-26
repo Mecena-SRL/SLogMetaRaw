@@ -13,7 +13,8 @@
 enum AuParamId : int {
     kPBypass, kPDevice, kPMic, kPMedium, kPNR, kPDesk, kPTransfer, kPCopies, kPListen,
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
-    kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR, kPCount
+    kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR,
+    kPLowCut, kPLow, kPHigh, kPLimit, kPAuto, kPMeterInL, kPMeterInR, kPCount
 };
 
 enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
@@ -109,6 +110,13 @@ inline const AuParamDef& auParam(AuParamId id)
         { kPMeterRef, "Taratura meter", AuKind::Range, -24, -6, -18, "dBFS" },   // the level that reads 0 VU
         { kPMeterL, "Meter sinistro", AuKind::Meter },
         { kPMeterR, "Meter destro", AuKind::Meter },
+        { kPLowCut, "Filtro passa-alto", AuKind::Range, 0, 400, 0, "Hz" },   // 0 = flat; the front's filter switch
+        { kPLow, "Bassi", AuKind::Range, -15, 15, 0, "dB" },                 // shelf at 100 Hz: desk EQ, recorder tone
+        { kPHigh, "Acuti", AuKind::Range, -15, 15, 0, "dB" },                // shelf at 10 kHz
+        { kPLimit, "Limitatore", AuKind::Toggle },
+        { kPAuto, "Livello automatico", AuKind::Toggle },
+        { kPMeterInL, "Meter ingresso sinistro", AuKind::Meter },            // what the meter reads in record/test
+        { kPMeterInR, "Meter ingresso destro", AuKind::Meter },
     };
     return defs[id];
 }
@@ -232,6 +240,10 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Riduzione rumore", kPOnNR, kPNR },
         { "Wow e flutter", kPOnWow, kPWow },
         { "Rumori", kPOnNoise, kPNoise },
+        { "Saturazione", -1, kPDrive },
+        { "Dry/wet", -1, kPMix },
+        { "Uscita", -1, kPOut },
+        { "Taratura meter", -1, kPMeterRef },
     };
     static const std::vector<AuRow> mixRows = {
         { "Banco", kPOnDesk, kPDesk },
@@ -242,18 +254,17 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Riversaggio su", kPOnTransfer, kPTransfer },
         { "Copie", -1, kPCopies },
         { "Ascolto", kPOnListen, kPListen },
+        { "Saturazione", -1, kPDrive },
+        { "Dry/wet", -1, kPMix },
+        { "Uscita", -1, kPOut },
+        { "Taratura meter", -1, kPMeterRef },
     };
     return mix ? mixRows : ripresa;
 }
 
-// The knobs on the front plate, under the device's name, and the two meters beside them.
-inline const std::vector<AuParamId>& auKnobs()
-{
-    static const std::vector<AuParamId> knobs = { kPDrive, kPMix, kPOut, kPMeterRef };
-    return knobs;
-}
-
-// The parameters a plugin has: bypass, everything its rows show, the knobs and the meters.
+// The parameters a plugin has: bypass, everything its rows show, the fronts' own controls and the meters. The rows
+// end with the plugin's trims (saturation, dry/wet, output, meter calibration): every machine has them, whatever its
+// front.
 inline std::vector<AuParamId> auParams(bool mix)
 {
     std::vector<AuParamId> out = { kPBypass };
@@ -261,9 +272,8 @@ inline std::vector<AuParamId> auParams(bool mix)
         if (r.toggle >= 0) out.push_back(AuParamId(r.toggle));
         if (r.control >= 0) out.push_back(AuParamId(r.control));
     }
-    for (AuParamId k : auKnobs()) out.push_back(k);
-    out.push_back(kPMeterL);
-    out.push_back(kPMeterR);
+    for (AuParamId k : { kPLowCut, kPLow, kPHigh, kPLimit, kPAuto }) out.push_back(k);   // the fronts' own controls
+    for (AuParamId k : { kPMeterL, kPMeterR, kPMeterInL, kPMeterInR }) out.push_back(k);
     return out;
 }
 
@@ -275,7 +285,6 @@ inline const AuLook& auLook(const double* v, bool mix)
     auDeviceSplit(auPlain(v, kPDevice), family, model);
     return auDeviceLook(family, model);
 }
-inline bool auMeterPeak(const double* v, bool mix) { return auMeterReadsPeak(auLook(v, mix).meter); }
 
 // Plain parameter values (index for lists, 0/1 for switches) → the engine's settings.
 inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)
@@ -299,5 +308,10 @@ inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)
     s.wow = float(v[kPWow]);
     s.mix = float(v[kPMix] / 100);
     s.outDb = float(v[kPOut]);
+    s.lowCutHz = float(v[kPLowCut]);
+    s.lowDb = float(v[kPLow]);
+    s.highDb = float(v[kPHigh]);
+    s.limit = v[kPLimit] > 0.5;
+    s.alc = v[kPAuto] > 0.5 || (!mix && auLook(v, mix).meter == AuMeter::Automatic);   // built in, no switch
     return s;
 }

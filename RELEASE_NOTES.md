@@ -4,11 +4,14 @@
 
 - **Audio per Logic Pro**: i due plugin audio ci sono anche come Audio Unit, per Logic Pro, GarageBand e le altre app
   Mac. L'installer Mac li propone come componente a parte, spuntato di serie; il disinstallatore li toglie.
-- **Audio, frontali con meter**: i due plugin audio si aprono sul frontale del registratore o del banco scelto, con il
-  suo nome, quattro manopole e l'indicatore di livello che aveva davvero, che si muove con il segnale: VU sugli
-  studio, modulometro sui Nagra, occhio magico sul Geloso e sul registratore a filo, LED sul Walkman Pro e sul Mackie,
-  PPM sul banco EMI, la spia del livello automatico sulle videocamere. La manopola *Taratura* sceglie quale livello
-  legge 0 VU (di serie −18 dBFS).
+- **Audio, frontali veri**: i due plugin audio si aprono sul frontale del registratore o del banco scelto, ricostruito
+  dai manuali: gli stessi comandi, dove la macchina li aveva, con le scritte e le posizioni originali, e funzionanti.
+  Il selettore di funzione del Nagra mette in TEST, RECORD o PLAYBACK; la velocità cambia il supporto; il filtro del
+  Nagra 4.2, il limitatore, il livello automatico, il Dolby, il tono e l'EQ dei banchi agiscono sul suono. Ogni
+  macchina ha il suo indicatore con la sua scala e il suo movimento, calcolato sul segnale: VU secondo la norma
+  (99 % in 300 ms, 1,5 % di sovraelongazione), modulometro sui Nagra, occhio magico sul Geloso, lampada al neon sul
+  registratore a filo, LED sul Walkman Pro e sul Mackie, quattro VU su Studer J37, Portastudio e EMI. Sotto il
+  frontale restano menu e regolazioni del plugin; *Taratura meter* sceglie quale livello legge 0 VU (di serie −18 dBFS).
 
 ## Log MetaRaw 4.3.1
 

@@ -69,6 +69,7 @@ inline constexpr AuMedium kAuMedia[] = {
     { "Radio AM", 100, 4500, 100, 0, 0.6f, 0.05f, -45, -55, -200, 0.5f, 0, 0.5f, 0, 8, 0, 0.8f, true, 1920, 9999 },
     { "Radio FM", 30, 15000, 100, 0, 0.3f, 0.02f, -65, -200, -200, 0, 0, 0.5f, 0, 8, 0, 0.6f, false, 1945, 9999 },
     { "Telefono fisso", 300, 3400, 1000, 2, 1.5f, 0.15f, -45, -200, -200, 0.2f, 0, 0.5f, 0, 8, 0, 0.5f, true, 1900, 9999 },
+    { "Nastro ¼\" · 2,4 cm/s", 80, 4500, 130, 3.5f, 1.4f, 0.1f, -44, -200, -200, 0, 0.4f, 0.5f, 0.45f, 6, 0.05f, 0, false, 1961, 1990 },
 };
 
 // A noise reducer: how much it lowers the medium's hiss (dB). Modelled as the hiss it removes, not as a compander.
@@ -100,10 +101,10 @@ constexpr unsigned long kAuReel = auBit(1) | auBit(2) | auBit(3) | auBit(4);
 constexpr unsigned long kAuCassette = auBit(5) | auBit(6) | auBit(7);
 
 inline constexpr AuDevice kAuReelPortable[] = {
-    { "Geloso G.257 (anni '50)", 3, auBit(3) | auBit(4), 4, 0.9f, 0.3f, -54, 1957 },
+    { "Geloso G.257 (1961)", 3, auBit(4), 4, 0.9f, 0.3f, -54, 1961 },
     { "Nagra III (1958)", 9, auBit(1) | auBit(2) | auBit(3), 2, 0.4f, 0.05f, -200, 1958 },
-    { "Uher 4000 Report-L (1965)", 13, auBit(2) | auBit(3) | auBit(4), 3, 0.6f, 0.05f, -200, 1965 },
-    { "Nagra 4.2 (1971)", 12, auBit(1) | auBit(2), 2, 0.3f, 0.02f, -200, 1971 },
+    { "Uher 4000 Report-L (1965)", 13, auBit(2) | auBit(3) | auBit(4) | auBit(24), 3, 0.6f, 0.05f, -200, 1965 },
+    { "Nagra 4.2 (1971)", 12, auBit(1) | auBit(2) | auBit(3), 2, 0.3f, 0.02f, -200, 1971 },
 };
 inline constexpr AuDevice kAuReelStudio[] = {
     { "Ampex 350 (valvole, 1953)", 7, auBit(1) | auBit(2), 1, 0.6f, 0.25f, -72, 1953 },

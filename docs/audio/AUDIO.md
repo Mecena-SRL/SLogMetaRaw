@@ -58,29 +58,67 @@ Tabelle come nel Creative: l'ordine è permanente (il progetto salva l'indice), 
 - **Banco**: RCA BC-2B, EMI REDD.51, Neve 8078, SSL 4000 E, Mackie CR-1604.
 - **Ascolto**: radio a valvole, radiolina a transistor, juke-box Wurlitzer 1015, TV CRT, sala (curva X).
 
-## Frontale e meter (`audio/vst3/AuPlugin.cpp`)
+## Frontali e comandi (`audio/vst3/AuFronts.h`, `AuLooks.h`, `AuMeters.h`)
 
-Il pannello si apre sul frontale del modello scelto (in *Mix e supporto*, del banco), disegnato e non fotografato,
-senza marchi: colori e materiali della macchina, targhetta con il nome, quattro manopole (*Saturazione*, *Dry/wet*,
-*Uscita*, *Taratura*) e l'indicatore di livello che quella macchina aveva, con la sua scala e la sua balistica. I dati
-stanno in `audio/vst3/AuLooks.h`, una riga per ogni registratore e banco, nello stesso ordine delle tabelle [gen]:
+Il pannello si apre sul frontale del modello scelto (in *Mix e supporto*, del banco): disegnato, senza marchi, con i
+comandi che quella macchina aveva, dove li aveva, con le scritte e le posizioni dei manuali, e il suo indicatore di
+livello con la sua scala e il suo movimento. Sotto il frontale restano i menu e le regolazioni del plugin
+(*Saturazione*, *Dry/wet*, *Uscita*, *Taratura meter*), uguali per tutti.
 
-| Indicatore | Scala e movimento | Dove |
-|---|---|---|
-| VU | −20…+3, lineare in tensione (0 VU al 71 %), media, circa 300 ms | Ampex 350 (uno), Studer J37 e A80, Revox A77, Portastudio 144, TC-D5M, Auricon (uno), RCA BC-2B (uno), Neve, SSL |
-| PPM | tacche 1–7 a 4 dB, la 4 al riferimento; sale in 10 ms, scende 24 dB in 2,8 s; quadrante nero | EMI REDD.51 |
-| Modulometro | −30…+5 dB, picco, discesa più lenta | Nagra III, Nagra 4.2 |
-| Indicatore REC | ago senza numeri, arco nero e rosso | Uher 4000, Philips EL 3300, Canon 514XL-S |
-| Occhio magico | ventaglio verde che si chiude col livello | Geloso G.257, Webster-Chicago 180 |
-| LED | scala −40…+6 dB, verde, giallo, rosso; picco tenuto | Walkman Pro WM-D6C, Mackie CR-1604 |
-| Livello automatico | nessun meter, una spia che si accende col suono | Ektasound 130, JVC GR-C1, CCD-V8 |
-| Nessuno | — | fonografo Edison |
+Ogni comando è **attivo** (muove un parametro), **meccanico** (sulla macchina vera non tocca il suono: avvolgimento,
+formato bobina, equalizzazione di riproduzione, pitch; si muove e basta) o **non collegato** (un canale o un ingresso
+che il plugin non alimenta, disegnato spento). Cosa fanno quelli attivi:
 
-- *Taratura* è il livello digitale che legge 0 VU (la tacca 4 del PPM, lo 0 del modulometro), da −24 a −6 dBFS, di
-  serie −18 dBFS; la lampada rossa si accende oltre il fondo scala.
-- Il livello lo misura il processore all'uscita, a ogni blocco (media quadratica per VU e aghi semplici, picco per gli
-  altri), e lo
-  manda al pannello con due parametri in sola lettura (`Meter sinistro`/`destro`, non salvati, non automatizzabili).
+| Comando sul frontale | Nel plugin |
+|---|---|
+| livello di registrazione, guadagno, trim, fader di canale | *Saturazione* (quanto si spinge nastro e preamplificatore) |
+| volume, livello di riproduzione, uscita linea, fader master | *Uscita* |
+| velocità (cm/s), tipo di cassetta | il supporto (solo quelli che la macchina accetta) |
+| Dolby, dbx | la riduzione rumore e il suo interruttore |
+| selettore di funzione (STOP, TEST, RECORD, PLAYBACK…), tasti di trasporto | STOP = bypass; TEST, INPUT, DIRECT = si ascolta senza nastro; RECORD = il meter legge l'ingresso, PLAYBACK il nastro |
+| limiter, AUTO, livello automatico | limitatore (Nagra 4.2, TC-D5M, SSL) e controllo automatico (Nagra, Canon; fisso sulle videocamere) |
+| filtro (Nagra 4.2 LFA/HP, passa-alto Neve e SSL) | passa-alto del secondo ordine; sul Nagra la frequenza dà l'attenuazione a 50 Hz scritta sul selettore (HP 2 = −20 dB) |
+| tono, acuti/bassi, EQ dei banchi | mensole a 100 Hz e 10 kHz |
+| selettore del meter (LEVEL, BATT, BIAS…), pulsante di riferimento | cosa legge l'indicatore: ingresso, nastro, batteria, una taratura fissa; il riferimento del Nagra III legge 0 dB, quello del 4.2 −8 dB |
+
+Un comando segue anche i parametri: se l'host o un menu cambiano il supporto, il selettore di velocità si sposta.
+
+### Indicatori e balistica (`AuMeters.h`, calcolata nel processore, campione per campione)
+
+| Indicatore | Scala | Movimento | Fonte | Dove |
+|---|---|---|---|---|
+| VU | −20…+3, 0 VU al 71 %; sul RCA la scala B (per cento in alto) | media; 99 % in 300 ms, sovraelongazione 1,5 % (ζ 0,80, ωn 13,1 rad/s) | ANSI C16.5, IEC 60268-17 [norma] | Ampex 350, Studer J37 (4) e A80, Revox A77, Portastudio 144 (4), TC-D5M, Auricon, RCA BC-2B, EMI REDD.51 (4), Neve, SSL |
+| PPM | tacche 1–7, 4 dB l'una, la 4 al riferimento | picco; 10 ms di 5 kHz leggono −2 dB; scende 24 dB in 2,8 s | IEC 60268-10 IIa [norma] | (disponibile, nessun modello lo usa) |
+| Modulometro | dB −30…+5, segmento nero di sovramodulazione 0…+2, scala batteria | picco quasi-istantaneo (10 ms −1 dB), scende 20 dB in 1,5 s | scala dai manuali Nagra; tempi [dedotti] come IEC tipo I | Nagra III, Nagra 4.2 |
+| Ago REC | senza numeri, arco nero e rosso, zona batteria | media, circa 100 ms | [dedotto] | Uher 4000, Philips EL 3300, Canon 514XL-S |
+| Occhio magico | ventaglio verde | media: carica 20 ms, scarica 250 ms | Sams, *Tape recorders, how they work*; tempi [dedotti] | Geloso G.257 |
+| Lampada al neon | si accende sopra lo 0 | picco, rapida | bollettino Webster 79/80; Sams | Webster-Chicago 180 |
+| LED | 5 lampade (−20…+4) sul Walkman Pro, 12 per canale (−30…CLIP) sul Mackie | picco 1 ms, scende 20 dB in 1,5 s, picco tenuto 0,8 s | manuale WM-D6C (5 LED picco/batteria); dB [dedotti] | WM-D6C, CR-1604 |
+| Livello automatico | una spia | media | [dedotto] | Ektasound 130, JVC GR-C1, CCD-V8 |
+| Nessuno | — | — | — | fonografo Edison |
+
+Tutti gli indicatori leggono una sinusoide stabile al suo valore efficace (i picchi sono tarati su un tono a 1 kHz,
+come si faceva): 0 VU, la tacca 4 del PPM e lo 0 del modulometro cadono sullo stesso livello, *Taratura meter*
+(di serie −18 dBFS). Il processore manda al pannello quattro letture in sola lettura (uscita e ingresso, sinistra e
+destra), non salvate.
+
+### Fonti dei frontali
+
+- Dai manuali e dalle schede lette: Nagra III (manuale 1963: selettore di funzione a sei posizioni, velocità ed
+  equalizzazione a moneta, pulsante di riferimento), Nagra 4.2 (manuale 1991: funzione, filtro LFA/HP, modulometro a
+  undici posizioni, AUTO 1/2, TAPE/DIRECT, oscillatore a −8 dB), Ampex 350 (manuale del 351, 1959: METER AND OUTPUT,
+  INPUT TRANSFER, EQUALIZATION, velocità e bobine), Revox A77 (guida di servizio: ingressi MIC HI/LO/AUX, IEC/NAB,
+  MONO/STEREO), Uher 4000 Report (selettore a quattro velocità con spento, manopole a trazione batteria/luce), Sony
+  WM-D6C (istruzioni: 5 LED picco/batteria, DOLBY NR B/C, TAPE, MIC ATT, SPEED TUNE), Portastudio 144 (manuale:
+  MIC/LINE-TAPE, TRIM, EQ, PAN, fader, PITCH, BUSS, CUE, quattro VU), RCA BC-2B (IB-24748: otto attenuatori con chiavi
+  AUD/PGM, MASTER, un VU da 4" scala B), EMI REDD.51 (quattordici fader a quadrante, EQ Pop/Classic, quattro VU),
+  Webster-Chicago 79/80 (bollettino: RECORD-LISTEN, MICROPHONE VOLUME, TONE, RUN-REWIND, OUTPUT, neon), Geloso G.257
+  (schede museali: tasti colorati, manopola rossa, interruttore a rotella; 4,75 cm/s).
+- [dedotto] da fotografie e dalla tipologia, senza manuale letto: Studer J37 e A80, Philips EL 3300, Sony TC-D5M,
+  Auricon, Ektasound, Canon 514XL-S, JVC GR-C1, CCD-V8, fonografo Edison, Neve 8078, SSL 4000 E, Mackie CR-1604. Le
+  scritte di questi vanno confrontate con le macchine vere.
+- Cambiati di conseguenza: il Geloso registra solo a 4,75 cm/s; l'Uher ha anche 2,4 cm/s (nuovo supporto); il Nagra
+  4.2 anche 9,5 cm/s; il Webster ha la lampada al neon e non l'occhio magico; il REDD.51 quattro VU e non PPM.
 
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
@@ -112,7 +150,9 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Incerto: comportamento in Fairlight (mai caricato in Resolve) e in Logic Pro (verificato solo da `auval`), build Mac e Windows finché la CI non passa.
 - Implementato e verificato (test in `tests/audio_test.cpp`, pannello fotografato in editorhost): menu filtrati e
   coerenti come sopra. L'host vede ancora le liste complete (automazione), il filtro è nel pannello.
-- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali e indicatori per ogni registratore e banco, manopole.
+- Implementato e verificato su Linux (validatore 94/94, editorhost): frontali, comandi e indicatori per ogni
+  registratore e banco; un selettore provato col mouse (Nagra 4.2: TEST spegne il supporto e sposta TAPE/DIRECT);
+  balistiche VU e PPM verificate da test contro le norme.
   Il movimento delle lancette è stato visto con un segnale finto nel pannello: l'host di prova dell'SDK non fa passare
   audio, quindi il meter con audio vero va visto in Fairlight.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.

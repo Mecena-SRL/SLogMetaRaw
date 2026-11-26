@@ -24,6 +24,11 @@ struct AuSettings
     bool on[kStages] = { true, true, true, true, true, true, true, true, true };
     float drive = 1, noiseDb = 0, wow = 1;  // trims: saturation ×, noise offset (dB), wow and flutter ×
     float mix = 1, outDb = 0;    // dry/wet and output level
+    // The machine's own controls (the front panel): a low cut (second-order high-pass, Hz, below 10 = off), the
+    // limiter or automatic level control, and the tone (shelves at 100 Hz and 10 kHz, dB): the desk's equaliser, or a
+    // recorder's playback tone.
+    float lowCutHz = 0, lowDb = 0, highDb = 0;
+    bool limit = false, alc = false;   // a peak limiter; automatic level control (slow, rides the level)
     uint32_t seed = 1;
 };
 
