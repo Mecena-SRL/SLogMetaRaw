@@ -72,6 +72,13 @@ void hiss(AuEngine::Biquad& filter, float& level, double fs, float lp, float db)
     level = dbToGain(db) * float(std::sqrt(3 * 0.5 * fs / (1.11 * edge)));   // 1.11: the filter's noise bandwidth
 }
 
+// One step of a 10 ms glide; lands exactly on the target, so a still control costs nothing and changes nothing.
+float glide(float z, float to, float k)
+{
+    z += k * (to - z);
+    return std::fabs(to - z) < 1e-6f * std::max(1.0f, std::fabs(to)) ? to : z;
+}
+
 }  // namespace
 
 float AuEngine::Block::random()
@@ -84,7 +91,7 @@ float AuEngine::Block::random()
 
 void AuEngine::add(Block b)
 {
-    if (!b.eq.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
+    if (b.level || !b.eq.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
         b.hum > 0 || b.rumble > 0 || b.crackle > 0 || b.dropout > 0)
         blocks_.push_back(std::move(b));
 }
@@ -124,6 +131,14 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         if (noise) b.hum = dbToGain(dev.humDb + s.noiseDb);
         add(std::move(b));
     }
+    // The record level, and the playback level that gives it back: always there, so the chain keeps its shape.
+    auto level = [&](float db) {
+        Block b;
+        b.level = true;
+        b.gain = dbToGain(std::clamp(db, -60.0f, 40.0f));
+        add(std::move(b));
+    };
+    level(s.recDb);   // Ripresa: after the preamplifier; Mix e supporto: into the desk and onto the master
     // The front panel's filter and limiter, at the machine's input.
     auto inputControls = [&] {
         Block b;
@@ -186,6 +201,7 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     int nr = s.nr >= 0 ? s.nr : (s.useDevice ? dev.nr : 0);
     float cut = s.on[kStNR] ? pick(kAuNR, std::size(kAuNR), nr).hissCutDb : 0;
     if (s.on[kStMedium] && med > 0) medium(med, cut);
+    level(-s.recDb);
     if (s.on[kStTransfer] && s.transfer > 0)
         for (int i = 0; i < std::clamp(s.copies, 1, 8); ++i) medium(s.transfer, 0);
 
@@ -201,12 +217,13 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     }
     for (size_t i = 0; i < blocks_.size(); ++i) {
         Block& b = blocks_[i];
-        if (same && i < old.size() && old[i].eq.size() == b.eq.size() &&
+        if (same && i < old.size() && old[i].eq.size() == b.eq.size() && old[i].level == b.level &&
             old[i].line.empty() == !(b.wowA > 0 || b.flutA > 0)) {
             const Block& o = old[i];
             b.z = o.z, b.env = o.env, b.line = o.line, b.tail = o.tail, b.hissZ = o.hissZ;
             b.pos = o.pos, b.rumbleZ = o.rumbleZ, b.drop = o.drop, b.dropTo = o.dropTo, b.dropLeft = o.dropLeft;
             b.rng = o.rng;
+            b.gainZ = o.level == b.level ? o.gainZ : b.gain;
         } else {
             fresh(b, i);
         }
@@ -227,18 +244,28 @@ void AuEngine::fresh(Block& b, size_t index) const
     b.rumbleZ = 0;
     b.drop = b.dropTo = 1;
     b.dropLeft = 0;
+    b.gainZ = b.gain;
     b.rng = seed_ * 2654435761u + uint32_t(index + 1) * 40503u;
     if (!b.rng) b.rng = 1;
 }
 
 void AuEngine::reset()
 {
+    wetZ_ = outZ_ = -1;
     for (size_t i = 0; i < blocks_.size(); ++i) fresh(blocks_[i], i);
 }
 
 void AuEngine::run(Block& b, float* const* ch, int frames)
 {
     const int n = channels_;
+    if (b.level) {   // 10 ms to a new level: automation moves it without steps
+        const float k = 1 - std::exp(-1 / float(0.01 * fs_));
+        for (int f = 0; f < frames; ++f) {
+            b.gainZ = glide(b.gainZ, b.gain, k);
+            for (int c = 0; c < n; ++c) ch[c][f] *= b.gainZ;
+        }
+        return;
+    }
     const float att = 1 - std::exp(-1 / float(0.005 * fs_)), rel = 1 - std::exp(-1 / float(0.15 * fs_));
     const float tailK = std::exp(-1 / float(0.0004 * fs_)), dropK = 1 - std::exp(-1 / float(0.003 * fs_));
     const float rumbleK = 1 - std::exp(float(-2 * kPi * 25 / fs_));
@@ -311,15 +338,21 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
 void AuEngine::process(float* const* ch, int frames)
 {
     const int n = channels_;
-    if (wet_ < 1) {
+    if (wetZ_ < 0) wetZ_ = wet_, outZ_ = out_;
+    const bool blend = wet_ < 1 || wetZ_ != wet_;
+    if (blend) {
         dry_.resize(size_t(n) * frames);
         for (int c = 0; c < n; ++c) std::copy(ch[c], ch[c] + frames, dry_.begin() + size_t(c) * frames);
     }
     for (Block& b : blocks_) run(b, ch, frames);
-    for (int c = 0; c < n; ++c)
-        for (int f = 0; f < frames; ++f) {
+    const float k = 1 - std::exp(-1 / float(0.01 * fs_));   // dry/wet and output glide in 10 ms
+    for (int f = 0; f < frames; ++f) {
+        wetZ_ = glide(wetZ_, wet_, k);
+        outZ_ = glide(outZ_, out_, k);
+        for (int c = 0; c < n; ++c) {
             float y = ch[c][f];
-            if (wet_ < 1) y = dry_[size_t(c) * frames + f] + wet_ * (y - dry_[size_t(c) * frames + f]);
-            ch[c][f] = y * out_;
+            if (blend) y = dry_[size_t(c) * frames + f] + wetZ_ * (y - dry_[size_t(c) * frames + f]);
+            ch[c][f] = y * outZ_;
         }
+    }
 }

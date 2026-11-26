@@ -29,6 +29,9 @@ struct AuSettings
     // recorder's playback tone.
     float lowCutHz = 0, lowDb = 0, highDb = 0;
     bool limit = false, alc = false;   // a peak limiter; automatic level control (slow, rides the level)
+    // The record level (dB): gain before the medium (in Mix e supporto before the desk too), taken back after it.
+    // Loudness stays; what changes is how hard the medium is driven against its hiss.
+    float recDb = 0;
     uint32_t seed = 1;
 };
 
@@ -62,6 +65,8 @@ private:
         std::vector<Biquad> eq;                  // run in order
         float drive = 0, asym = 0, comp = 0;     // saturation, even harmonics, level-riding (0..1)
         bool mono = false;
+        bool level = false;                      // a gain stage only: the record level and its playback
+        float gain = 1, gainZ = 1;               // target and the smoothed gain (no zipper when automated)
         float wowA = 0, wowW = 0, flutA = 0, flutW = 0;           // delay swing (s) and rate (rad/s)
         float hiss = 0, hum = 0, rumble = 0, crackle = 0, dropout = 0;  // linear levels; events per sample
         Biquad hissLp;
@@ -82,6 +87,7 @@ private:
     int channels_ = 0;
     uint32_t seed_ = 1;
     float wet_ = 1, out_ = 1;
+    float wetZ_ = -1, outZ_ = -1;   // smoothed towards wet_ and out_ (-1: not started, jump there)
     std::vector<Block> blocks_;
     std::vector<float> dry_;
 };

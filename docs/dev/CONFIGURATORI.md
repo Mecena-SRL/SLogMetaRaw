@@ -267,5 +267,8 @@ CI e installer. Audio Unit per Logic Pro (richiesta di Ivan, 25/11/2026, prima e
 registratore → microfono → supporto → riduzione, banco → master → riversaggio, filtrati per compatibilità e anno nel
 pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Frontali ricostruiti dai manuali con i comandi veri e funzionanti, balistiche a norma (richiesta di Ivan, 26/11/2026):
 comandi in `audio/vst3/AuFronts.h`, colori e indicatore in `AuLooks.h`, balistica nel processore in `AuMeters.h`, disegno
-in `Plate`, `Meters`, `FrontControl` di `audio/vst3/AuPlugin.cpp`. Aperto: prova in Fairlight e Logic, confronto con le
+in `Plate`, `Meters`, `FrontControl` di `audio/vst3/AuPlugin.cpp`. Presa diretta (richiesta di Ivan, 26/11/2026, fase 1 di 4):
+livello di registrazione `kPRecLevel`, levigatura nel motore, «?» e guida «Cosa registri» in `audio/vst3/AuGuide.h`
+(`HelpBadge` e guida nel pannello). Fasi seguenti: canale del banco per traccia (mono/stereo, pan, fader, bus),
+acquisizione dopo il riversaggio, frontali fotorealistici. Aperto: prova in Fairlight e Logic, confronto con le
 macchine vere dei frontali dedotti (Studer, EL 3300, TC-D5M, cineprese, Neve, SSL, Mackie). Dettagli: `docs/audio/AUDIO.md`.

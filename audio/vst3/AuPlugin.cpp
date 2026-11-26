@@ -21,6 +21,8 @@
 #endif
 
 #include <algorithm>
+#include <deque>
+#include <functional>
 #include <cmath>
 #include <random>
 
@@ -960,6 +962,40 @@ private:
     bool pressed_ = false;
 };
 
+// The «?» on the name plate: while the pointer is over it, the card with the machine's story shows.
+class HelpBadge : public CView
+{
+public:
+    HelpBadge(const CRect& r, std::function<void(bool)> hover) : CView(r), hover_(std::move(hover)) {}
+    void draw(CDrawContext* c) override
+    {
+        const CRect r = getViewSize();
+        fillEllipse(c, r, over_ ? CColor(250, 226, 160) : CColor(236, 230, 214), over_ ? CColor(214, 180, 110) : CColor(170, 162, 146));
+        c->setFrameColor(CColor(60, 56, 50));
+        c->setLineWidth(1);
+        auto path = VSTGUI::owned(c->createGraphicsPath());
+        path->addEllipse(r);
+        c->drawGraphicsPath(path, CDrawContext::kPathStroked);
+        c->setFont(kNormalFontSmall);
+        c->setFontColor(CColor(40, 36, 32));
+        c->drawString("?", r, kCenterText);
+        setDirty(false);
+    }
+    CMouseEventResult onMouseEntered(CPoint&, const CButtonState&) override { return show(true); }
+    CMouseEventResult onMouseExited(CPoint&, const CButtonState&) override { return show(false); }
+
+private:
+    CMouseEventResult show(bool on)
+    {
+        over_ = on;
+        invalid();
+        hover_(on);
+        return kMouseEventHandled;
+    }
+    std::function<void(bool)> hover_;
+    bool over_ = false;
+};
+
 class Panel : public VSTGUIEditor, public IControlListener
 {
 public:
@@ -970,7 +1006,12 @@ public:
     {
         for (AuParamId id : auParams(mix)) has_[id] = true;
     }
-    static ViewRect sizeFor(bool mix) { return ViewRect(0, 0, int32(kW), int32(kTop + auRows(mix).size() * kRow + 10)); }
+    static constexpr CCoord kGuideLines = 64;   // the guide's advice under its menu
+    static constexpr int32_t kApplyTag = 20000;
+    static ViewRect sizeFor(bool mix)
+    {
+        return ViewRect(0, 0, int32(kW), int32(kTop + (auRows(mix).size() + 1) * kRow + kGuideLines + 10));
+    }
 
     bool PLUGIN_API open(void* parent, const PlatformType& platform) override
     {
@@ -992,6 +1033,47 @@ public:
             if (row.control >= 0) addControl(AuParamId(row.control), CRect(204, y, kW - 84, y + kRow - 4));
             y += kRow;
         }
+        // The guide: what is being recorded, the advice for this machine, «Applica».
+        auto* label = new CTextLabel(CRect(12, y, 172, y + kRow - 4), mix_ ? "Cosa missi" : "Cosa registri");
+        style(label, kNormalFont, CColor(232, 196, 120));
+        label->setHoriAlign(kLeftText);
+        frame->addView(label);
+        addControl(kPSource, CRect(204, y, kW - 170, y + kRow - 4));
+        auto* apply = new CTextButton(CRect(kW - 162, y, kW - 84, y + kRow - 4), this, kApplyTag, "Applica");
+        apply->setFont(kNormalFontSmall);
+        apply->setTextColor(CColor(240, 234, 220));
+        apply->setGradient(VSTGUI::owned(CGradient::create(0, 1, CColor(84, 76, 66), CColor(52, 48, 44))));
+        apply->setGradientHighlighted(VSTGUI::owned(CGradient::create(0, 1, CColor(150, 120, 70), CColor(110, 88, 52))));
+        apply->setFrameColor(CColor(120, 110, 96));
+        apply->setRoundRadius(3);
+        frame->addView(apply);
+        y += kRow;
+        advice_ = new CMultiLineTextLabel(CRect(12, y, kW - 12, y + kGuideLines));
+        advice_->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
+        style(advice_, kNormalFontSmall, CColor(208, 200, 184));
+        advice_->setHoriAlign(kLeftText);
+        frame->addView(advice_);
+        // The «?» and its card, above everything else (dress() keeps them on top).
+        card_ = new CMultiLineTextLabel(CRect(0, 0, 10, 10));
+        card_->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
+        style(card_, kNormalFontSmall, CColor(34, 30, 26));
+        card_->setBackColor(CColor(246, 240, 226));
+        card_->setFrameColor(CColor(90, 80, 66));
+        card_->setStyle(CParamDisplay::kRoundRectStyle);
+        card_->setRoundRectRadius(6);
+        card_->setTextInset(CPoint(12, 12));
+        card_->setHoriAlign(kLeftText);
+        card_->setMouseEnabled(false);
+        card_->setVisible(false);
+        badge_ = new HelpBadge(CRect(0, 0, 16, 16), [this](bool on) {
+            if (card_) {   // the moving meter would draw through the card: it rests while the story is read
+                card_->setVisible(on);
+                if (meters_ && card_->getViewSize().rectOverlap(meters_->getViewSize())) meters_->setVisible(!on);
+                frame->invalid();
+            }
+        });
+        frame->addView(badge_);
+        frame->addView(card_);
         IPlatformFrameConfig* config = nullptr;
 #if SMTG_OS_LINUX
         X11::FrameConfig x11;   // an X11 host gives its run loop through the frame (as VST3Editor does)
@@ -1012,6 +1094,10 @@ public:
         front_.clear();
         plate_ = nullptr;
         meters_ = nullptr;
+        badge_ = nullptr;
+        card_ = nullptr;
+        advice_ = nullptr;
+        peaks_.clear();
         look_ = -1;
         values_.clear();
         if (frame) {
@@ -1022,6 +1108,10 @@ public:
 
     void valueChanged(CControl* control) override
     {
+        if (control->getTag() == kApplyTag) {
+            if (control->getValue() > 0.5f) applyGuide();
+            return;
+        }
         if (control->getTag() >= kFrontTag) return frontChanged(static_cast<FrontControl*>(control));
         ParamID id = ParamID(control->getTag());
         for (Menu& m : menus_)
@@ -1064,6 +1154,7 @@ private:
     int paramOf(CControl* control) const
     {
         const int32_t tag = control->getTag();
+        if (tag == kApplyTag) return -1;
         if (tag < kFrontTag) return tag;
         const AuControl& d = static_cast<FrontControl*>(control)->def();
         return !d.pos && d.use == AuUse::Live && d.param >= 0 && has_[d.param] ? d.param : -1;
@@ -1259,6 +1350,21 @@ private:
             frame->addView(view);
             front_.push_back({ view, d.pos ? d.def : 0 });
         }
+        // the «?» at the right of the name plate; the story below it, inside the front
+        const CPoint at(origin.x + front.nx, origin.y + front.ny);
+        badge_->setViewSize(CRect(at.x + 180, at.y + 4, at.x + 196, at.y + 20));
+        badge_->setMouseableArea(badge_->getViewSize());
+        const CCoord cw = 400, ch = 96;
+        // under the «?», over the plate and the rows if it must: they stand still while it is read
+        const CCoord cx = std::clamp(at.x + 196 - cw, CCoord(14), kW - 14 - cw), cy = at.y + 24;
+        card_->setViewSize(CRect(cx, cy, cx + cw, cy + ch));
+        card_->setText(auStory(v, mix_));
+        for (CView* top : { static_cast<CView*>(badge_), static_cast<CView*>(card_) }) {
+            top->remember();
+            frame->removeView(top, false);
+            frame->addView(top);
+            top->forget();
+        }
         reads_ = front.reads;
         tone_ = kNoTone;
         heldReads_ = -1;
@@ -1312,7 +1418,7 @@ private:
             const bool in = reads == kReadIn;
             const int ch = c & 1;
             double level = auMeterFromNorm(getController()->getParamNormalized(ParamID((in ? kPMeterInL : kPMeterL) + ch)));
-            if (in && !mix_) level += 20 * std::log10(std::max(v[kPDrive], 0.03));   // the record level is before the meter
+            if (in) level += v[kPRecLevel];   // the record level is before the meter
             db[c] = c < 2 ? level - v[kPMeterRef] : -100;   // tracks 3 and 4 get nothing from a stereo signal
             if (tone_ != kNoTone && c < 2) db[c] = tone_;
         }
@@ -1322,6 +1428,7 @@ private:
                                   : reads == kReadZero    ? Meters::kZero
                                                           : Meters::kLevel;
         meters_->feed(db, mode, kTick / 1000.0);
+        guide(v);
         const bool copies = v[kPTransfer] > 0;   // copies only count when there is a transfer
         for (auto& [control, id] : controls_) {
             if (control->isEditing()) continue;
@@ -1338,6 +1445,37 @@ private:
         }
     }
 
+    // The peaks of the last seconds on the machine's own meter, before the record level: what «Applica» works from.
+    double measured() const
+    {
+        double top = kAuNoMeasure;
+        for (double p : peaks_) top = std::max(top, p);
+        return top > -40 ? top : kAuNoMeasure;
+    }
+    void guide(const double* v)
+    {
+        double in = -100;
+        for (int c = 0; c < 2; ++c)
+            in = std::max(in, auMeterFromNorm(getController()->getParamNormalized(ParamID(kPMeterInL + c))) - v[kPMeterRef]);
+        peaks_.push_back(in);
+        while (peaks_.size() > size_t(8000 / kTick)) peaks_.pop_front();   // eight seconds
+        const std::string text = auGuideText(v, mix_, measured());
+        if (advice_ && text != adviceText_) {
+            adviceText_ = text;
+            advice_->setText(text.c_str());
+            advice_->invalid();
+        }
+    }
+    void applyGuide()
+    {
+        double v[kPCount];
+        values(v);
+        for (auto [id, plain] : auGuideApply(v, mix_, measured()))
+            if (has_[id]) editWhole(id, plain);
+        coerce();
+        sync(true);
+    }
+
     static constexpr int kTick = 33;   // ms: meters at 30 frames a second
     static constexpr double kNoTone = -1000;
 
@@ -1345,6 +1483,11 @@ private:
     bool has_[kPCount] = {};
     Plate* plate_ = nullptr;
     Meters* meters_ = nullptr;
+    HelpBadge* badge_ = nullptr;
+    CMultiLineTextLabel* card_ = nullptr;
+    CMultiLineTextLabel* advice_ = nullptr;
+    std::string adviceText_;
+    std::deque<double> peaks_;
     std::vector<Front> front_;
     int look_ = -1;
     int reads_ = kReadOut, heldReads_ = -1;
