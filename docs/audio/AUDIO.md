@@ -141,6 +141,17 @@ destra), non salvate.
   PPM 5 parlato e PPM 6 musica (prassi BBC); modulometro Nagra 0 dB (parlato −2); LED +3; neon appena acceso.
   Consigli di microfono e macchine: scelte d'uso comuni, non regole [dedotto].
 
+## Il banco e i canali (fase 2)
+
+Ogni traccia con *Ripresa* è un canale del banco, come in una presa diretta vera: microfono → **ingresso del canale**
+(stereo, mono somma, mono dal sinistro o dal destro) → **banco (canale)** (preamplificatore ed equalizzazione del banco
+scelto colorano la traccia prima del registratore; la compressione di bus resta alla sezione master) → registratore →
+**panpot** (mono a potenza costante, 0 dB al centro e +3 dB ai lati; stereo come bilanciamento) → **fader del canale**.
+*Mix e supporto* sul bus è la sezione master: ingresso (stereo o mono), banco, livello sul master, supporto,
+riversaggio, ascolto. Una band: una traccia per strumento, ciascuna con il suo microfono e registratore, lo stesso
+banco su tutte le tracce e sul bus. Ogni istanza è indipendente: il pannello di *Mix* non vede le tracce. Di serie un
+canale di *Ripresa* non ha banco, quindi i progetti salvati suonano come prima.
+
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
 Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
@@ -179,6 +190,8 @@ Rumori in dBFS RMS dopo la banda del supporto; wow e flutter come errore di velo
 - Implementato e verificato da test e in editorhost (26/11/2026): livello di registrazione (volume costante, fruscio
   e saturazione che cambiano), levigatura di livelli/uscita/dry-wet, «?» con la storia, guida «Cosa registri».
   La misura delle punte con audio vero va provata in Fairlight (l'host di prova non fa passare audio).
+- Implementato e verificato da test (26/11/2026): canale del banco in *Ripresa* (ingresso mono/stereo, banco prima del
+  registratore, panpot, fader), ingresso mono/stereo del master.
 - Limiti noti: cambiare un menu durante la riproduzione può dare un piccolo scatto.
 - Pianificato: prova in Fairlight e taratura su registrazioni vere (fase 3), ricerca per modello come `docs/creative/`
   (fase 4). Dolby come compander,

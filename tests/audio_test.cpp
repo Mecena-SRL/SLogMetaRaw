@@ -440,6 +440,31 @@ int main()
         check(!auGuideText(v, true, kAuNoMeasure).empty(), "mix guide text");
     }
 
+
+    // The desk channel: a mono input sums the sides, the pan places it at constant power, the fader is a gain; the
+    // channel's desk colours the track in Ripresa.
+    {
+        AuSettings s = bare();
+        Buffer in = sine(1000, 0.2f, 24000);
+        for (float& x : in[1]) x = 0;
+        s.input = 1;
+        Buffer y = render(s, in);
+        check(std::fabs(rms(y[0]) - rms(y[1])) < 1e-6 && std::fabs(rms(y[0]) - 0.1 / std::sqrt(2.0)) < 1e-3, "mono sums the sides");
+        s.input = 2;
+        s.pan = -1;
+        y = render(s, in);
+        check(rms(y[1], 12000) < 1e-6 && std::fabs(20 * std::log10(rms(y[0], 12000) / (0.2 / std::sqrt(2.0))) - 3.01) < 0.05,
+              "pan hard left, +3 dB at the side");
+        s.pan = 0;
+        s.faderDb = -6;
+        check(std::fabs(gainDb(s, 1000) + 6) < 0.05, "channel fader");
+        check(auDefault(kPDesk, false) == 0 && auDefault(kPInput, false) == 0, "a Ripresa channel starts plain");
+        AuSettings r;   // Ripresa with a Neve channel before the recorder
+        r.desk = 3;
+        Buffer m = render(r, sine(220, 0.5f, 9600));
+        check(sane(m) && m != render(AuSettings {}, sine(220, 0.5f, 9600)), "channel desk colours the track");
+    }
+
     if (!failures) std::printf("audio_test OK\n");
     return failures ? 1 : 0;
 }

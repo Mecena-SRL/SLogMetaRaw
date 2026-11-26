@@ -19,6 +19,10 @@
   uscita e dry/wet scorrono senza scatti. Il «?» sulla targhetta racconta la storia del registratore o del banco.
   *Cosa registri* (*Cosa missi* nel mix) dice a che livello portare le punte sul meter di quella macchina, misura il
   segnale e con *Applica* imposta livello, microfono, filtro e limitatore; consiglia anche macchine e banchi d'uso.
+- **Audio, il banco per ogni traccia**: in *Ripresa* ogni traccia diventa un canale del banco: ingresso stereo o mono
+  (somma o un solo lato), banco scelto prima del registratore, panpot e fader del canale. Con una band si mette
+  *Ripresa* su ogni strumento, ciascuno col suo microfono e registratore, e *Mix e supporto* sul bus come sezione
+  master (anche lì l'ingresso può essere mono).
 
 ## Log MetaRaw 4.3.1
 

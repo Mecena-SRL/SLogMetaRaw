@@ -999,7 +999,7 @@ private:
 class Panel : public VSTGUIEditor, public IControlListener
 {
 public:
-    static constexpr CCoord kW = 660, kRow = 28, kFace = 268, kTop = kFace + 12;
+    static constexpr CCoord kW = 660, kRow = 24, kFace = 268, kTop = kFace + 12;
     static constexpr int32_t kFrontTag = 10000;   // tags of front controls: kFrontTag + index in the front
 
     Panel(EditController* controller, bool mix, ViewRect size) : VSTGUIEditor(controller, &size), mix_(mix)

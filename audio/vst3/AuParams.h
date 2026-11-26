@@ -17,7 +17,7 @@ enum AuParamId : int {
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
     kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR,
     kPLowCut, kPLow, kPHigh, kPLimit, kPAuto, kPMeterInL, kPMeterInR,
-    kPRecLevel, kPSource, kPCount
+    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPCount
 };
 
 enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
@@ -81,6 +81,7 @@ inline std::vector<std::string> auListNames(AuParamId id, bool mix)
     case kPTransfer: return auNames(kAuMedia, 1, "Nessuno");
     case kPListen: return auNames(kAuListen);
     case kPSource: return mix ? auNames(kAuPrograms) : auNames(kAuSources);
+    case kPInput: return { "Stereo", "Mono (somma L+R)", "Mono dal sinistro", "Mono dal destro" };
     default: return {};
     }
 }
@@ -124,6 +125,10 @@ inline const AuParamDef& auParam(AuParamId id)
         // the record level: gain onto the medium, given back on playback (hiss and saturation move, loudness does not)
         { kPRecLevel, "Livello di registrazione", AuKind::Range, -24, 12, 0, "dB" },
         { kPSource, "Cosa registri", AuKind::List },   // the guide (AuGuide.h): no effect on the sound
+        // the desk channel (Ripresa) or the master's input (Mix e supporto)
+        { kPInput, "Ingresso", AuKind::List },
+        { kPPan, "Panpot", AuKind::Range, -100, 100, 0, "L/R" },
+        { kPFader, "Fader del canale", AuKind::Range, -60, 10, 0, "dB" },
     };
     return defs[id];
 }
@@ -131,6 +136,7 @@ inline const AuParamDef& auParam(AuParamId id)
 // The default plain value: Mix e supporto starts on ¼" tape at 38 cm/s, everything else on its table's default.
 inline double auDefault(AuParamId id, bool mix)
 {
+    if (id == kPDesk && !mix) return 0;   // a Ripresa channel starts on no desk (older projects sound as they did)
     return id == kPMedium && mix ? 1 : auParam(id).def;
 }
 
@@ -242,18 +248,23 @@ inline const std::vector<AuRow>& auRows(bool mix)
     static const std::vector<AuRow> ripresa = {
         { "Registratore", -1, kPDevice },
         { "Microfono", kPOnMic, kPMic },
+        { "Ingresso del canale", -1, kPInput },
+        { "Banco (canale)", kPOnDesk, kPDesk },
         { "Preamplificatore", kPOnPre, -1 },
         { "Livello di registrazione", -1, kPRecLevel },
         { "Supporto", kPOnMedium, kPMedium },
         { "Riduzione rumore", kPOnNR, kPNR },
         { "Wow e flutter", kPOnWow, kPWow },
         { "Rumori", kPOnNoise, kPNoise },
+        { "Panpot", -1, kPPan },
+        { "Fader del canale", -1, kPFader },
         { "Saturazione", -1, kPDrive },
         { "Dry/wet", -1, kPMix },
         { "Uscita", -1, kPOut },
         { "Taratura meter", -1, kPMeterRef },
     };
     static const std::vector<AuRow> mixRows = {
+        { "Ingresso", -1, kPInput },
         { "Banco", kPOnDesk, kPDesk },
         { "Livello sul master", -1, kPRecLevel },
         { "Supporto", kPOnMedium, kPMedium },
@@ -306,7 +317,10 @@ inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)
     s.mic = int(v[kPMic]);
     s.medium = mix ? int(v[kPMedium]) : (v[kPMedium] > 0 ? int(v[kPMedium]) : -1);
     s.nr = int(v[kPNR]) - (mix ? 0 : 1);
-    s.desk = mix ? int(v[kPDesk]) : 0;
+    s.desk = int(v[kPDesk]);   // Ripresa: the channel's desk; Mix e supporto: the bus
+    s.input = int(v[kPInput]);
+    s.pan = mix ? 0 : float(v[kPPan] / 100);
+    s.faderDb = mix ? 0 : float(v[kPFader]);
     s.transfer = mix ? int(v[kPTransfer]) : 0;
     s.copies = int(v[kPCopies] + 0.5);
     s.listen = mix ? int(v[kPListen]) : 0;

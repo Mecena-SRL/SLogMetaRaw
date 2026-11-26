@@ -32,6 +32,10 @@ struct AuSettings
     // The record level (dB): gain before the medium (in Mix e supporto before the desk too), taken back after it.
     // Loudness stays; what changes is how hard the medium is driven against its hiss.
     float recDb = 0;
+    // The desk channel (Ripresa) or the master's input (Mix e supporto): what comes in (0 stereo, 1 mono sum, 2 mono
+    // from the left, 3 from the right), then at the end the pan (-1..1) and the fader (dB).
+    int input = 0;
+    float pan = 0, faderDb = 0;
     uint32_t seed = 1;
 };
 
@@ -87,7 +91,9 @@ private:
     int channels_ = 0;
     uint32_t seed_ = 1;
     float wet_ = 1, out_ = 1;
-    float wetZ_ = -1, outZ_ = -1;   // smoothed towards wet_ and out_ (-1: not started, jump there)
+    float wetZ_ = -1, outZ_ = -1;
+    int input_ = 0;
+    float panL_ = 1, panR_ = 1, panLZ_ = 1, panRZ_ = 1;   // smoothed towards wet_ and out_ (-1: not started, jump there)
     std::vector<Block> blocks_;
     std::vector<float> dry_;
 };

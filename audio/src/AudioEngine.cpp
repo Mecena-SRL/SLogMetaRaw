@@ -107,6 +107,14 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     seed_ = s.seed ? s.seed : 1;   // after `same`: compared with the previous seed
     wet_ = std::clamp(s.mix, 0.0f, 1.0f);
     out_ = dbToGain(s.outDb);
+    input_ = std::clamp(s.input, 0, 3);
+    {   // the channel's pan and fader: a mono channel is panned at constant power, a stereo one balanced
+        const float p = std::clamp(s.pan, -1.0f, 1.0f), f = dbToGain(std::max(s.faderDb, -90.0f));
+        const bool mono = input_ > 0;
+        const double a = (p + 1) * kPi / 4;
+        panL_ = f * (mono ? float(std::cos(a) * std::sqrt(2.0)) : std::min(1.0f, 1 - p));
+        panR_ = f * (mono ? float(std::sin(a) * std::sqrt(2.0)) : std::min(1.0f, 1 + p));
+    }
     const double fs = fs_;
     const float drive = std::max(0.0f, s.drive);
     const bool noise = s.on[kStNoise];
@@ -123,6 +131,22 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         b.drive = m.drive * drive;
         add(std::move(b));
     }
+    // The desk: on the bus in Mix e supporto; in Ripresa the channel the microphone is plugged into, before the
+    // recorder (its preamplifier and equaliser colour the track as it is recorded).
+    auto desk = [&] {
+        if (!s.on[kStDesk] || s.desk <= 0) return;
+        const AuConsole& c = pick(kAuConsoles, std::size(kAuConsoles), s.desk);
+        Block b;
+        band(b.eq, fs, c.hp, c.lp, 1);
+        if (c.lowDb != 0) b.eq.push_back(shelf(fs, 100, c.lowDb, false));
+        if (c.highDb != 0 && 8000 < 0.45 * fs) b.eq.push_back(shelf(fs, 8000, c.highDb, true));
+        b.drive = c.drive * drive;
+        b.asym = c.asym;
+        b.comp = s.useDevice ? 0 : c.comp;   // the bus compression belongs to the master section
+        if (noise) hiss(b.hissLp, b.hiss, fs, c.lp, c.noiseDb + s.noiseDb);
+        add(std::move(b));
+    };
+    if (s.useDevice) desk();
     if (s.useDevice && s.on[kStPre]) {
         Block b;
         b.drive = dev.preDrive * drive;
@@ -153,18 +177,7 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         add(std::move(b));
     };
     if (s.useDevice) inputControls();
-    if (s.on[kStDesk] && s.desk > 0) {
-        const AuConsole& c = pick(kAuConsoles, std::size(kAuConsoles), s.desk);
-        Block b;
-        band(b.eq, fs, c.hp, c.lp, 1);
-        if (c.lowDb != 0) b.eq.push_back(shelf(fs, 100, c.lowDb, false));
-        if (c.highDb != 0 && 8000 < 0.45 * fs) b.eq.push_back(shelf(fs, 8000, c.highDb, true));
-        b.drive = c.drive * drive;
-        b.asym = c.asym;
-        b.comp = c.comp;
-        if (noise) hiss(b.hissLp, b.hiss, fs, c.lp, c.noiseDb + s.noiseDb);
-        add(std::move(b));
-    }
+    if (!s.useDevice) desk();
 
     if (!s.useDevice) {   // the desk's own equaliser and limiter follow its colour
         inputControls();
@@ -251,7 +264,7 @@ void AuEngine::fresh(Block& b, size_t index) const
 
 void AuEngine::reset()
 {
-    wetZ_ = outZ_ = -1;
+    wetZ_ = outZ_ = -1;   // panLZ_, panRZ_ restart with them
     for (size_t i = 0; i < blocks_.size(); ++i) fresh(blocks_[i], i);
 }
 
@@ -338,7 +351,12 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
 void AuEngine::process(float* const* ch, int frames)
 {
     const int n = channels_;
-    if (wetZ_ < 0) wetZ_ = wet_, outZ_ = out_;
+    if (n == 2 && input_ > 0)   // the channel's input: both sides summed, or one side only, on both
+        for (int f = 0; f < frames; ++f) {
+            const float m = input_ == 1 ? 0.5f * (ch[0][f] + ch[1][f]) : ch[input_ - 2][f];
+            ch[0][f] = ch[1][f] = m;
+        }
+    if (wetZ_ < 0) wetZ_ = wet_, outZ_ = out_, panLZ_ = panL_, panRZ_ = panR_;
     const bool blend = wet_ < 1 || wetZ_ != wet_;
     if (blend) {
         dry_.resize(size_t(n) * frames);
@@ -349,10 +367,12 @@ void AuEngine::process(float* const* ch, int frames)
     for (int f = 0; f < frames; ++f) {
         wetZ_ = glide(wetZ_, wet_, k);
         outZ_ = glide(outZ_, out_, k);
+        panLZ_ = glide(panLZ_, panL_, k);
+        panRZ_ = glide(panRZ_, panR_, k);
         for (int c = 0; c < n; ++c) {
             float y = ch[c][f];
             if (blend) y = dry_[size_t(c) * frames + f] + wetZ_ * (y - dry_[size_t(c) * frames + f]);
-            ch[c][f] = y * outZ_;
+            ch[c][f] = y * outZ_ * (n < 2 ? 1 : c == 0 ? panLZ_ : panRZ_);
         }
     }
 }
