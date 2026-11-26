@@ -193,6 +193,11 @@ becomes up to three **records** with their spectral sensitivity. Each is exposed
 a picture the way that process did: subtractive dyes, additive filters, a silver or platinum deposit on paper, a video
 signal. Every process is a table of numbers, and the panel shows only the controls that matter for the one you pick.
 
+**Setup d'epoca** (top of the panel): the real chain of a film or an era, loaded in one go: À bout de souffle,
+Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo, the Lumière
+Cinématographe, early state TV and 1980s commercial TV. Camera, format, stock, push, lens, copies, transfer and viewing
+follow the sources; the same list is coming to the audio plugins. Sources and what is deduced: `docs/SETUPS.md`.
+
 | Process | What it models |
 |---|---|
 | **Negativo colore e stampa** | three layers with their own contrast, toe and shoulder, interimage, grain per layer, halation, a positive print with R G B printer lights; 14 stocks, Eastern ones too (Sovcolor, ORWO, Svema, Gevacolor). *Uscita Log* gives the negative scan, in the input encoding |

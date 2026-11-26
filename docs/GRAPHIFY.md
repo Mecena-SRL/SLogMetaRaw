@@ -108,7 +108,17 @@ AudioPresets.h  (tabelle: dispositivi, microfoni, supporti, NR, banchi, ascolto)
                                                           su Mac anche due Audio Unit dal wrapper dell'SDK)
 tests/audio_test.cpp  (compilato dal CMake di ofx/SLogMetaRaw, guidato da tests/test_audio.py)
 ```
+
 Non dipende dal plugin OFX. Installer: `packaging/build_installer.sh` e `packaging/windows/build_package.ps1`. Documento: `docs/audio/AUDIO.md`.
+
+## `shared/` (in sviluppo)
+
+```
+shared/EraSetups.h  (setup d'epoca: righe per nome delle tabelle di Creative e Audio)
+      ├──> creative/CreativeModel.cpp (creativeApplySetup), CreativeFactory.cpp (scelta eraSetup)
+      └──> Audio: in arrivo (stessa lista nel pannello)
+```
+Documento: `docs/SETUPS.md`.
 
 ## Packaging e release (non runtime)
 
@@ -140,7 +150,7 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py` (con `gen/GamutMatrices.h` e
   `gen/Aces2Tables.h`): non va mai editato a mano.
 
-_Ultimo aggiornamento: 24/11/2026 — `detail/` e `math/Detail*.h` sostituiti da `creative/` e `math/Creative.h`
+_Ultimo aggiornamento: 26/11/2026 — aggiunto `shared/EraSetups.h` (setup d'epoca comuni a Creative e Audio). Prima, 24/11/2026 — `detail/` e `math/Detail*.h` sostituiti da `creative/` e `math/Creative.h`
 (nodo Creative). Prima, 24/11/2026 — rimosso `develop/NoiseMask` (Maschera rumore, 3.2.0-3.2.1: passa al plugin Noise;
 il record della clip conserva `noise_codec`). Prima, 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
 (`tools/aces2.py`, `gen/Aces2Tables.h`) e OpenDRT (`tests/model/opendrt.py`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso

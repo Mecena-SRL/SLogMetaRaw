@@ -443,6 +443,28 @@ class Creative(unittest.TestCase):
         res = subprocess.run([self.exe], input='names\n', capture_output=True, text=True, timeout=60)
         self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
 
+    def test_every_era_setup_loads_a_coherent_chain(self):
+        """Each row of shared/EraSetups.h names real rows of the tables and gives the process of its sources."""
+        if not self.exe:
+            self.skipTest('binari di test non compilabili qui')
+        res = subprocess.run([self.exe], input='setups\n', capture_output=True, text=True, timeout=20)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        rows = {}
+        for line in res.stdout.splitlines():
+            name, ok, ctl = line.split('|')
+            self.assertEqual(ok, '1', name)
+            rows[name] = [float(v) for v in ctl.split()]
+        dev, cam, maker, stock, fmt, lens, proc, gen, transfer, medium, sensor, push = range(12)
+        breathless = rows['Nouvelle Vague · À bout de souffle (Godard, 1960)']
+        self.assertEqual((breathless[proc], breathless[push]), (2, 1))   # still stock pushed one stop, B/W
+        contempt = rows['Nouvelle Vague · Le Mépris (Godard, 1963)']
+        self.assertEqual((contempt[proc], contempt[fmt]), (0, 9))       # colour negative, anamorphic
+        self.assertGreater(contempt[lens], 0)
+        self.assertEqual(rows['Nouvelle Vague · Pierrot le fou (Godard, 1965)'][fmt], 10)   # Techniscope
+        tv = rows['Televisione · TV di Stato agli esordi (studio, 1954)']
+        self.assertEqual((tv[dev], tv[proc], tv[transfer]), (2, 14, 4))  # live video, kinescope on 16 mm B/W
+        self.assertEqual(rows['Pre-cinema · Cinématographe Lumière (1895)'][proc], 2)
+
     # ---- unsteadiness: camera, printer, projector
 
     def weave(self, controls, n=240, size=(1920, 1080)):

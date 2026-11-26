@@ -172,6 +172,10 @@ void creativeRecordTimes(const CreativeControls& c, double out[3]);
 // The lens l's preset written into c's rows (distortion, softness, swirl, glare, streak, vignetting, aberration,
 // diffusion), and c.lensLoaded = l.
 void creativeLoadLens(CreativeControls& c, int l);
+// Era setup s (kEraSetups, shared/EraSetups.h; 0 = none) written into c: device, model, its rows, format, stock,
+// development, lens, print, copies, transfer and viewing; what a row leaves empty stays. False if s is 0 or out of
+// range, or a name in the row is not in the tables (tests check every row).
+bool creativeApplySetup(CreativeControls& c, int s);
 bool creativePrepareTransfer(CreativeParams& p, const CreativeControls& c, int W, int H, int frame);
 // history: how many of the frames before this one the host passes (creativeHistory or fewer, at the clip's start).
 void creativePrepare(CreativeParams& p, const CreativeControls& c, int W, int H, int frame, int space, int gamma,

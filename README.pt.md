@@ -194,6 +194,8 @@ vira até três **registros** com a sua sensibilidade espectral. Cada um é expo
 imagem como aquele processo fazia: corantes subtrativos, filtros aditivos, um depósito de prata ou platina no papel, um
 sinal de vídeo. Cada processo é uma tabela de números e o painel mostra só os controles do processo escolhido.
 
+**Setup d'epoca** (no topo do painel): a cadeia real de um filme ou de uma época, carregada de uma vez: À bout de souffle, Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo, o Cinématographe Lumière, a TV estatal dos primórdios e a TV comercial dos anos 80. Câmera, formato, película, revelação, óptica, cópias, transferência e visualização seguem as fontes; a mesma lista chega aos plugins de áudio. Fontes e o que é deduzido: `docs/SETUPS.md`.
+
 | Processo | O que modela |
 |---|---|
 | **Negativo colorido e cópia** | três camadas com contraste, pé e ombro próprios, interimagem, grão por camada, halo, cópia positiva com luzes R G B; 14 filmes, também do Leste (Sovcolor, ORWO, Svema, Gevacolor). *Saída Log* dá o escaneamento do negativo |

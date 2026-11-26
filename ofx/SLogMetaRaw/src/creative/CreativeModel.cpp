@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "CreativeModel.h"
 
+#include "../../../../shared/EraSetups.h"
+
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
@@ -1980,4 +1982,55 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         set3(p.mBezelTint, 0.33f, 0.33f, 0.38f);
         set3(p.mBodyTint, 0.78f, 0.77f, 0.74f);
     }
+}
+
+// The row of `name` in a list of names, -1 if absent; a null name is "leave as is" (-2).
+static int rowOf(const char* name, const char* const* names, int n)
+{
+    if (!name) return -2;
+    for (int i = 0; i < n; ++i)
+        if (!std::strcmp(names[i], name)) return i;
+    return -1;
+}
+
+bool creativeApplySetup(CreativeControls& c, int s)
+{
+    if (s <= 0 || s >= kEraSetupCount) return false;
+    const EraSetup& e = kEraSetups[s];
+    if (e.camera) {
+        const int film = rowOf(e.camera, kCrCameraNames.data(), kCrCameraCount);
+        const int video = rowOf(e.camera, kCrVideoCameraNames.data(), kCrVideoCameraCount);
+        if (film >= 0) c.device = kCrDevFilm, c.filmCamera = film;
+        else if (video >= 0) c.device = kCrDevVideo, c.videoCamera = video;
+        else return false;
+        creativeLoadDevice(c);   // the model's format, texture or tape rows
+    }
+    if (e.stock) {
+        int maker = -1, stock = -1;
+        for (int m = 0; m < kCrMakerCount && stock < 0; ++m)
+            for (int i = 0; i < kCrMakers[m].count && stock < 0; ++i)
+                if (!std::strcmp(kCrMakers[m].stocks[i].name, e.stock)) maker = m, stock = i;
+        if (stock < 0) return false;
+        c.maker = maker;
+        c.stock[maker] = stock;
+    }
+    // a setup is the whole chain: what it leaves empty is the camera's own (format, sensor) or none (the rest)
+    struct { const char* name; const char* const* names; int n; int* field; bool own; } rows[] = {
+        { e.format, kCrFormatNames, kCrFormatCount, &c.format, true },
+        { e.sensor, kCrSensorNames, kCrSensorCount, &c.sensor, true },
+        { e.lens, kCrLensNames.data(), kCrLensCount, &c.lens, false },
+        { e.generation, kCrGenerationNames, kCrGenerationCount, &c.generation, false },
+        { e.transfer, kCrTransferNames, kCrTransferCount, &c.transfer, false },
+        { e.medium, kCrMediumNames, kCrMediumCount, &c.medium, false } };
+    for (auto& r : rows) {
+        const int i = rowOf(r.name, r.names, r.n);
+        if (i == -1) return false;
+        if (i >= 0 || !r.own) *r.field = i >= 0 ? i : 0;
+    }
+    const double vignette = c.vignette, aberration = c.aberration, bloom = c.bloom;
+    creativeLoadLens(c, c.lens);   // no lens clears the last one's rows but keeps the camera's own
+    if (c.lens == 0) c.vignette = vignette, c.aberration = aberration, c.bloom = bloom;
+    creativeLoadMedium(c, c.medium);
+    c.push = e.push;
+    return true;
 }

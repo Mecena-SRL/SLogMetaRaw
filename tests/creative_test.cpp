@@ -19,6 +19,7 @@
 
 #include "../ofx/SLogMetaRaw/src/creative/CreativeEngine.h"
 #include "../ofx/SLogMetaRaw/src/creative/CreativePanel.h"
+#include "../shared/EraSetups.h"
 
 static void set(CreativeControls& c, const std::string& name, double v)
 {
@@ -45,6 +46,17 @@ int main()
     int W, H, space, gamma, frame, frames, threads;
     char line[8192];
     if (!fgets(line, sizeof(line), stdin)) return 2;
+    if (!std::strncmp(line, "setups", 6)) {   // each era setup on a fresh panel: name|ok|controls after resolving
+        for (int s = 1; s < kEraSetupCount; ++s) {
+            CreativeControls c;
+            const bool ok = creativeApplySetup(c, s);
+            const CreativeControls r = creativeResolve(c);
+            printf("%s|%d|%d %d %d %d %d %d %d %d %d %d %d %g\n", kEraSetups[s].name, ok, c.device,
+                   c.device == kCrDevVideo ? c.videoCamera : c.filmCamera, c.maker, c.stock[c.maker], c.format, c.lens,
+                   r.process, c.generation, c.transfer, c.medium, c.sensor, c.push);
+        }
+        return 0;
+    }
     if (!std::strncmp(line, "names", 5)) {   // every menu entry and every text the panel shows exists
         int bad = 0;
         for (const CrChoiceDef& d : kCrChoices)
