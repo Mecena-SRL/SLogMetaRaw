@@ -307,6 +307,8 @@ powershell -File packaging\windows\build_package.ps1   # dist\...-windows-x64.zi
 
 渲染与摄影机数据：ACES 2.0 Output Transform 移植自 OpenColorIO 2.6，ACES 1.3 以其内置变换核对（ACES：Academy of Motion Picture Arts and Sciences）；[OpenDRT](https://github.com/jedypod/open-display-transform) v1.1.0 由 Jed Smith 编写（GPL-3.0），移植自其 DCTL。DJI D-Log M 的曲线和色域来自 [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 中 Osmo Action 6 的实测，以及 DJI 的 Action 6 LUT（仅作参考，不随项目分发）；3.1.x 及之前的曲线是 Thatcher Freeman 的拟合。
 
+Creative 节点的实测胶片来自 Kodak 与 Fujifilm 技术资料，由 [spektrafilm](https://github.com/andreavolpato/agx-emulsion)（Andrea Volpato，配置文件 CC BY-SA 4.0）数字化，经 `tools/creative/datasheets.py` 精简；色度数据（CIE 观察者、光源、rawtoaces 训练集）来自 colour-science（BSD-3）。
+
 Stabilize 基于 AdrianEddy 及贡献者的 [Gyroflow](https://github.com/gyroflow/gyroflow)（GPL-3.0）及其镜头库。Noise 节点的空域滤波参考 NeighShrink（Chen、Bui、Krzyżak，2004）。
 
 [GNU GPL v3.0 或更高版本](LICENSE)。OpenFX SDK 版权归 The Open Effects Association 所有（BSD-3）。VST3 SDK 版权归 Steinberg Media Technologies 所有（MIT）；VST 是 Steinberg 的商标。Sony、XAVC 和 Catalyst 是 Sony Group Corporation 的商标；DaVinci Resolve 是 Blackmagic Design 的商标。本项目为独立项目，与上述两家公司无隶属关系，也未获其认可。

@@ -991,7 +991,7 @@
      "id": "cr.prepare",
      "kind": "function",
      "label": "Dai comandi ai parametri del motore",
-     "text": "creativePrepare traduce processo, variante, stock, formato e comandi in pesi spettrali dei record, curva, coloranti o filtri, grana, alone, difetti. Lo stock cambia grana, saturazione, contrasto, alone e dominante della sua variante. Interruttori: senza Colore i record sono i canali del video in strati uguali; senza Tono la curva è una retta e si esce nella codifica d'ingresso; senza Grana e texture niente grana, alone, ottica, instabilità, polvere. I numeri sono stime documentate in docs/CREATIVE.md, non profili misurati.",
+     "text": "creativePrepare traduce processo, variante, stock, formato e comandi in pesi spettrali dei record, curva, coloranti o filtri, grana, alone, difetti. Lo stock cambia grana, saturazione, contrasto, alone e dominante della sua variante. Interruttori: senza Colore i record sono i canali del video in strati uguali; senza Tono la curva è una retta e si esce nella codifica d'ingresso; senza Grana e texture niente grana, alone, ottica, instabilità, polvere. Le pellicole colore con una scheda (o una sorella misurata, kCrSheetLinks) prendono matrice di ripresa, curve, coloranti e stampa da CreativeSheets.h (sheetPrepare, generato da tools/creative/datasheets.py) e il laboratorio fissa le luci di stampa perché il grigio esca neutro (sheetLights); per il resto i numeri sono stime documentate in docs/CREATIVE.md.",
      "basis": "dedotto",
      "refs": [
       {
@@ -1005,6 +1005,9 @@
       },
       {
        "test": "tests/test_creative.py::Creative.test_film_with_everything_off_is_the_input"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_measured_negative_prints_its_grey_neutral"
       }
      ]
     },
@@ -1086,6 +1089,30 @@
       },
       {
        "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain"
+      }
+     ]
+    },
+    {
+     "id": "cr.sheet",
+     "kind": "function",
+     "label": "Pellicole dalle schede tecniche",
+     "text": "Per le pellicole misurate: esposizione degli strati da una matrice 3x3 adattata sulle sensibilità spettrali (riflettanze di rawtoaces), sviluppo sulla curva della scheda (cr_sheet_develop), poi la stampa come integrale spettrale a 10 nm: coloranti e base del negativo sulla lampada della stampatrice, presi dagli strati della 2383 o 2393 (cr_sheet_printer), curva della positiva (cr_sheet_print), coloranti della positiva sullo xeno visti dall'occhio adattato (cr_sheet_seen, cr_sheet_image). L'invertibile salta la stampa; il negativo com'è si vede su un piano luminoso. Dati misurati [doc] (Kodak, Fujifilm via spektrafilm, CC BY-SA 4.0), metodo e scelte in docs/creative/SCHEDE_TECNICHE.md.",
+     "basis": "dedotto",
+     "refs": [
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_sheet_printer"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_sheet_seen"
+      },
+      {
+       "cpp": "ofx/SLogMetaRaw/math/Creative.h::cr_process_film"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_a_measured_stock_sees_the_scene_alike_from_every_encoding"
+      },
+      {
+       "test": "tests/test_creative.py::Creative.test_printer_points_follow_the_lab"
       }
      ]
     },
@@ -1285,8 +1312,22 @@
      "label": "segnale"
     },
     {
+     "id": "c9s",
+     "from": "cr.kind",
+     "to": "cr.sheet",
+     "kind": "decision",
+     "label": "pellicola con scheda"
+    },
+    {
      "id": "c11",
      "from": "cr.process",
+     "to": "cr.medium",
+     "kind": "data",
+     "label": "RGB"
+    },
+    {
+     "id": "c11s",
+     "from": "cr.sheet",
      "to": "cr.medium",
      "kind": "data",
      "label": "RGB"
@@ -1365,6 +1406,10 @@
      "cr.medium": [
       8,
       2
+     ],
+     "cr.sheet": [
+      7,
+      1
      ]
     }
    },
@@ -1429,8 +1474,11 @@
    "ofx/SLogMetaRaw/math/Creative.h::cr_medium_at": "e8dd1ac7b3a6",
    "ofx/SLogMetaRaw/math/Creative.h::cr_print_grain": "cc34d8f1df29",
    "ofx/SLogMetaRaw/math/Creative.h::cr_process": "d4d68df9e79f",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_process_film": "849ef7a80672",
    "ofx/SLogMetaRaw/math/Creative.h::cr_records": "20226fd76450",
    "ofx/SLogMetaRaw/math/Creative.h::cr_sensor": "47da0d6731ad",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_sheet_printer": "8a5aa64926a1",
+   "ofx/SLogMetaRaw/math/Creative.h::cr_sheet_seen": "ae5db79c4115",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal": "49e63162701e",
    "ofx/SLogMetaRaw/math/Creative.h::cr_signal_at": "ad1f6b9a84cb",
    "ofx/SLogMetaRaw/math/Creative.h::cr_smear_col": "f86e080eb8fc",
@@ -1447,7 +1495,7 @@
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadDevice": "8c579be48a9d",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadLens": "be29af39e278",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeLoadMedium": "8a46d31803db",
-   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "0bca3efa94e7",
+   "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepare": "05faae95d2b3",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativePrepareTransfer": "74534c96e297",
    "ofx/SLogMetaRaw/src/creative/CreativeModel.cpp::creativeResolve": "b09c74d88479"
   }

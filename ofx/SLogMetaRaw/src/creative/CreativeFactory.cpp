@@ -96,8 +96,9 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
         if (std::strcmp(c.name, "mediumRoom") != 0) choice(c);   // the room goes with the light, below
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kCreativeInputCount, 0,
                  "Codifica che entra nel nodo. Automatico la chiede a Resolve, poi alla clip. Anche dopo un grade: "
-                 "Rec.709 (grigio 18% a 0,41), DaVinci WG, ACES (cct, cg, 2065-1), Cineon. L'uscita è Rec.709 "
-                 "Gamma 2.4, o la stessa codifica con Uscita Log",
+                 "Rec.709 (grigio 18% a 0,41), DaVinci WG, ACES (cct, cg, 2065-1), Cineon, i Log delle camere. "
+                 "La pellicola vede la luce della scena (lineare), quindi rende uguale da ogni codifica. L'uscita è "
+                 "Rec.709 Gamma 2.4, o la stessa codifica con Uscita Log",
                  proc);
 
     for (const CrSliderDef& s : kCrSliders) {

@@ -423,6 +423,10 @@ Jed Smith (GPL-3.0), ported from its DCTL. The DJI D-Log M curve and gamut come 
 [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 and from DJI's Action 6 LUT, used only as a reference and not
 distributed; up to 3.1.x the curve was Thatcher Freeman's fit.
 
+The Creative node's measured film stocks come from Kodak and Fujifilm datasheets as digitised by
+[spektrafilm](https://github.com/andreavolpato/agx-emulsion) (Andrea Volpato, profiles CC BY-SA 4.0), reduced by
+`tools/creative/datasheets.py`; colour data (CIE observer, illuminants, rawtoaces training set) via colour-science (BSD-3).
+
 Stabilize builds on [Gyroflow](https://github.com/gyroflow/gyroflow) by AdrianEddy and contributors (GPL-3.0) and its
 lens catalogue. The Noise node's spatial filter follows NeighShrink (Chen, Bui and Krzyżak, 2004).
 

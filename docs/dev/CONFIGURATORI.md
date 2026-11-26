@@ -281,3 +281,14 @@ non una tabella per plugin. Una riga è la catena intera: i campi vuoti tornano 
 nel Creative (`creativeApplySetup`, scelta `eraSetup`, golden aggiornato), 10 setup con fonti in `docs/SETUPS.md`.
 Aperto: applicazione nell'Audio dopo la PR del simulatore audio (righe Perfectone EP 6 e AKG D 25 con frontale),
 tubo image orthicon, fonti mancanti segnate [ded], prova in Resolve.
+
+### Pellicole dalle schede tecniche (26/11/2026, non rilasciato)
+
+Richiesta di Ivan: ogni pellicola fedele, in ogni spazio colore, conversione reale. Decisione: le pellicole colore con
+una scheda digitalizzata (spektrafilm, CC BY-SA 4.0) passano per una catena spettrale a 10 nm (`cr_sheet_*` in
+`math/Creative.h`, dati generati in `src/creative/CreativeSheets.h` da `tools/creative/datasheets.py`); le sorelle
+della stessa casa e generazione usano la scheda misurata [ded] con le loro stime; il resto resta sul modello. La
+matrice di ripresa è adattata come un IDT sulle riflettanze di rawtoaces (Mallett scartato: luce negativa fuori sRGB).
+Corretto il segno dei punti di stampa (più rosso = più ciano, come dice il pannello). Menu *Ingresso (IDT)* con tutti i
+Log delle camere. Aperto: schede del bianco e nero e delle pellicole storiche, luce sbagliata per la pellicola (T al
+sole senza 85), interimage misurato, prova in Resolve. Dettagli: `docs/creative/SCHEDE_TECNICHE.md`.
