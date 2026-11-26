@@ -92,7 +92,7 @@ float AuEngine::Block::random()
 
 void AuEngine::add(Block b)
 {
-    if (b.level || !b.eq.empty() || !b.pre.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
+    if (b.level || b.quant > 0 || b.clip > 0 || b.slip > 0 || !b.eq.empty() || !b.pre.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
         b.hum > 0 || b.rumble > 0 || b.crackle > 0 || b.dropout > 0)
         blocks_.push_back(std::move(b));
 }
@@ -244,6 +244,25 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         for (int i = 0; i < std::clamp(s.copies, 1, 8); ++i) medium(s.transfer, 0);
 
     if (s.useDevice) tone();   // the recorder's playback tone
+    if (s.capture > 0) {   // the copy played back and digitised: the player first, then the converter
+        const AuCapture& k = pick(kAuCaptures, std::size(kAuCaptures), s.capture);
+        Block player;
+        band(player.eq, fs, k.hp, k.lp, 1);
+        if (k.azimuthDb > 0 && 10000 < 0.45 * fs) player.eq.push_back(shelf(fs, 10000, -k.azimuthDb, true));
+        if (s.on[kStWow] && k.wow > 0) {
+            player.wowW = float(2 * kPi * 0.55);
+            player.wowA = k.wow * 0.01f * std::max(0.0f, s.wow) / player.wowW;
+        }
+        player.slip = k.slipUs * 1e-6f;
+        if (noise) player.hum = dbToGain(k.humDb + s.noiseDb);
+        add(std::move(player));
+        Block adc;
+        adc.level = false;
+        if (noise) hiss(adc.hissLp, adc.hiss, fs, 0, k.noiseDb + s.noiseDb);
+        adc.quant = k.bits > 0 ? std::ldexp(1.0f, -(k.bits - 1)) : 0;
+        adc.clip = k.clipDb < 0 ? dbToGain(k.clipDb) : 0;
+        add(std::move(adc));
+    }
     if (s.on[kStListen] && s.listen > 0) {
         const AuListen& l = pick(kAuListen, std::size(kAuListen), s.listen);
         Block b;
@@ -257,7 +276,7 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         Block& b = blocks_[i];
         if (same && i < old.size() && old[i].eq.size() == b.eq.size() && old[i].pre.size() == b.pre.size() &&
             old[i].level == b.level &&
-            old[i].line.empty() == !(b.wowA > 0 || b.flutA > 0)) {
+            old[i].line.empty() == !(b.wowA > 0 || b.flutA > 0 || b.slip > 0)) {
             const Block& o = old[i];
             b.z = o.z, b.zPre = o.zPre, b.env = o.env, b.line = o.line, b.tail = o.tail, b.hissZ = o.hissZ;
             b.pos = o.pos, b.rumbleZ = o.rumbleZ, b.drop = o.drop, b.dropTo = o.dropTo, b.dropLeft = o.dropLeft;
@@ -277,7 +296,7 @@ void AuEngine::fresh(Block& b, size_t index) const
     b.z.assign(b.eq.size() * 2 * n, 0);
     b.zPre.assign(b.pre.size() * 2 * n, 0);
     b.env.assign(n, 0);
-    b.line.assign(b.wowA > 0 || b.flutA > 0 ? line * n : 0, 0);
+    b.line.assign(b.wowA > 0 || b.flutA > 0 || b.slip > 0 ? line * n : 0, 0);
     b.tail.assign(n, 0);
     b.hissZ.assign(2 * n, 0);
     b.pos = 0;
@@ -365,7 +384,7 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
             if (mask) {
                 float* line = &b.line[c * (mask + 1)];
                 line[w & mask] = x;
-                double rd = double(w) - double(delay) * fs_;
+                double rd = double(w) - double(delay + (c ? b.slip : 0)) * fs_;
                 size_t i0 = size_t(std::floor(rd));
                 float fr = float(rd - std::floor(rd));
                 x = line[i0 & mask] * (1 - fr) + line[(i0 + 1) & mask] * fr;
@@ -377,6 +396,8 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
             float& tl = b.tail[c];
             tl = tl * tailK + click * (c ? 0.8f : 1.0f);
             x = (x + hum + rumble + tl) * b.drop;
+            if (b.clip > 0) x = std::clamp(x, -b.clip, b.clip);
+            if (b.quant > 0) x = std::round(x / b.quant) * b.quant;
             ch[c][f] = x;
         }
     }

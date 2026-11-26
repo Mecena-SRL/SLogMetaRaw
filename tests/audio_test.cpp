@@ -522,6 +522,27 @@ int main()
         check(worn(1, true) < worn(0, true) - 3, "worn medium is duller");
     }
 
+
+    // The acquisition: every player and converter renders finite; a cheap one clips, has its bits, loses the highs.
+    {
+        for (int k = 1; k < int(std::size(kAuCaptures)); ++k) {
+            AuSettings s;
+            s.useDevice = false;
+            s.capture = k;
+            check(sane(render(s, music)) && render(s, music) == render(s, music, 211), "capture finite and deterministic", kAuCaptures[k].name);
+        }
+        AuSettings s = bare();
+        s.useDevice = false;
+        s.capture = 7;   // 8-bit recorder: clips at -1 dBFS, 8 bits
+        s.on[kStNoise] = false;
+        Buffer y = render(s, sine(500, 1.2f, 4800));
+        float top = 0;
+        for (float x : y[0]) top = std::max(top, std::fabs(x));
+        check(top <= std::pow(10.0f, -1 / 20.0f) + 1e-6f, "capture clips");
+        s.capture = 2;   // VHS + USB stick
+        check(gainDb(s, 14000) < gainDb(s, 1000) - 3, "capture loses the highs");
+    }
+
     if (!failures) std::printf("audio_test OK\n");
     return failures ? 1 : 0;
 }

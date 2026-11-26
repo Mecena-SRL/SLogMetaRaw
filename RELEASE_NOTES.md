@@ -36,6 +36,9 @@
   77-DX, cardioide/omni del U 47, direttività del C12). Tutto parte nuovo, come suonava allora; *Usura del supporto*
   invecchia il nastro. Il nastro registra con le equalizzazioni di norma (gli acuti saturano prima), con il rumore di
   modulazione; i trasformatori dei banchi saturano nei bassi.
+- **Audio, acquisizione**: in *Mix e supporto*, dopo il riversaggio, si sceglie come la copia torna nel computer: il
+  lettore (piastra a cassetta, videoregistratore, giradischi, bobine, proiettore, radio) con l'azimut, il wow e il
+  ronzio, e il convertitore con i suoi bit, il suo rumore e il suo taglio.
 
 ## Log MetaRaw 4.3.1
 

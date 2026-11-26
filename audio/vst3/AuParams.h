@@ -17,7 +17,7 @@ enum AuParamId : int {
     kPOnMic, kPOnPre, kPOnDesk, kPOnMedium, kPOnWow, kPOnNoise, kPOnNR, kPOnTransfer, kPOnListen,
     kPDrive, kPNoise, kPWow, kPMix, kPOut, kPMeterRef, kPMeterL, kPMeterR,
     kPLowCut, kPLow, kPHigh, kPLimit, kPAuto, kPMeterInL, kPMeterInR,
-    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPMicFilter, kPMicPattern, kPAge, kPCount
+    kPRecLevel, kPSource, kPInput, kPPan, kPFader, kPMicFilter, kPMicPattern, kPAge, kPCapture, kPCount
 };
 
 enum class AuKind { List, Toggle, Range, Meter };   // Meter: read-only level the processor reports to the panel
@@ -81,6 +81,7 @@ inline std::vector<std::string> auListNames(AuParamId id, bool mix)
     case kPTransfer: return auNames(kAuMedia, 1, "Nessuno");
     case kPListen: return auNames(kAuListen);
     case kPSource: return mix ? auPresetNames(kAuPrograms) : auPresetNames(kAuSources);
+    case kPCapture: return auNames(kAuCaptures);
     case kPInput: return { "Stereo", "Mono (somma L+R)", "Mono dal sinistro", "Mono dal destro" };
     case kPMicFilter:
     case kPMicPattern: return { "Di fabbrica", "1", "2", "3", "4", "5" };
@@ -135,6 +136,7 @@ inline const AuParamDef& auParam(AuParamId id)
         { kPMicFilter, "Filtro del microfono", AuKind::List },
         { kPMicPattern, "Direttività del microfono", AuKind::List },
         { kPAge, "Usura del supporto", AuKind::Range, 0, 100, 0, "%" },   // 0 = new, as it sounded then
+        { kPCapture, "Acquisizione", AuKind::List },   // the copy played back and digitised (kAuCaptures)
     };
     return defs[id];
 }
@@ -304,6 +306,7 @@ inline const std::vector<AuRow>& auRows(bool mix)
         { "Supporto", kPOnMedium, kPMedium },
         { "Riduzione rumore", kPOnNR, kPNR },
         { "Riversaggio su", kPOnTransfer, kPTransfer },
+        { "Acquisizione", -1, kPCapture },
         { "Ascolto", kPOnListen, kPListen },
         { "Regolazioni", -1, -1, K::Header },
         { "Livello master", -1, kPRecLevel, K::Half },
@@ -359,6 +362,7 @@ inline AuSettings auSettings(const double* v, bool mix, uint32_t seed)
     s.micFilter = auPlain(v, kPMicFilter) - 1;   // -1: as it left the factory
     s.micPattern = auPlain(v, kPMicPattern) - 1;
     s.age = float(v[kPAge] / 100);
+    s.capture = mix ? auPlain(v, kPCapture) : 0;
     s.transfer = mix ? int(v[kPTransfer]) : 0;
     s.copies = int(v[kPCopies] + 0.5);
     s.listen = mix ? int(v[kPListen]) : 0;

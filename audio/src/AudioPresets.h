@@ -228,3 +228,28 @@ inline constexpr AuListen kAuListen[] = {
     { "Televisore CRT (anni '70)", 150, 7000, 2500, 3, 1, 0.3f, true },
     { "Sala cinematografica (curva X)", 40, 10000, 1000, 0, 1, 0, false },
 };
+
+// The acquisition: how the analogue copy comes back into the computer, the machine that plays it and the converter
+// that digitises it. Band (Hz), the playback head's azimuth error (dB lost at 10 kHz, and the time slip between the
+// channels in µs), ground-loop hum and converter noise (dBFS), the converter's bits (0 = clean 24-bit) and where it
+// clips (dBFS, a hard edge), the player's own wow (% peak). [dedotto: typical of each kind, not a measured unit]
+struct AuCapture
+{
+    const char* name;
+    float hp, lp, azimuthDb, slipUs, humDb, noiseDb;
+    int bits;
+    float clipDb, wow;
+    int year;
+};
+
+inline constexpr AuCapture kAuCaptures[] = {
+    { "Nessuna (passaggio diretto)", 0, 0, 0, 0, -200, -200, 0, 0, 0, 0 },
+    { "Piastra a cassetta di casa + scheda audio", 30, 15000, 3, 25, -72, -84, 16, -0.5f, 0.08f, 1995 },
+    { "Videoregistratore VHS + chiavetta di cattura USB", 40, 14000, 1, 10, -60, -70, 16, -3, 0.12f, 2005 },
+    { "Giradischi + preamplificatore RIAA + convertitore", 20, 18000, 0, 0, -66, -88, 16, -1, 0.06f, 2000 },
+    { "Registratore a bobine allineato + convertitore da studio", 20, 20000, 0.5f, 5, -90, -110, 0, -0.1f, 0.03f, 2010 },
+    { "Lettore ottico del proiettore + scheda audio", 60, 9000, 0, 0, -58, -80, 16, -1, 0.15f, 1998 },
+    { "Sintonizzatore radio + registrazione al computer", 30, 15000, 0, 0, -70, -82, 16, -1, 0, 2000 },
+    { "Registratore digitale portatile (8 bit, anni '90)", 60, 7000, 0, 0, -200, -48, 8, -1, 0, 1995 },
+};
+

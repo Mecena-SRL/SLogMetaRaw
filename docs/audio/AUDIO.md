@@ -164,6 +164,14 @@ la musica, la seconda per il parlato, come i 19 cm/s del Nagra al cinema) e dico
   Rumore di modulazione sui supporti magnetici (circa −50 dB sotto il segnale [dedotto]). Trasformatori dei banchi a
   valvole e a trasformatore che saturano prima nei bassi [dedotto].
 
+## Acquisizione (`kAuCaptures` in `AudioPresets.h`, solo in *Mix e supporto*)
+
+Dopo il riversaggio, come la copia analogica torna nel computer: il lettore che la suona (banda, errore di azimut
+della testina: acuti persi e ritardo tra i canali, wow proprio, ronzio di massa) e il convertitore (rumore, bit,
+taglio netto al fondo scala). Voci: piastra a cassetta di casa + scheda audio, VHS + chiavetta USB, giradischi + RIAA
++ convertitore, bobine allineate + convertitore da studio, lettore ottico del proiettore, sintonizzatore radio,
+registratore digitale a 8 bit. Valori tipici del genere, non di un'unità misurata [dedotto].
+
 ## Il banco e i canali (fase 2)
 
 Ogni traccia con *Ripresa* è un canale del banco, come in una presa diretta vera: microfono → **ingresso del canale**

@@ -270,8 +270,9 @@ comandi in `audio/vst3/AuFronts.h`, colori e indicatore in `AuLooks.h`, balistic
 in `Plate`, `Meters`, `FrontControl` di `audio/vst3/AuPlugin.cpp`. Presa diretta (richiesta di Ivan, 26/11/2026, fase 1 di 4):
 livello di registrazione `kPRecLevel`, levigatura nel motore, «?» e guida «Cosa registri» in `audio/vst3/AuGuide.h`
 (`HelpBadge` e guida nel pannello). Fase 2: canale del banco in *Ripresa* (`kPInput`, `kPPan`, `kPFader`, `kPDesk`
-anche in Ripresa, di serie nessuno). Fasi seguenti:
-acquisizione dopo il riversaggio, frontali fotorealistici. Aperto: prova in Fairlight e Logic, confronto con le
+anche in Ripresa, di serie nessuno). Poi (richiesta di Ivan): preset d'uso a categorie (`kAuSources`, `kAuPrograms`),
+commutatori dei microfoni (`kPMicFilter`, `kPMicPattern`), usura (`kPAge`), equalizzazioni di norma, acquisizione
+(`kPCapture`, `kAuCaptures`). Restano: frontali fotorealistici, microfono disegnato. Aperto: prova in Fairlight e Logic, confronto con le
 macchine vere dei frontali dedotti (Studer, EL 3300, TC-D5M, cineprese, Neve, SSL, Mackie). Dettagli: `docs/audio/AUDIO.md`.
 
 ### Setup d'epoca (26/11/2026, non rilasciato)

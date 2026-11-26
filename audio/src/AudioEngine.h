@@ -40,6 +40,7 @@ struct AuSettings
     // the medium's wear: 0 = new, as it sounded then; 1 = worn (more hiss and dropouts, duller, less steady).
     int micFilter = -1, micPattern = -1;
     float age = 0;
+    int capture = 0;   // kAuCaptures: how the copy is played back and digitised at the end (0 = not)
     uint32_t seed = 1;
 };
 
@@ -78,7 +79,9 @@ private:
         float gain = 1, gainZ = 1;               // target and the smoothed gain (no zipper when automated)
         float wowA = 0, wowW = 0, flutA = 0, flutW = 0;           // delay swing (s) and rate (rad/s)
         float hiss = 0, hum = 0, rumble = 0, crackle = 0, dropout = 0;  // linear levels; events per sample
-        float modNoise = 0;   // a magnetic medium's modulation noise: hiss that rides on the signal (× signal)
+        float modNoise = 0;
+        float quant = 0, clip = 0;   // a converter: step of its bits, its hard clipping level (0 = none)
+        float slip = 0;              // seconds the right channel lags the left (a head's azimuth error)   // a magnetic medium's modulation noise: hiss that rides on the signal (× signal)
         Biquad hissLp;
         // state, per channel where it is a vector
         std::vector<float> z, zPre, env, line, tail, hissZ;
