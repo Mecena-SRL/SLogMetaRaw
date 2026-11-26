@@ -1,6 +1,6 @@
 # Changelog
 
-## In sviluppo
+## Log MetaRaw 4.4.0
 
 - **Creative, pellicole dalle schede tecniche**: Vision3 500T, 200T, 250D, 50D, Verita 200D, Portra 160/400/800, Ektar,
   Gold, Ultramax, Ektachrome E100 e 100D, Kodachrome 64, Provia 100F, Pro 400H (e le sorelle della stessa famiglia:
