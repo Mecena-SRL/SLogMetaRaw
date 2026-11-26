@@ -2,6 +2,13 @@
 
 ## In sviluppo
 
+- **Setup d'epoca**: in cima al Creative una lista di catene reali, per film e per epoca: *À bout de souffle*
+  (Cameflex a mano, pellicola fotografica Ilford spinta di uno stop), *Vivre sa vie*, *Le Mépris* (anamorfico 2,35),
+  *Pierrot le fou* (Techniscope), *Numéro deux* (video rifilmato su 35 mm), *Accattone* e il *Vangelo* di Pasolini, il
+  Cinématographe Lumière, la TV di Stato del 1954 (kinescopio) e la TV commerciale degli anni '80. Carica cinepresa,
+  formato, pellicola, sviluppo, ottica, copie, riversaggio e visione, poi tutto resta modificabile. Nuove righe:
+  Éclair Cameflex, Cinématographe Lumière, Ilford HPS, Eastmancolor 5251, pellicola Lumière, anamorfico Franscope. La
+  stessa lista arriva nei plugin audio. Fonti, e cosa è dedotto: `docs/SETUPS.md`. L'uscita Rec.709 non cambia.
 - **Audio per Logic Pro**: i due plugin audio ci sono anche come Audio Unit, per Logic Pro, GarageBand e le altre app
   Mac. L'installer Mac li propone come componente a parte, spuntato di serie; il disinstallatore li toglie.
 - **Audio, frontali veri**: i due plugin audio si aprono sul frontale del registratore o del banco scelto, ricostruito

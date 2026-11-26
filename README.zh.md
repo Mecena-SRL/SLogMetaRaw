@@ -137,6 +137,8 @@ Noise  →  Stabilize  →  Motion Blur  →  Log MetaRaw  →  Log MetaRaw Crea
 
 一个引擎重做**工艺本身**，而不是模仿结果。场景光解码为线性 Rec.2020 后，变成最多三个带光谱灵敏度的**记录**；每个记录在材料的曲线上曝光，再按该工艺的方式成像：减色染料、加色滤光、纸上的银或铂沉积，或视频信号。每种工艺是一张数字表，面板只显示所选工艺用得到的控件。
 
+**Setup d'epoca**（面板顶部）：一次载入某部影片或某个时代的真实器材链：À bout de souffle, Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo、卢米埃尔电影机、早期国家电视台和 80 年代商业电视。摄影机、画幅、胶片、冲洗、镜头、拷贝、转录和观看方式都依据资料；同一列表将进入音频插件。资料与推断部分见 `docs/SETUPS.md`。
+
 | 工艺 | 模拟内容 |
 |---|---|
 | **彩色负片与拷贝** | 三层各自的反差、趾部与肩部、层间效应、分层颗粒、光晕、带 R G B 印片光的正片；14 种胶片，包括东欧的 Sovcolor、ORWO、Svema、Gevacolor。*Log 输出*给出负片扫描 |

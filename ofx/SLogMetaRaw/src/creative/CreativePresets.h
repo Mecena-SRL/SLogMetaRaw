@@ -75,7 +75,8 @@ inline constexpr CrStock kCrKodak[] = {
     { "Plus-X invertibile 7276 (1955)", kStBW, 0, kG8 | kG16, 12, 1, 1.25f },
     { "Tri-X 400 (foto)", kStBW, 1, kG135 | kG120, 17 },
     { "T-Max 100 (foto)", kStBW, 2, kG135 | kG120, 8 },
-    { "T-Max 400 (foto)", kStBW, 2, kG135 | kG120, 10 } };
+    { "T-Max 400 (foto)", kStBW, 2, kG135 | kG120, 10 },
+    { "Eastmancolor 5251 (1962)", kStNeg, 9, kG16 | kG35, 18, 0.95f } };
 
 inline constexpr CrStock kCrFuji[] = {
     { "Eterna 500 8573 (2004)", kStNeg, 3, kG16 | kG35, 9, 1, 0.95f, 1, CR_FUJI },
@@ -131,7 +132,8 @@ inline constexpr CrStock kCrIlford[] = {
     { "Delta 100", kStBW, 2, kG135 | kG120, 8 },
     { "Delta 3200", kStBW, 4, kG135 | kG120 },
     { "XP2 Super (cromogenica)", kStBW, 2, kG135 | kG120, 9, 1, 0.9f },
-    { "HP (1935)", kStBW, 1, kG135 | kG120, 20, 1, 1, 1, { 0, 0, 0 }, 2 } };
+    { "HP (1935)", kStBW, 1, kG135 | kG120, 20, 1, 1, 1, { 0, 0, 0 }, 2 },
+    { "HPS (1954, foto)", kStBW, 1, kG135 | kG120, 20 } };
 
 inline constexpr CrStock kCrFerrania[] = {
     { "Pancro 30 / P30 (Pasolini, Fellini)", kStBW, 0, kG16 | kG35 | kG135, 13, 1, 1.15f },
@@ -168,6 +170,10 @@ inline constexpr CrStock kCrLomo[] = {
     { "LomoChrome Metropolis", kStNeg, 3, kG135 | kG120, 12, 0.55f, 1.15f },
     { "Berlin Kino 400", kStBW, 1, kG135 | kG120, 16 } };
 
+// Emulsion coated by the Lumière works for the Cinématographe: not colour-sensitised [ded], a single perforation.
+inline constexpr CrStock kCrLumiere[] = {
+    { "Pellicola Lumière (1895)", kStBW, 0, kG35, 22, 1, 1.1f, 1, { 0, 0, 0 }, 0 } };
+
 inline constexpr CrStock kCrKonica[] = {
     { "Centuria Super 200", kStNeg, 5, kG135, 8, 0.95f },
     { "Impresa 50", kStNeg, 14, kG135, 4 } };
@@ -191,7 +197,8 @@ inline constexpr CrMaker kCrMakers[] = {
     { "DuPont", "stockDupont", kCrDupont, (int)std::size(kCrDupont) },
     { "CineStill", "stockCinestill", kCrCinestill, (int)std::size(kCrCinestill) },
     { "Lomography", "stockLomo", kCrLomo, (int)std::size(kCrLomo) },
-    { "Konica", "stockKonica", kCrKonica, (int)std::size(kCrKonica) } };
+    { "Konica", "stockKonica", kCrKonica, (int)std::size(kCrKonica) },
+    { "Lumière (Lione)", "stockLumiere", kCrLumiere, (int)std::size(kCrLumiere) } };
 const int kCrMakerCount = (int)std::size(kCrMakers);
 
 // The stocks made in each gauge, every manufacturer's together: what the panel offers first for the camera's format
@@ -214,14 +221,14 @@ inline constexpr CrPick kCrPick16[] = {
     { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 }, { 1, 8 }, { 2, 0 }, { 2, 2 }, { 2, 4 }, { 2, 5 },
     { 3, 0 }, { 3, 1 }, { 3, 3 }, { 3, 4 }, { 3, 5 }, { 3, 6 }, { 4, 1 }, { 4, 2 }, { 4, 3 }, { 4, 4 },
     { 4, 5 }, { 5, 0 }, { 5, 1 }, { 6, 0 }, { 7, 1 }, { 7, 2 }, { 8, 0 }, { 8, 2 }, { 9, 0 }, { 9, 1 },
-    { 9, 2 } };   // 61
+    { 9, 2 }, { 0, 47 } };   // 62
 inline constexpr CrPick kCrPick35[] = {
     { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 5 }, { 0, 6 }, { 0, 7 }, { 0, 8 }, { 0, 9 },
     { 0, 10 }, { 0, 11 }, { 0, 12 }, { 0, 13 }, { 0, 14 }, { 0, 15 }, { 0, 16 }, { 0, 24 }, { 0, 38 }, { 0, 39 },
     { 0, 40 }, { 0, 41 }, { 1, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 },
     { 1, 8 }, { 2, 1 }, { 2, 4 }, { 2, 5 }, { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 5 }, { 3, 6 }, { 4, 0 },
     { 4, 1 }, { 4, 2 }, { 4, 5 }, { 6, 0 }, { 6, 1 }, { 7, 0 }, { 7, 1 }, { 7, 2 }, { 8, 0 }, { 8, 1 },
-    { 8, 3 }, { 9, 0 }, { 9, 1 } };   // 53
+    { 8, 3 }, { 9, 0 }, { 9, 1 }, { 0, 47 }, { 13, 0 } };   // 55
 inline constexpr CrPick kCrPick65[] = {
     { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 12 }, { 0, 13 }, { 0, 38 }, { 3, 0 }, { 3, 1 } };   // 10
 inline constexpr CrPick kCrPick135[] = {
@@ -229,12 +236,13 @@ inline constexpr CrPick kCrPick135[] = {
     { 0, 34 }, { 0, 35 }, { 0, 36 }, { 0, 37 }, { 0, 44 }, { 0, 45 }, { 0, 46 }, { 1, 10 }, { 1, 11 }, { 1, 12 },
     { 1, 13 }, { 1, 14 }, { 2, 0 }, { 2, 2 }, { 2, 6 }, { 2, 7 }, { 2, 8 }, { 2, 9 }, { 4, 6 }, { 5, 0 },
     { 5, 1 }, { 5, 2 }, { 5, 3 }, { 5, 4 }, { 5, 5 }, { 5, 6 }, { 6, 0 }, { 6, 3 }, { 6, 4 }, { 6, 5 },
-    { 10, 0 }, { 10, 1 }, { 10, 2 }, { 10, 3 }, { 11, 0 }, { 11, 1 }, { 11, 2 }, { 12, 0 }, { 12, 1 } };   // 49
+    { 10, 0 }, { 10, 1 }, { 10, 2 }, { 10, 3 }, { 11, 0 }, { 11, 1 }, { 11, 2 }, { 12, 0 }, { 12, 1 },
+    { 5, 7 } };   // 50
 inline constexpr CrPick kCrPick120[] = {
     { 0, 21 }, { 0, 29 }, { 0, 30 }, { 0, 31 }, { 0, 32 }, { 0, 33 }, { 0, 34 }, { 0, 44 }, { 0, 45 }, { 0, 46 },
     { 1, 10 }, { 1, 11 }, { 1, 12 }, { 1, 13 }, { 2, 8 }, { 2, 9 }, { 5, 0 }, { 5, 1 }, { 5, 2 }, { 5, 3 },
     { 5, 4 }, { 5, 5 }, { 5, 6 }, { 6, 5 }, { 10, 0 }, { 10, 1 }, { 10, 2 }, { 10, 3 }, { 11, 0 }, { 11, 1 },
-    { 11, 2 } };   // 31
+    { 11, 2 }, { 5, 7 } };   // 32
 struct CrGaugeList { const char* param; unsigned gauge; const CrPick* picks; int count; };
 inline constexpr CrGaugeList kCrGaugeLists[] = {
     { "stockFor8", kG8, kCrPick8, (int)std::size(kCrPick8) },
@@ -269,7 +277,7 @@ inline constexpr CrCamera kCrCameras[] = {
     { "Arriflex 16SR (16 e Super 16, 1975)", 6, CR_F(1) | CR_F(6), 0.3f, 0.05f, 0.3f, 0.1f, 0, 0.1f },
     { "Aaton XTR (Super 16, 1990)", 6, CR_F(1) | CR_F(6), 0.35f, 0.05f, 0.3f, 0.1f, 0, 0.1f },
     { "Arriflex 416 (Super 16, 2006)", 6, CR_F(6), 0.15f, 0.03f, 0.2f, 0.05f, 0, 0.05f },
-    { "Mitchell BNC (35 mm Academy, 1934)", 12, CR_F(12) | CR_F(2), 0.15f, 0.05f, 0.5f, 0.2f, 0.1f, 0.08f },
+    { "Mitchell BNC (35 mm Academy, 1934)", 12, CR_F(12) | CR_F(2) | CR_F(9), 0.15f, 0.05f, 0.5f, 0.2f, 0.1f, 0.08f },
     { "Arriflex 35 IIC (35 mm, 1963)", 12, CR_F(12) | CR_F(2) | CR_F(10), 0.45f, 0.05f, 0.4f, 0.15f, 0, 0.1f },
     { "Konvas-1M (35 mm, URSS)", 12, CR_F(12) | CR_F(2), 0.5f, 0.1f, 0.6f, 0.3f, 0.15f, 0.2f },
     { "Arriflex 35BL (35 mm, 1972)", 2, CR_F(2) | CR_F(12) | CR_F(10), 0.25f, 0.03f, 0.3f, 0.1f, 0, 0.06f },
@@ -282,7 +290,11 @@ inline constexpr CrCamera kCrCameras[] = {
     { "IMAX MSM 9802 (IMAX 15/70, 1990)", 4, CR_F(4), 0.1f, 0.02f, 0.3f, 0.1f, 0, 0.03f },
     { "Leica M6 (135, 1984)", 13, CR_F(13), 0, 0.3f, 0.5f, 0.1f, 0, 0 },
     { "Canon AE-1 (135, 1976)", 13, CR_F(13), 0, 0.3f, 0.4f, 0.15f, 0, 0 },
-    { "Hasselblad 500C/M (120 6x6, 1970)", 14, CR_F(14), 0, 0.3f, 0.4f, 0.05f, 0, 0 } };
+    { "Hasselblad 500C/M (120 6x6, 1970)", 14, CR_F(14), 0, 0.3f, 0.4f, 0.05f, 0, 0 },
+    // a reflex for the hand, 35 and 16 mm: claws on the perforations' edge only [src: TCM, Breathless]
+    { "Éclair Cameflex CM3 (35 mm, 1947)", 12, CR_F(12) | CR_F(2) | CR_F(1), 0.45f, 0.1f, 0.4f, 0.15f, 0, 0.15f },
+    // camera, printer and projector in one, cranked, one round perforation a side, about 15 fps
+    { "Cinématographe Lumière (35 mm, 1895, a manovella)", 12, CR_F(12), 1.0f, 0.6f, 0.8f, 0.3f, 0.1f, 0.4f } };
 #undef CR_F
 const int kCrCameraCount = (int)std::size(kCrCameras);
 
@@ -372,7 +384,10 @@ inline constexpr CrLens kCrLenses[] = {
     { "Petzval (ottone, 1840)", 0, 1, 1, 1, 6, 0, 2.5f, 0.35f, 0.3f, { 1, 1, 0.97f }, { 1, 0.92f, 0.8f },
       { 1, 0.9f, 0.8f } },
     { "Ottica da telefono", 0, 1, 0.05f, 0, 1, 0, 0.6f, 0.2f, 0.05f, { 1, 1, 1 }, { 0.85f, 0.75f, 1 },
-      { 0.85f, 0.75f, 1 } } };
+      { 0.85f, 0.75f, 1 } },
+    // the French anamorphic of Le Mépris: barrel and pincushion of the period's lenses [src: ASC, Contempt] [gen]
+    { "Franscope (anamorfico, anni '50-'60)", 3.5f, 0.4f, 0.3f, 0, 2.5f, 0.12f, 1.3f, 0.4f, 0.2f,
+      { 1.02f, 1, 0.97f }, { 0.95f, 0.95f, 1 }, { 0.4f, 0.55f, 1 } } };
 const int kCrLensCount = (int)std::size(kCrLenses);
 
 // The names of a table's rows, for its choice parameter.
