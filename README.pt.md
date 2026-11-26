@@ -417,6 +417,10 @@ v1.1.0 é de Jed Smith (GPL-3.0), portado do seu DCTL. A curva e o gamut DJI D-L
 em [jens-krause/dlogm-dctl](https://github.com/jens-krause/dlogm-dctl) v1.3 e da LUT DJI da Action 6, usada só como referência e
 não distribuída; até a 3.1.x a curva era o ajuste de Thatcher Freeman.
 
+Os filmes medidos do nó Creative vêm das fichas técnicas da Kodak e da Fujifilm digitalizadas pelo
+[spektrafilm](https://github.com/andreavolpato/agx-emulsion) (Andrea Volpato, perfis CC BY-SA 4.0), reduzidas por
+`tools/creative/datasheets.py`; dados colorimétricos (observador CIE, iluminantes, conjunto rawtoaces) do colour-science (BSD-3).
+
 O Stabilize baseia-se no [Gyroflow](https://github.com/gyroflow/gyroflow) de AdrianEddy e colaboradores (GPL-3.0) e no seu
 catálogo de objetivas. O filtro espacial do nó Noise segue o NeighShrink (Chen, Bui e Krzyżak, 2004).
 

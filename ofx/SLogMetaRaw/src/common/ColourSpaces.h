@@ -15,7 +15,7 @@ inline int validCode(int v, int count) { return v >= 0 && v < count ? v : -1; }
 // "Ingresso nodo" choice: 0 = automatic, then fixed (gamut, transfer) pairs. Noise and Develop list the first
 // kNodeInputCount; the Creative node, which may sit after a grade, lists them all (indices are permanent: add at the
 // end). Rec.709 reads through the BT.709 curve, so a graded picture's grey (code 0.41) is the film's 18%.
-const int kNodeInputCount = 6, kCreativeInputCount = 10;
+const int kNodeInputCount = 6, kCreativeInputCount = 26;
 extern const int kNodeInputPairs[kCreativeInputCount][2];
 extern const char* const kNodeInputNames[kCreativeInputCount];
 

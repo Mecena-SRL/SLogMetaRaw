@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "CreativeModel.h"
+#include "CreativeSheets.h"
 
 #include "../../../../shared/EraSetups.h"
 
@@ -1231,6 +1232,113 @@ static void creativeSoundtrack(CreativeParams& p, const CreativeControls& c, con
     p.sndDye = c.process == kCrColourNegative && year >= 2004 ? 1 : 0;
 }
 
+namespace {
+
+// The stock's datasheet link (CreativePresets.h), if it has one.
+const CrSheetLink* sheetLink(const CreativeControls& c)
+{
+    if (!creativeStock(c)) return nullptr;
+    const int maker = pick(c.maker, kCrMakerCount), stock = pick(c.stock[maker], kCrMakers[maker].count);
+    for (const CrSheetLink& l : kCrSheetLinks)
+        if (l.maker == maker && l.stock == stock) return &l;
+    return nullptr;
+}
+
+void copy(float* d, const float* s, int n) { std::copy(s, s + n, d); }
+
+// The eye on a lamp, its white the film's own clear base (the projectionist's open gate; a light box's white stays).
+void sheetView(CreativeParams& p, const CrSheetView& v, const float* base, bool toBase)
+{
+    copy(p.shView, &v.v[0][0], 3 * CR_SPEC_N);
+    if (!toBase) return;
+    const SMf3 w = cr_sheet_seen(smf3(0, 0, 0), p.shEps, base, p);   // eps unused at D = 0
+    const float g[3] = { w.x, w.y, w.z };
+    for (int c = 0; c < 3; ++c)
+        for (int i = 0; i < CR_SPEC_N; ++i) p.shView[c * CR_SPEC_N + i] /= std::max(g[c], 1e-6f);
+}
+
+// The log10 exposure at which a rising datasheet curve reaches density D.
+float sheetInverse(const float* curve, float D, const CreativeParams& p)
+{
+    for (int i = 0; i + 1 < CR_HD_N; ++i)
+        if (curve[i + 1] >= D && curve[i + 1] > curve[i])
+            return p.shLo + p.shStep * ((float)i + std::clamp((D - curve[i]) / (curve[i + 1] - curve[i]), 0.0f, 1.0f));
+    return p.shLo + p.shStep * (float)(CR_HD_N - 1);
+}
+
+// The printer's lights a lab sets (LAD): the negative's grey prints to a neutral grey of display 0.115 (CR_SIGMA,
+// Kodak's print aim near 1.0 Status A). Newton on the print's densities, then each layer's exposure from its curve.
+void sheetLights(CreativeParams& p)
+{
+    const double aim = std::log10(1.0 / (1.0 + CR_SIGMA));
+    double P[3] = { 1.0, 0.8, 0.8 };
+    auto f = [&](const double* q, double* out) {
+        const SMf3 o = cr_sheet_seen(smf3((float)q[0], (float)q[1], (float)q[2]), p.shPEps, p.shPBase, p);
+        out[0] = std::log10(std::max(o.x, 1e-9f)) - aim;
+        out[1] = std::log10(std::max(o.y, 1e-9f)) - aim;
+        out[2] = std::log10(std::max(o.z, 1e-9f)) - aim;
+    };
+    for (int it = 0; it < 12; ++it) {
+        double F[3], J[9];
+        f(P, F);
+        for (int j = 0; j < 3; ++j) {
+            double q[3] = { P[0], P[1], P[2] }, G[3];
+            q[j] += 1e-3;
+            f(q, G);
+            for (int i = 0; i < 3; ++i) J[i * 3 + j] = (G[i] - F[i]) / 1e-3;
+        }
+        const double det = J[0] * (J[4] * J[8] - J[5] * J[7]) - J[1] * (J[3] * J[8] - J[5] * J[6]) + J[2] * (J[3] * J[7] - J[4] * J[6]);
+        if (std::fabs(det) < 1e-12) break;
+        double d[3];
+        for (int c = 0; c < 3; ++c) {   // Cramer: replace column c by F
+            double m[9];
+            for (int i = 0; i < 9; ++i) m[i] = J[i];
+            for (int i = 0; i < 3; ++i) m[i * 3 + c] = F[i];
+            d[c] = (m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6]) + m[2] * (m[3] * m[7] - m[4] * m[6])) / det;
+        }
+        for (int c = 0; c < 3; ++c) P[c] = clampd(P[c] - d[c], 0.0, 4.0);
+    }
+    const SMf3 grey = smf3(p.shGrey[0], p.shGrey[1], p.shGrey[2]);
+    set3(p.shLights, 0, 0, 0);
+    const SMf3 h = cr_sheet_printer(grey, p);
+    const float hn[3] = { h.x, h.y, h.z };
+    for (int j = 0; j < 3; ++j) {
+        p.shGreyH[j] = sheetInverse(p.shPrint + j * CR_HD_N, (float)P[j], p);
+        p.shLights[j] = p.shGreyH[j] - hn[j];
+    }
+}
+
+// The datasheet chain for the camera stock s: on print stock pr (or none), its view.
+void sheetPrepare(CreativeParams& p, const CrSheet& s, const CrSheet* pr, int sheet)
+{
+    p.sheet = sheet;
+    p.shLo = kCrSheetLo;
+    p.shStep = kCrSheetStep;
+    for (int i = 0; i < 9; ++i) p.recW[i] = s.shoot[i] * CR_GREY;   // green 1 at grey -> grey 0.18
+    copy(p.shCurve, &s.curve[0][0], 3 * CR_HD_N);
+    copy(p.shEps, &s.eps[0][0], 3 * CR_SPEC_N);
+    copy(p.shBase, s.base, CR_SPEC_N);
+    for (int k = 0; k < 3; ++k)   // grey's own densities: each layer's exposure to it, the stock's balance
+        p.shGrey[k] = cr_sheet_curve(p.shCurve + k * CR_HD_N, std::log10(CR_GREY * (s.shoot[k * 3] + s.shoot[k * 3 + 1] + s.shoot[k * 3 + 2])), p);
+    if (p.output == CR_OUT_NEGATIVE) {
+        sheetView(p, kCrViewBox, p.shBase, false);
+        return;
+    }
+    if (sheet == CR_SHEET_REVERSAL) {
+        sheetView(p, kCrViewSlide, p.shBase, true);
+        return;
+    }
+    if (sheet != CR_SHEET_PRINT || !pr) return;
+    copy(p.shPrint, &pr->curve[0][0], 3 * CR_HD_N);
+    copy(p.shPEps, &pr->eps[0][0], 3 * CR_SPEC_N);
+    copy(p.shPBase, pr->base, CR_SPEC_N);
+    copy(p.shQ, &pr->sens[0][0], 3 * CR_SPEC_N);
+    sheetView(p, kCrViewXenon, p.shPBase, true);
+    sheetLights(p);
+}
+
+}  // namespace
+
 void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H, int frame, int space, int gamma,
                      int history)
 {
@@ -1631,16 +1739,32 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         break;
     }
 
+    // a stock measured on its datasheet, or a measured sibling standing for it: the measured curves replace the
+    // variant's (its interimage, grain and halation stay); a sibling adds its own contrast, saturation and cast
+    const CrSheetLink* link = proc == kCrColourNegative || proc == kCrReversal ? sheetLink(c) : nullptr;
+    if (link && useColour && useTone) {
+        for (int k = 0; k < 3; ++k) {
+            p.slope[k] = 1.0f;
+            p.offset[k] = 0.0f;
+        }
+        p.saturation = (float)clampd(c.saturation, 0, 2);
+        if (proc == kCrReversal) printContrast = 1.45f;
+    } else {
+        link = nullptr;
+    }
+
     // the stock: its grain, saturation, contrast, halation and cast over the variant it starts from
     if (const CrStock* st = creativeStock(c)) {
         if (st->rms > 0) rms = st->rms;
-        p.saturation *= st->sat;
         hal *= st->hal;
-        for (int k = 0; k < 3; ++k) {
-            if (proc != kCrReversal) p.slope[k] *= st->contrast;
-            p.offset[k] += st->cast[k];
+        if (!link || !link->measured) {
+            p.saturation *= st->sat;
+            for (int k = 0; k < 3; ++k) {
+                if (proc != kCrReversal || link) p.slope[k] *= st->contrast;
+                p.offset[k] += st->cast[k];
+            }
+            if (proc == kCrReversal && !link) printContrast *= st->contrast;
         }
-        if (proc == kCrReversal) printContrast *= st->contrast;
     }
 
     // development: push/pull and silver kept, age (film processes)
@@ -1688,8 +1812,10 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
 
     // the print's (or the positive's) lights and contrast: 1 printer point = 0.025 log E = 0.083 stop
     const float pts[3] = { (float)clampd(c.printR, -24, 24), (float)clampd(c.printG, -24, 24), (float)clampd(c.printB, -24, 24) };
+    if (link && proc == kCrColourNegative && c.print != 0)   // the measured print's own contrast, a variant's relative
+        printContrast /= c.print == 2 ? 1.65f : 1.45f;
     for (int k = 0; k < 3; ++k) {
-        p.printOffset[k] = printCast[k] + 0.083f * pts[k];
+        p.printOffset[k] = printCast[k] - 0.083f * pts[k];   // more light in a layer: more of its dye
         p.printContrast[k] = printContrast * (float)clampd(c.printContrast, 0.5, 2);
     }
     p.contrast *= (float)clampd(c.printContrast, 0.5, 2);
@@ -1867,6 +1993,11 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
     // only some of the film: without its colour the records are the picture's own channels in equal layers (a black
     // and white stock keeps the picture's colour); without its tone the curve is a straight line, back in the input
     // encoding (no print, no medium)
+    if (link) {
+        const bool rev = proc == kCrReversal, scan = !rev && c.print == 0;
+        sheetPrepare(p, kCrSheetFilms[link->sheet], rev || scan ? nullptr : &kCrSheetPrints[c.print == 2 ? 1 : 0],
+                     rev ? CR_SHEET_REVERSAL : (scan ? CR_SHEET_SCAN : CR_SHEET_PRINT));
+    }
     if (!useColour) {
         if (p.records == 1) {
             p.records = 3;
@@ -1883,7 +2014,7 @@ void creativePrepare(CreativeParams& p, const CreativeControls& c0, int W, int H
         for (int k = 0; k < 3; ++k) {
             p.slope[k] = slope;
             p.offset[k] = offset;
-            p.printOffset[k] = cast + 0.083f * pts[k];
+            p.printOffset[k] = cast - 0.083f * pts[k];
             p.fade[k] = fade;
             p.stain[k] = stain;
         }

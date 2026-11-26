@@ -554,12 +554,16 @@ full → video:  x' = x · 1023/876 − 64/876</div>
       </table>
       <div class="sci"><b>The engine.</b> Per record: <code>s = log2(E/0.18)</code>, an H&amp;D curve with soft toe and shoulder,
       grain per layer, then the positive's curve. Subtractive: dyes through an absorption matrix; additive: a mosaic;
-      monochrome: paper · 10<sup>−D·K</sup>. Same bits on CPU and Metal; radii follow the height (same look in proxy).</div>
+      monochrome: paper · 10<sup>−D·K</sup>. Same bits on CPU and Metal; radii follow the height (same look in proxy).
+      <span class="new">Datasheets</span> Kodak and Fujifilm colour stocks with a datasheet (Vision3, Portra, Ektar, E100,
+      Kodachrome, Provia, Pro 400H and their siblings) follow the measurements: the layers' spectral sensitivities, the
+      datasheet curves, printing on 2383 or 2393 as a 10 nm spectral integral, xenon projection; grey neutral as the lab
+      times it.</div>
     </div>
     <div>
       <h2>The controls</h2>
       <table>
-        <tr><td class="k">Ingresso (IDT)</td><td>Also Rec.709, DaVinci WG, ACES, Cineon: after a grade.</td></tr>
+        <tr><td class="k">Ingresso (IDT)</td><td>Also Rec.709, DaVinci WG, ACES, Cineon (after a grade) and every camera Log: the film sees the scene's light, so it renders the same from any encoding.</td></tr>
         <tr><td class="k">Ripresa e sviluppo</td><td>Exposure, light balance, <b>push</b> or pull, <b>retained silver</b>, flash, age.</td></tr>
         <tr><td class="k">Stampa e copie</td><td>Positive (9), <b>Generation</b> (answer print to dupe), print grain, printer points, contrast.</td></tr>
         <tr><td class="k">Dispositivo</td><td><span class="new">4.2</span> Film camera, video camera, digital cinema, phone, console <span class="new">4.3</span> (palette and DAC steps): the model loads format, tape, <b>Sensor</b> (tube lag, CCD smear), sharpening, codec. <b>Tone, Colour, Texture</b>: to use only part of it.</td></tr>

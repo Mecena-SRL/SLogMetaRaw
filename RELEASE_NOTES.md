@@ -2,6 +2,16 @@
 
 ## In sviluppo
 
+- **Creative, pellicole dalle schede tecniche**: Vision3 500T, 200T, 250D, 50D, Verita 200D, Portra 160/400/800, Ektar,
+  Gold, Ultramax, Ektachrome E100 e 100D, Kodachrome 64, Provia 100F, Pro 400H (e le sorelle della stessa famiglia:
+  Vision2, EXR, Kodachrome, Eterna, Reala, CineStill, 43 pellicole in tutto) ora girano come pellicola vera: la luce
+  della scena espone gli strati con le loro sensibilità spettrali, ogni strato si sviluppa sulla curva della sua scheda
+  Kodak o Fujifilm, il negativo si stampa sulla 2383 (o sulla 2393 Premier) con i coloranti e le sensibilità misurate,
+  e la copia si proietta allo xeno; il laboratorio regola le luci perché il grigio esca neutro. La stessa scena rende
+  uguale da S-Log3, DaVinci WG, ACES, LogC, V-Log, Apple Log e gli altri Log: il menu *Ingresso (IDT)* li elenca tutti.
+  Le luci di stampa ora vanno nel verso del laboratorio (più rosso = copia più ciano). Le pellicole storiche e il
+  bianco e nero restano sul modello di prima. Fonti e cosa è dedotto: `docs/creative/SCHEDE_TECNICHE.md`. L'uscita
+  Rec.709 di Log MetaRaw non cambia.
 - **Setup d'epoca**: in cima al Creative una lista di catene reali, per film e per epoca: *À bout de souffle*
   (Cameflex a mano, pellicola fotografica Ilford spinta di uno stop), *Vivre sa vie*, *Le Mépris* (anamorfico 2,35),
   *Pierrot le fou* (Techniscope), *Numéro deux* (video rifilmato su 35 mm), *Accattone* e il *Vangelo* di Pasolini, il

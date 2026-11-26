@@ -50,7 +50,8 @@ Plugin.cpp  (registra le tre factory OFX, in quest'ordine: Develop, Creative (sl
   ├──> develop/DevelopFactory.h ──> DevelopEffect, DevelopProcessor, DevelopSync,
   │                                 BuildParams, ToneParams, ClipMeta, LutExport (DevelopLut.cpp)
   ├──> creative/CreativeFactory.h ──> CreativeEffect, CreativePanel (tabella del pannello), CreativeModel (tabelle
-  │                                  dei processi → CreativeParams), CreativePresets (dispositivi, modelli, pellicole), CreativeEngine (CPU) | CreativeKernels (Metal)
+  │                                  dei processi → CreativeParams), CreativePresets (dispositivi, modelli, pellicole), CreativeSheets (pellicole
+  │                                  dalle schede tecniche, generato da tools/creative/datasheets.py), CreativeEngine (CPU) | CreativeKernels (Metal)
   └──> noise/NoiseFactory.h     ──> NoiseEffect, NoiseEngine (CPU: temporale + wavelet) | NoiseKernels (Metal), NoiseProfiles, develop/ClipMeta (lettura clip)
                                     (tabella camere e formati, docs/DENOISE.md)
 
@@ -150,7 +151,8 @@ versione prima di una release. Non pubblicati ancora nelle release notes.
 - `gen/DevelopMath.h` è generato da `math/` via `tools/build_math.py` (con `gen/GamutMatrices.h` e
   `gen/Aces2Tables.h`): non va mai editato a mano.
 
-_Ultimo aggiornamento: 26/11/2026 — aggiunto `shared/EraSetups.h` (setup d'epoca comuni a Creative e Audio). Prima, 24/11/2026 — `detail/` e `math/Detail*.h` sostituiti da `creative/` e `math/Creative.h`
+_Ultimo aggiornamento: 26/11/2026 — aggiunti `creative/CreativeSheets.h` (generato) e `tools/creative/datasheets.py`
+(pellicole dalle schede tecniche, `docs/creative/SCHEDE_TECNICHE.md`). Prima, 26/11/2026 — aggiunto `shared/EraSetups.h` (setup d'epoca comuni a Creative e Audio). Prima, 24/11/2026 — `detail/` e `math/Detail*.h` sostituiti da `creative/` e `math/Creative.h`
 (nodo Creative). Prima, 24/11/2026 — rimosso `develop/NoiseMask` (Maschera rumore, 3.2.0-3.2.1: passa al plugin Noise;
 il record della clip conserva `noise_codec`). Prima, 15/11/2026 — aggiunto `math/Display.h` (rendering display del Develop), poi ACES 2.0
 (`tools/aces2.py`, `gen/Aces2Tables.h`) e OpenDRT (`tests/model/opendrt.py`). Prima, 02/11/2026 — verificata la mappa contro main alla 3.0.0 (nessun file sorgente aggiunto o rimosso
