@@ -141,6 +141,16 @@ class OfxHost(unittest.TestCase):
         self.assertEqual((every['secret:maker'], every['secret:stockKodak'], every['secret:stockFor35']),
                          ('0', '0', '1'))
 
+    def test_creative_era_setup_loads_the_whole_chain(self):
+        """Choosing À bout de souffle sets the hand-held camera, the still stock and the push, in the panel."""
+        v = self.values('--change', 'eraSetup=2', plugin=1)
+        get = lambda n: v.get(n, v.get('secret:' + n))  # noqa: E731
+        self.assertEqual((get('device'), get('filmCamera'), get('maker'), get('stockIlford')), ('1', '25', '5', '7'))
+        self.assertEqual(float(get('push')), 1)
+        contempt = self.values('--change', 'eraSetup=4', plugin=1)
+        get = lambda n: contempt.get(n, contempt.get('secret:' + n))  # noqa: E731
+        self.assertEqual((get('format'), get('lens'), get('stockKodak')), ('9', '15', '47'))
+
     def test_the_old_input_list_fills_the_two_choices(self):
         """Before 2.5 "Ingresso nodo" held space and gamma together: S-Gamut3/S-Log3 becomes both choices."""
         values = self.values('--set', 'nodeInput=3', '--set', 'settingsVersion=5')

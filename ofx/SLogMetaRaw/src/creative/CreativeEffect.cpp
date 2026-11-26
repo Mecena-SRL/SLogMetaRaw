@@ -239,6 +239,34 @@ void CreativeEffect::loadDevice()
     if (m_DeviceLoaded) m_DeviceLoaded->setValue(c.deviceLoaded);
 }
 
+void CreativeEffect::applySetup()
+{
+    int s = 0;
+    fetchChoiceParam("eraSetup")->getValue(s);
+    CreativeControls c = readControls(timeLineGetTime());
+    if (!creativeApplySetup(c, s)) return;
+    for (int i = 0; i < kCrChoiceCount; ++i)
+        if (m_Choices[i]) {
+            int cur = 0;
+            m_Choices[i]->getValue(cur);
+            if (cur != c.*(kCrChoices[i].field)) m_Choices[i]->setValue(c.*(kCrChoices[i].field));
+        }
+    for (int i = 0; i < kCrMakerCount; ++i)
+        if (m_Stocks[i] && i == c.maker) m_Stocks[i]->setValue(c.stock[i]);
+    static const char* const rows[] = { "push", "weave", "hair", "breath", "vignette", "aberration", "bloom", "wear",
+                                        "heads", "instability", "distortion", "edgeSoft", "swirl", "glare", "streak" };
+    for (int i = 0; i < kCrSliderCount; ++i)
+        for (const char* r : rows)
+            if (m_Sliders[i] && !std::strcmp(kCrSliders[i].name, r)) {
+                m_Sliders[i]->deleteAllKeys();
+                m_Sliders[i]->setValue(c.*(kCrSliders[i].field));
+            }
+    if (m_DeviceLoaded) m_DeviceLoaded->setValue(c.deviceLoaded);
+    if (m_LensLoaded) m_LensLoaded->setValue(c.lensLoaded);
+    loadMedium();   // the response rows of the setup's viewing medium
+    syncPick();
+}
+
 void CreativeEffect::syncPick()
 {
     const CreativeControls c = readControls(timeLineGetTime());
@@ -334,6 +362,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
     const bool user = p_Args.reason == OFX::eChangeUserEdit;
     const bool model = p_ParamName == "device" || p_ParamName == "filmCamera" || p_ParamName == "videoCamera"
                        || p_ParamName == "cinemaCamera" || p_ParamName == "phoneCamera";
+    if (p_ParamName == "eraSetup" && user) applySetup();
     if (p_ParamName == "medium" && user) loadMedium();
     if (p_ParamName == "lens" && user) loadLens();
     if (model && user) loadDevice();
@@ -346,7 +375,7 @@ void CreativeEffect::changedParam(const OFX::InstanceChangedArgs& p_Args, const 
              || p_ParamName == "output" || p_ParamName == "format" || p_ParamName == "maker"
              || !std::strncmp(p_ParamName.c_str(), "stock", 5) || !std::strncmp(p_ParamName.c_str(), "use", 3)
              || p_ParamName == "camWeave" || p_ParamName == "projWeave" || p_ParamName == "generation"
-             || p_ParamName == "allStocks" || p_ParamName == "scanView")
+             || p_ParamName == "allStocks" || p_ParamName == "scanView" || p_ParamName == "eraSetup")
         updateProcess();   // rows and info that depend on these choices
     m_Badge.refresh(false);
 }

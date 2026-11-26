@@ -19,7 +19,7 @@ in sequenza (Tre lastre, Kinemacolor), che leggono i fotogrammi successivi.
 | Passo | Cosa fa |
 |---|---|
 | Record | fino a tre (strati, strisce, lastre): pesi spettrali su Rec.2020 lineare, letti ognuno nel suo punto (registro, aberrazione radiale, instabilità del quadro) e nel suo istante; esposizione, preflash, vignettatura. Se i tre leggono lo stesso fotogramma nello stesso punto la sorgente si decodifica una volta. Con le copie (Generazione) i record si sfocano come i duplicati (σ 0,6–1,3 px a 1080) e la grana del negativo si allarga e cala come un rumore sfocato |
-| Ottica | facoltativa, sui record (ricerca `creative-ricerca/v2/DIGITALI_OTTICHE.md` B.14-B.15): distorsione di Brown a barilotto per asse (gli angoli restano, anamorfici soprattutto in orizzontale) e colore del vetro dove i record si leggono; bordi morbidi e vortice come sfocatura ellittica allungata lungo il cerchio attorno al centro (16 campioni a spirale aurea, `cr_lens_soft`), senza profondità quindi anche sui soggetti ai bordi; velo (veiling glare) = quota della luminanza media locale su una griglia di raggio un quarto dell'altezza, nel colore del trattamento; striscia anamorfica per riga con decadimento esponenziale (lunghezza 12% della larghezza) delle luci oltre due stop sul grigio (`cr_streak_row`). 14 ottiche, dalla Cooke Speed Panchro al Petzval: caricano anche vignettatura, aberrazione e diffusione. Valori stimati [gen], da tarare; niente bokeh né ghost |
+| Ottica | facoltativa, sui record (ricerca `creative-ricerca/v2/DIGITALI_OTTICHE.md` B.14-B.15): distorsione di Brown a barilotto per asse (gli angoli restano, anamorfici soprattutto in orizzontale) e colore del vetro dove i record si leggono; bordi morbidi e vortice come sfocatura ellittica allungata lungo il cerchio attorno al centro (16 campioni a spirale aurea, `cr_lens_soft`), senza profondità quindi anche sui soggetti ai bordi; velo (veiling glare) = quota della luminanza media locale su una griglia di raggio un quarto dell'altezza, nel colore del trattamento; striscia anamorfica per riga con decadimento esponenziale (lunghezza 12% della larghezza) delle luci oltre due stop sul grigio (`cr_streak_row`). 15 ottiche, dalla Cooke Speed Panchro al Petzval e al Franscope: caricano anche vignettatura, aberrazione e diffusione. Valori stimati [gen], da tarare; niente bokeh né ghost |
 | Alone e diffusione | su griglie ridotte (box, gaussiana separabile con σ/s ≤ 3 e pesi per ricorrenza, ritorno bilineare): la luce che torna dal supporto nei record, il filtro di diffusione |
 | Curva | per record, in stop dal grigio: pendenza e offset H&D (sviluppo), piede e spalla softplus, interimage, grana del negativo e dei duplicati (value noise per strato, semi e grandezze propri), polvere (granelli dai bordi irregolari e fibre, densità e nitidezza variabili, `cr_speck`) e graffi (spessore e intensità variabili lungo la riga), luci di stampa, curva del positivo (Naka-Rushton), grana della stampa nelle sue densità (RMS ∝ √D) |
 | Immagine | sottrattiva (densità dei coloranti per una matrice di assorbimenti, chiave K, argento trattenuto, sbiadimento, macchia), additiva (filtri per mosaico di grani o rete) o monocroma (carta · 10^(−D·K), specchio, ossidazione, bordo) |
@@ -36,16 +36,21 @@ seguono l'altezza del fotogramma: stesso aspetto in proxy e a piena risoluzione.
 
 ## Preset (`src/creative/CreativePresets.h`)
 
+**Setup d'epoca** (`shared/EraSetups.h`, `creativeApplySetup`): in cima al pannello, una lista comune
+con l'Audio. Ogni riga carica la catena di un film o di un'epoca (cinepresa o videocamera, formato, pellicola, sviluppo,
+ottica, copie, riversaggio, visione) nei comandi, che restano modificabili. Fonti e scelte dedotte:
+[`SETUPS.md`](SETUPS.md).
+
 Il pannello parte dal **Dispositivo**: Processo a mano (tutti i processi, il pannello di sempre e il default, così i
 grade salvati prima non cambiano), cinepresa o fotocamera a pellicola, videocamera analogica, cinema digitale, telefono
 e compatta. Ogni famiglia ha i suoi modelli con nome commerciale, scelti diversi tra loro; il nome dice a quale look si
 mira, i numeri sono stime nostre dalle ricerche (`creative-ricerca/v2`: cineprese, formati, pellicole, digitali, video),
 non profili misurati.
 
-- Cinepresa (25): formato nativo e formati montati, instabilità (doppio pin 0,1 … manovella 1), sfarfallio, vignettatura,
+- Cinepresa (27): formato nativo e formati montati, instabilità (doppio pin 0,1 … manovella 1), sfarfallio, vignettatura,
   aberrazione e diffusione dell'obiettivo. Sceglierla li carica nei comandi (`creativeLoadDevice`, `deviceLoaded`); un
   grade che non li ha usa quelli del modello.
-- Produttore (13) e pellicola (118): processo (negativo, invertibile, B/N), variante del motore da cui parte, formati in cui
+- Produttore (14) e pellicola (121): processo (negativo, invertibile, B/N), variante del motore da cui parte, formati in cui
   è esistita, grana (RMS; Vision3 relativa al 500T 5219: 50D 0,55, 250D 0,70, 200T 0,75, 800T 1,4, 5254 1,6, 5247 2,0),
   saturazione, contrasto, alone (CineStill senza rem-jet), dominante (Fuji più fredda, Est verde-ciano, Agfa oliva),
   sensibilità per le B/N antiche. `creativeResolve` ne ricava processo e variante; `creativeDeviceInfo` scrive i formati

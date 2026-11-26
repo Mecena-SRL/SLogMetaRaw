@@ -273,3 +273,11 @@ livello di registrazione `kPRecLevel`, levigatura nel motore, «?» e guida «Co
 anche in Ripresa, di serie nessuno). Fasi seguenti:
 acquisizione dopo il riversaggio, frontali fotorealistici. Aperto: prova in Fairlight e Logic, confronto con le
 macchine vere dei frontali dedotti (Studer, EL 3300, TC-D5M, cineprese, Neve, SSL, Mackie). Dettagli: `docs/audio/AUDIO.md`.
+
+### Setup d'epoca (26/11/2026, non rilasciato)
+
+Decisione: una sola lista `shared/EraSetups.h`, letta per nome da Creative e Audio (stesso indice nei due plugin),
+non una tabella per plugin. Una riga è la catena intera: i campi vuoti tornano alla dotazione o a nessuno. Fatto: video
+nel Creative (`creativeApplySetup`, scelta `eraSetup`, golden aggiornato), 10 setup con fonti in `docs/SETUPS.md`.
+Aperto: applicazione nell'Audio dopo la PR del simulatore audio (righe Perfectone EP 6 e AKG D 25 con frontale),
+tubo image orthicon, fonti mancanti segnate [ded], prova in Resolve.

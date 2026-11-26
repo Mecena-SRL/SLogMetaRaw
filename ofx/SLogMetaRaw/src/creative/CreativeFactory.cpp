@@ -8,6 +8,8 @@
 #include "CreativeEffect.h"
 #include "CreativePanel.h"
 
+#include "../../../../shared/EraSetups.h"
+
 #include <string>
 #include <vector>
 
@@ -82,6 +84,14 @@ void CreativeFactory::describeInContext(ImageEffectDescriptor& d, ContextEnum)
             for (const CrToggleDef& t : kCrToggles) defineCheck(d, page, t.name, t.label, true, t.hint, proc);
         }
     };
+    std::vector<const char*> setups;
+    for (const EraSetup& e : kEraSetups) setups.push_back(e.name);
+    defineChoice(d, page, "eraSetup", "Setup d'epoca", setups.data(), kEraSetupCount, 0,
+                 "La catena reale di un'epoca, di un autore o di un film: cinepresa o videocamera, formato, pellicola, "
+                 "sviluppo, ottica, copie, riversaggio e visione, tutti caricati nei comandi sotto, che restano "
+                 "modificabili. Lo stesso setup nell'Audio carica registratore, microfono, nastro e banda della copia. "
+                 "Fonti e scelte dedotte: docs/SETUPS.md",
+                 proc);
     for (const CrChoiceDef& c : kCrChoices)
         if (std::strcmp(c.name, "mediumRoom") != 0) choice(c);   // the room goes with the light, below
     defineChoice(d, page, "nodeInput", "Ingresso (IDT)", kNodeInputNames, kCreativeInputCount, 0,
