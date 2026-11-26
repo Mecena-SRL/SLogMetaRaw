@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <string>
 #include <vector>
 
 namespace {
@@ -431,7 +432,21 @@ int main()
         v[kPSource] = 1;                     // speech: peaks at -2 dB on the modulometer
         check(auGuideLevel(v, false, -14) == 12, "guide level");
         check(auGuideMic(v, 1) == 0, "guide mic for speech on a Nagra 4.2: its own shotgun");
-        check(!auGuideText(v, false, -14).empty() && !auGuideApply(v, false, -14).empty(), "guide text");
+        check(!auGuideText(v, false, -14).empty(), "guide text");
+        v[kPSource] = 1;   // Cinema · Presa diretta: mono, limiter, 19 cm/s (the Nagra's own), the shotgun
+        for (auto [id, plain] : auPresetValues(v, false)) v[id] = plain;
+        check(v[kPInput] == 1 && v[kPLimit] == 1 && v[kPMedium] == 0 && v[kPMic] == 0 && v[kPLowCut] == 80,
+              "preset of use sets the Nagra for cinema");
+        v[kPSource] = 10;   // Sala di registrazione · Voce: the quietest speed
+        for (auto [id, plain] : auPresetValues(v, false)) v[id] = plain;
+        check(v[kPMedium] == 1, "music preset takes 38 cm/s");
+        v[kPDevice] = auDeviceIndex(1, 0);   // Ampex 350: a U 47 on the cardioid position
+        v[kPSource] = 10;
+        for (auto [id, plain] : auPresetValues(v, false)) v[id] = plain;
+        check(v[kPMic] == 0 && v[kPMicPattern] == 1, "voice preset: the Ampex's own U 47, cardioid");
+        check(auEntryName(kPMicPattern, 2, v, false) == "Omnidirezionale", "U 47 pattern names");
+        check(std::string(kAuSources[10].name) == "Voce" && auListNames(kPSource, false)[10] == "Sala di registrazione · Voce",
+              "presets by category");
         v[kPDevice] = auDeviceIndex(4, 0);   // phonograph: the horn only
         check(auGuideMic(v, 2) == -1 || auGuideMic(v, 2) == 0, "guide keeps the horn");
         check(auMeterReading(AuMeter::PPM, 8) == "PPM 6", "PPM marks");
@@ -463,6 +478,48 @@ int main()
         r.desk = 3;
         Buffer m = render(r, sine(220, 0.5f, 9600));
         check(sane(m) && m != render(AuSettings {}, sine(220, 0.5f, 9600)), "channel desk colours the track");
+    }
+
+
+    // The microphone's switches, the medium's standard equalisation and its wear.
+    {
+        AuSettings s = bare();
+        s.on[kStMic] = true;
+        s.mic = 10;   // MD 421
+        s.micFilter = 0;
+        const double m = gainDb(s, 60);
+        s.micFilter = 4;   // S
+        check(gainDb(s, 60) < m - 8, "MD 421 on S cuts the bass");
+        s.mic = 7;   // U 47: omni has no proximity lift
+        s.micPattern = 0;
+        const double cardioid = gainDb(s, 60);
+        s.micPattern = 1;
+        check(gainDb(s, 60) < cardioid - 1, "U 47 omni: no proximity effect");
+
+        AuSettings t = bare();
+        t.on[kStMedium] = true;
+        t.useDevice = false;
+        t.medium = 5;   // cassette type I, 120 µs
+        auto level = [&](double hz, float amp) {
+            AuSettings u = t;
+            u.on[kStNoise] = u.on[kStWow] = false;
+            Buffer y = render(u, sine(hz, amp, 24000));
+            return 20 * std::log10(rms(y[0], 12000) / (amp / std::sqrt(2.0)));
+        };
+        const double lowHf = level(8000, 0.02f), hotHf = level(8000, 0.6f), lowMid = level(1000, 0.02f),
+                     hotMid = level(1000, 0.6f);
+        check(lowHf - hotHf > (lowMid - hotMid) + 1.5, "pre-emphasis: the highs saturate first");
+
+        auto worn = [&](float age, bool tone) {
+            AuSettings u = t;
+            u.on[kStNoise] = true;
+            u.on[kStWow] = false;
+            u.age = age;
+            Buffer in = tone ? sine(9000, 0.05f, 48000) : Buffer(2, std::vector<float>(48000));
+            return 20 * std::log10(rms(render(u, in)[0], 12000) + 1e-12);
+        };
+        check(worn(1, false) > worn(0, false) + 5, "worn medium hisses more");
+        check(worn(1, true) < worn(0, true) - 3, "worn medium is duller");
     }
 
     if (!failures) std::printf("audio_test OK\n");

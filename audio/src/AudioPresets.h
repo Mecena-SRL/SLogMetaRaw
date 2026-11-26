@@ -32,6 +32,40 @@ inline constexpr AuMic kAuMics[] = {
     { "Electret di videocamera", 120, 12000, 4000, 3, 1, 0, 0, 1975 },
 };
 
+// The switches a microphone really had (from its data sheet): a bass filter and a polar pattern. A filter position
+// cuts the lows with a shelf at 100 Hz; a pattern scales the proximity effect (omni has none, figure of eight the
+// most). Positions in the order engraved on the microphone; `def` is how it left the factory. [dedotto: the amounts]
+struct AuMicPos
+{
+    const char* name;
+    float value;   // filter: dB at 100 Hz; pattern: proximity ×
+};
+struct AuMicSwitch
+{
+    int mic;   // row of kAuMics
+    AuMicPos pos[5];
+    int count, def;
+};
+inline constexpr AuMicSwitch kAuMicFilters[] = {
+    { 5, { { "M (musica)", 0 }, { "V1 (voce)", -6 }, { "V2 (voce, più taglio)", -12 } }, 3, 0 },   // RCA 77-DX
+    { 10, { { "M", 0 }, { "2", -3 }, { "3", -6 }, { "4", -10 }, { "S", -15 } }, 5, 0 },               // MD 421
+};
+inline constexpr AuMicSwitch kAuMicPatterns[] = {
+    { 5, { { "Bidirezionale", 1.3f }, { "Unidirezionale", 1 }, { "Non direzionale", 0 } }, 3, 1 },   // RCA 77-DX
+    { 7, { { "Cardioide", 1 }, { "Omnidirezionale", 0 } }, 2, 0 },                                   // U 47
+    { 8, { { "Omni", 0 }, { "Subcardioide", 0.5f }, { "Cardioide", 1 }, { "Ipercardioide", 1.15f }, { "Figura a 8", 1.3f } }, 5, 2 },  // C12
+};
+template <size_t N> constexpr const AuMicSwitch* auMicSwitch(const AuMicSwitch (&table)[N], int mic)
+{
+    for (const AuMicSwitch& s : table)
+        if (s.mic == mic) return &s;
+    return nullptr;
+}
+inline const AuMicSwitch* auMicSwitch(bool filter, int mic)
+{
+    return filter ? auMicSwitch(kAuMicFilters, mic) : auMicSwitch(kAuMicPatterns, mic);
+}
+
 // A recording or transfer medium. Band edges and the head bump (Hz, dB); drive is the saturation of a full-level
 // signal (0 = clean); noise floors in dBFS (-200 = none); wow and flutter as peak speed error in % with their rates;
 // crackle and dropout as events per second; comp the medium's own limiting (0..1); mono sums the channels.
@@ -54,7 +88,7 @@ inline constexpr AuMedium kAuMedia[] = {
     { "Cassetta Tipo II (cromo)", 40, 14500, 80, 1.5f, 1, 0.05f, -55, -200, -200, 0, 0.12f, 0.8f, 0.15f, 10, 0.02f, 0, false, 1970, 9999 },
     { "Cassetta Tipo IV (metallo)", 35, 16000, 80, 1.5f, 0.9f, 0.05f, -57, -200, -200, 0, 0.1f, 0.8f, 0.12f, 10, 0.015f, 0, false, 1979, 9999 },
     { "Filo d'acciaio", 150, 5000, 300, 2, 1.4f, 0.15f, -40, -200, -200, 0.5f, 0.5f, 0.7f, 0.6f, 6, 0.1f, 0.2f, true, 1946, 1955 },
-    { "Cilindro di cera", 250, 4000, 1500, 4, 1.2f, 0.2f, -34, -200, -48, 8, 0.8f, 0.9f, 0.4f, 5, 0, 0.3f, true, 1888, 1929 },
+    { "Cilindro di cera", 250, 4000, 1500, 4, 1.2f, 0.2f, -34, -200, -48, 3, 0.8f, 0.9f, 0.4f, 5, 0, 0.3f, true, 1888, 1929 },
     { "Disco 78 giri (gommalacca)", 80, 6000, 2500, 2, 0.9f, 0.1f, -38, -200, -50, 6, 0.3f, 1.3f, 0.1f, 12, 0, 0, true, 1898, 1960 },
     { "Vinile 45 giri", 30, 15000, 100, 0.5f, 0.4f, 0.08f, -60, -200, -58, 1.5f, 0.08f, 0.75f, 0.05f, 12, 0, 0, false, 1949, 9999 },
     { "Vinile 33 giri LP", 25, 16000, 100, 0.5f, 0.4f, 0.08f, -62, -200, -60, 0.8f, 0.07f, 0.55f, 0.04f, 12, 0, 0, false, 1948, 9999 },
@@ -63,14 +97,29 @@ inline constexpr AuMedium kAuMedia[] = {
     { "VHS Hi-Fi", 20, 20000, 100, 0, 0.3f, 0.02f, -75, -55, -200, 0, 0.02f, 0.4f, 0.02f, 13, 0.02f, 0.3f, false, 1983, 2008 },
     { "Video8 AFM", 20, 15000, 100, 0, 0.3f, 0.02f, -70, -60, -200, 0, 0.03f, 0.4f, 0.03f, 13, 0.02f, 0.3f, true, 1985, 2007 },
     { "U-matic", 50, 12000, 150, 1, 0.8f, 0.05f, -48, -62, -200, 0, 0.1f, 0.5f, 0.15f, 12, 0.03f, 0.1f, true, 1971, 2000 },
-    { "Banda ottica 35 mm (Academy)", 50, 7500, 100, 0, 0.9f, 0.12f, -50, -200, -200, 2, 0.05f, 1, 0.1f, 24, 0, 0.1f, true, 1927, 9999 },
-    { "Banda ottica 16 mm", 100, 6000, 100, 0, 1, 0.12f, -42, -200, -200, 3, 0.1f, 1, 0.2f, 24, 0, 0.1f, true, 1935, 2000 },
+    { "Banda ottica 35 mm (Academy)", 50, 7500, 100, 0, 0.9f, 0.12f, -50, -200, -200, 0.5f, 0.05f, 1, 0.1f, 24, 0, 0.1f, true, 1927, 9999 },
+    { "Banda ottica 16 mm", 100, 6000, 100, 0, 1, 0.12f, -42, -200, -200, 0.8f, 0.1f, 1, 0.2f, 24, 0, 0.1f, true, 1935, 2000 },
     { "Pista magnetica Super 8", 70, 8000, 150, 2, 1.1f, 0.08f, -45, -200, -200, 0.3f, 0.3f, 1.5f, 0.4f, 18, 0.05f, 0, true, 1973, 1990 },
     { "Radio AM", 100, 4500, 100, 0, 0.6f, 0.05f, -45, -55, -200, 0.5f, 0, 0.5f, 0, 8, 0, 0.8f, true, 1920, 9999 },
     { "Radio FM", 30, 15000, 100, 0, 0.3f, 0.02f, -65, -200, -200, 0, 0, 0.5f, 0, 8, 0, 0.6f, false, 1945, 9999 },
     { "Telefono fisso", 300, 3400, 1000, 2, 1.5f, 0.15f, -45, -200, -200, 0.2f, 0, 0.5f, 0, 8, 0, 0.5f, true, 1900, 9999 },
     { "Nastro ¼\" · 2,4 cm/s", 80, 4500, 130, 3.5f, 1.4f, 0.1f, -44, -200, -200, 0, 0.4f, 0.5f, 0.45f, 6, 0.05f, 0, false, 1961, 1990 },
 };
+
+// The medium's standard equalisation: the playback high-frequency time constant (µs; 0 = none), the record side
+// pre-emphasising the same amount. The highs reach the medium boosted, so they saturate first, as on the real thing:
+// CCIR/IEC 35 µs at 38 cm/s, 70 µs at 19, 90 µs at 9,5, 120 µs at 4,75 and 2,4 and on type I cassettes, 70 µs on
+// type II and IV, RIAA 75 µs on vinyl, 50 µs on European FM. [standard]
+inline constexpr float kAuMediumEqUs[] = {
+    0, 35, 70, 90, 120,   // digital, ¼" 38, 19, 9,5, 4,75
+    120, 70, 70,          // cassette I, II, IV
+    0, 0, 0, 75, 75,      // wire, wax, shellac (curves of the period vary), vinyl 45, 33
+    0, 0, 0, 0, 0,        // VHS linear SP, LP, Hi-Fi, Video8, U-matic
+    0, 0, 0,              // optical 35, 16, Super 8 stripe
+    0, 50, 0,             // AM, FM, telephone
+    120,                  // ¼" 2,4
+};
+static_assert(std::size(kAuMediumEqUs) == std::size(kAuMedia), "one equalisation per medium");
 
 // A noise reducer: how much it lowers the medium's hiss (dB). Modelled as the hiss it removes, not as a compander.
 struct AuNoiseReduction

@@ -9,6 +9,7 @@ namespace {
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kQ = 0.70710678118654752;   // Butterworth
 constexpr float kSilent = -199;   // dBFS at or below: the noise is absent
+constexpr double kEmphasisDb = 12;   // how far the record pre-emphasis shelf lifts the highs
 
 float dbToGain(float db) { return db <= kSilent ? 0.0f : std::pow(10.0f, db / 20.0f); }
 
@@ -91,7 +92,7 @@ float AuEngine::Block::random()
 
 void AuEngine::add(Block b)
 {
-    if (b.level || !b.eq.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
+    if (b.level || !b.eq.empty() || !b.pre.empty() || b.drive > 0 || b.comp > 0 || b.mono || b.wowA > 0 || b.flutA > 0 || b.hiss > 0 ||
         b.hum > 0 || b.rumble > 0 || b.crackle > 0 || b.dropout > 0)
         blocks_.push_back(std::move(b));
 }
@@ -123,11 +124,18 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     const AuDevice& dev = pick(fam.devices, fam.count, s.model);
 
     if (s.useDevice && s.on[kStMic]) {
-        const AuMic& m = pick(kAuMics, std::size(kAuMics), s.mic > 0 ? s.mic : dev.mic);
+        const int mic = s.mic > 0 ? s.mic : dev.mic;
+        const AuMic& m = pick(kAuMics, std::size(kAuMics), mic);
+        float prox = m.prox, cut = 0;   // the microphone's own switches
+        if (const AuMicSwitch* p = auMicSwitch(kAuMicPatterns, mic))
+            prox *= p->pos[std::clamp(s.micPattern < 0 ? p->def : s.micPattern, 0, p->count - 1)].value;
+        if (const AuMicSwitch* f = auMicSwitch(kAuMicFilters, mic))
+            cut = f->pos[std::clamp(s.micFilter < 0 ? f->def : s.micFilter, 0, f->count - 1)].value;
         Block b;
         band(b.eq, fs, m.hp, m.lp, 1);
         bell(b.eq, fs, m.peakHz, m.peakDb, m.peakQ);
-        if (m.prox != 0) b.eq.push_back(shelf(fs, 150, m.prox, false));
+        if (prox != 0) b.eq.push_back(shelf(fs, 150, prox, false));
+        if (cut != 0) b.eq.push_back(shelf(fs, 100, cut, false));
         b.drive = m.drive * drive;
         add(std::move(b));
     }
@@ -143,6 +151,10 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         b.drive = c.drive * drive;
         b.asym = c.asym;
         b.comp = s.useDevice ? 0 : c.comp;   // the bus compression belongs to the master section
+        if (c.asym > 0.05f) {   // input and output transformers saturate first in the lows [dedotto]
+            b.pre.push_back(shelf(fs, 60, 6, false));
+            b.eq.insert(b.eq.begin(), shelf(fs, 60, -6, false));
+        }
         if (noise) hiss(b.hissLp, b.hiss, fs, c.lp, c.noiseDb + s.noiseDb);
         add(std::move(b));
     };
@@ -184,6 +196,7 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         tone();
     }
 
+    const float age = std::clamp(s.age, 0.0f, 1.0f);
     auto medium = [&](int index, float hissCut) {
         const AuMedium& m = pick(kAuMedia, std::size(kAuMedia), index);
         Block b;
@@ -191,10 +204,19 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
         b.asym = m.asym;
         b.comp = m.comp;
         b.mono = m.mono;
-        band(b.eq, fs, m.hp, m.lp, 2);
+        // the standard equalisation: highs boosted on the way in (they saturate first), cut back on playback
+        const float us = kAuMediumEqUs[std::clamp(index, 0, int(std::size(kAuMediumEqUs)) - 1)];
+        const double corner = us > 0 ? 1e6 / (2 * kPi * us) : 0;
+        if (corner > 0 && corner < 0.4 * fs) {
+            b.pre.push_back(shelf(fs, corner, kEmphasisDb, true));
+            b.eq.push_back(shelf(fs, corner, -kEmphasisDb, true));
+        }
+        // wear: the highs go first
+        const float lp = m.lp > 0 ? m.lp * (1 - 0.35f * age) : 0;
+        band(b.eq, fs, m.hp, lp, 2);
         bell(b.eq, fs, m.bumpHz, m.bumpDb, 1);
         if (s.on[kStWow]) {
-            float w = std::max(0.0f, s.wow);
+            float w = std::max(0.0f, s.wow) * (1 + 0.8f * age);
             b.wowW = float(2 * kPi * m.wowHz);
             b.flutW = float(2 * kPi * m.flutterHz);
             // a delay swinging by A at ω changes the speed by A·ω: the peak error in % sets A
@@ -202,11 +224,14 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
             b.flutA = m.flutter * 0.01f * w / b.flutW;
         }
         if (noise) {
-            hiss(b.hissLp, b.hiss, fs, m.lp, m.hissDb + s.noiseDb - hissCut);
+            hiss(b.hissLp, b.hiss, fs, lp > 0 ? lp : m.lp, m.hissDb + s.noiseDb - hissCut + 8 * age);
             b.hum = dbToGain(m.humDb + s.noiseDb);
-            b.rumble = dbToGain(m.rumbleDb + s.noiseDb);
-            b.crackle = float(m.crackle / fs);
-            b.dropout = float(m.dropout / fs);
+            b.rumble = dbToGain(m.rumbleDb + s.noiseDb + 6 * age);
+            b.crackle = float(m.crackle * (1 + 6 * age) / fs);
+            b.dropout = float((m.dropout * (1 + 15 * age) + 0.05 * age * age) / fs);
+            // the oxide's grain under the signal: about 50 dB below it on tape, more when worn [dedotto]
+            const bool magnetic = us > 0 || index == 8 || (index >= 13 && index <= 17) || index == 20;
+            if (magnetic) b.modNoise = 0.003f * (1 + 2 * age);
         }
         add(std::move(b));
     };
@@ -230,10 +255,11 @@ void AuEngine::prepare(double sampleRate, int channels, const AuSettings& s)
     }
     for (size_t i = 0; i < blocks_.size(); ++i) {
         Block& b = blocks_[i];
-        if (same && i < old.size() && old[i].eq.size() == b.eq.size() && old[i].level == b.level &&
+        if (same && i < old.size() && old[i].eq.size() == b.eq.size() && old[i].pre.size() == b.pre.size() &&
+            old[i].level == b.level &&
             old[i].line.empty() == !(b.wowA > 0 || b.flutA > 0)) {
             const Block& o = old[i];
-            b.z = o.z, b.env = o.env, b.line = o.line, b.tail = o.tail, b.hissZ = o.hissZ;
+            b.z = o.z, b.zPre = o.zPre, b.env = o.env, b.line = o.line, b.tail = o.tail, b.hissZ = o.hissZ;
             b.pos = o.pos, b.rumbleZ = o.rumbleZ, b.drop = o.drop, b.dropTo = o.dropTo, b.dropLeft = o.dropLeft;
             b.rng = o.rng;
             b.gainZ = o.level == b.level ? o.gainZ : b.gain;
@@ -249,6 +275,7 @@ void AuEngine::fresh(Block& b, size_t index) const
     size_t line = 16;
     while (line < fs_ * 0.05) line <<= 1;   // 50 ms covers the widest wow
     b.z.assign(b.eq.size() * 2 * n, 0);
+    b.zPre.assign(b.pre.size() * 2 * n, 0);
     b.env.assign(n, 0);
     b.line.assign(b.wowA > 0 || b.flutA > 0 ? line * n : 0, 0);
     b.tail.assign(n, 0);
@@ -328,6 +355,10 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
                 float lvl = 10 * std::log10(e + 1e-12f), over = lvl + 18;
                 if (over > 0) x *= std::pow(10.0f, -over * (1 - 1 / (1 + 4 * b.comp)) / 20);
             }
+            if (!b.pre.empty()) {
+                float* zp = &b.zPre[c * b.pre.size() * 2];
+                for (size_t i = 0; i < b.pre.size(); ++i) x = b.pre[i].run(x, zp[2 * i], zp[2 * i + 1]);
+            }
             if (g > 1e-3f) x = std::tanh(g * (x + b.asym * x * x)) / g;
             float* z = &b.z[c * nq * 2];
             for (size_t i = 0; i < nq; ++i) x = b.eq[i].run(x, z[2 * i], z[2 * i + 1]);
@@ -339,7 +370,10 @@ void AuEngine::run(Block& b, float* const* ch, int frames)
                 float fr = float(rd - std::floor(rd));
                 x = line[i0 & mask] * (1 - fr) + line[(i0 + 1) & mask] * fr;
             }
-            if (b.hiss > 0) x += b.hiss * b.hissLp.run(b.random(), b.hissZ[2 * c], b.hissZ[2 * c + 1]);
+            if (b.hiss > 0) {
+                const float n = b.hissLp.run(b.random(), b.hissZ[2 * c], b.hissZ[2 * c + 1]);
+                x += b.hiss * n + b.modNoise * x * n;
+            }
             float& tl = b.tail[c];
             tl = tl * tailK + click * (c ? 0.8f : 1.0f);
             x = (x + hum + rumble + tl) * b.drop;

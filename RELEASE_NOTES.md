@@ -30,6 +30,12 @@
   (somma o un solo lato), banco scelto prima del registratore, panpot e fader del canale. Con una band si mette
   *Ripresa* su ogni strumento, ciascuno col suo microfono e registratore, e *Mix e supporto* sul bus come sezione
   master (anche lì l'ingresso può essere mono).
+- **Audio, preset d'uso e suono da nuovo**: sotto il frontale, preset a categorie (Cinema, Televisione, Radio, Sala
+  di registrazione, Concerto, In casa) impostano la macchina come in quella presa; *Regola livello* porta le punte
+  dove andavano. I microfoni hanno i loro commutatori veri (filtro del MD 421, Voce/Musica e direttività del RCA
+  77-DX, cardioide/omni del U 47, direttività del C12). Tutto parte nuovo, come suonava allora; *Usura del supporto*
+  invecchia il nastro. Il nastro registra con le equalizzazioni di norma (gli acuti saturano prima), con il rumore di
+  modulazione; i trasformatori dei banchi saturano nei bassi.
 
 ## Log MetaRaw 4.3.1
 

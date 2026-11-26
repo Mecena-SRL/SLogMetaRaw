@@ -141,6 +141,29 @@ destra), non salvate.
   PPM 5 parlato e PPM 6 musica (prassi BBC); modulometro Nagra 0 dB (parlato −2); LED +3; neon appena acceso.
   Consigli di microfono e macchine: scelte d'uso comuni, non regole [dedotto].
 
+## Pannello: frontale, preset d'uso, scelte, regolazioni (richiesta di Ivan, 26/11/2026)
+
+Dall'alto: il frontale della macchina con i suoi comandi; **preset d'uso** a categorie (Cinema, Televisione, Radio,
+Sala di registrazione, Concerto dal vivo, In casa; nel mix: preset di missaggio), che impostano la macchina come in
+quella presa (microfono e suoi commutatori, ingresso, filtro, limitatore, velocità o cassetta: la più silenziosa per
+la musica, la seconda per il parlato, come i 19 cm/s del Nagra al cinema) e dicono a che livello registrare;
+**«Regola livello»** porta le punte misurate all'obiettivo. Poi le **scelte dal microfono al supporto** e le
+**regolazioni**, due per riga. Ogni preset e consiglio è prassi d'epoca [dedotto] (`kAuSources`, `kAuPrograms` in
+`AuGuide.h`).
+
+- **Commutatori dei microfoni** (`kAuMicFilters`, `kAuMicPatterns` in `AudioPresets.h`): filtro dei bassi a 5
+  posizioni del MD 421 (M…S), Voce/Musica del RCA 77-DX (M, V1, V2) e la sua direttività, cardioide/omni del U 47,
+  cinque direttività del C12. Posizioni dalle schede; quantità del taglio e della prossimità [dedotto]. *Di fabbrica*
+  è la posizione di uscita.
+- **Di base tutto è nuovo**: macchina, supporto, microfono come suonavano all'epoca. *Usura del supporto* (0-100 %)
+  aggiunge fruscio (+8 dB), perdita di acuti (−35 % di banda), cadute, crepitio e instabilità. Rivisti da nuovi:
+  meno crepitio su cilindro e piste ottiche nuove.
+- **Processo hardware** (`AudioEngine.cpp`): equalizzazione di norma del supporto, preenfasi in registrazione e
+  deenfasi in riproduzione (CCIR/IEC 35 µs a 38 cm/s, 70 a 19, 90 a 9,5, 120 a 4,75 e cassette tipo I, 70 tipo II e
+  IV, RIAA 75 µs, FM 50 µs [standard]; preenfasi 12 dB [dedotto]): gli acuti saturano prima, come sul nastro vero.
+  Rumore di modulazione sui supporti magnetici (circa −50 dB sotto il segnale [dedotto]). Trasformatori dei banchi a
+  valvole e a trasformatore che saturano prima nei bassi [dedotto].
+
 ## Il banco e i canali (fase 2)
 
 Ogni traccia con *Ripresa* è un canale del banco, come in una presa diretta vera: microfono → **ingresso del canale**
