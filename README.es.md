@@ -198,7 +198,7 @@ y se convierte en imagen como lo hacía ese proceso: colorantes sustractivos, fi
 platino sobre papel, una señal de vídeo. Cada proceso es una tabla de números y el panel muestra solo los controles del
 proceso elegido.
 
-**Setup d'epoca** (arriba del panel): la cadena real de una película o de una época, cargada de una vez: À bout de souffle, Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo, el Cinématographe Lumière, la TV estatal de los inicios y la TV comercial de los años 80. Cámara, formato, película, revelado, óptica, copias, transferencia y visionado siguen las fuentes; la misma lista llega a los plugins de audio. Fuentes y lo deducido: `docs/SETUPS.md`.
+**Setup d'epoca** (arriba del panel): la cadena real de una película o de una época, cargada de una vez: À bout de souffle, Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo, el Cinématographe Lumière, la TV estatal de los inicios y la TV comercial de los años 80. Cámara, formato, película, revelado, óptica, copias, transferencia y visionado siguen las fuentes; la misma lista es el primer menú de los dos plugins de audio (grabadora, micrófono y cinta; mesa, máster, banda de la copia y escucha). Fuentes y lo deducido: `docs/SETUPS.md`.
 
 | Proceso | Qué modela |
 |---|---|

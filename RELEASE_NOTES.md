@@ -18,7 +18,8 @@
   Cinématographe Lumière, la TV di Stato del 1954 (kinescopio) e la TV commerciale degli anni '80. Carica cinepresa,
   formato, pellicola, sviluppo, ottica, copie, riversaggio e visione, poi tutto resta modificabile. Nuove righe:
   Éclair Cameflex, Cinématographe Lumière, Ilford HPS, Eastmancolor 5251, pellicola Lumière, anamorfico Franscope. La
-  stessa lista arriva nei plugin audio. Fonti, e cosa è dedotto: `docs/SETUPS.md`. L'uscita Rec.709 non cambia.
+  stessa lista è il primo menu dei due plugin audio: registratore, microfono e nastro in *Ripresa*; banco, master,
+  banda della copia e ascolto in *Mix e supporto*. Fonti, e cosa è dedotto: `docs/SETUPS.md`. L'uscita Rec.709 non cambia.
 - **Audio per Logic Pro**: i due plugin audio ci sono anche come Audio Unit, per Logic Pro, GarageBand e le altre app
   Mac. L'installer Mac li propone come componente a parte, spuntato di serie; il disinstallatore li toglie.
 - **Audio, frontali veri**: i due plugin audio si aprono sul frontale del registratore o del banco scelto, ricostruito

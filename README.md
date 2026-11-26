@@ -199,7 +199,7 @@ signal. Every process is a table of numbers, and the panel shows only the contro
 **Setup d'epoca** (top of the panel): the real chain of a film or an era, loaded in one go: À bout de souffle,
 Vivre sa vie, Le Mépris, Pierrot le fou, Numéro deux, Accattone, Il Vangelo secondo Matteo, the Lumière
 Cinématographe, early state TV and 1980s commercial TV. Camera, format, stock, push, lens, copies, transfer and viewing
-follow the sources; the same list is coming to the audio plugins. Sources and what is deduced: `docs/SETUPS.md`.
+follow the sources; the same list is the first menu of both audio plugins (recorder, microphone and tape; desk, master, print soundtrack and listening). Sources and what is deduced: `docs/SETUPS.md`.
 
 | Process | What it models |
 |---|---|

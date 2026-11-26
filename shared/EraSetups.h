@@ -3,7 +3,7 @@
 // coherent chain, from the camera and the stock to the recorder and the print. Every field names a row of the
 // plugins' own tables (CreativePresets.h, CreativeModel.cpp, AudioPresets.h) by its exact name. A setup is the whole
 // chain: nullptr is the device's own (format, sensor, microphone, medium) or none (lens, copies, transfer, viewing,
-// desk); a row with no camera or no recorder leaves that plugin as it is. Sources, and which choices are documented and which are deduced: docs/SETUPS.md. Order is
+// desk). A row with no camera leaves the Creative as it is, one with no recorder the Ripresa (see auSetupValues). Sources, and which choices are documented and which are deduced: docs/SETUPS.md. Order is
 // permanent (a saved project keeps the index): append only.
 #pragma once
 #include <iterator>
@@ -19,7 +19,8 @@ struct EraSetup
     const char* lens;     // kCrLenses
     const char* sensor;   // kCrSensorNames; nullptr = the video camera's own
     const char* generation, *transfer, *medium;
-    // Audio: recorder (family table row), microphone, medium, desk, transfer, listening.
+    // Audio. Ripresa: recorder (any family), its microphone and medium (nullptr: its own), only with a recorder. Mix
+    // e supporto: the desk, the master medium (tape; nullptr: the recorder's), the transfer and the listening.
     const char* recorder, *mic, *tape, *desk, *audioTransfer, *listen;
 };
 
@@ -33,7 +34,7 @@ inline constexpr EraSetup kEraSetups[] = {
       "Nastro ¼\" · 38 cm/s", nullptr, "Banda ottica 35 mm (Academy)", "Sala cinematografica (curva X)" },
     { "Nouvelle Vague · Vivre sa vie (Godard, 1962)", "Mitchell BNC (35 mm Academy, 1934)", nullptr,
       "Double-X 5222 (1959)", 0, nullptr, nullptr, "Copia di distribuzione (interpositivo e internegativo)", nullptr,
-      "Proiezione in sala (xeno)", "Perfectone EP 6 (1959)", "AKG D 25 (dinamico, 1953)", "Nastro ¼\" · 19 cm/s",
+      "Proiezione in sala (xeno)", "Perfectone EP 6 (1959)", nullptr, "Nastro ¼\" · 19 cm/s",
       nullptr, "Banda ottica 35 mm (Academy)", "Sala cinematografica (curva X)" },
     { "Nouvelle Vague · Le Mépris (Godard, 1963)", "Mitchell BNC (35 mm Academy, 1934)", "35 mm anamorfico",
       "Eastmancolor 5251 (1962)", 0, "Franscope (anamorfico, anni '50-'60)", nullptr,
@@ -60,10 +61,9 @@ inline constexpr EraSetup kEraSetups[] = {
     { "Televisione · TV di Stato agli esordi (studio, 1954)", "Camera da studio a tubi Plumbicon (broadcast, anni '70)",
       nullptr, nullptr, 0, nullptr, "Nessuno (il segnale com'è)", nullptr,
       "Kinescopio su 16 mm bianco e nero (anni '50)", "Televisore a tubo PAL (576 righe)", nullptr,
-      "RCA 77-DX (nastro, 1954)", nullptr, "RCA BC-2B (broadcast a valvole, 1950)", "Banda ottica 16 mm",
-      "Radio a valvole (anni '50)" },
+      nullptr, "Banda ottica 16 mm", "RCA BC-2B (broadcast a valvole, 1950)", nullptr, "Radio a valvole (anni '50)" },
     { "Televisione · TV commerciale (anni '80)", "Ikegami HL-79E con U-matic BVU (Plumbicon, 1984)", nullptr,
       nullptr, 0, nullptr, nullptr, nullptr, nullptr, "Televisore a tubo PAL (576 righe)", nullptr,
-      "Sennheiser MKH 416 (fucile, 1975)", "U-matic", nullptr, nullptr, "Televisore CRT (anni '70)" },
+      nullptr, "U-matic", nullptr, nullptr, "Televisore CRT (anni '70)" },
 };
 inline constexpr int kEraSetupCount = (int)std::size(kEraSetups);

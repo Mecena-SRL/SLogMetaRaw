@@ -3,6 +3,7 @@
 // each stage does what its table says; the menus offer only what fits together. Run by tests/test_audio.py; prints one line per failure, exit 1 on any.
 #include "AuFronts.h"
 #include "AuMeters.h"
+#include "AuParams.h"
 
 #include <algorithm>
 #include <cmath>
@@ -90,6 +91,26 @@ int main()
             check((d.media >> d.medium) & 1, "device takes its medium", d.name);
             check(d.nr >= 0 && d.nr < int(std::size(kAuNR)), "device nr", d.name);
         }
+
+    // Era setups (shared/EraSetups.h): every name exists, and what a setup sets survives the menus' coherence rules.
+    for (int s = 1; s < kEraSetupCount; ++s)
+        for (bool mix : { false, true }) {
+            bool ok = false;
+            const auto set = auSetupValues(s, mix, &ok);
+            check(ok, "era setup names", kEraSetups[s].name);
+            double v[kPCount];
+            for (int i = 0; i < kPCount; ++i) v[i] = auDefault(AuParamId(i), mix);
+            for (auto [id, plain] : set) v[id] = plain;
+            auCoerce(v, mix);
+            for (auto [id, plain] : set) check(v[id] == plain, "era setup coherent", kEraSetups[s].name);
+        }
+    {
+        const auto take = auSetupValues(2, false), mix = auSetupValues(2, true);   // À bout de souffle
+        check(!take.empty() && take[0].second == auDeviceNamed("Ampex 350"), "Breathless: post-sync in studio");
+        check(mix.size() == 5 && mix[3].second == auRowNamed(kAuMedia, "Banda ottica 35 mm (Academy)"),
+              "Breathless: optical print");
+        check(auSetupValues(1, false).empty() && auSetupValues(1, true).empty(), "Lumière: silent");
+    }
 
     // All switches off: the samples pass untouched (bit for bit).
     {

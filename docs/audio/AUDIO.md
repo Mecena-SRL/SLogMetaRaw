@@ -186,6 +186,14 @@ riversaggio, ascolto. Una band: una traccia per strumento, ciascuna con il suo m
 banco su tutte le tracce e sul bus. Ogni istanza è indipendente: il pannello di *Mix* non vede le tracce. Di serie un
 canale di *Ripresa* non ha banco, quindi i progetti salvati suonano come prima.
 
+## Setup d'epoca (`shared/EraSetups.h`, `auSetupValues`)
+
+Primo menu di entrambi i plugin, la stessa lista del Creative: scegliere un film o un'epoca carica la sua catena. In
+*Ripresa* registratore, microfono e supporto (quelli del registratore se la riga non li dice), solo se la riga nomina
+un registratore; in *Mix e supporto* banco, supporto del master, riversaggio (la banda ottica della copia) e ascolto.
+Poi le regole di coerenza (`auCoerce`) e tutto resta modificabile; il menu non agisce sul suono. Fonti e scelte
+dedotte: [`../SETUPS.md`](../SETUPS.md).
+
 ## Cosa va con cosa (`audio/vst3/AuParams.h`)
 
 Come nel Creative, ogni menu del pannello offre solo ciò che i menu sopra permettono; cambiare un menu riporta i figli
