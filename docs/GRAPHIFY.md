@@ -103,7 +103,8 @@ common/  (condiviso dai nodi)
 ```
 AudioPresets.h  (tabelle: dispositivi, microfoni, supporti, NR, banchi, ascolto)
       └──> AudioEngine.h/.cpp  (catena per blocchi, indipendente dall'host)
-              └──> audio/vst3/AuParams.h ──> AuPlugin.cpp  (VST3: due plugin, pannello VSTGUI; CMake proprio, SDK scaricato;
+              └──> audio/vst3/AuParams.h ──> AuFronts.h, AuLooks.h, AuMeters.h  (frontali, indicatori, balistica)
+                                           └──> AuPlugin.cpp  (VST3: due plugin, pannello VSTGUI; CMake proprio, SDK scaricato;
                                                           su Mac anche due Audio Unit dal wrapper dell'SDK)
 tests/audio_test.cpp  (compilato dal CMake di ofx/SLogMetaRaw, guidato da tests/test_audio.py)
 ```

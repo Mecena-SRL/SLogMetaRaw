@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Log MetaRaw Audio engine (audio/src): every preset renders finite and deterministic, switches really bypass, and
 // each stage does what its table says; the menus offer only what fits together. Run by tests/test_audio.py; prints one line per failure, exit 1 on any.
-#include "AuParams.h"
+#include "AuFronts.h"
+#include "AuMeters.h"
 
 #include <algorithm>
 #include <cmath>
@@ -274,6 +275,94 @@ int main()
         v[kPDesk] = 1;
         auto fixed = auCoerce(v, true);
         check(!fixed.empty() && v[kPMedium] != 13, "coerce on desk change");
+    }
+
+    // The front panels' own controls: low cut, limiter, automatic level, tone.
+    {
+        AuSettings s = bare();
+        s.useDevice = true;
+        double flat = gainDb(s, 50);
+        s.lowCutHz = 158;   // Nagra 4.2, HP 2: -20 dB at 50 Hz
+        check(std::fabs(gainDb(s, 50) - flat + 20) < 1, "filter HP 2 is -20 dB at 50 Hz");
+        check(gainDb(s, 1000) > -0.5, "filter leaves 1 kHz");
+        s = bare();
+        s.highDb = -12;
+        check(gainDb(s, 15000) < -8 && gainDb(s, 500) > -1, "tone cuts the treble");
+        s = bare();
+        s.lowDb = 10;   // REDD.51 bass: +10 dB shelf at 100 Hz
+        check(gainDb(s, 30) > 8 && gainDb(s, 2000) < 1, "bass shelf");
+        AuSettings loud = bare();
+        Buffer in = sine(1000, 0.9f, 24000);
+        double open = rms(render(loud, in)[0], 12000);
+        loud.limit = true;
+        double limited = rms(render(loud, in)[0], 12000);
+        loud.limit = false, loud.alc = true;
+        double riding = rms(render(loud, in)[0], 12000);
+        check(limited < open * 0.7 && riding < limited, "limiter and automatic level lower a loud tone");
+    }
+
+    // Meter ballistics (AuMeters.h) against their standards.
+    {
+        auto reading = [](AuMeter m, const std::vector<float>& x, int upTo) {
+            AuBallistics b;
+            b.prepare(kFs, m);
+            b.run(x.data(), upTo);
+            return b.db();
+        };
+        const float a = float(std::sqrt(2.0));   // a sine of RMS 1 reads 0 dB on every meter
+        std::vector<float> tone = sine(1000, a, int(kFs * 3), 1)[0];
+        check(std::fabs(reading(AuMeter::VU, tone, int(kFs * 2.5))) < 0.15, "VU reads a sine at its RMS");
+        check(std::fabs(reading(AuMeter::PPM, tone, int(kFs * 1))) < 0.1, "PPM reads a sine at its RMS");
+        double peak = -100, at99 = -1;   // VU: 99 % (−0.087 dB) at 300 ms, overshoot 1 to 1.5 %
+        for (int ms = 10; ms <= 1500; ms += 5) {
+            const double db = reading(AuMeter::VU, tone, int(kFs * ms / 1000));
+            peak = std::max(peak, db);
+            if (at99 < 0 && db >= 20 * std::log10(0.99)) at99 = ms;
+        }
+        check(at99 >= 270 && at99 <= 330, "VU 99 % in 300 ms");
+        check(peak > 20 * std::log10(1.005) && peak < 20 * std::log10(1.02), "VU overshoot about 1.5 %");
+        std::vector<float> burst = sine(5000, a, int(kFs * 0.01), 1)[0];   // PPM IIa: a 10 ms burst of 5 kHz, 2 dB low
+        check(std::fabs(reading(AuMeter::PPM, burst, int(kFs * 0.01)) + 2) < 0.3, "PPM 10 ms burst -2 dB");
+        std::vector<float> fall = tone;   // and falls 24 dB in 2.8 s
+        std::fill(fall.begin() + int(kFs), fall.end(), 0.0f);
+        fall.resize(size_t(kFs * 3.8));
+        check(std::fabs(reading(AuMeter::PPM, fall, int(kFs * 3.8)) + 24) < 1, "PPM falls 24 dB in 2.8 s");
+    }
+
+    // Every front fits its machine: positions name media and noise reductions the machine takes, controls drive
+    // parameters the plugin has.
+    {
+        double v[kPCount];
+        for (int fam = 0; fam < int(std::size(kAuFamilies)); ++fam)
+            for (int m = 0; m < int(kAuFamilies[fam].count); ++m) {
+                const AuDevice& d = kAuFamilies[fam].devices[m];
+                const AuFront& f = kAuFamilyFronts[fam][m];
+                for (int i = 0; i < kPCount; ++i) v[i] = auDefault(AuParamId(i), false);
+                v[kPDevice] = auDeviceIndex(fam, m);
+                auto params = auParams(false);
+                for (int c = 0; c < f.count; ++c) {
+                    const AuControl& k = f.controls[c];
+                    check(k.pos || k.param < 0 || std::find(params.begin(), params.end(), k.param) != params.end(),
+                          "front pot drives a parameter", d.name);
+                    for (int p = 0; p < k.count; ++p)
+                        for (const AuSet& set : { k.pos[p].a, k.pos[p].b, k.pos[p].c, k.pos[p].d }) {
+                            if (set.target == kSetMedium) check((d.media >> int(set.value)) & 1, "front speed fits", d.name);
+                            if (set.target == kSetNR) check(auNRFits(int(set.value), d.medium, d.year + kAuDeviceLife), "front NR fits", d.name);
+                            if (set.target >= 0)
+                                check(std::find(params.begin(), params.end(), set.target) != params.end(), "front switch param", d.name);
+                        }
+                    check(!k.pos || (k.def >= 0 && k.def < k.count), "front default position", d.name);
+                }
+            }
+        auto params = auParams(true);
+        for (const AuFront& f : kAuDeskFronts)
+            for (int c = 0; c < f.count; ++c) {
+                const AuControl& k = f.controls[c];
+                check(k.pos || k.param < 0 || std::find(params.begin(), params.end(), k.param) != params.end(), "desk pot");
+                for (int p = 0; p < k.count; ++p)
+                    for (const AuSet& set : { k.pos[p].a, k.pos[p].b, k.pos[p].c, k.pos[p].d })
+                        if (set.target >= 0) check(std::find(params.begin(), params.end(), set.target) != params.end(), "desk switch");
+            }
     }
 
     if (!failures) std::printf("audio_test OK\n");

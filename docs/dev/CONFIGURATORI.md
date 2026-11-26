@@ -265,6 +265,7 @@ Ivan: due plugin («Ripresa» per le tracce, «Mix e supporto» per bus e master
 reali e interruttore per ogni stadio. Fatto: motore e tabelle in `audio/src/`, test; plugin VST3 con pannello (`audio/vst3/`),
 CI e installer. Audio Unit per Logic Pro (richiesta di Ivan, 25/11/2026, prima esclusa): wrapper dell'SDK, target `LogMetaRawAU`. Menu coerenti (richiesta di Ivan, 25/11/2026):
 registratore → microfono → supporto → riduzione, banco → master → riversaggio, filtrati per compatibilità e anno nel
-pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Frontale e indicatore di livello propri di ogni registratore e banco (richiesta di Ivan, 25/11/2026): dati in
-`audio/vst3/AuLooks.h`, disegno in `Plate`, `Meters`, `Knob` di
-`audio/vst3/AuPlugin.cpp`, livelli dal processore con parametri in sola lettura. Aperto: prova in Fairlight, taratura. Dettagli: `docs/audio/AUDIO.md`.
+pannello (`auAllowed`, `auCoerce` in `audio/vst3/AuParams.h`). Frontali ricostruiti dai manuali con i comandi veri e funzionanti, balistiche a norma (richiesta di Ivan, 26/11/2026):
+comandi in `audio/vst3/AuFronts.h`, colori e indicatore in `AuLooks.h`, balistica nel processore in `AuMeters.h`, disegno
+in `Plate`, `Meters`, `FrontControl` di `audio/vst3/AuPlugin.cpp`. Aperto: prova in Fairlight e Logic, confronto con le
+macchine vere dei frontali dedotti (Studer, EL 3300, TC-D5M, cineprese, Neve, SSL, Mackie). Dettagli: `docs/audio/AUDIO.md`.
