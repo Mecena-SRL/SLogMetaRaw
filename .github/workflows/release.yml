@@ -74,7 +74,8 @@ jobs:
         run: |
           A="$(lipo -archs ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle/Contents/MacOS/SLogMetaRaw.ofx)"; [[ $A == *x86_64* && $A == *arm64* ]]
           codesign --verify ofx/SLogMetaRaw/SLogMetaRaw.ofx.bundle
-          hdiutil verify dist/*.dmg
+          for d in dist/*.dmg; do hdiutil verify "$d"; done
+          test -f dist/LogMetaRawAudio-*.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: macos-package

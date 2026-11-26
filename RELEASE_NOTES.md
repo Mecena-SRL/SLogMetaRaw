@@ -42,6 +42,12 @@
 
 ## Log MetaRaw 4.3.1
 
+- **Audio, download a parte**: oltre al pacchetto completo, la release ha i soli plugin audio per Logic Pro,
+  GarageBand, Cubase, Reaper, Ableton e le altre DAW: `LogMetaRawAudio-<versione>.dmg` (VST3 e Audio Unit, con
+  installer e disinstallatore) e `LogMetaRawAudio-<versione>-windows-x64.zip` (VST3). Dentro c'è una guida dedicata di
+  quattro pagine, in italiano e in inglese: installazione, dove si trovano i plugin in ogni DAW, il pannello, a che
+  livello registrare, la band, il film, l'automazione e le macchine. Il controllo aggiornamenti dell'app propone sempre
+  il pacchetto completo.
 - **Audio, scelte coerenti**: nei due plugin audio ogni menu propone solo ciò che va con le scelte sopra, come nel
   Creative. In *Ripresa* i registratori sono divisi per famiglia; microfono, supporto e riduzione rumore mostrano per
   prima la dotazione del registratore («Del registratore · Nastro ¼" · 19 cm/s») e poi solo le alternative compatibili:

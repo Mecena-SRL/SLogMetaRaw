@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Log MetaRaw Audio – guide</title>
+<style>
+  @page { size: A4; margin: 11mm 13mm 9mm; }
+  :root { --ink: #1c1f26; --muted: #5b6270; --warm: #e8893a; --cool: #3d7bff; --green: #2e9e5b; --line: #e3e5ea;
+          --soft: #f6f7f9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 9.6pt;
+         line-height: 1.34; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 184mm; height: 276mm; display: flex; flex-direction: column; overflow: hidden;
+          break-before: page; }
+  .page:first-child { break-before: auto; }
+  .content { flex: 1 1 auto; min-height: 0; }
+  header.top { display: flex; align-items: center; gap: 4mm; padding-bottom: 2.4mm; margin-bottom: 2mm;
+               border-bottom: 2px solid transparent; border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  header.top img { width: 15mm; height: 15mm; }
+  header.top h1 { font-size: 19pt; margin: 0; letter-spacing: -0.3px; }
+  header.top .sub { color: var(--muted); font-size: 9.4pt; margin-top: 0.6mm; }
+  .part { display: flex; align-items: baseline; justify-content: space-between; gap: 3mm; padding-bottom: 1.6mm;
+          margin-bottom: 2mm; border-bottom: 2px solid transparent;
+          border-image: linear-gradient(90deg, var(--warm), var(--cool)) 1; }
+  .part h1 { font-size: 15pt; margin: 0; letter-spacing: -0.2px; }
+  .part .where { color: var(--muted); font-size: 8.8pt; text-align: right; }
+  h2 { font-size: 11pt; margin: 2.6mm 0 1mm; }
+  h3 { font-size: 9.8pt; margin: 1.8mm 0 0.6mm; }
+  p { margin: 0.9mm 0; }
+  ul, ol { margin: 0.6mm 0; padding-left: 4.6mm; }
+  li { margin: 0.4mm 0; }
+  .cols { display: grid; grid-template-columns: 89mm 89mm; column-gap: 6mm; }
+  .cols > div { min-width: 0; }
+  figure { margin: 1.2mm 0 1.6mm; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 8.3pt; color: var(--muted); line-height: 1.28; margin-top: 0.6mm; }
+  figcaption b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; line-height: 1.28; }
+  th { text-align: left; font-size: 8.2pt; color: var(--muted); font-weight: 600; padding: 0.6mm 1.2mm;
+       border-bottom: 1.2px solid #c9cdd5; }
+  td { padding: 0.65mm 1.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.k { font-weight: 600; white-space: nowrap; }
+  td.pg { color: var(--muted); text-align: right; white-space: nowrap; width: 7mm; }
+  tr.grp td { background: var(--soft); font-weight: 700; font-size: 8.8pt; border-bottom: 1px solid #c9cdd5;
+              padding-top: 0.9mm; }
+  tr.grp td span { font-weight: 400; color: var(--muted); }
+  .sum td { padding: 0.45mm 1.2mm; font-size: 8.7pt; }
+  .sum td.k { width: 47mm; }
+  .sum.tight td { padding: 0.2mm 1.2mm; font-size: 8pt; line-height: 1.17; }
+  .sum.tight tr.grp td { font-size: 8pt; }
+  .note { color: var(--muted); }
+  .new { display: inline-block; font-size: 7pt; font-weight: 700; color: #fff; background: var(--green);
+         border-radius: 1mm; padding: 0 1mm; vertical-align: 0.3mm; margin-left: 0.8mm; }
+  .box { background: var(--soft); border: 1px solid var(--line); border-radius: 2mm; padding: 1.8mm 2.6mm; margin: 1.4mm 0; }
+  .premise { background: linear-gradient(90deg, #fff6ef, #eef4ff); border: 1px solid var(--line); border-radius: 2mm;
+             padding: 1.8mm 2.8mm; margin: 1.2mm 0; }
+  .sci { border-left: 2.5px solid var(--cool); background: #f3f7ff; padding: 1.3mm 2.4mm; margin: 1.4mm 0;
+         font-size: 9pt; }
+  .sci b:first-child { color: #2a5fd6; }
+  .warn { border-left: 2.5px solid var(--warm); background: #fff7f0; padding: 1.3mm 2.4mm; margin: 1.4mm 0; font-size: 9pt; }
+  .formula { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.4pt; background: var(--soft);
+             border: 1px solid var(--line); border-radius: 1.5mm; padding: 1.2mm 2.2mm; margin: 1mm 0; white-space: pre; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.2pt; background: #eceef2; padding: 0.1mm 0.8mm;
+         border-radius: 0.8mm; }
+  .fc td:first-child { white-space: nowrap; }
+  .sw { display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 0.5mm; vertical-align: -0.35mm; margin-right: 0.5mm; }
+  footer { margin-top: auto; padding-top: 1.6mm; border-top: 1px solid var(--line); display: flex;
+           justify-content: space-between; color: var(--muted); font-size: 8pt; }
+  .shot img { border: 1px solid var(--line); border-radius: 1.5mm; }
+</style>
+</head>
+<body>
+
+<section class="page"><div class="content">
+  <header class="top">
+    <img src="icon.png" alt="">
+    <div>
+      <h1>Log MetaRaw Audio</h1>
+      <div class="sub">Period recorders, microphones, desks and media · VST3 and Audio Unit · guide · v@VERSION@</div>
+    </div>
+  </header>
+  <p>Two plugins to record and mix <b>the way it was done</b>: "location sound on a Nagra 4.2 with a shotgun, mixed on a
+  Neve, dubbed to VHS and captured back with a USB stick". Each machine opens on <b>its own front panel</b>, with its real
+  controls and meter, and sounds <b>as new</b>: as it was heard then, not as it reaches us today.</p>
+  <div class="cols">
+    <div>
+      <h2>The two plugins</h2>
+      <table>
+        <tr><td class="k">Ripresa (recording)</td><td>On tracks. Microphone → desk channel → recorder → medium. One instance per
+          track: every instrument has its own microphone and machine.</td></tr>
+        <tr><td class="k">Mix e supporto (mix and medium)</td><td>On a bus or the master. Desk → master medium → dubs →
+          capture → listening (radio, TV, jukebox, cinema).</td></tr>
+      </table>
+      <h2>Installation</h2>
+      <h3>Mac (Logic Pro, GarageBand, Fairlight, Ableton, Cubase, Reaper…)</h3>
+      <ol>
+        <li>Open <code>LogMetaRawAudio-@VERSION@.dmg</code> and double-click <b>Installa Log MetaRaw Audio.pkg</b>.</li>
+        <li>In <i>Customize</i> choose <b>VST3</b> (Fairlight, Cubase, Reaper, Ableton, Studio One, Bitwig) and/or
+          <b>Audio Unit</b> (Logic Pro, GarageBand, MainStage). Both by default.</li>
+        <li>Reopen the DAW. Logic checks new Audio Units by itself.</li>
+      </ol>
+      <p class="note">They install into <code>/Library/Audio/Plug-Ins/VST3</code> and <code>/Library/Audio/Plug-Ins/Components</code>.
+      To remove them: <b>Disinstalla Log MetaRaw Audio.command</b> on the disk.</p>
+      <h3>Windows (Fairlight, Cubase, Reaper, Ableton, Studio One…)</h3>
+      <ol>
+        <li>Extract <code>LogMetaRawAudio-@VERSION@-windows-x64.zip</code>.</li>
+        <li>Copy the <code>Log MetaRaw Audio.vst3</code> folder into <code>C:\Program Files\Common Files\VST3</code>.</li>
+        <li>Reopen the DAW and rescan plugins if needed.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Where to find them</h2>
+      <table>
+        <tr><td class="k">Logic Pro</td><td><i>Audio FX</i> slot › Audio Units › Log MetaRaw › Ripresa or Mix e supporto.</td></tr>
+        <tr><td class="k">DaVinci Resolve</td><td>Fairlight › Mixer › <i>Effects</i> slot › VST3 › Log MetaRaw.</td></tr>
+        <tr><td class="k">Cubase, Reaper, Ableton, Studio One, Bitwig</td><td>VST3 effects › Log MetaRaw.</td></tr>
+      </table>
+      <h2>In three steps</h2>
+      <ol>
+        <li><b>Ripresa</b> on the track: pick the <b>recorder</b>, then a <b>use preset</b> (e.g. <i>Cinema · Presa
+          diretta</i>, <i>Sala di registrazione · Voce</i>): the machine is set up as for that session.</li>
+        <li>Play the track for a few seconds and press <b>Regola livello</b> (set level): the peaks go where the engineer
+          put them, on that machine's meter.</li>
+        <li><b>Mix e supporto</b> on the master: desk, final medium, optional dub and capture.</li>
+      </ol>
+      <div class="box"><b>The "?"</b> on the front's nameplate: hover over it for the story of the recorder or desk.</div>
+      <div class="warn">The sound is built from published specifications, standards and period descriptions: it is an
+      <b>estimate</b> of the behaviour, not a measurement of one unit. Where a value is inferred the documentation says so
+      (<code>docs/audio/AUDIO.md</code>). Names and trademarks belong to their owners; the fronts are original drawings
+      without logos. The panel is in Italian.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Introduction</span><span>1 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>The panel</h1><span class="where">top to bottom</span></div>
+  <div class="cols">
+    <div>
+      <figure class="shot"><img src="img/audio-ripresa.png" alt=""><figcaption><b>Ripresa</b> with a Nagra 4.2: the front on
+      top, presets, choices and trims below.</figcaption></figure>
+    </div>
+    <div>
+      <h2>1 · The front</h2>
+      <p>The real machine's controls, where it had them and with their labels, and working: the Nagra's selector goes to
+      TEST, RECORD or PLAYBACK, the speed changes the tape, the filter, limiter, Dolby and tone act on the sound. Purely
+      mechanical controls move but do not change the sound; channels the plugin does not use are off.</p>
+      <h3>The meter</h3>
+      <p>Each machine has its own, with its scale and movement, computed on the signal sample by sample:</p>
+      <table>
+        <tr><td class="k">VU</td><td>99 % in 300 ms, 1–1.5 % overshoot (ANSI C16.5 / IEC 60268-17).</td></tr>
+        <tr><td class="k">PPM</td><td>IEC 60268-10 type IIa: 10 ms at 5 kHz reads −2 dB; falls 24 dB in 2.8 s.</td></tr>
+        <tr><td class="k">Modulometer</td><td>Nagra peak meter; battery zone.</td></tr>
+        <tr><td class="k">Others</td><td>Magic eye, neon lamp, LEDs, needle indicator.</td></tr>
+      </table>
+      <p>In record and TEST the meter reads what goes onto tape (input × level), in playback what comes back.
+      <i>Taratura meter</i> (meter calibration) sets which digital level reads 0 VU (−18 dBFS by default).</p>
+      <h2>2 · Use presets</h2>
+      <p>By category: <b>Cinema</b> (location sound, documentary, ambience, Super 8), <b>Televisione</b> (field report, studio,
+      camcorder), <b>Radio</b> (interview and commentary, studio), <b>Sala di registrazione</b> (vocals, choir, guitars, bass,
+      drums, piano, winds, strings, orchestra), <b>Concerto dal vivo</b>, <b>In casa</b>. The preset picks the microphone and its
+      switches, mono or stereo input, filter, limiter and speed (the quietest for music, 19 cm/s for speech as in film), and
+      writes below it the level to bring peaks to and the machines that were used.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h2>3 · From microphone to medium</h2>
+      <table>
+        <tr><td class="k">Microfono</td><td>The stock one or another of its era.</td></tr>
+        <tr><td class="k">Filtro, Direttività</td><td>The real switches: MD 421 bass roll-off M…S, RCA 77-DX voice/music and
+          pattern, U 47 cardioid/omni, the C12's five patterns.</td></tr>
+        <tr><td class="k">Ingresso</td><td>Stereo, mono (sum) or one side only.</td></tr>
+        <tr><td class="k">Banco (canale)</td><td>The desk channel the microphone goes into: it colours the track before tape.</td></tr>
+        <tr><td class="k">Supporto, Riduzione</td><td>Only what the machine accepted: a Nagra does not record onto VHS.</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>4 · Trims</h2>
+      <table>
+        <tr><td class="k">Livello reg.</td><td>How hard it goes to tape: low = more hiss, high = more saturation. Loudness stays.</td></tr>
+        <tr><td class="k">Usura supporto</td><td>0 % = new (as it was then). Higher: hiss, lost highs, dropouts, crackle.</td></tr>
+        <tr><td class="k">Rumori, Wow e flutter</td><td>More or less than the real ones.</td></tr>
+        <tr><td class="k">Panpot, Fader canale</td><td>The channel in the mix.</td></tr>
+        <tr><td class="k">Saturazione, Dry/wet, Uscita</td><td>Character, blend, final level.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · The panel</span><span>2 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>Recording and mixing</h1><span class="where">a band, a film, an interview</span></div>
+  <div class="cols">
+    <div>
+      <h2>A band</h2>
+      <ol>
+        <li>One track per instrument, <b>Ripresa</b> on each: the same recorder (e.g. Studer J37 for 1960s beat) or different
+          machines, as in a studio.</li>
+        <li>On each track the instrument's preset (<i>Sala di registrazione · Batteria</i>, <i>· Basso</i>…): it picks the
+          microphone that suits the machine's era.</li>
+        <li>The same <b>Banco (canale)</b> on every track (e.g. EMI REDD.51); <b>mono</b> input for vocals and instruments,
+          <b>stereo</b> for overheads and piano; <b>panpot</b> and <b>fader</b> for the mix.</li>
+        <li>On the master <b>Mix e supporto</b> with the same desk: it is the master section. Mix preset, final medium
+          (e.g. ¼" tape at 38 cm/s), then optionally a dub (vinyl, cassette, VHS) and the capture.</li>
+      </ol>
+      <h2>A film or documentary</h2>
+      <ol>
+        <li>Dialogue: <b>Ripresa</b> with a Nagra III or 4.2, preset <i>Cinema · Presa diretta</i> (shotgun, mono, filter,
+          limiter, 19 cm/s). Ambience on another track with <i>Cinema · Ambiente</i>.</li>
+        <li>Master: preset <i>Cinema · Missaggio del film</i> (mono), 35 mm optical track for the theatre print, or VHS for TV.</li>
+      </ol>
+      <h2>Automation: like a real session</h2>
+      <p>Every control that changes the sound is an automatable parameter. In write mode (Logic: <i>Touch/Latch</i>;
+      Fairlight: <i>Automation</i>) turn the front's knobs and the DAW records keyframes; levels, pan, fader, output and
+      dry/wet move without steps. Changing machine or medium while playing can give a small click.</p>
+    </div>
+    <div>
+      <h2>What level to record at</h2>
+      <p>The guide under the preset measures the peaks of the last 8 seconds and <b>Regola livello</b> brings them here, on the
+      machine's meter:</p>
+      <table>
+        <tr><th>Meter</th><th>Speech</th><th>Music</th><th>Drums</th></tr>
+        <tr><td class="k">VU and indicators</td><td>−3</td><td>0</td><td>−5 (VU under-reads them)</td></tr>
+        <tr><td class="k">PPM (BBC)</td><td>PPM 5</td><td>PPM 6</td><td>PPM 6</td></tr>
+        <tr><td class="k">Nagra modulometer</td><td>−2 dB</td><td>0 dB</td><td>0 dB</td></tr>
+        <tr><td class="k">LED</td><td>0</td><td>+3</td><td>+3</td></tr>
+        <tr><td class="k">Neon</td><td colspan="3">just lights on the peaks</td></tr>
+      </table>
+      <p class="note">Period practice, not standards. On recorders with automatic level (Super 8 cameras, camcorders) the
+      machine does it itself.</p>
+      <h2>Capture</h2>
+      <p>In <b>Mix e supporto</b>, after the dub: how the copy gets back into the computer. The player (home cassette deck,
+      VCR, turntable with RIAA, aligned reels, projector, tuner) with azimuth, wow and hum, and the converter (USB stick,
+      audio card, studio converter, 8-bit recorder) with its bits, noise and band limit.</p>
+      <h2>The sound, as new</h2>
+      <p>By default machine, tape and microphone are new. Tape records with its speed's standard equalisation (CCIR/IEC,
+      RIAA on vinyl, FM 50 µs): highs arrive boosted and saturate first, as on real machines; there is the oxide's
+      modulation noise; valve desks' transformers saturate in the lows. For the "as it reaches us today" effect raise
+      <i>Usura supporto</i>.</p>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · Recording and mixing</span><span>3 / 4</span></footer>
+</section>
+<section class="page"><div class="content">
+  <div class="part"><h1>The machines</h1><span class="where">common names, fronts without logos</span></div>
+  <div class="cols">
+    <div>
+      <h2>Recorders (Ripresa)</h2>
+      <table>
+        <tr><td class="k">Portable reels</td><td>Geloso G.257 (1961), Nagra III (1958), Uher 4000 Report-L (1965), Nagra 4.2 (1971).</td></tr>
+        <tr><td class="k">Studio reels</td><td>Ampex 350 (1953), Studer J37 (1964), Revox A77 (1967), Studer A80 (1970).</td></tr>
+        <tr><td class="k">Cassette</td><td>Philips EL 3300 (1963), Tascam Portastudio 144 (1979), Sony TC-D5M (1980), Walkman Pro WM-D6C (1984).</td></tr>
+        <tr><td class="k">Film cameras and camcorders</td><td>Auricon Cine-Voice 16 mm, Kodak Ektasound 130, Canon 514XL-S, JVC GR-C1 VHS-C, Sony CCD-V8.</td></tr>
+        <tr><td class="k">Before tape</td><td>Edison cylinder phonograph, Webster-Chicago 180 wire recorder.</td></tr>
+      </table>
+      <h2>Microphones</h2>
+      <p>Acoustic horn, carbon, piezo, RCA 44-BX and 77-DX, Shure 55, Neumann U 47, AKG C12, EV 635A, Sennheiser MD 421,
+      Shure SM58, Sennheiser MKH 416, cheap dynamic, camcorder electret. Each recorder offers the microphones released
+      within 15 years of it.</p>
+      <h2>Desks (Ripresa and Mix)</h2>
+      <p>RCA BC-2B (1950), EMI REDD.51 (1964), Neve 8078 (1978), SSL 4000 E (1979), Mackie CR-1604 (1993).</p>
+    </div>
+    <div>
+      <h2>Media and dubs</h2>
+      <p>¼" tape at 38, 19, 9.5, 4.75 and 2.4 cm/s; cassette type I, II, IV; steel wire; wax cylinder; 78 rpm; 45 and 33 vinyl;
+      linear VHS SP and LP, VHS Hi-Fi, Video8, U-matic; 35 and 16 mm optical track; Super 8 stripe; AM and FM radio;
+      telephone. Noise reduction: Dolby A, B, C, dbx, where the medium took them. <i>Copie</i> (copies): every extra dub
+      loses highs and adds hiss.</p>
+      <h2>Listening</h2>
+      <p>Valve radio, transistor radio, Wurlitzer 1015 jukebox, CRT television, cinema (X curve).</p>
+      <h2>What is verified</h2>
+      <ul>
+        <li>Verified by automated tests: meter timings per the standards, equalisations, filters, record level, presets,
+          switches, capture; plugin validated with the Steinberg tool; builds on Mac, Windows and Linux.</li>
+        <li>Still to try by ear: Fairlight and Logic with real recordings. Fronts of Studer, EL 3300, TC-D5M, film cameras,
+          Neve, SSL and Mackie rebuilt from descriptions where the manual was missing.</li>
+      </ul>
+      <div class="box">GPL-3.0 licence. Sources, technical documentation and issues: the project repository.</div>
+    </div>
+  </div>
+</div>
+<footer><span>Log MetaRaw Audio @VERSION@ · The machines</span><span>4 / 4</span></footer>
+</section>
+
+</body>
+</html>
