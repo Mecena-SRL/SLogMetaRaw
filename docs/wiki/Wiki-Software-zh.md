@@ -46,7 +46,7 @@ Log MetaRaw 读取索尼摄影机写入每个文件的拍摄数据（开尔文�
 
 ## 2. 安装
 
-1. 从 [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) 下载 `SLogMetaRaw-3.0.0.dmg` 并打开。
+1. 从 [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) 下载 `SLogMetaRaw-4.4.0.dmg` 并打开。
 
    ![DMG 窗口](images/01-dmg.png)
 

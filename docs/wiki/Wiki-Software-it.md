@@ -46,7 +46,7 @@ I file originali non vengono **mai modificati**: nessuna transcodifica, nessun r
 
 ## 2. Installazione
 
-1. Scarica `SLogMetaRaw-3.0.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
+1. Scarica `SLogMetaRaw-4.4.0.dmg` da [Releases](https://github.com/Mecena-SRL/SLogMetaRaw/releases) e aprilo.
 
    ![La finestra del DMG](images/01-dmg.png)
 
