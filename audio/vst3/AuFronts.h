@@ -414,7 +414,7 @@ inline constexpr AuControl kEP6Controls[] = {
     auKnob(240, 40, 60, "NIVEAU", kPRecLevel, -24, 12, "0|2|4|6|8|10"),
     auKnob(330, 40, 50, "ÉCOUTE", kPOut, -24, 12, "0|10"),
     auPick(AuWidget::Selector, 420, 30, 100, 100, "", kEP6Function, 2),
-    auPick(AuWidget::Selector, 240, 140, 80, 80, "MESURE", kEP6Meter, 0),
+    auPick(AuWidget::Selector, 340, 140, 80, 80, "MESURE", kEP6Meter, 0),
     auPick(AuWidget::Lever, 560, 50, 34, 46, "LIMITEUR", kEP6Limit, 0),
 };
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## In sviluppo
+
+- **Audio, il microfono disegnato**: in *Ripresa* il microfono in uso compare accanto al frontale del registratore se è
+  corto e tozzo (U 47, C12, RCA 44 e 77, Shure 55, MD 421, AKG D 25, carbone, cristallo, electret), sotto se è lungo
+  (fucile MKH 416, SM58, EV 635A, dinamico economico, tromba acustica). Nell'altro spazio la sua scheda: che microfono è
+  e la sua banda. I commutatori veri (filtro dei bassi del MD 421 e del RCA 77-DX, direttività del 77-DX, del U 47 e del
+  C12) sono disegnati sul corpo e si cambiano con un clic. Disegni originali dalla sagoma di ogni tipo, senza marchi.
+  La finestra di *Ripresa* è più larga e più alta per farci stare il microfono.
+- **Audio, Perfectone EP 6**: il selettore MESURE non copre più la targhetta.
+
 ## Log MetaRaw 4.4.0
 
 - **Creative, pellicole dalle schede tecniche**: Vision3 500T, 200T, 250D, 50D, Verita 200D, Portra 160/400/800, Ektar,
