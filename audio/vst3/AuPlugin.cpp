@@ -3,6 +3,7 @@
 // samples through AuEngine), a controller (parameters, saved state) and a panel drawn from the rows in AuParams.h.
 #include "AuFronts.h"
 #include "AuMeters.h"
+#include "AuMicLooks.h"
 
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/base/ibstream.h"
@@ -997,10 +998,293 @@ private:
     bool over_ = false;
 };
 
+// The microphone in use, drawn from its look (AuMicLooks.h): standing beside the front when it is short and stout,
+// lying under it when it is long. Its real switches are drawn on it and, as chips below, move the plugin's parameters.
+class MicView : public CView
+{
+public:
+    // which: 0 the bass filter, 1 the polar pattern; the panel cycles that parameter to its next position
+    MicView(const CRect& r, std::function<void(int)> click) : CView(r), click_(std::move(click)) {}
+    void set(int mic, bool lying, int filterAt, int patternAt)
+    {
+        if (mic == mic_ && lying == lying_ && filterAt == filterAt_ && patternAt == patternAt_) return;
+        mic_ = mic, lying_ = lying, filterAt_ = filterAt, patternAt_ = patternAt;
+        invalid();
+    }
+    void draw(CDrawContext* c) override
+    {
+        const CRect r = getViewSize();
+        fillRound(c, r, 8, CColor(46, 43, 40), CColor(32, 30, 28));
+        c->setFrameColor(CColor(70, 64, 58));
+        c->setLineWidth(1);
+        auto frameP = VSTGUI::owned(c->createRoundRectGraphicsPath(r, 8));
+        c->drawGraphicsPath(frameP, CDrawContext::kPathStroked);
+        chips_.clear();
+        if (mic_ <= 0 || mic_ >= int(std::size(kAuMics))) return setDirty(false);
+        const AuMicLook& look = kAuMicLooks[mic_];
+        // the picture's box: across W, along L, head first
+        CRect pic = lying_ ? CRect(r.left + 12, r.top + 8, r.right - 218, r.bottom - 8)
+                           : CRect(r.left + 10, r.top + 10, r.right - 10, r.bottom - 74);
+        CCoord along = lying_ ? pic.getWidth() : pic.getHeight(), across = lying_ ? pic.getHeight() : pic.getWidth();
+        const CCoord want = lying_ ? std::min(along, across * look.length) : std::min(along, across * 1.7);
+        const CCoord wide = lying_ ? across : std::min(across, along / 1.7);
+        box_ = lying_ ? CRect(pic.left, pic.top + (across - wide) / 2, pic.left + want, pic.top + (across + wide) / 2)
+                      : CRect(pic.left + (across - wide) / 2, pic.top + (along - want) / 2, pic.left + (across + wide) / 2,
+                              pic.top + (along + want) / 2);
+        drawMic(c, look);
+        // name and switches, upright text
+        CRect text = lying_ ? CRect(r.right - 206, r.top + 8, r.right - 8, r.bottom - 8)
+                            : CRect(r.left + 8, r.bottom - 70, r.right - 8, r.bottom - 6);
+        c->setFont(kNormalFontSmall);
+        c->setFontColor(CColor(236, 228, 210));
+        std::string name = kAuMics[mic_].name;   // the full name is on the card; here up to its bracket
+        if (size_t cut = name.find(" ("); cut != std::string::npos) name.resize(cut);
+        c->drawString(name.c_str(), CRect(text.left, text.top, text.right, text.top + 14), kLeftText);
+        CCoord y = text.top + 17;
+        for (int which = 0; which < 2; ++which) {
+            const AuMicSwitch* sw = auMicSwitch(which == 0, mic_);
+            if (!sw) continue;
+            const int at = which == 0 ? filterAt_ : patternAt_;
+            const std::string s = std::string(which == 0 ? "Filtro: " : "Direttività: ") + sw->pos[at].name;
+            CRect chip(text.left, y, text.right, y + 17);
+            fillRound(c, chip, 3, CColor(84, 76, 66), CColor(56, 52, 46));
+            c->setFrameColor(CColor(150, 120, 70));
+            auto p = VSTGUI::owned(c->createRoundRectGraphicsPath(chip, 3));
+            c->drawGraphicsPath(p, CDrawContext::kPathStroked);
+            c->setFont(kNormalFontVerySmall);
+            c->setFontColor(CColor(240, 232, 214));
+            c->drawString(s.c_str(), chip.inset(5, 0), kLeftText);
+            chips_.push_back({ chip, which });
+            y += 20;
+        }
+        if (chips_.empty()) {
+            c->setFont(kNormalFontVerySmall);
+            c->setFontColor(CColor(180, 172, 158));
+            c->drawString("Nessun commutatore", CRect(text.left, y, text.right, y + 14), kLeftText);
+        }
+        setDirty(false);
+    }
+    CMouseEventResult onMouseDown(CPoint& where, const CButtonState& buttons) override
+    {
+        if (!buttons.isLeftButton()) return kMouseEventNotHandled;
+        for (const auto& [rect, which] : chips_)
+            if (rect.pointInside(where)) {
+                click_(which);
+                return kMouseDownEventHandledButDontNeedMovedOrUpEvents;
+            }
+        return kMouseEventNotHandled;
+    }
+
+private:
+    // canonical: u across (0 left, 1 right), v along (0 the head, 1 the tail), mapped onto box_
+    CPoint P(double u, double v) const
+    {
+        return lying_ ? CPoint(box_.left + v * box_.getWidth(), box_.top + u * box_.getHeight())
+                      : CPoint(box_.left + u * box_.getWidth(), box_.top + v * box_.getHeight());
+    }
+    CRect R(double u0, double v0, double u1, double v1) const
+    {
+        const CPoint a = P(u0, v0), b = P(u1, v1);
+        return CRect(std::min(a.x, b.x), std::min(a.y, b.y), std::max(a.x, b.x), std::max(a.y, b.y));
+    }
+    void mesh(CDrawContext* c, const CRect& g, CColor col, bool round) const
+    {
+        auto clip = VSTGUI::owned(c->createGraphicsPath());
+        if (round) clip->addEllipse(g);
+        else clip->addRoundRect(g, 3);
+        c->setFrameColor(shade(col, 0.55, 140));
+        c->setLineWidth(1);
+        CRect old;
+        c->getClipRect(old);
+        c->setClipRect(g);
+        for (CCoord x = g.left - g.getHeight(); x < g.right; x += 3)
+            c->drawLine(CPoint(x, g.bottom), CPoint(x + g.getHeight(), g.top));
+        for (CCoord x = g.left; x < g.right + g.getHeight(); x += 3)
+            c->drawLine(CPoint(x, g.bottom), CPoint(x - g.getHeight(), g.top));
+        c->setClipRect(old);
+        c->setFrameColor(shade(col, 0.5));
+        c->drawGraphicsPath(clip, CDrawContext::kPathStroked);
+    }
+    void body(CDrawContext* c, const CRect& r, CColor col, double radius) const
+    {
+        // shaded across the cylinder: light on the near edge, dark on the far one
+        auto path = VSTGUI::owned(c->createRoundRectGraphicsPath(r, radius));
+        auto g = VSTGUI::owned(CGradient::create(0, 1, shade(col, 1.25), shade(col, 0.6)));
+        g->addColorStop(0.35, shade(col, 1.1));
+        const CPoint a = lying_ ? r.getTopLeft() : r.getTopLeft(), b = lying_ ? r.getBottomLeft() : r.getTopRight();
+        c->fillLinearGradient(path, *g, a, b);
+        c->setFrameColor(shade(col, 0.45));
+        c->setLineWidth(1);
+        c->drawGraphicsPath(path, CDrawContext::kPathStroked);
+    }
+    void sw(CDrawContext* c, double u, double v, int at, int count) const   // a slide on the body, at its position
+    {
+        CRect slot = R(u - 0.09, v - 0.035, u + 0.09, v + 0.035);
+        fillRound(c, slot, 2, CColor(20, 20, 20), CColor(50, 50, 50));
+        const double t = count > 1 ? double(at) / (count - 1) : 0;
+        CRect knob = lying_ ? CRect(slot.left + 1, slot.top + 1 + t * (slot.getHeight() - 8), slot.right - 1,
+                                    slot.top + 7 + t * (slot.getHeight() - 8))
+                            : CRect(slot.left + 1 + t * (slot.getWidth() - 8), slot.top + 1,
+                                    slot.left + 7 + t * (slot.getWidth() - 8), slot.bottom - 1);
+        fillRound(c, knob, 1, CColor(220, 220, 214), CColor(140, 140, 136));
+    }
+    void drawMic(CDrawContext* c, const AuMicLook& l) const
+    {
+        const CColor bodyC = rgb(l.body), trim = rgb(l.trim), grille = rgb(l.grille);
+        const AuMicSwitch* fs = auMicSwitch(true, mic_);
+        const AuMicSwitch* ps = auMicSwitch(false, mic_);
+        switch (l.shape) {
+        case AuMicShape::Horn: {
+            auto cone = VSTGUI::owned(c->createGraphicsPath());
+            cone->beginSubpath(P(0.02, 0));
+            cone->addLine(P(0.98, 0));
+            cone->addLine(P(0.58, 0.8));
+            cone->addLine(P(0.58, 1));
+            cone->addLine(P(0.42, 1));
+            cone->addLine(P(0.42, 0.8));
+            cone->closeSubpath();
+            auto g = VSTGUI::owned(CGradient::create(0, 1, shade(bodyC, 1.3), shade(bodyC, 0.55)));
+            c->fillLinearGradient(cone, *g, P(0, 0), P(1, 0));
+            c->setFrameColor(trim);
+            c->drawGraphicsPath(cone, CDrawContext::kPathStroked);
+            fillEllipse(c, R(0, -0.02, 1, 0.04), shade(grille, 1.4), grille);   // the open mouth
+            break;
+        }
+        case AuMicShape::Carbon:   // a round button on a candlestick
+            body(c, R(0.45, 0.42, 0.55, 0.92), trim, 2);
+            fillEllipse(c, R(0.25, 0.9, 0.75, 1.0), shade(trim, 1.2), shade(trim, 0.6));
+            fillEllipse(c, R(0.12, 0.02, 0.88, 0.46), shade(bodyC, 1.4), bodyC);
+            fillEllipse(c, R(0.26, 0.1, 0.74, 0.38), shade(grille, 1.2), shade(grille, 0.7));
+            mesh(c, R(0.26, 0.1, 0.74, 0.38), grille, true);
+            break;
+        case AuMicShape::Crystal:
+            body(c, R(0.44, 0.5, 0.56, 0.98), trim, 2);
+            fillEllipse(c, R(0.1, 0.02, 0.9, 0.55), shade(bodyC, 1.3), shade(bodyC, 0.7));
+            mesh(c, R(0.2, 0.08, 0.8, 0.49), grille, true);
+            break;
+        case AuMicShape::Ribbon44: {   // the lozenge cage on its yoke
+            auto cage = VSTGUI::owned(c->createGraphicsPath());
+            cage->beginSubpath(P(0.5, 0.0));
+            cage->addLine(P(0.92, 0.33));
+            cage->addLine(P(0.5, 0.72));
+            cage->addLine(P(0.08, 0.33));
+            cage->closeSubpath();
+            auto g = VSTGUI::owned(CGradient::create(0, 1, shade(bodyC, 1.3), shade(bodyC, 0.6)));
+            c->fillLinearGradient(cage, *g, P(0, 0), P(1, 0));
+            c->setFrameColor(trim);
+            c->drawGraphicsPath(cage, CDrawContext::kPathStroked);
+            for (double v = 0.06; v < 0.7; v += 0.035) {   // the horizontal bars of the cage
+                const double half = (v < 0.33 ? v / 0.33 : (0.72 - v) / 0.39) * 0.42;
+                c->setFrameColor(shade(grille, 0.6));
+                c->drawLine(P(0.5 - half, v), P(0.5 + half, v));
+            }
+            body(c, R(0.08, 0.32, 0.14, 0.82), trim, 2);   // the yoke
+            body(c, R(0.86, 0.32, 0.92, 0.82), trim, 2);
+            body(c, R(0.08, 0.8, 0.92, 0.86), trim, 2);
+            body(c, R(0.45, 0.85, 0.55, 1.0), trim, 2);
+            break;
+        }
+        case AuMicShape::Ribbon77:   // a capsule (pill) on its yoke, the switches at the back
+            body(c, R(0.2, 0.0, 0.8, 0.74), bodyC, 40);
+            mesh(c, R(0.26, 0.06, 0.74, 0.68), grille, false);
+            body(c, R(0.12, 0.3, 0.18, 0.86), trim, 2);
+            body(c, R(0.82, 0.3, 0.88, 0.86), trim, 2);
+            body(c, R(0.12, 0.84, 0.88, 0.9), trim, 2);
+            body(c, R(0.45, 0.88, 0.55, 1.0), trim, 2);
+            if (fs) sw(c, 0.5, 0.78, filterAt_, fs->count);
+            if (ps) sw(c, 0.5, 0.04, patternAt_, ps->count);
+            break;
+        case AuMicShape::Unidyne:   // the rounded grille with its vertical ribs
+            body(c, R(0.18, 0.04, 0.82, 0.72), bodyC, 30);
+            for (double u = 0.24; u < 0.78; u += 0.06) {
+                c->setFrameColor(shade(grille, 0.55));
+                c->setLineWidth(2);
+                c->drawLine(P(u, 0.1), P(u, 0.66));
+            }
+            c->setLineWidth(1);
+            body(c, R(0.4, 0.7, 0.6, 0.86), trim, 3);
+            body(c, R(0.3, 0.86, 0.7, 1.0), trim, 3);
+            break;
+        case AuMicShape::Bottle:   // the valve condenser: a cylinder with its dome grille
+            body(c, R(0.22, 0.3, 0.78, 1.0), bodyC, 6);
+            fillEllipse(c, R(0.22, 0.0, 0.78, 0.42), shade(grille, 1.25), shade(grille, 0.65));
+            mesh(c, R(0.22, 0.0, 0.78, 0.42), grille, true);
+            body(c, R(0.21, 0.36, 0.79, 0.4), trim, 1);
+            fillEllipse(c, R(0.46, 0.52, 0.54, 0.57), CColor(250, 230, 160), CColor(200, 160, 80));   // the badge
+            if (ps) sw(c, 0.5, 0.66, patternAt_, ps->count);
+            break;
+        case AuMicShape::Stick:
+            body(c, R(0.2, 0.18, 0.8, 1.0), bodyC, 6);
+            fillEllipse(c, R(0.12, 0.0, 0.88, 0.26), shade(grille, 1.3), shade(grille, 0.7));
+            mesh(c, R(0.12, 0.0, 0.88, 0.26), grille, true);
+            body(c, R(0.18, 0.24, 0.82, 0.28), trim, 1);
+            body(c, R(0.3, 0.95, 0.7, 1.0), trim, 1);
+            break;
+        case AuMicShape::Ball:
+            body(c, R(0.28, 0.3, 0.72, 1.0), bodyC, 6);
+            body(c, R(0.22, 0.26, 0.78, 0.34), trim, 3);
+            fillEllipse(c, R(0.02, 0.0, 0.98, 0.32), shade(grille, 1.3), shade(grille, 0.6));
+            mesh(c, R(0.02, 0.0, 0.98, 0.32), grille, true);
+            break;
+        case AuMicShape::Shotgun:
+            body(c, R(0.25, 0.0, 0.75, 1.0), bodyC, 6);
+            for (double v = 0.06; v < 0.62; v += 0.07) fillRound(c, R(0.42, v, 0.58, v + 0.035), 2, shade(grille, 0.7), grille);
+            body(c, R(0.22, 0.9, 0.78, 1.0), trim, 3);
+            break;
+        case AuMicShape::Block:   // the MD 421: stout, ribbed front, the bass switch on its back
+            body(c, R(0.14, 0.0, 0.86, 0.6), bodyC, 10);
+            for (double u = 0.22; u < 0.8; u += 0.05) {
+                c->setFrameColor(shade(bodyC, 1.8));
+                c->drawLine(P(u, 0.05), P(u, 0.55));
+            }
+            body(c, R(0.32, 0.58, 0.68, 1.0), bodyC, 6);
+            body(c, R(0.3, 0.58, 0.7, 0.62), trim, 1);
+            if (fs) sw(c, 0.5, 0.8, filterAt_, fs->count);
+            break;
+        case AuMicShape::Electret:
+            body(c, R(0.32, 0.25, 0.68, 0.8), bodyC, 6);
+            fillRound(c, R(0.34, 0.2, 0.66, 0.3), 4, shade(grille, 1.3), grille);
+            mesh(c, R(0.34, 0.2, 0.66, 0.3), grille, false);
+            break;
+        case AuMicShape::Suspended:   // the head in its elastic ring, the boom clamp below
+            c->setFrameColor(shade(trim, 1.6));
+            c->setLineWidth(2);
+            for (double a = 0; a < 2 * kPi; a += kPi / 4)
+                c->drawLine(P(0.5 + 0.28 * std::cos(a), 0.3 + 0.2 * std::sin(a)), P(0.5 + 0.46 * std::cos(a), 0.3 + 0.32 * std::sin(a)));
+            c->setLineWidth(1);
+            {
+                auto ring = VSTGUI::owned(c->createGraphicsPath());
+                ring->addEllipse(R(0.03, -0.02, 0.97, 0.62));
+                c->setLineWidth(5);
+                c->setFrameColor(trim);
+                c->drawGraphicsPath(ring, CDrawContext::kPathStroked);
+                c->setLineWidth(1);
+            }
+            fillEllipse(c, R(0.22, 0.1, 0.78, 0.5), shade(bodyC, 1.3), shade(bodyC, 0.6));
+            mesh(c, R(0.28, 0.14, 0.72, 0.46), grille, true);
+            body(c, R(0.45, 0.6, 0.55, 0.9), trim, 2);
+            body(c, R(0.3, 0.88, 0.7, 1.0), trim, 2);
+            break;
+        case AuMicShape::Same: break;
+        }
+    }
+
+    std::function<void(int)> click_;
+    int mic_ = -1, filterAt_ = 0, patternAt_ = 0;
+    bool lying_ = false;
+    CRect box_;
+    std::vector<std::pair<CRect, int>> chips_;
+};
+
 class Panel : public VSTGUIEditor, public IControlListener
 {
 public:
-    static constexpr CCoord kW = 660, kRow = 24, kFace = 268, kTop = kFace + 12;
+    static constexpr CCoord kW = 660, kRow = 24, kFace = 268;
+    // Ripresa has the microphone: a column beside the front (a short one stands there) and a strip under it (a long one
+    // lies there); whichever the drawing does not use carries the microphone's card.
+    static constexpr CCoord kSide = 176, kStrip = 92;
+    static constexpr CCoord width(bool mix) { return mix ? kW : kW + kSide; }
+    static constexpr CCoord top(bool mix) { return kFace + 12 + (mix ? 0 : kStrip); }
     static constexpr int32_t kFrontTag = 10000;   // tags of front controls: kFrontTag + index in the front
 
     Panel(EditController* controller, bool mix, ViewRect size) : VSTGUIEditor(controller, &size), mix_(mix)
@@ -1018,17 +1302,18 @@ public:
     static std::vector<Slot> layout(bool mix, CCoord& height)
     {
         std::vector<Slot> out;
-        CCoord y = kTop;
+        CCoord y = top(mix);
+        const CCoord W = width(mix);
         bool right = false;   // a half row is waiting for its neighbour
         for (const AuRow& row : auRows(mix)) {
             if (row.kind == AuRowKind::Half) {
-                out.push_back({ &row, right ? kW / 2 + 6 : 12, y, kW / 2 - 18 });
+                out.push_back({ &row, right ? W / 2 + 6 : 12, y, W / 2 - 18 });
                 if (right) y += kRow;
                 right = !right;
                 continue;
             }
             if (right) y += kRow, right = false;
-            out.push_back({ &row, 12, y, kW - 24 });
+            out.push_back({ &row, 12, y, W - 24 });
             y += row.kind == AuRowKind::Header ? kRow - 2 : kRow;
             if (row.control == kPSource) y += kGuideLines;
         }
@@ -1040,7 +1325,7 @@ public:
     {
         CCoord h;
         layout(mix, h);
-        return ViewRect(0, 0, int32(kW), int32(h));
+        return ViewRect(0, 0, int32(width(mix)), int32(h));
     }
 
 
@@ -1052,6 +1337,26 @@ public:
         frame->setBackgroundColor(CColor(30, 28, 26));
         plate_ = new Plate(CRect(8, 8, kW - 8, kFace));   // the front: name plate, meters, controls
         frame->addView(plate_);
+        if (!mix_) {
+            auto clicked = [this](int which) { micSwitch(which); };
+            micSide_ = new MicView(CRect(kW, 8, kW + kSide - 8, kFace), clicked);
+            micStrip_ = new MicView(CRect(8, kFace + 6, kW - 8, kFace + kStrip), clicked);
+            for (CMultiLineTextLabel** sheet : { &sheetSide_, &sheetStrip_ }) {
+                *sheet = new CMultiLineTextLabel(sheet == &sheetSide_ ? micSide_->getViewSize() : micStrip_->getViewSize());
+                (*sheet)->setLineLayout(CMultiLineTextLabel::LineLayout::wrap);
+                style(*sheet, kNormalFontSmall, CColor(214, 206, 190));
+                (*sheet)->setBackColor(CColor(40, 37, 34));
+                (*sheet)->setFrameColor(CColor(70, 64, 58));
+                (*sheet)->setStyle(CParamDisplay::kRoundRectStyle);
+                (*sheet)->setRoundRectRadius(8);
+                (*sheet)->setTextInset(CPoint(12, 10));
+                (*sheet)->setHoriAlign(kLeftText);
+                (*sheet)->setMouseEnabled(false);
+            }
+            for (CView* view : { static_cast<CView*>(micSide_), static_cast<CView*>(micStrip_),
+                                 static_cast<CView*>(sheetSide_), static_cast<CView*>(sheetStrip_) })
+                frame->addView(view);
+        }
         meters_ = new Meters(CRect(0, 0, 10, 10));
         frame->addView(meters_);
         CCoord height;
@@ -1139,6 +1444,9 @@ public:
         front_.clear();
         plate_ = nullptr;
         meters_ = nullptr;
+        micSide_ = micStrip_ = nullptr;
+        sheetSide_ = sheetStrip_ = nullptr;
+        sheetText_.clear();
         badge_ = nullptr;
         card_ = nullptr;
         advice_ = nullptr;
@@ -1226,7 +1534,7 @@ private:
         frame->addView(c);
         controls_.push_back({ c, id });
     }
-    void addControl(AuParamId id, const CRect& r, CCoord valueRight = kW - 12)
+    void addControl(AuParamId id, const CRect& r, CCoord valueRight = -1)
     {
         if (auParam(id).kind == AuKind::List) {   // filled by sync(): its entries depend on the other menus
             auto* menu = new COptionMenu(r, this, id);
@@ -1246,6 +1554,7 @@ private:
         slider->setValueColor(CColor(232, 196, 120));
         slider->setDefaultValue(scaleOf(id, mix_).norm(auDefault(id, mix_)));
         add(slider, id);
+        if (valueRight < 0) valueRight = width(mix_) - 12;
         auto* text = new CTextLabel(CRect(r.right + 4, r.top, valueRight, r.bottom));
         style(text, kNormalFontSmall, CColor(220, 214, 200));
         text->setHoriAlign(kRightText);
@@ -1438,6 +1747,49 @@ private:
             if (f.view->def().pos)
                 if (int r = auPositionReads(f.view->def().pos[f.index]); r >= 0) reads_ = r;
     }
+    // The microphone in use beside the front (short) or under it (long), its card in the other place.
+    void dressMic(const double* v)
+    {
+        if (mix_ || !micSide_) return;
+        const int mic = auPlain(v, kPMic) > 0 ? auPlain(v, kPMic) : auDevice(v).mic;
+        const bool lying = kAuMicLooks[mic].lying;
+        auto at = [&](bool filter) {
+            const AuMicSwitch* sw = auMicSwitch(filter, mic);
+            const int plain = auPlain(v, filter ? kPMicFilter : kPMicPattern);
+            return !sw ? 0 : plain > 0 && plain <= sw->count ? plain - 1 : sw->def;
+        };
+        MicView* pic = lying ? micStrip_ : micSide_;
+        CMultiLineTextLabel* sheet = lying ? sheetSide_ : sheetStrip_;
+        pic->set(mic, lying, at(true), at(false));
+        pic->setVisible(true);
+        (lying ? micSide_ : micStrip_)->setVisible(false);
+        sheet->setVisible(true);
+        (lying ? sheetStrip_ : sheetSide_)->setVisible(false);
+        const AuMic& m = kAuMics[mic];
+        std::string text = std::string(m.name) + (auPlain(v, kPMic) == 0 ? " · di serie" : "") + "\n" + kAuMicLooks[mic].kind;
+        char band[96];
+        std::snprintf(band, sizeof band, "\nBanda %d Hz - %.1f kHz", int(m.hp > 0 ? m.hp : 20), (m.lp > 0 ? m.lp : 20000) / 1000.0);
+        text += band;
+        if (!auMicSwitch(true, mic) && !auMicSwitch(false, mic)) text += "\nNessun commutatore sul microfono.";
+        else text += "\nI commutatori sul microfono si cliccano.";
+        if (text != sheetText_) {
+            sheetText_ = text;
+            sheet->setText(text.c_str());
+            sheet->invalid();
+        }
+    }
+    void micSwitch(int which)   // a click on the microphone's switch: its next position
+    {
+        double v[kPCount];
+        values(v);
+        const int mic = auPlain(v, kPMic) > 0 ? auPlain(v, kPMic) : auDevice(v).mic;
+        const AuMicSwitch* sw = auMicSwitch(which == 0, mic);
+        if (!sw) return;
+        const AuParamId id = which == 0 ? kPMicFilter : kPMicPattern;
+        const int plain = auPlain(v, id), now = plain > 0 && plain <= sw->count ? plain - 1 : sw->def;
+        editWhole(id, (now + 1) % sw->count + 1);
+        sync(true);
+    }
     // Moves the front's controls to the values the parameters hold (the host, automation, a menu).
     void place(const double* v, bool all)
     {
@@ -1475,6 +1827,7 @@ private:
         for (Menu& m : menus_)
             if (all || !m.menu->isEditing()) fill(m, v);
         dress(v);
+        dressMic(v);
         place(v, all);
         double db[4];   // the readings the processor reported, against the calibration
         const int reads = heldReads_ >= 0 ? heldReads_ : reads_;
@@ -1553,6 +1906,11 @@ private:
     bool has_[kPCount] = {};
     Plate* plate_ = nullptr;
     Meters* meters_ = nullptr;
+    MicView* micSide_ = nullptr;
+    MicView* micStrip_ = nullptr;
+    CMultiLineTextLabel* sheetSide_ = nullptr;
+    CMultiLineTextLabel* sheetStrip_ = nullptr;
+    std::string sheetText_;
     HelpBadge* badge_ = nullptr;
     CMultiLineTextLabel* card_ = nullptr;
     CMultiLineTextLabel* advice_ = nullptr;

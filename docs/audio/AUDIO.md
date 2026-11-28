@@ -123,6 +123,14 @@ destra), non salvate.
 - Cambiati di conseguenza: il Geloso registra solo a 4,75 cm/s; l'Uher ha anche 2,4 cm/s (nuovo supporto); il Nagra
   4.2 anche 9,5 cm/s; il Webster ha la lampada al neon e non l'occhio magico; il REDD.51 quattro VU e non PPM.
 
+## Il microfono disegnato (`audio/vst3/AuMicLooks.h`)
+
+In *Ripresa* il microfono in uso è disegnato dalla sua sagoma (una riga per microfono di `kAuMics`, stesso ordine):
+in piedi in una colonna accanto al frontale se è corto e tozzo, sdraiato in una striscia sotto il frontale se è lungo;
+nello spazio che resta, la sua scheda (tipo e banda). I commutatori disegnati sono quelli di `kAuMicFilters` e
+`kAuMicPatterns` e un clic passa alla posizione seguente. [dedotto] proporzioni e colori dalla tipologia, non da un
+esemplare misurato; nessun marchio.
+
 ## Livello di registrazione, automazione e guide (`AuParams.h`, `AuGuide.h`)
 
 - **Livello di registrazione** (*Ripresa*: dopo il preamplificatore; *Mix e supporto*: «Livello sul master», prima del
